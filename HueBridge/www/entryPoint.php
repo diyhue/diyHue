@@ -16,23 +16,70 @@ if (mysqli_connect_errno()) {
 
 function convert_xy($x, $y, $brightness_raw)
 {
-    $brightness = $brightness_raw / 255.0;
-    $bright_y = $brightness / $y;
-    $X = $x * $bright_y;
-    $Z = (1 - $x - $y) * $bright_y;
+    $Y = $brightness_raw / 255.0;
 
-  // convert to RGB (0.0-1.0) color space
-    $R = $X * 1.4628067 - $brightness * 0.1840623 - $Z * 0.2743606;
-    $G = -$X * 0.5217933 + $brightness * 1.4472381 + $Z * 0.0677227;
-    $B = $X * 0.0349342 - $brightness * 0.0968930 + $Z * 1.2884099;
+    $z = 1.0 - $x - $y;
 
-  // apply inverse 2.2 gamma
-    $inv_gamma = 1.0 / 2.4;
-    $linear_delta = 0.055;
-    $linear_interval = 1 + $linear_delta;
-    $r = $R <= 0.0031308 ? 12.92 * $R : $linear_interval * pow($R, $inv_gamma) - $linear_delta;
-    $g = $G <= 0.0031308 ? 12.92 * $G : $linear_interval * pow($G, $inv_gamma) - $linear_delta;
-    $b = $B <= 0.0031308 ? 12.92 * $B : $linear_interval * pow($B, $inv_gamma) - $linear_delta;
+    $X = ($Y / $y) * $x;
+    $Z = ($Y / $y) * $z;
+
+    // sRGB D65 conversion
+    $r =  $X * 1.656492 - $Y * 0.354851 - $Z * 0.255038;
+    $g = -$X * 0.707196 + $Y * 1.655397 + $Z * 0.036152;
+    $b =  $X * 0.051713 - $Y * 0.121364 + $Z * 1.011530;
+
+    if ($r > $b && $r > $g && $r > 1.0) {
+        // red is too big
+        $g = $g / $r;
+        $b = $b / $r;
+        $r = 1.0;
+    }
+    else if ($g > $b && $g > $r && $g > 1) {
+        // green is too big
+        $r = $r / $g;
+        $b = $b / $g;
+        $g = 1.0;
+    }
+    else if ($b > $r && $b > $g && $b > 1) {
+        // blue is too big
+        $r = $r / $b;
+        $g = $g / $b;
+        $b = 1;
+    }
+
+    // Apply gamma correction
+    $r = $r <= 0.0031308 ? 12.92 * $r : (1.0 + 0.055) * pow($r, (1.0 / 2.4)) - 0.055;
+    $g = $g <= 0.0031308 ? 12.92 * $g : (1.0 + 0.055) * pow($g, (1.0 / 2.4)) - 0.055;
+    $b = $b <= 0.0031308 ? 12.92 * $b : (1.0 + 0.055) * pow($b, (1.0 / 2.4)) - 0.055;
+
+    if ($r > $b && $r > $g) {
+        // red is biggest
+        if ($r > 1) {
+            $g = $g / $r;
+            $b = $b / $$r;
+            $r = 1;
+        }
+    }
+    else if ($g > $b && $g > $r) {
+        // green is biggest
+        if ($g > 1) {
+            $r = $r / $g;
+            $b = $b / $g;
+            $g = 1;
+        }
+    }
+    else if ($b > $r && $b > $g) {
+        // blue is biggest
+        if ($b > 1) {
+            $r = $r / $b;
+            $g = $g / $b;
+            $b = 1;
+        }
+    }
+
+    $r = $r < 0 ? 0 : $r;
+    $g = $g < 0 ? 0 : $g;
+    $b = $b < 0 ? 0 : $b;
 
     return array((int) ($r * 255), (int) ($g * 255), (int) ($b * 255));
 }
@@ -212,3 +259,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT' || $_SERVER['REQUEST_METHOD'] == 'POST' 
 
 echo json_encode($output_array, JSON_UNESCAPED_SLASHES);
 mysqli_close($con);
+?>
