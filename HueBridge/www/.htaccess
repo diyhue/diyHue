@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteRule ^description.xml$   description.php
+RewriteCond %{REQUEST_URI}  !\.xml$ 
+RewriteRule (.*)  entryPoint.php [QSA]
