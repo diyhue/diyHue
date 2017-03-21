@@ -9,7 +9,23 @@ TO DO:
  - create sensors and switches with ESP8266.
  - make schedules functions to work on bridge.
 
- BUGS:
- - color formula still has some problems.
+BRIDGE INSTALLATION (raspbian/ubuntu/debian)
+
+sudo apt install apache2 php7.0 php7.0-mysqli php7.0-curl
+sudo apt install mariadb-server
+   or 
+sudo apt install mysql-server
+sudo a2enmod rewrite
+copy www folder content to /var/www/html
+edit the folowing variables in entryPoint.php:
+  - $dbip = '192.168.10.111';
+  - $dbname = 'hue';
+  - $dbuser = 'hue';
+  - $dbpass = 'hue123';
+  - $ip_addres = '192.168.10.13';
+  - $gateway = '192.168.10.1';
+  - $mac = '12:1F:CF:F6:90:75';
+import sql_schema in database
+
  
  Credits: probonopd
