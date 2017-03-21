@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             $update_string         = 'UPDATE lights SET ';
             if ($row_scene['xy'] != '') {
                 $update_string_actions = 'state = ' . (int) $row_scene['state'] . ', bri = ' . $row_scene['bri'] . ", xy = '" . $row_scene['xy'] . "', colormode = 'xy' ";
-                $curl_arguments['xy']  = $row_scene['xy'];
+                $curl_arguments['xy']  = json_decode($row_scene['xy'], true);
             } else {
                 $update_string_actions = 'state = ' . (int) $row_scene['state'] . ', bri = ' . $row_scene['bri'] . ', ct = ' . $row_scene['ct'] . ", colormode = 'ct' ";
                 $curl_arguments['ct']  = $row_scene['ct'];
@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             if ($row_scene['transitiontime'] != '0') {
                 $curl_arguments['transitiontime'] = $row_scene['transitiontime'];
             }
+            error_log('light_json:' . json_encode($curl_arguments));
             update_light($row_scene['light_id'], json_encode($curl_arguments));
             error_log('query:' . $update_string);
             mysqli_query($con, $update_string);
@@ -132,3 +133,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     );
     error_log('group delete');
 }
+

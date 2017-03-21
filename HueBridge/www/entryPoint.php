@@ -84,7 +84,7 @@ function convert_xy($x, $y, $brightness_raw)
     return array((int) ($r * 255), (int) ($g * 255), (int) ($b * 255));
 }
 
-function convert_ct($mirek)
+function convert_ct($mirek, $bri)
 {
     $hectemp = 10000 / $mirek;
     if ($hectemp <= 66) {
@@ -100,16 +100,13 @@ function convert_ct($mirek)
     $g = $g > 255 ? 255 : $g;
     $b = $b > 255 ? 255 : $b;
 
-    return array($r, $g, $b);
-
-    //return 'setleds?r='.(int) $r.'&g='.(int) $g.'&b='.(int) $b.'&fade=100';
+    return array((int)$r * ($bri / 255), (int)$g * ($bri / 255), (int)$b * ($bri / 255));
 }
 
 function update_light($light, $data)
 {
     global $con;
     $array_data = json_decode($data, true);
-
     $query_light_status = mysqli_query($con, "SELECT state, bri, xy, ct, colormode, ip, strip_light_nr FROM lights WHERE id = $light;");
     $row_light_status = mysqli_fetch_assoc($query_light_status);
     $url = "http://$row_light_status[ip]/";
@@ -127,44 +124,33 @@ function update_light($light, $data)
             }
         }
     } else {
-        if (isset($array_data['xy']) || isset($array_data['bri']) && $row_light_status['colormode'] == 'xy') {
-            if (isset($array_data['xy'])) {
-                $rgb = convert_xy($array_data['xy'][0], $array_data['xy'][1], $row_light_status['bri']);
-            } else {
-                $xy = json_decode($row_light_status['xy'], true);
-                $rgb = convert_xy($xy[0], $xy[1], $array_data['bri']);
-            }
-            if (is_numeric($row_light_status['strip_light_nr'])) {
-                $url .= 'set?light='.$row_light_status['strip_light_nr'];
-            }
-            $url .= "&r=$rgb[0]&g=$rgb[1]&b=$rgb[2]";
-        } elseif (isset($array_data['ct']) || isset($array_data['bri']) && $row_light_status['colormode'] == 'ct') {
-            if (isset($array_data['ct'])) {
-                $rgb = convert_ct($array_data['ct']);
-            } else {
-                $rgb = convert_ct($row_light_status['ct']);
-            }
-            if (isset($array_data['bri'])) {
-                $r = $rgb[0] * ($array_data['bri'] / 255);
-                $g = $rgb[1] * ($array_data['bri'] / 255);
-                $b = $rgb[2] * ($array_data['bri'] / 255);
-            } else {
-                $r = $rgb[0] * ($row_light_status['bri'] / 255);
-                $g = $rgb[1] * ($row_light_status['bri'] / 255);
-                $b = $rgb[2] * ($row_light_status['bri'] / 255);
-            }
-            if (is_numeric($row_light_status['strip_light_nr'])) {
-                $url .= 'set?light='.$row_light_status['strip_light_nr'];
-            }
-            $url .= "&r=$r&g=$g&b=$b";
-        }
+      if (isset($array_data['bri'])) {
+        $bri = $array_data['bri'];
+      } else {
+        $bri = $row_light_status['bri'];
+      }
+      if (isset($array_data['xy'])) {
+        $rgb = convert_xy($array_data['xy'][0], $array_data['xy'][1], $bri);
+      } else if (isset($array_data['ct'])) {
+        $rgb = convert_ct($array_data['ct'], $bri);
+      } elseif ($row_light_status['colormode'] == 'xy') {
+        $xy = json_decode($row_light_status['xy'], true);
+        $rgb = convert_xy($xy[0], $xy[1], $bri);
+      } elseif ($row_light_status['colormode'] == 'ct') {
+        $rgb = convert_ct($row_light_status['ct'], $bri);
+      }
+      $url .= "set?r=$rgb[0]&g=$rgb[1]&b=$rgb[2]";
+      if (is_numeric($row_light_status['strip_light_nr'])) {
+          $url .= '&light='.$row_light_status['strip_light_nr'];
+      }
+      if (isset($array_data['transitiontime'])) {
+        $url .= '&fade='.$row_light_status['transitiontime'];
+      }
     }
     error_log($url);
     $ch = curl_init();
 
     curl_setopt($ch, CURLOPT_URL, $url);
-//    curl_setopt($ch, CURLOPT_POST, true);
-//    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
     $result = curl_exec($ch);
@@ -232,15 +218,7 @@ if (count($url) > 2 && !empty($url['2'])) {
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
-    if (rand(1, 5) != 1) {
-        $output_array[] = array(
-            'error' => array(
-                'address' => '',
-                'description' => 'link button not pressed',
-                'type' => 101,
-            ),
-        );
-    } elseif (isset($data['devicetype'])) {
+    if (isset($data['devicetype'])) {
         $new_user = hash('ripemd160', $data['devicetype']);
         error_log("mysql: INSERT INTO `users`(`username`, `devicetype`, `last_use_date`, `create_date`) VALUES ('".$new_user."',".$data['devicetype']."',NOW(),NOW());");
         mysqli_query($con, "INSERT INTO `users`(`username`, `devicetype`, `last_use_date`, `create_date`) VALUES ('".$new_user."','".$data['devicetype']."',NOW(),NOW());");
@@ -260,3 +238,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT' || $_SERVER['REQUEST_METHOD'] == 'POST' 
 echo json_encode($output_array, JSON_UNESCAPED_SLASHES);
 mysqli_close($con);
 ?>
+
