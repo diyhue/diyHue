@@ -4,7 +4,6 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 
-// these are only used in LightHandler.cpp, but it seems that the IDE only scans the .ino and real libraries for dependencies
 #include <ESP8266WebServer.h>
 
 
@@ -15,9 +14,10 @@ const char* password = "nustiuceparola";
 #define pixelCount 30
 
 uint8_t rgb[lightsCount][3];
-bool light_state[lightsCount],level[lightsCount][3];
+bool light_state[lightsCount], level[lightsCount][3];
 int fade[lightsCount];
 float current_rgb[lightsCount][3], step_level[lightsCount][3];
+
 ESP8266WebServer server(80);
 
 RgbwColor red = RgbwColor(255, 0, 0, 0);
@@ -124,23 +124,30 @@ void setup() {
 
   server.on("/off", []() {
     int light = getArgValue("light") - 1;
+    fade[light] = getArgValue("fade");
+    if (fade[light] == -1) fade[light] = 150;
     server.send(200, "text/plain", "OK, light = " + (String)(light - 1));
-    step_level[light][0] = current_rgb[light][0] / 100;
-    step_level[light][1] = current_rgb[light][1] / 100;
-    step_level[light][2] = current_rgb[light][2] / 100;
-    level[light][0] = true;
-    level[light][1] = true;
-    level[light][2] = true;
+    step_level[light][0] = (rgb[light][0] - current_rgb[light][0]) / (fade[light] / 1.5);
+    step_level[light][1] = (rgb[light][1] - current_rgb[light][1]) / (fade[light] / 1.5);
+    step_level[light][2] = (rgb[light][2] - current_rgb[light][2]) / (fade[light] / 1.5);
+    step_level[light][0] = current_rgb[light][0] / (fade[light] / 1.5);
+    step_level[light][1] = current_rgb[light][1] / (fade[light] / 1.5);
+    step_level[light][2] = current_rgb[light][2] / (fade[light] / 1.5);
     light_state[light] = false;
-    
+
   });
 
   server.on("/on", []() {
     int light = getArgValue("light") - 1;
+    fade[light] = getArgValue("fade");
+    if (fade[light] == -1) fade[light] = 150;
     server.send(200, "text/plain", "OK, light = " + (String)light);
-    level[light][0] = false;
-    level[light][1] = false;
-    level[light][2] = false;
+    step_level[light][0] = (rgb[light][0] - current_rgb[light][0]) / (fade[light] / 1.5);
+    step_level[light][1] = (rgb[light][1] - current_rgb[light][1]) / (fade[light] / 1.5);
+    step_level[light][2] = (rgb[light][2] - current_rgb[light][2]) / (fade[light] / 1.5);
+    level[light][0] = true;
+    level[light][1] = true;
+    level[light][2] = true;
     light_state[light] = true;
   });
 
