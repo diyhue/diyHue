@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                 '/' . $url_response . '/' . $key => $value
             )
         );
-        error_log('GROUP PUT:' . json_encode($data, JSON_UNESCAPED_SLASHES));
+        #error_log('GROUP PUT:' . json_encode($data, JSON_UNESCAPED_SLASHES));
     }
     if (isset($data['scene'])) {
         $query_scene = mysqli_query($con, 'SELECT * FROM lightstates WHERE scene_id = ' . $data['scene'] . ';');
@@ -95,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             if ($row_scene['transitiontime'] != '0') {
                 $curl_arguments['transitiontime'] = $row_scene['transitiontime'];
             }
-            error_log('light_json:' . json_encode($curl_arguments));
+            #error_log('light_json:' . json_encode($curl_arguments));
             update_light($row_scene['light_id'], json_encode($curl_arguments));
-            error_log('query:' . $update_string);
+            #error_log('query:' . $update_string);
             mysqli_query($con, $update_string);
         }
     } elseif (isset($data['on'])) {
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         } else {
             $query_lights = mysqli_query($con, 'SELECT lights FROM groups WHERE id = ' . $url['4'] . ';');
             $row_lights   = mysqli_fetch_assoc($query_lights);
-            error_log('group on :' . $row_lights['lights']);
+            #error_log('group on :' . $row_lights['lights']);
             foreach (json_decode($row_lights['lights']) as $light) {
                 update_light($light, json_encode($data));
                 mysqli_query($con, 'UPDATE lights set state = ' . (int) $data['on'] . ' WHERE id = ' . $light . ';');
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
-    error_log('GROUP POST:' . json_encode($data));
+    #error_log('GROUP POST:' . json_encode($data));
     mysqli_query($con, "INSERT INTO `groups`(`lights`, `name`, `type`, `class`) VALUES ('" . json_encode($data['lights']) . "','" . $data['name'] . "','" . $data['type'] . "','" . $data['class'] . "');");
     $output_array[] = array(
         'success' => array(
@@ -133,4 +133,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     );
     error_log('group delete');
 }
-

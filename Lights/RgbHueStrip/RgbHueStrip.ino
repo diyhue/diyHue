@@ -4,7 +4,6 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 
-// these are only used in LightHandler.cpp, but it seems that the IDE only scans the .ino and real libraries for dependencies
 #include <ESP8266WebServer.h>
 
 
@@ -18,6 +17,7 @@ uint8_t rgb[lightsCount][3];
 bool light_state[lightsCount], level[lightsCount][3];
 int fade[lightsCount];
 float step_level[lightsCount][3], current_rgb[lightsCount][3];
+byte mac[6];
 
 ESP8266WebServer server(80);
 
@@ -70,6 +70,8 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
+
+  WiFi.macAddress(mac);
 
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
@@ -150,6 +152,10 @@ void setup() {
     level[light][1] = true;
     level[light][2] = true;
     light_state[light] = true;
+  });
+
+  server.on("/detect", []() {
+    server.send(200, "text/plain", "{\"hue\": \"strip\",\"lights\": " + (String)lightsCount + ",\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
 

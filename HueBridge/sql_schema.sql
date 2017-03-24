@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 192.168.10.111
--- Generation Time: 20 Mar 2017 la 22:04
+-- Generation Time: 24 Mar 2017 la 22:02
 -- Versiune server: 10.0.28-MariaDB-0ubuntu0.16.04.1
 -- PHP Version: 7.0.13-0ubuntu0.16.04.1
 
@@ -52,8 +52,8 @@ CREATE TABLE `lights` (
   `sat` smallint(6) NOT NULL,
   `xy` varchar(20) NOT NULL,
   `ct` smallint(6) NOT NULL,
-  `alert` varchar(10) NOT NULL,
-  `effect` varchar(10) NOT NULL,
+  `alert` varchar(10) NOT NULL DEFAULT 'None',
+  `effect` varchar(10) NOT NULL DEFAULT 'None',
   `colormode` varchar(10) NOT NULL,
   `type` varchar(50) NOT NULL,
   `name` varchar(30) NOT NULL,
@@ -64,15 +64,6 @@ CREATE TABLE `lights` (
   `strip_light_nr` tinyint(4) NOT NULL DEFAULT '1',
   `new` tinyint(1) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Salvarea datelor din tabel `lights`
---
-
-INSERT INTO `lights` (`id`, `state`, `bri`, `hue`, `sat`, `xy`, `ct`, `alert`, `effect`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`, `new`) VALUES
-(1, 1, 229, 0, 0, '[0.669057,0.319255]', 466, 'none', 'none', 'xy', 'Extended color light', 'Hue Light 1', 'AA:BB:CC:DD:EE:FF:00:11-1', 'LCT001', '66009461', '192.168.10.19', 1, 1),
-(2, 1, 229, 0, 0, '[0.669057,0.319255]', 466, 'none', 'none', 'xy', 'Extended color light', 'Hue Light 2', 'AA:BB:CC:DD:EE:FF:00:11-2', 'LCT001', '66009461', '192.168.10.19', 2, 1),
-(3, 1, 229, 0, 100, '[0.669057,0.319255]', 466, 'none', 'none', 'xy', 'Extended color light', 'Hue Light 3', 'AA:BB:CC:DD:EE:FF:00:11-3', 'LCT001', '66009461', '192.168.10.19', 3, 1);
 
 -- --------------------------------------------------------
 

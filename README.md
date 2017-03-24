@@ -1,13 +1,14 @@
 I create this project in order to have all lights in my house remotely managed. I choose Philips Hue API because there are lot of smartphone applications available and official one looks very good. 
-HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use a Raspberry Pi and OrangePi Zero. There is no configuration panel, lights ip's must be chaged directly in dababase (phpMyAdmin is nice to have). Other settings must be changes in entryPoint.php. There is no SSDP discover service but most application support direct ip connection (official one from Help button).
+HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use a Raspberry Pi and OrangePi Zero, both are working with no lag.
 
-Light controllers are ESP8266 based devices. Is possible to setup more lights per strip to create nice scenes. 
+Light controllers are ESP8266 based devices. Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights, but i recommend lights to have a dhcp reservation with an ip between x.x.x.1 <-> x.x.x.20 to be descovered on first scan, because entire subnet scan require more time than official application wait.
 
 Currently there is support just for rgb and rgbw neo pixel strips (library used: https://github.com/Makuna/NeoPixelBus)
 
 TO DO:
- - create sensors and switches with ESP8266.  
- - make schedules functions to work on bridge.  
+ - create sensors and switches with ESP8266 platforms.  
+ - add support for cheap wi-fi light bulbs that are available on aliexpress  
+ - make scheduler function to work on bridge, currently no cron implemented.  
 
 BRIDGE INSTALLATION (raspbian/ubuntu/debian)  
 ###install webserver (apache + php)###  
@@ -31,15 +32,15 @@ find:
 
 change "AllowOverride None"  in "AllowOverride All"  
 ###copy php files in /var/www/html###  
-cp -r /var/www/html  
+cp -r HueBridge/www/* /var/www/html  
 
 ###edit the settings variables in entryPoint.php###  
 vim /var/www/html/entryPoint.php:  
-  - $dbip = '192.168.10.111'; // put yout database server ip. Usualy 127.0.0.1 
+  - $dbip = '127.0.0.1'; // put yout database server ip. Usualy 127.0.0.1 
   - $dbname = 'hue';  //database name. default "hue".  
   - $dbuser = 'hue';  //username for connection to database  
   - $dbpass = 'hue123';  //user password  
-  - $ip_addres = '192.168.10.13';  //ip of the bridge (required by some application to work)  
+  - $ip_addres = '192.168.10.24';  //ip of the bridge (required by some application to work)  
   - $gateway = '192.168.10.1';  //ip of the bridge (required by some application to work)  
   - $mac = '12:1F:CF:F6:90:75';  // bridge mac address (required by some application to work)  
 ###import sql_schema in database###  
@@ -56,6 +57,7 @@ lights can be controlled with any browser. example url:
 "http://{light ip}/set?light=1&r=0&g=60&b=255&fade=2000"  
 "http://{light ip}/off?light=1&fade=1000"  
 "http://{light ip}/on?light=1"  
+"http://{light ip}/discover"  
 
  
 Credits: probonopd
