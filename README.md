@@ -68,14 +68,14 @@ lights can be controlled with any browser. example url:
 CHANGELOG
 
 24-Mar-2017  
- - improve color acuracy
- - light strips are automaticaly detected and can be configured from official application
- - sql schema create also hue@127.0.0.1 user
+ - improve color acuracy  
+ - light strips are automaticaly detected and can be configured from official application  
+ - sql schema create also hue@127.0.0.1 user  
 25-Mar-2017  
  - switch light discover to nmap, network scanning is done much faster.
- - on new light scan check if ip of current ones was changed. if yes update in database with new ip
- - option for static ip on lights
- - new arduino skeches where lights are default on. Useful if are still used classic wall switches.
+ - on new light scan check if ip of current ones was changed. if yes update in database with new ip  
+ - option for static ip on lights  
+ - new arduino skeches where lights are default on. Useful if are still used classic wall switches.  
 
 
  
