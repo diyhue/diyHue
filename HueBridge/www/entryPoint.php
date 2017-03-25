@@ -2,8 +2,8 @@
 
 $dbip = '127.0.0.1';
 $dbname = 'hue';
-$dbuser = 'root';
-$dbpass = 'marius123';
+$dbuser = 'hue';
+$dbpass = 'hue123';
 $ip_addres = '192.168.10.24';
 $gateway = '192.168.10.1';
 $mac = '38:1E:B1:CA:83:55';
@@ -218,6 +218,8 @@ function update_light($light, $data)
             $url .= '&fade='.$array_data['transitiontime'];
         }
     }
+
+    error_log($url);
     #error_log($url);
     $ch = curl_init();
 

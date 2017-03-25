@@ -103,10 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             '/lights' => 'Searching for new devices'
         )
     );
-    echo json_encode($output_array, JSON_UNESCAPED_SLASHES);
-    $ip_pices       = explode('.', $ip_addres);
-    for ($i = 1; $i <= 254; ++$i) {
-        $url = "http://$ip_pices[0].$ip_pices[1].$ip_pices[2].$i/detect";
+    $network_ips = shell_exec("nmap  $gateway/24 -p80 --open -n | grep report | cut -d ' ' -f5");
+    $ips_array = explode("\n", $network_ips);
+    foreach($ips_array as $ip){
+        $url = "http://$ip/detect";
         $ch  = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -117,21 +117,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         if (!empty($result)) {
             $data = json_decode($result, true);
             if (is_array($data) && isset($data['hue'])) {
-                error_log("$ip_pices[0].$ip_pices[1].$ip_pices[2].$i is a hue " . $data['hue']);
+                error_log("$ip is a hue " . $data['hue']);
                 $new_light     = mysqli_query($con, "SELECT ip FROM lights WHERE uniqueid LIKE '".$data['mac']."%' LIMIT 1;");
                 $row_cnt       = $new_light->num_rows;
                 $row_new_light = mysqli_fetch_assoc($new_light);
                 if ($row_cnt > 0) {
-                    if ($row_new_light['ip'] == "$ip_pices[0].$ip_pices[1].$ip_pices[2].$i") {
+                    if ($row_new_light['ip'] == $ip) {
                         error_log("this is already present with correct ip");
                     } else {
-                        $query_update_lights = mysqli_query($con, "UPDATE lights SET ip = '$ip_pices[0].$ip_pices[1].$ip_pices[2].$i' WHERE uniqueid LIKE '".$data['mac']."%';");
+                        error_log("fix ip for address ".$data['mac']." new ip is $ip");
+                        $query_update_lights = mysqli_query($con, "UPDATE lights SET ip = '$ip' WHERE uniqueid LIKE '".$data['mac']."%';");
                     }
                 } else {
-                    for ($j = 1; $j <= $data['lights']; ++$j) {
+                    for ($i = 1; $i <= $data['lights']; ++$i) {
                         if ($data['hue'] == "strip") {
-                            mysqli_query($con, "INSERT INTO `lights`(`ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('461', 'ct', 'Extended color light','Hue Light $j','".$data['mac']."-".$j."','LCT001','66009461', '$ip_pices[0].$ip_pices[1].$ip_pices[2].$i', '$j');");
-                            error_log("INSERT INTO `lights`(`ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('461', 'ct', 'Extended color light','Hue Light $j','".$data['mac']."-".$j."','LCT001','66009461', '$ip_pices[0].$ip_pices[1].$ip_pices[2].$i', '$j');");
+                            mysqli_query($con, "INSERT INTO `lights`(`ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('461', 'ct', 'Extended color light','Hue ".$data['type']." ".$data['hue']." Light $i','".$data['mac']."-".$i."','LCT001','66009461', '$ip', '$i');");
+                            error_log("INSERT INTO `lights`(`ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('461', 'ct', 'Extended color light','Hue ".$data['type']." ".$data['hue']." Light $i','".$data['mac']."-".$i."','LCT001','66009461', '$ip', '$i');");
                         }
                     }
                 }

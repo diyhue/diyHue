@@ -13,6 +13,11 @@ const char* password = "nustiuceparola";
 #define lightsCount 3
 #define pixelCount 60
 
+// if you want to setup static ip uncomment these 3 lines and line 69
+//IPAddress strip_ip ( 192,  168,   10,  95);
+//IPAddress gateway_ip ( 192,  168,   10,   1);
+//IPAddress subnet_mask(255, 255, 255,   0);
+
 uint8_t rgb[lightsCount][3];
 bool light_state[lightsCount], level[lightsCount][3];
 int fade[lightsCount];
@@ -60,6 +65,8 @@ void setup() {
 
   // Show that the NeoPixels are alive
   delay(120); // Apparently needed to make the first few pixels animate correctly
+  
+  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);

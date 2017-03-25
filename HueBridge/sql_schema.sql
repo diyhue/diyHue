@@ -20,6 +20,9 @@ SET time_zone = "+00:00";
 -- Database: `hue`
 --
 CREATE DATABASE IF NOT EXISTS `hue` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT USAGE ON hue.* TO 'hue'@'localhost' IDENTIFIED BY 'hue123';
+GRANT ALL PRIVILEGES ON hue.* TO 'hue'@'localhost';
+FLUSH PRIVILEGES;
 USE `hue`;
 
 -- --------------------------------------------------------
