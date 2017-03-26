@@ -1,16 +1,16 @@
-I create this project in order to have all lights in my house remotely managed. I choose Philips Hue API because there are lot of smartphone applications available and official one looks very good. 
+I create this project in order to have all lights in my house remotely managed. I choose Philips Hue API because there are lot of smartphone applications available and official one looks very good.
 HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use a Raspberry Pi and OrangePi Zero, both are working with no lag.
 
 Light controllers are ESP8266 based devices. Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights on same network
 
 Currently there is support just for rgb and rgbw neo pixel strips (library used: https://github.com/Makuna/NeoPixelBus)
 
-TO DO:
+#TO DO:
  - create sensors and switches with ESP8266 platforms.  
  - add support for cheap wi-fi light bulbs that are available on aliexpress  
  - make scheduler function to work on bridge, currently no cron implemented.  
 
-BRIDGE INSTALLATION (raspbian/ubuntu/debian)  
+#BRIDGE INSTALLATION (raspbian/ubuntu/debian)  
 ###install webserver (apache + php)###  
 sudo apt install apache2 php7.0 php7.0-mysqli php7.0-curl nmap  
 or for debian distributions  
@@ -36,7 +36,7 @@ cp -r HueBridge/www/* /var/www/html
 
 ###edit the settings variables in entryPoint.php###  
 vim /var/www/html/entryPoint.php:  
-  - $dbip = '127.0.0.1'; // put yout database server ip. Usualy 127.0.0.1 
+  - $dbip = '127.0.0.1'; // put yout database server ip. Usualy 127.0.0.1
   - $dbname = 'hue';  //database name. default "hue" created with sql_schema.sql.  
   - $dbuser = 'hue';  //username for connection to database, default hue created with sql_schema.sql  
   - $dbpass = 'hue123';  //user password, default 'hue123'  
@@ -48,7 +48,7 @@ mysql -u username -p  < file.sql
 ###connect to bridge###  
 open official smartphone application, click help, insert the bridge ip and connect.  
 
-LIGHT STRIPS  
+#LIGHT STRIPS  
 supported neopixel led are WS2812B (rgb, recommended until a more complex rgb -> rgbw conversion will be implemented) and SK6812 (rgbw).  
 data in pin must be connected to dedicated harware pin of the esp8266 platforms (rx pin on wemos d1 mini and nodemcu)  
 compilation require Makuna/NeoPixelBus library that can be downloaded automatically from Arduino library mannager.  
@@ -65,18 +65,19 @@ lights can be controlled with any browser. example url:
 "http://{light ip}/discover"  
 
 
-CHANGELOG
+#CHANGELOG
 
 24-Mar-2017  
  - improve color acuracy  
  - light strips are automaticaly detected and can be configured from official application  
- - sql schema create also hue@127.0.0.1 user  
+ - sql schema create also the user hue@127.0.0.1  
 25-Mar-2017  
  - switch light discover to nmap, network scanning is done much faster.
  - on new light scan check if ip of current ones was changed. if yes update in database with new ip  
  - option for static ip on lights  
  - new arduino skeches where lights are default on. Useful if are still used classic wall switches.  
+25-Mar-2017
+ - fix group rename bug
 
 
- 
 Credits: probonopd
