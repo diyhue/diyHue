@@ -5,6 +5,8 @@ Light controllers are ESP8266 based devices. Is possible to setup more lights pe
 
 Currently there is support just for rgb and rgbw neo pixel strips (library used: https://github.com/Makuna/NeoPixelBus)
 
+Demo video: https://www.youtube.com/watch?v=izCzEavYxUY&t=198s
+
 #TO DO:
  - create sensors and switches with ESP8266 platforms.  
  - add support for cheap wi-fi light bulbs that are available on aliexpress  
@@ -78,6 +80,8 @@ lights can be controlled with any browser. example url:
  - new arduino skeches where lights are default on. Useful if are still used classic wall switches.  
 25-Mar-2017
  - fix group rename bug
-
+28-Mar-2017
+ - fix light delete bug
+ - merged arduino skeches, now default on can be set with header option.
 
 Credits: probonopd
