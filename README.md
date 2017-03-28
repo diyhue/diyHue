@@ -78,10 +78,10 @@ lights can be controlled with any browser. example url:
  - on new light scan check if ip of current ones was changed. if yes update in database with new ip  
  - option for static ip on lights  
  - new arduino skeches where lights are default on. Useful if are still used classic wall switches.  
-25-Mar-2017
- - fix group rename bug
-28-Mar-2017
- - fix light delete bug
- - merged arduino skeches, now default on can be set with header options "startup_brightness" and "startup_color"
+25-Mar-2017  
+ - fix group rename bug  
+28-Mar-2017  
+ - fix light delete bug  
+ - merged arduino skeches, now default on can be set with header options "startup_brightness" and "startup_color"  
 
 Credits: probonopd
