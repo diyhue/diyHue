@@ -82,6 +82,6 @@ lights can be controlled with any browser. example url:
  - fix group rename bug
 28-Mar-2017
  - fix light delete bug
- - merged arduino skeches, now default on can be set with header option.
+ - merged arduino skeches, now default on can be set with header options "startup_brightness" and "startup_color"
 
 Credits: probonopd
