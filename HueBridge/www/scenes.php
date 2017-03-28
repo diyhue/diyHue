@@ -134,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 } elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
     error_log('scenes delete');
     mysqli_query($con, 'DELETE FROM `scenes` WHERE id = '.$url['4'].';');
+    mysqli_query($con, 'DELETE FROM `lightstates` WHERE scene_id = '.$url['4'].';');
     $output_array[] = array(
         'success' => '/scenes/'.$url['4'].' deleted',
     );
