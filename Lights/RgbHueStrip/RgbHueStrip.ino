@@ -16,7 +16,7 @@ const char* password = "nustiuceparola";
 #define startup_color 0
 // 0 = warm_white, 1 =  neutral, 2 = cold_white, 3 = red, 4 = green, 5 = blue
 
-// if you want to setup static ip uncomment these 3 lines and line 69
+// if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);

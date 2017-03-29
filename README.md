@@ -100,7 +100,10 @@ lights can be controlled with any browser. example url:
 
 28-Mar-2017  
  - fix light delete bug  
- - merged arduino skeches, now default on can be set with header options "startup_brightness" and "startup_color"  
+ - merged arduino skeches, now default on can be set with header options "startup_brightness" and "startup_color"
 
-Contributions are welcomed
+29-Mar-2017  
+ - add new arduino sketch that bring support for pwm rgb lights
+
+Contributions are welcomed  
 Credits: probonopd
