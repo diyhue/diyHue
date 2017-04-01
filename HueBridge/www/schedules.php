@@ -78,4 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             'id' => (string) mysqli_insert_id($con),
         ),
     );
+} elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+    error_log('scheduler delete');
+    mysqli_query($con, 'DELETE FROM `schedules` WHERE id = '.$url['4'].';');
+    $output_array[] = array(
+        'success' => '/schedules/'.$url['4'].' deleted',
+    );
 }
