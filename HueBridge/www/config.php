@@ -1,5 +1,5 @@
 <?php
-
+// this file is managing configuration request from bridge, it is not a configuration file. Options variables are loacated in bridge-config.php file.
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $query_users = mysqli_query($con, 'SELECT * FROM users;');
     while ($row_users = mysqli_fetch_assoc($query_users)) {
@@ -55,3 +55,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     );
     error_log('config:' . json_encode($output_array, JSON_UNESCAPED_SLASHES));
 }
+?>

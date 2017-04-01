@@ -1,12 +1,6 @@
 <?php
 
-$dbip = '127.0.0.1';
-$dbname = 'hue';
-$dbuser = 'hue';
-$dbpass = 'hue123';
-$ip_addres = '192.168.10.24';
-$gateway = '192.168.10.1';
-$mac = '38:1E:B1:CA:83:55';
+require_once('bridge-config.php');
 
 global $con;
 $con = mysqli_connect($dbip, $dbuser, $dbpass, $dbname);
