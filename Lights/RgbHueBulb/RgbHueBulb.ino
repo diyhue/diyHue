@@ -8,9 +8,9 @@
 const char* ssid = "MikroTik";
 const char* password = "nustiuceparola";
 
-#define red_pin 4
-#define green_pin 5
-#define blue_pin 16
+#define red_pin 16
+#define green_pin 4
+#define blue_pin 5
 #define startup_brightness 250
 #define startup_color 0
 // 0 = warm_white, 1 =  neutral, 2 = cold_white, 3 = red, 4 = green, 5 = blue
@@ -54,23 +54,26 @@ void handleNotFound() {
 
 
 void setup() {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
   analogWriteRange(255);
-  
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
-
-  if (startup_brightness == 0) {
-  analogWrite(red_pin, 255);
-  analogWrite(green_pin, 255);
-  analogWrite(blue_pin, 255);
-  delay(200);
   analogWrite(red_pin, 0);
   analogWrite(green_pin, 0);
   analogWrite(blue_pin, 0);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+
+  if (startup_brightness == 0) {
+    analogWrite(red_pin, 255);
+    analogWrite(green_pin, 255);
+    analogWrite(blue_pin, 255);
+    delay(200);
+    analogWrite(red_pin, 0);
+    analogWrite(green_pin, 0);
+    analogWrite(blue_pin, 0);
 
 
-  while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED) {
       analogWrite(red_pin, 255);
       delay(250);
       analogWrite(red_pin, 0);
@@ -178,7 +181,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"type\": \"rgbw\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
 
@@ -196,6 +199,7 @@ void loop() {
 
 
 void lightEngine() {
+  int white_level = 255;
   if (light_state) {
     if (rgb[0] != (int)current_rgb[0] || rgb[1] != (int)current_rgb[1] || rgb[2] != (int)current_rgb[2]) {
       if (rgb[0] != (int)current_rgb[0]) current_rgb[0] += step_level[0];
@@ -207,6 +211,9 @@ void lightEngine() {
       if (!level[0] && current_rgb[0] < rgb[0]) current_rgb[0] = rgb[0];
       if (!level[1] && current_rgb[1] < rgb[1]) current_rgb[1] = rgb[1];
       if (!level[2] && current_rgb[2] < rgb[2]) current_rgb[2] = rgb[2];
+      analogWrite(red_pin, current_rgb[0]);
+      analogWrite(green_pin, current_rgb[1]);
+      analogWrite(blue_pin, current_rgb[2]);
     }
   } else {
     if ((int)current_rgb[0] != 0 || (int)current_rgb[1] != 0 || (int)current_rgb[2] != 0) {
@@ -216,10 +223,10 @@ void lightEngine() {
       if ((int)current_rgb[0] < 0) current_rgb[0] = 0;
       if ((int)current_rgb[1] < 0) current_rgb[1] = 0;
       if ((int)current_rgb[2] < 0) current_rgb[2] = 0;
+      analogWrite(red_pin, current_rgb[0]);
+      analogWrite(green_pin, current_rgb[1]);
+      analogWrite(blue_pin, current_rgb[2]);
     }
   }
-  analogWrite(red_pin, current_rgb[0]);
-  analogWrite(green_pin, current_rgb[1]);
-  analogWrite(blue_pin, current_rgb[0]);
   delay(2);
 }
