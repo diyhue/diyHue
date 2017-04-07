@@ -1,15 +1,13 @@
-I create this project in order to have all lights in my house remotely managed whitout to pay the expensive price of original Philips devices. Currently all futures of original bridge are working except "Wake up" and "Go to sleep" functions (need some sample output from original bridges). I expect this to be fixed soon.
-HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use both an RaspberryPi 2 and an OrangePi Zero, both are working with no lag. I expect RaspberryPi Zero W to work also with no lag.
+I create this project in order to have all lights in my house remotely managed whitout to pay the expensive price of original Philips devices. Currently all futures of original bridge are working except "Go to sleep" functions that i expect to be fixed soon.
+HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use both an RaspberryPi 2 and an OrangePi Zero, both are working with no lag and very small load. I expect RaspberryPi Zero W to work as whell with no problems.
 
-Light controllers are ESP8266 based devices (ESP-12E and WEMOS D1 mini in my tests). Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights on same network wich made the setup very easy.
-Currently there is support for ws2812b and SK6812 neopixels strips and "Color Dream" wifi rgbw bulbs. 
+Light controllers are ESP8266 based devices (i use ESP-12E and WEMOS D1 mini for my tests). Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights on same network wich made the setup very easy. Currently i'm working on sensors with ESP8266 in light sleep mode to run for long time on baterie.
+There is support for WS2812b/SK6812 neopixels strips, "Color Dream" wifi rgbw bulbs and there is the possibility to adapt any pwm light or esp8266 rgb/rgbw bulbs.
 
 Demo video: https://www.youtube.com/watch?v=izCzEavYxUY&t=198s (this was made before "Color Dream" bulb support
 
 ### TO DO:
- - create sensors and switches with ESP8266 platforms.  
- - add support for cheap wi-fi light bulbs that are available on aliexpress  
- - make scheduler function to work on bridge, currently no cron implemented.  
+ - create discoverable sensors and switches with ESP8266 platforms that can run on batteries for long time.  
  
 ### BRIDGE INSTALLATION:
 ##### install webserver (apache + php)  
@@ -74,7 +72,7 @@ append the following line:
 #### connect to bridge
 Open official smartphone application, click help, insert the bridge ip and connect.
 ## LIGHT STRIPS:
-Supported neopixel led are WS2812B (rgb, recommended until a more complex rgb -> rgbw conversion will be implemented) and SK6812 (rgbw).  
+Supported neopixel led are WS2812B and SK6812 (rgbw).  
 Data in pin of the leds must be connected to dedicated harware pin of the esp8266 platforms (rx pin on wemos d1 mini and esp-12e)  
 Compilation require Makuna/NeoPixelBus library that can be founded and downloaded automatically from Arduino library mannager.  
 
@@ -125,7 +123,10 @@ lights can be controlled with any browser. example url:
 01-Apr-2017  
  - fix scheduler delete bug
  - add cron job file, now "My routines" from application are working. Still issues with "Wake up" and "Go to sleep"
- - add rgbw sketch for "Dream Color" wifi RGBW bulb 
+ - add rgbw sketch for "Dream Color" wifi RGBW bulb
+07-Apr-2017
+ - Major changes and improvements. Color processing is made now by light instead of bridge, for this reason lights must be also updated.
+ - Was created first sensor concept skech that run in light sleep mode.
 
 Contributions are welcomed  
 Credits: probonopd
