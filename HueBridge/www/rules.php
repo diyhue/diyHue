@@ -6,14 +6,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         while ($row_rules = mysqli_fetch_assoc($query_rules)) {
             $rules_array[$row_rules['id']] = array(
                     'name' => $row_rules['name'],
-                    'owner' => $row_rules['owner'],
+                    //'owner' => $row_rules['owner'],
                     'created' => $row_rules['created_conv'],
-                    'lasttriggered' => (($row_rules['lasttriggered'] == "0000-00-00 00:00:00")?"none":$row_rules['lasttriggered']),
-                    'timestriggered' => (int)$row_rules['timestriggered'],
+                    //'lasttriggered' => (($row_rules['lasttriggered'] == "0000-00-00 00:00:00")?"none":$row_rules['lasttriggered']),
+                    //'timestriggered' => (int)$row_rules['timestriggered'],
                     'status' => $row_rules['status'],
                     'recycle' => (bool)$row_rules['recycle'],
                     'conditions' => json_decode($row_rules['conditions']),
-                    'actions' => json_decode($row_rules['conditions'])
+                    'actions' => json_decode($row_rules['actions'])
                 );
         }
         if (isset($rules_array)) {

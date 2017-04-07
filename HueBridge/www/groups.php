@@ -132,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         }
         $update_string = rtrim($update_string, ',');
         $update_string .= ' WHERE id = '.$url['4'];
+        error_log($update_string);
         $update_groups = mysqli_query($con, $update_string);
     }
 } elseif ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -150,3 +151,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     );
     error_log('group delete');
 }
+

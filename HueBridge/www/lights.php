@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $raw_data = file_get_contents('php://input');
     update_light($url['4'], $raw_data);
     $data = json_decode($raw_data, true);
-    #error_log("LIGHTS PUT: " . json_encode($data));
+    error_log("LIGHTS PUT: " . json_encode($data));
     $update_string = 'UPDATE lights SET ';
     foreach ($data as $key => $value) {
         $url_response = implode('/', array_slice($url, 3));
@@ -90,13 +90,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         if ($key == 'xy' || $key == 'ct' || $key == 'hue') {
             $update_string .= "colormode = '".$key."',";
         }
-        #error_log($key . '|' . $value);
         $update_string .= $key." = '".$value."',";
     }
     $update_string = rtrim($update_string, ',');
     $update_string .= ' WHERE id = '.$url['4'];
     $update_lights = mysqli_query($con, $update_string);
-    #error_log($update_string);
+    error_log($update_string);
 } elseif ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($url['4'])) {
     $output_array[] = array(
         'success' => array(
@@ -130,9 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
                     }
                 } else {
                     for ($i = 1; $i <= $data['lights']; ++$i) {
-                        if ($data['hue'] == 'strip') {
-                            mysqli_query($con, "INSERT INTO `lights`(`bri`, `ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('200', '461', 'ct', 'Extended color light','Hue ".$data['type'].' '.$data['hue']." Light $i','".$data['mac'].'-'.$i."','LCT001','66009461', '$ip', '$i');");
-                            error_log("INSERT INTO `lights`(`bri`, `ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('200', '461', 'ct', 'Extended color light','Hue ".$data['type'].' '.$data['hue']." Light $i','".$data['mac'].'-'.$i."','LCT001','66009461', '$ip', '$i');");
+                        if ($data['hue'] == 'strip' || $data['hue'] == 'bulb') {
+                            mysqli_query($con, "INSERT INTO `lights`(`bri`, `ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('200', '461', 'ct', 'Extended color light','Hue ".$data['type'].' '.$data['hue']." Light $i','".$data['mac'].'-'.$i."','".(($data['hue'] == 'strip')?'LST001':'LCT001')."','66009461', '$ip', '$i');");
+                            error_log("INSERT INTO `lights`(`bri`, `ct`, `colormode`, `type`, `name`, `uniqueid`, `modelid`, `swversion`, `ip`, `strip_light_nr`) VALUES ('200', '461', 'ct', 'Extended color light','Hue ".$data['type'].' '.$data['hue']." Light $i','".$data['mac'].'-'.$i."','".(($data['hue'] == 'strip')?'LST001':'LCT001')."','66009461', '$ip', '$i');");
                         }
                     }
                 }

@@ -1,4 +1,5 @@
 RewriteEngine On
 RewriteRule ^description.xml$   description.php
-RewriteCond %{REQUEST_URI}  !\.xml$ 
+#RewriteCond %{REQUEST_URI}  !\.xml$
+RewriteCond %{REQUEST_URI} !^/(description|phpMyAdmin)
 RewriteRule (.*)  entryPoint.php [QSA]
