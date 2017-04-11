@@ -1,11 +1,10 @@
-I create this project in order to have all lights in my house remotely managed whitout to pay the expensive price of original Philips devices. Currently all futures of original bridge are working except "Go to sleep" functions that i expect to be fixed soon.
+I create this project in order to have all lights in my house remotely managed whitout to pay the expensive price of original Philips Hue devices. Currently all futures of original bridge are working except "Go to sleep" functions that i expect to be fixed soon.
 HUE bridge is created in PHP with mysql database as backend for storing data. For tests i use both an RaspberryPi 2 and an OrangePi Zero, both are working with no lag and very small load. I expect RaspberryPi Zero W to work as whell with no problems.
 
-Light controllers are ESP8266 based devices (i use ESP-12E and WEMOS D1 mini for my tests). Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights on same network wich made the setup very easy. Currently i'm working on sensors with ESP8266 in light sleep mode to run for long time on baterie.
-There is support for WS2812b/SK6812 neopixels strips, "Color Dream" wifi rgbw bulbs and there is the possibility to adapt any pwm light or esp8266 rgb/rgbw bulbs.
+Light controllers are ESP8266 based devices (i use ESP-12E and WEMOS D1 mini for my tests). Is possible to setup more lights per strip to create nice scenes. Bridge is able to autodiscover lights on same network wich made the setup very easy. Currently i'm working on switches/sensors with ESP8266 in deep sleep mode to run for long time on baterie.
+There is support for WS2812b/SK6812 neopixels strips and "Color Dream" wifi rgbw bulbs and there is the possibility to adapt any pwm led driver or any esp8266 rgb/rgbw bulbs available on market.
 
-Demo video: https://www.youtube.com/watch?v=izCzEavYxUY&t=198s (this was made before "Color Dream" bulb support
-
+Demo video: https://www.youtube.com/watch?v=izCzEavYxUY&t=198s (outdated, missing lot of futures and improvements!)
 ### TO DO:
  - create discoverable sensors and switches with ESP8266 platforms that can run on batteries for long time.  
  
@@ -48,9 +47,9 @@ change ```AllowOverride None```  in ```AllowOverride All```
 ```
 $sudo cp -r HueBridge/www/. /var/www/html  
 ```
-#### edit the settings variables in entryPoint.php 
+#### edit the settings variables in bridge-config.php 
 ```
-$sudo nano /var/www/html/entryPoint.php:  
+$sudo nano /var/www/html/bridge-config.php:  
 ```
   - ```$ip_addres = '192.168.10.24';```  //replace with ip of the bridge 
   - ```$gateway = '192.168.10.1';```  //replace with the gateway/router ip   
@@ -92,11 +91,18 @@ https://www.aliexpress.com/item/AC85-240V-5W-7W-9W-RGBW-WIFI-LED-Bulb-Light-Colo
  - ```IPAddress strip_ip ( xxx,  xxx,   xxx,  xxx);``` //if you want to use static ip uncommented with gateway_ip, subnet_mask and WiFi.config(strip_ip, gateway_ip, subnet_mask);
 lights can be controlled with any browser. example url:  
 ```
-"http://{light ip}/set?light=1&r=0&g=60&b=255&fade=2000"  
-"http://{light ip}/off?light=1&fade=1000"  
-"http://{light ip}/on?light=1"  
+"http://{light ip}/set?light=1&r=0&g=60&b=255&transitiontime=2000"
 "http://{light ip}/discover" 
 ```
+list of arguments that can be passed in url:
+  - "on": 1 to set light on, 0 to set the light off.
+  - "r", "g", "b": setup light color using rbg values between 0 and 255. 
+  - "x" and "y": values between 0.0 and 1.0 to setup light color in CIE chart.
+  - "ct": value between 153 (max warm white) and 500 (max could white) http://en.wikipedia.org/wiki/Mired
+  - hue: value between 0 and 65535, represent the hue of the light.
+  - sat: saturation of the light. 255 is the most saturated and 0 is the least saturated.
+  - bri: brightness of the light, 255 is the maximum brightness, 1 is the minimum, 0 will turn the light on to previews state
+  - transitiontime: duration of the transition from the light’s current state to the new stat. default 4 represent 0.4 seconds.
 ## CHANGELOG
 
 24-Mar-2017  
@@ -124,9 +130,10 @@ lights can be controlled with any browser. example url:
  - fix scheduler delete bug
  - add cron job file, now "My routines" from application are working. Still issues with "Wake up" and "Go to sleep"
  - add rgbw sketch for "Dream Color" wifi RGBW bulb
+ 
 07-Apr-2017
  - Major changes and improvements. Color processing is made now by light instead of bridge, for this reason lights must be also updated.
- - Was created first sensor concept skech that run in light sleep mode.
+ - Was created first sensor concept skech that run in deep sleep mode.
 
 Contributions are welcomed  
 Credits: probonopd
