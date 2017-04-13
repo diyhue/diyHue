@@ -74,4 +74,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             'id' => (string) mysqli_insert_id($con),
         ),
     );
+} elseif ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+  error_log('rules delete');
+  mysqli_query($con, 'DELETE FROM `rules` WHERE id = '.$url['4'].';');
+  $output_array[] = array(
+      'success' => '/rules/'.$url['4'].' deleted',
+  );
 }
