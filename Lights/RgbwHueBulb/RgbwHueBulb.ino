@@ -295,7 +295,15 @@ void setup() {
         color_mode = 1;
       }
       else if (server.argName(i) == "bri") {
-        bri = server.arg(i).toInt();
+        if (server.arg(i).toInt() == 0)
+          light_state = true;
+        else
+          bri = server.arg(i).toInt();
+      }
+      else if (server.argName(i) == "bri_inc") {
+        bri += server.arg(i).toInt();
+        if (bri > 255) bri = 255;
+        else if (bri < 0) bri = 0;
       }
       else if (server.argName(i) == "ct") {
         ct = server.arg(i).toInt();
