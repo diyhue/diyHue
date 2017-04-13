@@ -80,7 +80,7 @@ void setup() {
     client.connect(bridgeIp, 80);
 
     //register device
-    String url = "/switches";
+    String url = "/switch";
     url += "?devicetype=" + (String)switchType;
     url += "&mac=" + macToStr(mac);
 

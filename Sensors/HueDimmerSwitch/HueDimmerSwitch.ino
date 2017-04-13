@@ -10,10 +10,10 @@ extern "C" {
 const char* ssid = "MikroTik";
 const char* password = "nustiuceparola";
 
-#define button1_pin 15
+#define button1_pin 12
 #define button2_pin 4
-#define button3_pin 5
-#define button4_pin 12
+#define button3_pin 13
+#define button4_pin 14
 
 const char* switchType = "ZLLSwitch";
 
@@ -80,7 +80,7 @@ void setup() {
     client.connect(bridgeIp, 80);
 
     //register device
-    String url = "/switches";
+    String url = "/switch";
     url += "?devicetype=" + (String)switchType;
     url += "&mac=" + macToStr(mac);
 
@@ -103,16 +103,16 @@ void loop() {
     int i;
     while (digitalRead(button1_pin) == HIGH & i < 20) {
       i++;
-      delay(50);
+      delay(100);
     }
     counter = 0;
   }
-  if (digitalRead(button2_pin) == HIGH) {
+   if (digitalRead(button2_pin) == HIGH) {
     sendHttpRequest(2000);
     int i;
     while (digitalRead(button2_pin) == HIGH & i < 20) {
       i++;
-      delay(50);
+      delay(100);
     }
     counter = 0;
   }
@@ -121,11 +121,11 @@ void loop() {
     int i;
     while (digitalRead(button3_pin) == HIGH & i < 20) {
       i++;
-      delay(50);
+      delay(100);
     }
     counter = 0;
   }
-  if (digitalRead(button4_pin) == HIGH) {
+ if (digitalRead(button4_pin) == HIGH) {
     sendHttpRequest(4000);
     int i;
     while (digitalRead(button4_pin) == HIGH & i < 20) {
@@ -135,7 +135,7 @@ void loop() {
     counter = 0;
   }
   if (counter == 5000) {
-    goingToSleep();
+    //goingToSleep();
   } else {
     counter++;
   }
