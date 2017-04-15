@@ -10,10 +10,10 @@ extern "C" {
 const char* ssid = "MikroTik";
 const char* password = "nustiuceparola";
 
-#define button1_pin 15
-#define button2_pin 4
+#define button1_pin 1
+#define button2_pin 3
 #define button3_pin 5
-#define button4_pin 12
+#define button4_pin 4
 
 const char* switchType = "ZGPSwitch";
 
@@ -53,11 +53,11 @@ void sendHttpRequest(int button) {
 }
 
 void setup() {
-  pinMode(1, INPUT);
-  pinMode(3, INPUT);
-  pinMode(4, INPUT);
-  pinMode(5, INPUT);
   pinMode(16, OUTPUT);
+  pinMode(button1_pin, INPUT);
+  pinMode(button2_pin, INPUT);
+  pinMode(button3_pin, INPUT);
+  pinMode(button4_pin, INPUT);
   digitalWrite(16, LOW);
 
   WiFi.mode(WIFI_STA);
@@ -91,7 +91,6 @@ void setup() {
                  "Connection: close\r\n\r\n");
   }
 
-
 }
 
 void loop() {
@@ -100,39 +99,39 @@ void loop() {
 
   if (digitalRead(button1_pin) == HIGH) {
     sendHttpRequest(34);
-    int i;
-    while (digitalRead(button1_pin) == HIGH & i < 20) {
-      i++;
-      delay(50);
-    }
     counter = 0;
+    int i = 0;
+    while (digitalRead(button1_pin) == HIGH && i < 20) {
+      delay(20);
+      i++;
+    }
   }
   if (digitalRead(button2_pin) == HIGH) {
     sendHttpRequest(16);
-    int i;
-    while (digitalRead(button2_pin) == HIGH & i < 20) {
-      i++;
-      delay(50);
-    }
     counter = 0;
+    int i = 0;
+    while (digitalRead(button2_pin) == HIGH && i < 20) {
+      delay(20);
+      i++;
+    }
   }
   if (digitalRead(button3_pin) == HIGH) {
     sendHttpRequest(17);
-    int i;
-    while (digitalRead(button3_pin) == HIGH & i < 20) {
-      i++;
-      delay(50);
-    }
     counter = 0;
+    int i = 0;
+    while (digitalRead(button3_pin) == HIGH && i < 20) {
+      delay(20);
+      i++;
+    }
   }
   if (digitalRead(button4_pin) == HIGH) {
     sendHttpRequest(18);
-    int i;
-    while (digitalRead(button4_pin) == HIGH & i < 20) {
-      i++;
-      delay(50);
-    }
     counter = 0;
+    int i = 0;
+    while (digitalRead(button4_pin) == HIGH && i < 20) {
+      delay(20);
+      i++;
+    }
   }
   if (counter == 5000) {
     goingToSleep();
@@ -140,4 +139,3 @@ void loop() {
     counter++;
   }
 }
-
