@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         'timezone' => 'Europe/Bucharest',
         'zigbeechannel' => '6',
         'modelid' => 'BSB001',
-        'bridgeid' => '121FCFF69075',
+        'bridgeid' => strtoupper(str_replace(":", "",$mac)),
         'factorynew' => false,
         'datastoreversion' => 59,
         'whitelist' => $array_whitelist

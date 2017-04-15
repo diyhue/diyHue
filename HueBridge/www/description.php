@@ -1,10 +1,12 @@
 <?php
+require_once('bridge-config.php');
+
 echo "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
 <specVersion>
 <major>1</major>
 <minor>0</minor>
 </specVersion>
-<URLBase>http://". $_SERVER['SERVER_ADDR'] .":80/</URLBase>
+<URLBase>http://". $ip_addres .":80/</URLBase>
 <device>
 <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
 <friendlyName>Philips hue (". $_SERVER['SERVER_ADDR'] .")</friendlyName>
@@ -14,7 +16,7 @@ echo "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
 <modelName>Philips hue bridge 2015</modelName>
 <modelNumber>BSB002</modelNumber>
 <modelURL>http://www.meethue.com</modelURL>
-<serialNumber>121FCFF69075</serialNumber>
+<serialNumber>" . strtoupper(str_replace(":", "",$mac)) . "</serialNumber>
 <UDN>MYUUID</UDN>
 <presentationURL>index.html</presentationURL>
 <iconList>
