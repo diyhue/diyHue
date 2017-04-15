@@ -47,13 +47,6 @@ change ```AllowOverride None```  in ```AllowOverride All```
 ```
 $sudo cp -r HueBridge/www/. /var/www/html  
 ```
-#### edit the settings variables in bridge-config.php 
-```
-$sudo nano /var/www/html/bridge-config.php:  
-```
-  - ```$ip_addres = '192.168.10.24';```  //replace with ip of the bridge 
-  - ```$gateway = '192.168.10.1';```  //replace with the gateway/router ip   
-  - ```$mac = '12:1F:CF:F6:90:75';```  // important!!! replace with bridge mac address. Cand be saw with command ```$ip a``` 
 #### import sql_schema in database 
 ```
 $mysql -u username -p  < file.sql
@@ -135,5 +128,10 @@ list of arguments that can be passed in url:
  - Major changes and improvements. Color processing is made now by light instead of bridge, for this reason lights must be also updated.
  - Was created first sensor concept skech that run in deep sleep mode.
 
+15-Apr-2015
+ - Added SSDP discover python script.
+ - ip, gateway and mac are automaticaly retrived from host.
+
 Contributions are welcomed  
+
 Credits: probonopd
