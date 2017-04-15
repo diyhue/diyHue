@@ -41,7 +41,7 @@ if ($row_cnt == 0 && isset($_GET['devicetype'])) {
         $modelid   = 'ZGPSWITCH';
         $swversion = '';
     }
-    mysqli_query($con, "INSERT INTO `sensors` (`type`, `name`, `modelid`, `manufacturername`, `uniqueid`, `swversion`, `recycle`, `new`) VALUES ('$device', '$name', '$modelid', 'Philips', '$mac', '$swversion', 0, 1);");
+    mysqli_query($con, "INSERT INTO `sensors` (`type`, `config`, `name`, `modelid`, `manufacturername`, `uniqueid`, `swversion`, `recycle`, `new`) VALUES ('$device', '$config', '$name', '$modelid', 'Philips', '$mac', '$swversion', 0, 1);");
 } else {
     $row_sensor_id = mysqli_fetch_assoc($query_sensor);
     $sensor_id     = $row_sensor_id['id'];
