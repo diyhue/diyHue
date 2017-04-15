@@ -1,6 +1,5 @@
 RewriteEngine On
 RewriteRule ^description.xml$   description.php
 RewriteRule ^switch$   switch.php
-#RewriteCond %{REQUEST_URI}  !\.xml$
 RewriteCond %{REQUEST_URI} !^/(description|switch|phpMyAdmin)
 RewriteRule (.*)  entryPoint.php [QSA]
