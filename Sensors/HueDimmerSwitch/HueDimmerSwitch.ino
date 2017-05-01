@@ -7,17 +7,19 @@ extern "C" {
 #include "user_interface.h"
 }
 
-const char* ssid = "MikroTik";
-const char* password = "nustiuceparola";
-
 #define button1_pin 1
 #define button2_pin 3
 #define button3_pin 5
 #define button4_pin 4
 
+const char* ssid = "MikroTik";
+const char* password = "nustiuceparola";
 const char* switchType = "ZLLSwitch";
+const char* bridge_user = "9f552609847c0dd1f372fee9b76330035b7a3bb1";
 
-const char* bridgeIp = "192.168.10.200";
+//Set bridge ip or ip of every light controlled by this switch
+
+const char* bridgeIp[] = {"192.168.10.200"};
 
 IPAddress strip_ip ( 192,  168,   10,  96);
 IPAddress gateway_ip ( 192,  168,   10,   1);
@@ -45,11 +47,13 @@ String macToStr(const uint8_t* mac) {
 
 void sendHttpRequest(int button) {
   WiFiClient client;
-  String url = "/switch?mac=" + macToStr(mac) + "&button=" + button;
-  client.connect(bridgeIp, 80);
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + bridgeIp + "\r\n" +
-               "Connection: close\r\n\r\n");
+  for (int i = 0; i < sizeof(bridgeIp) / 4; i++) {
+    String url = "/switch?mac=" + macToStr(mac) + "&button=" + button;
+    client.connect(bridgeIp[i], 80);
+    client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                 "Host: " + bridgeIp[0] + "\r\n" +
+                 "Connection: close\r\n\r\n");
+  }
 }
 
 void setup() {
@@ -58,6 +62,10 @@ void setup() {
   pinMode(button2_pin, INPUT);
   pinMode(button3_pin, INPUT);
   pinMode(button4_pin, INPUT);
+  digitalWrite(button1_pin, LOW);
+  digitalWrite(button2_pin, LOW);
+  digitalWrite(button3_pin, LOW);
+  digitalWrite(button4_pin, LOW);
   digitalWrite(16, LOW);
 
   WiFi.mode(WIFI_STA);
@@ -77,7 +85,7 @@ void setup() {
   if ((*rinfo).reason != REASON_DEEP_SLEEP_AWAKE) {
 
     WiFiClient client;
-    client.connect(bridgeIp, 80);
+    client.connect(bridgeIp[0], 80);
 
     //register device
     String url = "/switch";
@@ -85,9 +93,9 @@ void setup() {
     url += "&mac=" + macToStr(mac);
 
     //###Registering device
-    client.connect(bridgeIp, 80);
+    client.connect(bridgeIp[0], 80);
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                 "Host: " + bridgeIp + "\r\n" +
+                 "Host: " + bridgeIp[0] + "\r\n" +
                  "Connection: close\r\n\r\n");
   }
 
@@ -101,7 +109,7 @@ void loop() {
     sendHttpRequest(1000);
     counter = 0;
     int i = 0;
-    while (digitalRead(button1_pin) == HIGH && i < 20) {
+    while (digitalRead(button1_pin) == HIGH && i < 30) {
       delay(20);
       i++;
     }
@@ -110,7 +118,7 @@ void loop() {
     sendHttpRequest(2000);
     counter = 0;
     int i = 0;
-    while (digitalRead(button2_pin) == HIGH && i < 20) {
+    while (digitalRead(button2_pin) == HIGH && i < 30) {
       delay(20);
       i++;
     }
@@ -119,7 +127,7 @@ void loop() {
     sendHttpRequest(3000);
     counter = 0;
     int i = 0;
-    while (digitalRead(button3_pin) == HIGH && i < 20) {
+    while (digitalRead(button3_pin) == HIGH && i < 30) {
       delay(20);
       i++;
     }
@@ -128,7 +136,7 @@ void loop() {
     sendHttpRequest(4000);
     counter = 0;
     int i = 0;
-    while (digitalRead(button4_pin) == HIGH && i < 20) {
+    while (digitalRead(button4_pin) == HIGH && i < 30) {
       delay(20);
       i++;
     }

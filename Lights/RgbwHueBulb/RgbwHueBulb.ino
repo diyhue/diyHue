@@ -9,20 +9,20 @@
 const char* ssid = "MikroTik";
 const char* password = "nustiuceparola";
 
+// Available scenes: 0 = Relax, 1 = Read, 2 = Concentrate, 3 = Energize, 4 = Dimmed, 5 = Bright, 6 = Night
+#define default_scene 0
+#define startup_on false
 #define red_pin 12
 #define green_pin 13
 #define blue_pin 14
 #define white_pin 5
-#define startup_brightness 250
-#define startup_color 0
-// 0 = warm_white, 1 = neutral, 2 = cold_white, 3 = red, 4 = green, 5 = blue
 
 // if you want to setup static ip uncomment these 3 lines and line 69
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgbw[4], color_mode = 2;
+uint8_t rgbw[4], color_mode = 2, scene = default_scene;
 bool light_state;
 int transitiontime, ct = 400, hue, bri = 250, sat;
 float step_level[4], current_rgbw[4], x, y;
@@ -194,10 +194,38 @@ void handleNotFound() {
   server.send(404, "text/plain", message);
 }
 
+void apply_scene(uint8_t new_scene) {
+  if ( new_scene == 0) {
+    bri = 144; ct = 447; color_mode = 2; convert_ct();
+  } else if ( new_scene == 1) {
+    bri = 254; ct = 346; color_mode = 2; convert_ct();
+  } else if ( new_scene == 2) {
+    bri = 254; ct = 233; color_mode = 2; convert_ct();
+  }  else if ( new_scene == 3) {
+    bri = 254; ct = 156; color_mode = 2; convert_ct();
+  }  else if ( new_scene == 4) {
+    bri = 77; ct = 367; color_mode = 2; convert_ct();
+  }  else if ( new_scene == 5) {
+    bri = 254; ct = 447; color_mode = 2; convert_ct();
+  }  else if ( new_scene == 6) {
+    bri = 1; x = 0, 561; y = 0, 4042; color_mode = 1; convert_xy();
+  }  else if ( new_scene == 7) {
+    bri = 203; x = 0.380328; y = 0.39986; color_mode = 1; convert_xy();
+  }  else if ( new_scene == 8) {
+    bri = 112; x = 0.359168; y = 0.28807; color_mode = 1; convert_xy();
+  }  else if ( new_scene == 9) {
+    bri = 142; x = 0.267102; y = 0.23755; color_mode = 1; convert_xy();
+  }  else if ( new_scene == 10) {
+    bri = 216; x = 0.393209; y = 0.29961; color_mode = 1; convert_xy();
+  }
+}
+
+
 void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  //analogWriteRange(255);
+  analogWriteRange(1024);
+  analogWriteFreq(4096);
   delay(500);
   analogWrite(red_pin, 0);
   analogWrite(green_pin, 0);
@@ -206,8 +234,12 @@ void setup() {
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
-  if (startup_brightness == 0) {
+  apply_scene(default_scene);
+  step_level[0] = rgbw[0] / 350.0f; step_level[1] = rgbw[1] / 350.0f; step_level[2] = rgbw[2] / 350.0f; step_level[3] = rgbw[3] / 350.0f;
 
+  if (startup_on == true) {
+    light_state = true;
+  } else {
     while (WiFi.status() != WL_CONNECTED) {
       analogWrite(red_pin, 10);
       delay(250);
@@ -218,27 +250,6 @@ void setup() {
     analogWrite(green_pin, 10);
     delay(500);
     analogWrite(green_pin, 0);
-    //setup default warm_white on power on
-    convert_ct();
-
-  } else {
-    bri = startup_brightness;
-    //setup start color/brightness and transitiontime
-    if ( startup_color == 0) {
-      ct = 400; convert_ct();
-    } else if ( startup_color == 1) {
-      ct = 320; convert_ct();
-    } else if ( startup_color == 2) {
-      ct = 200; convert_ct();
-    }  else if ( startup_color == 3) {
-      rgbw[0] = 254 * (startup_brightness / 255.0f); rgbw[1] = 0; rgbw[2] = 0;
-    }  else if ( startup_color == 4) {
-      rgbw[0] = 0; rgbw[1] = 254 * (startup_brightness / 255.0f); rgbw[2] = 0;
-    }  else if ( startup_color == 5) {
-      rgbw[0] = 0; rgbw[1] = 0; rgbw[2] = 254 * (startup_brightness / 255.0f);
-    }
-    step_level[0] = rgbw[0] / 350.0f; step_level[1] = rgbw[1] / 350.0f; step_level[2] = rgbw[2] / 350.0f; step_level[3] = rgbw[3] / 350.0f;
-    light_state = true;
   }
 
   WiFi.macAddress(mac);
@@ -257,13 +268,67 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
 
+  server.on("/switch", []() {
+    server.send(200, "text/plain", "OK");
+    int button;
+    for (uint8_t i = 0; i < server.args(); i++) {
+      if (server.argName(i) == "button") {
+        button = server.arg(i).toInt();
+      }
+    }
+    if (button == 1000) {
+      if (light_state == false) {
+        light_state = true;
+        scene = 0;
+      } else {
+        apply_scene(scene);
+        scene++;
+        if (scene == 11) {
+          scene = 0;
+        }
+      }
+    } else if (button == 2000) {
+      if (light_state == false) {
+        bri = 30;
+        light_state = true;
+      } else {
+        bri += 30;
+      }
+      if (bri > 255) bri = 255;
+      if (color_mode == 1) convert_xy();
+      else if (color_mode == 2) convert_ct();
+      else if (color_mode == 3) convert_hue();
+    } else if (button == 3000 && light_state == true) {
+      bri -= 30;
+      if (bri < 1) bri = 1;
+      else {
+        if (color_mode == 1) convert_xy();
+        else if (color_mode == 2) convert_ct();
+        else if (color_mode == 3) convert_hue();
+      }
+    } else if (button == 4000) {
+      light_state = false;
+    }
+    if (light_state) {
+      step_level[0] = (rgbw[0] - current_rgbw[0]) / 54;
+      step_level[1] = (rgbw[1] - current_rgbw[1]) / 54;
+      step_level[2] = (rgbw[2] - current_rgbw[2]) / 54;
+      step_level[3] = (rgbw[3] - current_rgbw[3]) / 54;
+    } else {
+      step_level[0] = current_rgbw[0] / 54;
+      step_level[1] = current_rgbw[1] / 54;
+      step_level[2] = current_rgbw[2] / 54;
+      step_level[3] = current_rgbw[3] / 54;
+    }
+  });
+
 
   server.on("/set", []() {
     light_state = true;
-    float transitiontime = 40;
+    float transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "on") {
-        if (server.arg(i) == "1") {
+        if (server.arg(i) == "True") {
           light_state = true;
         }
         else {
@@ -295,9 +360,7 @@ void setup() {
         color_mode = 1;
       }
       else if (server.argName(i) == "bri") {
-        if (server.arg(i).toInt() == 0)
-          light_state = true;
-        else
+        if (server.arg(i).toInt() != 0)
           bri = server.arg(i).toInt();
       }
       else if (server.argName(i) == "bri_inc") {
@@ -318,7 +381,7 @@ void setup() {
         color_mode = 3;
       }
       else if (server.argName(i) == "transitiontime") {
-        transitiontime = server.arg(i).toInt() * 60;
+        transitiontime = server.arg(i).toInt();
       }
     }
     server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state);
@@ -329,6 +392,7 @@ void setup() {
     } else if (color_mode == 3 && light_state == true) {
       convert_hue();
     }
+    transitiontime *= 60.0;
     if (light_state) {
       step_level[0] = (rgbw[0] - current_rgbw[0]) / transitiontime;
       step_level[1] = (rgbw[1] - current_rgbw[1]) / transitiontime;
@@ -362,7 +426,6 @@ void setup() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
 }
@@ -375,14 +438,14 @@ void lightEngine() {
       if (rgbw[1] != current_rgbw[1]) current_rgbw[1] += step_level[1];
       if (rgbw[2] != current_rgbw[2]) current_rgbw[2] += step_level[2];
       if (rgbw[3] != current_rgbw[3]) current_rgbw[3] += step_level[3];
-      if ((step_level[0] > 0.0 && current_rgbw[0] > rgbw[0]) || (step_level[0] < 0.0 && current_rgbw[0] < rgbw[0])) current_rgbw[0] = rgbw[0];
-      if ((step_level[1] > 0.0 && current_rgbw[1] > rgbw[1]) || (step_level[1] < 0.0 && current_rgbw[1] < rgbw[1])) current_rgbw[1] = rgbw[1];
-      if ((step_level[2] > 0.0 && current_rgbw[2] > rgbw[2]) || (step_level[2] < 0.0 && current_rgbw[2] < rgbw[2])) current_rgbw[2] = rgbw[2];
-      if ((step_level[3] > 0.0 && current_rgbw[3] > rgbw[3]) || (step_level[3] < 0.0 && current_rgbw[3] < rgbw[3])) current_rgbw[3] = rgbw[3];
-      analogWrite(red_pin, current_rgbw[0] * 4);
-      analogWrite(green_pin, current_rgbw[1] * 4);
-      analogWrite(blue_pin, current_rgbw[2] * 4);
-      analogWrite(white_pin, current_rgbw[3] * 4);
+      if ((step_level[0] > 0.0f && current_rgbw[0] > rgbw[0]) || (step_level[0] < 0.0f && current_rgbw[0] < rgbw[0])) current_rgbw[0] = rgbw[0];
+      if ((step_level[1] > 0.0f && current_rgbw[1] > rgbw[1]) || (step_level[1] < 0.0f && current_rgbw[1] < rgbw[1])) current_rgbw[1] = rgbw[1];
+      if ((step_level[2] > 0.0f && current_rgbw[2] > rgbw[2]) || (step_level[2] < 0.0f && current_rgbw[2] < rgbw[2])) current_rgbw[2] = rgbw[2];
+      if ((step_level[3] > 0.0f && current_rgbw[3] > rgbw[3]) || (step_level[3] < 0.0f && current_rgbw[3] < rgbw[3])) current_rgbw[3] = rgbw[3];
+      analogWrite(red_pin, (int)(current_rgbw[0] * 4));
+      analogWrite(green_pin, (int)(current_rgbw[1] * 4));
+      analogWrite(blue_pin, (int)(current_rgbw[2] * 4));
+      analogWrite(white_pin, (int)(current_rgbw[3] * 4));
     }
   } else {
     if (current_rgbw[0] != 0 || current_rgbw[1] != 0 || current_rgbw[2] != 0 || current_rgbw[3] != 0) {
@@ -390,15 +453,16 @@ void lightEngine() {
       if (current_rgbw[1] != 0) current_rgbw[1] -= step_level[1];
       if (current_rgbw[2] != 0) current_rgbw[2] -= step_level[2];
       if (current_rgbw[3] != 0) current_rgbw[3] -= step_level[3];
-      if (current_rgbw[0] < 0) current_rgbw[0] = 0;
-      if (current_rgbw[1] < 0) current_rgbw[1] = 0;
-      if (current_rgbw[2] < 0) current_rgbw[2] = 0;
-      if (current_rgbw[3] < 0) current_rgbw[3] = 0;
-      analogWrite(red_pin, current_rgbw[0] * 4);
-      analogWrite(green_pin, current_rgbw[1] * 4);
-      analogWrite(blue_pin, current_rgbw[2] * 4);
-      analogWrite(white_pin, current_rgbw[3] * 4);
+      if (current_rgbw[0] < 0.0f) current_rgbw[0] = 0;
+      if (current_rgbw[1] < 0.0f) current_rgbw[1] = 0;
+      if (current_rgbw[2] < 0.0f) current_rgbw[2] = 0;
+      if (current_rgbw[3] < 0.0f) current_rgbw[3] = 0;
+      analogWrite(red_pin, (current_rgbw[0] * 4));
+      analogWrite(green_pin, (current_rgbw[1] * 4));
+      analogWrite(blue_pin, (current_rgbw[2] * 4));
+      analogWrite(white_pin, (current_rgbw[3] * 4));
     }
+    ArduinoOTA.handle();
   }
-  delay(2);
+  delay(1);
 }

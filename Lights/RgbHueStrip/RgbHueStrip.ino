@@ -286,7 +286,7 @@ void setup() {
         light_state[light] = true;
       }
       else if (server.argName(i) == "on") {
-        if (server.arg(i) == "1") {
+        if (server.arg(i) == "True") {
           light_state[light] = true;
         }
         else {

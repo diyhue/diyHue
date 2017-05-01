@@ -1,0 +1,32 @@
+{
+    "config": {
+        "UTC": "2017-04-26T20:16:20",
+        "apiversion": "1.15.0",
+        "bridgeid": "B827EBC76B26",
+        "datastoreversion": 59,
+        "dhcp": true,
+        "factorynew": false,
+        "gateway": "192.168.1.1",
+        "ipaddress": "192.168.10.200",
+        "linkbutton": true,
+        "localtime": "2017-04-26T23:16:20",
+        "mac": "b8:27:eb:c7:6b:26",
+        "modelid": "BSB002",
+        "name": "Philips hue",
+        "netmask": "255.255.255.0",
+        "portalservices": false,
+        "proxyaddress": "none",
+        "proxyport": 0,
+        "swversion": "01036659",
+        "timezone": "Europe/Bucharest",
+        "whitelist": {},
+        "zigbeechannel": 15
+    },
+    "groups": {},
+    "lights": {},
+    "resourcelinks": {},
+    "rules": {},
+    "scenes": {},
+    "schedules": {},
+    "sensors": {}
+}
