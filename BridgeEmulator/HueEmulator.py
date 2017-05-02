@@ -126,14 +126,14 @@ new_lights = {}
 lights_address = {}
 
 try:
-    with open('/home/pi/config.json', 'r') as fp:
+    with open('config.json', 'r') as fp:
         bridge_config = json.load(fp)
         print("config loaded")
 except Exception:
     print("config file was not loaded")
 
 try:
-    with open('/home/pi/lights_address.json', 'r') as fp:
+    with open('lights_address.json', 'r') as fp:
         lights_address = json.load(fp)
         print("lights address loaded")
 except Exception:
@@ -145,9 +145,9 @@ bridge_config["config"]["bridgeid"] = mac.upper()
 
 
 def save_config():
-    with open('/home/pi/config.json', 'w') as fp:
+    with open('config.json', 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
-    with open('/home/pi/lights_address.json', 'w') as fp:
+    with open('lights_address.json', 'w') as fp:
         json.dump(lights_address, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
 def update_group_stats(light):
