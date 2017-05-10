@@ -381,6 +381,7 @@ class S(BaseHTTPRequestHandler):
                         del put_dictionary["bri_inc"]
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
+                            bridge_config["lights"][light]["state"].update(put_dictionary)
                             sendLightRequest(light, put_dictionary)
                     elif url_pices[4] == "0":
                         for light in bridge_config["lights"].iterkeys():
