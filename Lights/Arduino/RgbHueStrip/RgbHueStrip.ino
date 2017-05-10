@@ -12,16 +12,17 @@ const char* password = "nustiuceparola";
 
 #define lightsCount 3
 #define pixelCount 60
-#define startup_brightness 0
-#define startup_color 0
-// 0 = warm_white, 1 =  neutral, 2 = cold_white, 3 = red, 4 = green, 5 = blue
+
+// Available scenes: 0 = Relax, 1 = Read, 2 = Concentrate, 3 = Energize, 4 = Dimmed, 5 = Bright, 6 = Night
+#define default_scene 0
+#define startup_on true
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgb[lightsCount][3], color_mode[lightsCount];
+uint8_t rgb[lightsCount][3], color_mode[lightsCount], scene = default_scene;
 bool light_state[lightsCount];
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
 float step_level[lightsCount][3], current_rgb[lightsCount][3], x[lightsCount], y[lightsCount];
@@ -211,6 +212,34 @@ void infoLight(RgbColor color) {
   }
 }
 
+
+void apply_scene(uint8_t new_scene, uint8_t light) {
+  if ( new_scene == 0) {
+    bri[light] = 144; ct[light] = 447; color_mode[light] = 2; convert_ct(light);
+  } else if ( new_scene == 1) {
+    bri[light] = 254; ct[light] = 346; color_mode[light] = 2; convert_ct(light);
+  } else if ( new_scene == 2) {
+    bri[light] = 254; ct[light] = 233; color_mode[light] = 2; convert_ct(light);
+  }  else if ( new_scene == 3) {
+    bri[light] = 254; ct[light] = 156; color_mode[light] = 2; convert_ct(light);
+  }  else if ( new_scene == 4) {
+    bri[light] = 77; ct[light] = 367; color_mode[light] = 2; convert_ct(light);
+  }  else if ( new_scene == 5) {
+    bri[light] = 254; ct[light] = 447; color_mode[light] = 2; convert_ct(light);
+  }  else if ( new_scene == 6) {
+    bri[light] = 1; x[light] = 0, 561; y[light] = 0, 4042; color_mode[light] = 1; convert_xy(light);
+  }  else if ( new_scene == 7) {
+    bri[light] = 203; x[light] = 0.380328; y[light] = 0.39986; color_mode[light] = 1; convert_xy(light);
+  }  else if ( new_scene == 8) {
+    bri[light] = 112; x[light] = 0.359168; y[light] = 0.28807; color_mode[light] = 1; convert_xy(light);
+  }  else if ( new_scene == 9) {
+    bri[light] = 142; x[light] = 0.267102; y[light] = 0.23755; color_mode[light] = 1; convert_xy(light);
+  }  else if ( new_scene == 10) {
+    bri[light] = 216; x [light] = 0.393209; y[light] = 0.29961; color_mode[light] = 1; convert_xy(light);
+  }
+}
+
+
 void setup() {
   strip.Begin();
   strip.Show();
@@ -222,9 +251,18 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  if (startup_brightness == 0) {
-    infoLight(white);
 
+  for (int i = 0; i < lightsCount; i++) {
+    apply_scene(default_scene, i);
+    step_level[i][0] = rgb[i][0] / 350.0f; step_level[i][1] = rgb[i][1] / 350.0f; step_level[i][2] = rgb[i][2] / 350.0f;
+  }
+
+  if (startup_on == true) {
+    for (int i = 0; i < lightsCount; i++) {
+      light_state[i] = true;
+    }
+  } else {
+    infoLight(white);
     while (WiFi.status() != WL_CONNECTED) {
       infoLight(red);
       delay(500);
@@ -237,27 +275,6 @@ void setup() {
       rgb[i][0] = 254; rgb[i][1] = 145; rgb[i][2] = 40;
     }
 
-  } else {
-    //setup start color/brightness and transitiontime
-    for (int i = 0; i < lightsCount; i++) {
-      bri[i] = startup_brightness;
-      //setup start color/brightness and transitiontime
-      if ( startup_color == 0) {
-        ct[i] = 400; convert_ct(i);
-      } else if ( startup_color == 1) {
-        ct[i] = 320; convert_ct(i);
-      } else if ( startup_color == 2) {
-        ct[i] = 200; convert_ct(i);
-      }  else if ( startup_color == 3) {
-        rgb[i][0] = 254.0f * (startup_brightness / 255.0f); rgb[i][1] = 0; rgb[i][2] = 0;
-      }  else if ( startup_color == 4) {
-        rgb[i][0] = 0; rgb[i][1] = 254.0f * (startup_brightness / 255.0f); rgb[i][2] = 0;
-      }  else if ( startup_color == 5) {
-        rgb[i][0] = 0; rgb[i][1] = 0; rgb[i][2] = 254.0f * (startup_brightness / 255.0f);
-      }
-      step_level[i][0] = rgb[i][0] / 350.0f; step_level[i][1] = rgb[i][1] / 350.0f; step_level[i][2] = rgb[i][2] / 350.0f;
-      light_state[i] = true;
-    }
   }
 
   WiFi.macAddress(mac);
@@ -277,9 +294,63 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
 
 
+  server.on("/switch", []() {
+    server.send(200, "text/plain", "OK");
+    int button;
+    for (uint8_t i = 0; i < server.args(); i++) {
+      if (server.argName(i) == "button") {
+        button = server.arg(i).toInt();
+      }
+    }
+    for (int i = 0; i < lightsCount; i++) {
+      if (button == 1000) {
+        if (light_state[i] == false) {
+          light_state[i] = true;
+          scene = 0;
+        } else {
+          apply_scene(scene, i);
+          scene++;
+          if (scene == 11) {
+            scene = 0;
+          }
+        }
+      } else if (button == 2000) {
+        if (light_state[i] == false) {
+          bri[i] = 30;
+          light_state[i] = true;
+        } else {
+          bri[i] += 30;
+        }
+        if (bri[i] > 255) bri[i] = 255;
+        if (color_mode[i] == 1) convert_xy(i);
+        else if (color_mode[i] == 2) convert_ct(i);
+        else if (color_mode[i] == 3) convert_hue(i);
+      } else if (button == 3000 && light_state[i] == true) {
+        bri[i] -= 30;
+        if (bri[i] < 1) bri[i] = 1;
+        else {
+          if (color_mode[i] == 1) convert_xy(i);
+          else if (color_mode[i] == 2) convert_ct(i);
+          else if (color_mode[i] == 3) convert_hue(i);
+        }
+      } else if (button == 4000) {
+        light_state[i] = false;
+      }
+      if (light_state[i]) {
+        step_level[i][0] = (rgb[i][0] - current_rgb[i][0]) / 54;
+        step_level[i][1] = (rgb[i][1] - current_rgb[i][1]) / 54;
+        step_level[i][2] = (rgb[i][2] - current_rgb[i][2]) / 54;
+      } else {
+        step_level[i][0] = current_rgb[i][0] / 54;
+        step_level[i][1] = current_rgb[i][1] / 54;
+        step_level[i][2] = current_rgb[i][2] / 54;
+      }
+    }
+  });
+
   server.on("/set", []() {
     uint8_t light;
-    float transitiontime = 40;
+    float transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "light") {
         light = server.arg(i).toInt() - 1;
@@ -314,9 +385,7 @@ void setup() {
         color_mode[light] = 1;
       }
       else if (server.argName(i) == "bri") {
-        if (server.arg(i).toInt() == 0)
-          light_state[light] = true;
-        else
+        if (server.arg(i).toInt() != 0)
           bri[light] = server.arg(i).toInt();
       }
       else if (server.argName(i) == "bri_inc") {
@@ -337,9 +406,10 @@ void setup() {
         color_mode[light] = 3;
       }
       else if (server.argName(i) == "transitiontime") {
-        transitiontime = server.arg(i).toInt() * 30;
+        transitiontime = server.arg(i).toInt();
       }
     }
+    transitiontime *= 10;
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
     if (color_mode[light] == 1 && light_state[light] == true) {
       convert_xy(light);
@@ -370,7 +440,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"strip\",\"lights\": " + (String)lightsCount + ",\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"strip\",\"lights\": " + (String)lightsCount + ",\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[3], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/reset", []() {
@@ -381,12 +451,6 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-}
-
-void loop() {
-  ArduinoOTA.handle();
-  server.handleClient();
-  lightEngine();
 }
 
 void lightEngine() {
@@ -406,7 +470,7 @@ void lightEngine() {
         strip.Show();
       }
     } else {
-      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0) {
+      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0 ) {
         if (current_rgb[i][0] != 0) current_rgb[i][0] -= step_level[i][0];
         if (current_rgb[i][1] != 0) current_rgb[i][1] -= step_level[i][1];
         if (current_rgb[i][2] != 0) current_rgb[i][2] -= step_level[i][2];
@@ -423,3 +487,10 @@ void lightEngine() {
     delay(2);
   }
 }
+
+void loop() {
+  ArduinoOTA.handle();
+  server.handleClient();
+  lightEngine();
+}
+
