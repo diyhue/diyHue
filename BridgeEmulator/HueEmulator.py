@@ -72,11 +72,19 @@ def rules_processor():
     for rule in bridge_config["rules"].iterkeys():
         if bridge_config["rules"][rule]["status"] == "enabled":
             execute = True
+            seconds_delay = 0
             for condition in bridge_config["rules"][rule]["conditions"]:
                 url_pices = condition["address"].split('/')
                 if condition["operator"] == "eq":
-                    if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
-                        execute = False
+                    if condition["value"] == "true":
+                        if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                            execute = False
+                    elif condition["value"] == "false":
+                        if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                            execute = False
+                    else:
+                        if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
+                            execute = False
                 elif condition["operator"] == "gt":
                     if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
                         execute = False
@@ -86,13 +94,18 @@ def rules_processor():
                 elif condition["operator"] == "dx":
                     if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                         execute = False
+                elif condition["operator"] == "ddx":
+                    h, m, s = condition["value"].split(':')
+                    seconds_delay = int(h[2:]) * 3600 + int(m) * 60 + int(s)
             if execute:
                 print("rule " + rule + " is triggered")
                 for action in bridge_config["rules"][rule]["actions"]:
-                    Thread(target=sendActionRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
+                    Thread(target=sendActionRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]), seconds_delay]).start()
 
-
-def sendActionRequest(url, method, data):
+def sendActionRequest(url, method, data, delay=0):
+    if delay != 0:
+        print("delay action with " + str(delay) + " seconds")
+        sleep(delay)
     opener = urllib2.build_opener(urllib2.HTTPHandler)
     request = urllib2.Request("http://127.0.0.1" + url, data=data)
     request.add_header("Content-Type",'application/json')
@@ -168,6 +181,35 @@ def update_group_stats(light):
             avg_bri = bri / len(bridge_config["groups"][group]["lights"])
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
+
+def scan_for_lights():
+    print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
+    #return all host that listen on port 80
+    device_ips = check_output("nmap  " + get_ip_address() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).split("\n")
+    del device_ips[-1] #delete last empty element in list
+    for ip in device_ips:
+        if ip != get_ip_address():
+            try:
+                f = urllib2.urlopen("http://" + ip + "/detect")
+                device_data = json.loads(f.read())
+                if device_data.keys()[0] == "hue":
+                    print(ip + " is a hue " + device_data['hue'])
+                    device_exist = False
+                    for light in bridge_config["lights"].iterkeys():
+                        if bridge_config["lights"][light]["uniqueid"].startswith( device_data["mac"] ):
+                            device_exist = True
+                            lights_address[light]["ip"] = ip
+                    if not device_exist:
+                        print("is a new device")
+                        for x in xrange(1, int(device_data["lights"]) + 1):
+                            i = 1
+                            while (str(i)) in bridge_config["lights"]:
+                                i += 1
+                            bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": "LST001" if device_data["hue"] == "strip" else "LCT001", "swversion": "66009461"}
+                            new_lights.update({str(i): {"name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x)}})
+                            lights_address[str(i)] = {"ip": ip, "light_nr": x}
+            except Exception, e:
+                print(ip + " is unknow device " + str(e))
 
 def description():
     return """<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
@@ -273,34 +315,9 @@ class S(BaseHTTPRequestHandler):
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
-                    print(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
-                    #return all host that listen on port 80
-                    device_ips = check_output("nmap  " + get_ip_address() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).split("\n")
-                    del device_ips[-1] #delete last empty element in list
-                    for ip in device_ips:
-                        if ip != get_ip_address():
-                            try:
-                                f = urllib2.urlopen("http://" + ip + "/detect")
-                                device_data = json.loads(f.read())
-                                if device_data.keys()[0] == "hue":
-                                    print(ip + " is a hue " + device_data['hue'])
-                                    device_exist = False
-                                    for light in bridge_config["lights"].iterkeys():
-                                        if bridge_config["lights"][light]["uniqueid"].startswith( device_data["mac"] ):
-                                            device_exist = True
-                                            lights_address[light]["ip"] = ip
-                                    if not device_exist:
-                                        print("is a new device")
-                                        for x in xrange(1, int(device_data["lights"]) + 1):
-                                            i = 1
-                                            while (str(i)) in bridge_config[url_pices[3]]:
-                                                i += 1
-                                            bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": "LST001" if device_data["hue"] == "strip" else "LCT001", "swversion": "66009461"}
-                                            new_lights.update({str(i): {"name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x)}})
-                                            lights_address[str(i)] = {"ip": ip, "light_nr": x}
-                            except Exception, e:
-                                print(ip + " is unknow device " + str(e))
-                    self.wfile.write(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
+                    Thread(target=scan_for_lights).start()
+                    sleep(7) #give no more than 7 seconds for light scanning (otherwise will face app disconnection)
+                    self.wfile.write(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}]))
                 else: #create object
                     # find the first unused if for new objecy
                     i = 1
@@ -346,7 +363,6 @@ class S(BaseHTTPRequestHandler):
         put_dictionary = json.loads(self.data_string)
         url_pices = self.path.split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
-            print(len(url_pices))
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/"
@@ -407,9 +423,10 @@ class S(BaseHTTPRequestHandler):
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
+                if url_pices[3] == "sensors": #if was a sensor action then process the rules
+                    rules_processor()
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
-                print("are 7")
                 try:
                     bridge_config[url_pices[3]][url_pices[4]][url_pices[5]][url_pices[6]].update(put_dictionary)
                 except KeyError:
