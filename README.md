@@ -1,5 +1,5 @@
-## NEW HUE BRIDGE RELEASE (Python Based)
-Old version based on PHP + Mysql was decommisioned. New version process rules and schedules like real Hue Bridge and don't require complex installation steps. Configuration is saved to json file and can be manually edited to create objects or change bridge settings that are not available in smartphone application.
+## diyHue
+With this project you will be able to control any ESP8266 based light available on the market using Philips Hue smartphone applications or from any web browser using light internal GUI. Hue Bridge Emulator is needed only if you want to control the lights from Philips Hue applications and to get the advantages of functions present in Hue Lights. Is written in python and will run on all small boxes like RaspberryPi.
 
 ### Requirements:
 nmap package for lights autodiscover
@@ -9,25 +9,18 @@ nmap package for lights autodiscover
  - Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.
 
 ## LIGHT STRIPS:
-Supported neopixel leds are WS2812B and SK6812 (rgbw).  
-Data in pin of the leds must be connected to dedicated harware pin of the esp8266 platforms (rx pin on wemos d1 mini and esp-12e)  
-Compilation require Makuna/NeoPixelBus library that can be founded and downloaded automatically from Arduino library mannager.  
+There is support for both WS2812B (rgb) and SK6812 (rgbw) smart leds (neopixels). Data in pin of the strip must be connected to rx pin of esp8266 device. In order to compile the sketch you must download NeoPixelBus (by Makuna) and WiFiManager (by tzapu) libraries available in Arduino library manager. Is possible to emulate more lights in one strip by setting lightsCount value to any value. I recommend about 3 lights per strip in order to have nice scenes.
 
-## COLOR DREAM RGBW BULBS:
-I found these bulbs are esp8266 based devices that can be adapted to work with this bridge. Despite the low price these bulbs feels solid, are more heavy than regular bulbs and i expect to be medium to long life.
-I was not able to flash the memory by connecting vdd, gnd, rx, tx, rst and gpio0 pins to a nodemcu dev board, but was very easy for me to replace the SPI flash chip from an already programmed epb8266 board. This operation took me about 30 seconds, while soldering the small wires took me more than 5 minutes. Future firmware updates will be easy to perform via Arduino OTA (wifi). Sketch for these bulbs can be found in RgbwHueBulb folder, the gpio pins defined (12, 13, 14 and 5) are the correct ones connected to leds.
-Bulbs where buyed from here:
-https://www.aliexpress.com/item/AC85-240V-5W-7W-9W-RGBW-WIFI-LED-Bulb-Light-Colorful-Dimmable-LED-Light-Support-IOS/32785628736.html?spm=2114.13010608.0.0.B8FcLh
+
+## GENERIC PWM LIGHTS:
+
+Most of wifi bulbs and strip controllers from the market are esp8266 based and control the brightness of leds using pwm. The only real difference from them is the order of output pins. If you intend to buy some cheap wifi bulbs/strips and want to use this project you will need to check how hard is to flash the firmware in that light. So far i use only "Color Dreams" wifi bulbs and i was not able to flash the firmware easy using external serial adapter connected directly to ESP8266 pins. However for me was not that hard to replace the SPI flash chip from these bulbs with ones already flashed on WEMOS d1 mini pro, but i have some electronics skills and was not first time when i replace an SOT8 chip.
 
 #### Options in skeches:
- - ```const char* ssid = "....";``` // your wi-fi netwotk mane
- - ```const char* password = "....";```// your wi-fi password
- - ```lightsCount x ``` //number of emulated lights per strip
- - ```pixelCount xx``` // number of leds in strip
- - ```default_scene x``` // available scenes: 0 = Relax, 1 = Read, 2 = Concentrate, 3 = Energize, 4 = Dimmed, 5 = Bright, 6 = Night
- - ```startup_on false/true```// true = light will start of power, like regular bulbs with default_scene
- - ```IPAddress strip_ip ( xxx,  xxx,   xxx,  xxx);``` //if you want to use static ip uncommented with gateway_ip, subnet_mask and WiFi.config(strip_ip, gateway_ip, subnet_mask);
-lights can be controlled with any browser. example url:  
+ - ```lightsCount x ``` //number of emulated lights per strip, available only for neopixels stript
+ - ```pixelCount xx``` // number of leds in strip, available only for neopixels strips
+ - ```IPAddress strip_ip ( xxx,  xxx,   xxx,  xxx);``` //if you want to use static ip uncommented with gateway_ip, subnet_mask and WiFi.config(strip_ip, gateway_ip, subnet_mask) line.
+lights can be controlled from internal GUI or with hue api via http GET of POST. example url:  
 ```
 "http://{light ip}/set?light=1&r=0&g=60&b=255&transitiontime=2000"
 "http://{light ip}/discover"
@@ -80,6 +73,11 @@ list of arguments that can be passed in url:
 
 01-May-2017
  - Rerwire Hue Bridge Emulator to Python
+
+17-May-2017
+ - implement wifi manager for wifi setup
+ - implement light GUI
+ - power options are saved in EEPROM
 
 Contributions are welcomed  
 
