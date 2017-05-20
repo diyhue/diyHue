@@ -13,7 +13,6 @@ from urlparse import urlparse, parse_qs
 mac = '%012x' % get_mac()
 
 run_service = True
-socket.setdefaulttimeout(2) #don't wait more than 2 seconds for a connection response
 
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -111,9 +110,71 @@ def sendActionRequest(url, method, data, delay=0):
     request = urllib2.Request("http://127.0.0.1" + url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    opener.open(request)
+    opener.open(request, timeout=4)
 
+def convert_xy(x, y, bri):
+    Y = bri / 250.0
+    z = 1.0 - x - y
 
+    X = (Y / y) * x
+    Z = (Y / y) * z
+
+  # sRGB D65 conversion
+    r =  X * 1.656492 - Y * 0.354851 - Z * 0.255038
+    g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
+    b =  X * 0.051713 - Y * 0.121364 + Z * 1.011530
+
+    if r > b and r > g and r > 1:
+    # red is too big
+        g = g / r
+        b = b / r
+        r = 1
+
+    elif g > b and g > r and g > 1:
+    #green is too big
+        r = r / g
+        b = b / g
+        g = 1
+
+    elif b > r and b > g and b > 1:
+    # blue is too big
+        r = r / b
+        g = g / b
+        b = 1
+
+  # Apply gamma correction  if device_data["hue"] == "strip" else
+    r = 12.92 * r if r <= 0.0031308 else (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
+    g = 12.92 * g if g <= 0.0031308 else (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
+    b = 12.92 * b if b <= 0.0031308 else (1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055
+    #r = r <= 0.0031308 ? 12.92 * r : (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
+    #g = g <= 0.0031308 ? 12.92 * g : (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
+    #b = b <= 0.0031308 ? 12.92 * b : (1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055
+
+    if r > b and r > g:
+    # red is biggest
+        if r > 1:
+            g = g / r
+            b = b / r
+            r = 1
+        elif g > b and g > r:
+        # green is biggest
+            if g > 1:
+                r = r / g
+                b = b / g
+                g = 1
+
+        elif b > r and b > g:
+        # blue is biggest
+            if b > 1:
+                r = r / b
+                g = g / b
+                b = 1
+
+    r = 0 if r < 0 else r
+    g = 0 if g < 0 else g
+    b = 0 if b < 0 else b
+
+    return [int(r * 255), int(g * 255), int(b * 255)]
 
 def sendLightRequest(light, data):
     sent_data = {}
@@ -134,11 +195,16 @@ def sendLightRequest(light, data):
             elif key == "bri":
                 sent_data["brightness"] = value
             elif key == "ct":
-                sent_data["color_temp"] = value
+                sent_data["color_temp"] = int((500 - value) / 1.6 + 153)
             elif key == "hue":
                 sent_data["hue"] = value / 180
             elif key == "sat":
                 sent_data["saturation"] = value * 100 / 255
+            elif key == "xy":
+                rgb = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+                sent_data["r"] = rgb[0]
+                sent_data["g"] = rgb[1]
+                sent_data["b"] = rgb[2]
             print(json.dumps(sent_data))
     try:
         opener = urllib2.build_opener(urllib2.HTTPHandler)
