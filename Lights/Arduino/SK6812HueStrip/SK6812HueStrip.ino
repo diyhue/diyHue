@@ -323,7 +323,7 @@ void setup() {
       } else if (button == 4000) {
         light_state[i] = false;
       }
-      for (uint8_t j = 0; j < 3; j++) {
+      for (uint8_t j = 0; j <= 3; j++) {
         if (light_state[i]) {
           step_level[i][j] = (rgbw[i][j] - current_rgbw[i][j]) / 54;
         } else {
@@ -421,7 +421,7 @@ void setup() {
     } else if (color_mode[light] == 3 && light_state[light] == true) {
       convert_hue(light);
     }
-    for (uint8_t j = 0; j < 3; j++) {
+    for (uint8_t j = 0; j <= 3; j++) {
       if (light_state[light]) {
         step_level[light][j] = ((float)rgbw[light][j] - current_rgbw[light][j]) / transitiontime;
       } else {
@@ -504,7 +504,7 @@ void setup() {
           current_rgbw[light][3] = 255;
         }
       }
-      for (uint8_t j = 0; j < 3; j++) {
+      for (uint8_t j = 0; j <= 3; j++) {
         if (light_state[light]) {
           step_level[light][j] = ((float)rgbw[light][j] - current_rgbw[light][j]) / transitiontime;
         } else {
@@ -611,7 +611,7 @@ void lightEngine() {
   for (int i = 0; i < lightsCount; i++) {
     if (light_state[i]) {
       if (rgbw[i][0] != current_rgbw[i][0] || rgbw[i][1] != current_rgbw[i][1] || rgbw[i][2] != current_rgbw[i][2] || rgbw[i][3] != current_rgbw[i][3]) {
-        for (uint8_t k = 0; k < 3; k++) {
+        for (uint8_t k = 0; k <= 3; k++) {
           if (rgbw[i][k] != current_rgbw[i][k]) current_rgbw[i][k] += step_level[i][k];
           if ((step_level[i][k] > 0.0 && current_rgbw[i][k] > rgbw[i][k]) || (step_level[i][k] < 0.0 && current_rgbw[i][k] < rgbw[i][k])) current_rgbw[i][k] = rgbw[i][k];
         }
@@ -623,7 +623,7 @@ void lightEngine() {
       }
     } else {
       if (current_rgbw[i][0] != 0 || current_rgbw[i][1] != 0 || current_rgbw[i][2] != 0 || current_rgbw[i][3] != 0) {
-        for (uint8_t k = 0; k < 3; k++) {
+        for (uint8_t k = 0; k <= 3; k++) {
           if (current_rgbw[i][k] != 0) current_rgbw[i][k] -= step_level[i][k];
           if (current_rgbw[i][k] < 0) current_rgbw[i][k] = 0;
         }

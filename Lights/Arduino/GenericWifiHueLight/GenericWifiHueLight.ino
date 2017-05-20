@@ -13,6 +13,8 @@
 #define blue_pin 14
 #define white_pin 5
 
+#define pwm_channels 4 // put 3 for rgb, 4 for rgbw
+
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
@@ -306,7 +308,7 @@ void setup() {
     } else if (button == 4000) {
       light_state = false;
     }
-    for (uint8_t color = 0; color < 3; color++) {
+    for (uint8_t color = 0; color < pwm_channels; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / 54;
       } else {
@@ -401,7 +403,7 @@ void setup() {
       convert_hue();
     }
     transitiontime *= 60.0;
-    for (uint8_t color = 0; color < 3; color++) {
+    for (uint8_t color = 0; color < pwm_channels; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
       } else {
@@ -477,7 +479,7 @@ void setup() {
         current_rgbw[3] = 255;
       }
     }
-    for (uint8_t color = 0; color < 3; color++) {
+    for (uint8_t color = 0; color < pwm_channels; color++) {
       if (light_state) {
         step_level[color] = ((float)rgbw[color] - current_rgbw[color]) / transitiontime;
       } else {
@@ -581,7 +583,7 @@ void setup() {
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < 3; color++) {
+  for (uint8_t color = 0; color < pwm_channels; color++) {
     if (light_state) {
       if (rgbw[color] != current_rgbw[color] ) {
         current_rgbw[color] += step_level[color];
