@@ -110,7 +110,7 @@ def sendActionRequest(url, method, data, delay=0):
     request = urllib2.Request("http://127.0.0.1" + url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    opener.open(request, timeout=4)
+    opener.open(request)
 
 def convert_xy(x, y, bri):
     Y = bri / 250.0
@@ -201,17 +201,14 @@ def sendLightRequest(light, data):
             elif key == "sat":
                 sent_data["saturation"] = value * 100 / 255
             elif key == "xy":
-                rgb = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
-                sent_data["r"] = rgb[0]
-                sent_data["g"] = rgb[1]
-                sent_data["b"] = rgb[2]
+                (sent_data["r"], sent_data["g"], sent_data["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
             print(json.dumps(sent_data))
     try:
         opener = urllib2.build_opener(urllib2.HTTPHandler)
         request = urllib2.Request(url, data=json.dumps(sent_data))
         request.add_header("Content-Type",'application/json')
         request.get_method = lambda: method
-        opener.open(request)
+        opener.open(request, timeout=2)
     except:
         bridge_config["lights"][light]["state"]["reachable"] = False
         print("request error")
@@ -344,6 +341,12 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         if self.path == '/description.xml':
             self.wfile.write(description())
+        if self.path == '/milight':
+            milight_lights = {}
+            for light in lights_address:
+                if lights_address[light]["protocol"] == "milight":
+                    milight_lights[light] = lights_address[light]
+            self.wfile.write(json.dumps(milight_lights, sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path.startswith("/switch"):
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
@@ -438,6 +441,15 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"][0]}
                 self.wfile.write(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
                 print(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
+        elif self.path == '/milight':
+            #register new mi-light
+            i = 1
+            while (str(i)) in bridge_config["lights"]:
+                i += 1
+            bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"], "uniqueid": "1234567890abcdef", "modelid": "LCT001", "swversion": "66009461"}
+            new_lights.update({str(i): {"name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"]}})
+            lights_address[str(i)] = {"device_id": post_dictionary["device_id"], "device_type": post_dictionary["device_type"], "group_id": int(post_dictionary["group_id"]), "ip": post_dictionary["ip"], "protocol": "milight"}
+            self.wfile.write(json.dumps([{"success": {"milight": post_dictionary}}], sort_keys=True, indent=4, separators=(',', ': ')))
         self.end_headers()
         save_config()
 
@@ -530,6 +542,8 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         url_pices = self.path.split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
+            if url_pices[3] == "lights":
+                del lights_address[url_pices[4]]
             del bridge_config[url_pices[3]][url_pices[4]]
             self.wfile.write(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}]))
 

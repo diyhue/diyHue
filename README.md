@@ -9,7 +9,16 @@ nmap package for lights autodiscover
  - Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.
 
 ## LIGHT STRIPS:
+Wi-fi connection is setup using WiFiManager https://github.com/tzapu/WiFiManager
 There is support for both WS2812B (rgb) and SK6812 (rgbw) smart leds (neopixels). Data in pin of the strip must be connected to rx pin of esp8266 device. In order to compile the sketch you must download NeoPixelBus (by Makuna) and WiFiManager (by tzapu) libraries available in Arduino library manager. Is possible to emulate more lights in one strip by setting lightsCount value to any value. I recommend about 3 lights per strip in order to have nice scenes.
+
+
+##MI-LIGHT BULBS:
+esp8266_milight_hub is required https://github.com/sidoh/esp8266_milight_hub. To add MiLight bulbs in Hue Bridge you need to post json data like in this example:  
+```curl -X POST -d '{ "device_id": "0x1234", "device_type": "rgb_cct", "group_id": 1, "ip": "192.168.10.23"}' http://192.168.10.200/milight```
+where 192.168.10.200 will be the ip of the hue bridge, 192.168.10.23 the ip of the milight hub and the other options must be know from milight hub. After this you will see a new light in hue application. Options can be edited in lights_address.json file located on bridge. Light can be also deleted from hue application and recreated from any remote computer in case some values must be changed.
+To display all Mi-Light bulbs with all parameters you can use ```curl http://192.168.10.200/milight```
+
 
 
 ## GENERIC PWM LIGHTS:
