@@ -13,6 +13,7 @@ from urlparse import urlparse, parse_qs
 mac = '%012x' % get_mac()
 
 run_service = True
+socket.setdefaulttimeout(2) //don't wait more than 2 seconds for a connection response
 
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -110,29 +111,42 @@ def sendActionRequest(url, method, data, delay=0):
     request = urllib2.Request("http://127.0.0.1" + url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    url = opener.open(request)
+    opener.open(request)
 
 
 
 def sendLightRequest(light, data):
-    url = "http://" + lights_address[light]["ip"] + "/set?light=" + str(lights_address[light]["light_nr"]);
-    for key, value in data.iteritems():
-        if key == "xy":
-            url += "&x=" + str(value[0]) + "&y=" + str(value[1])
-        else:
-            url += "&" + key + "=" + str(value)
+    sent_data = {}
+    if lights_address[light]["protocol"] == "native":
+        url = "http://" + lights_address[light]["ip"] + "/set?light=" + str(lights_address[light]["light_nr"]);
+        method = 'GET'
+        for key, value in data.iteritems():
+            if key == "xy":
+                url += "&x=" + str(value[0]) + "&y=" + str(value[1])
+            else:
+                url += "&" + key + "=" + str(value)
+    elif lights_address[light]["protocol"] == "milight":
+        url = "http://" + lights_address[light]["ip"] + "/gateways/" + lights_address[light]["device_id"] + "/" + lights_address[light]["device_type"] + "/" + str(lights_address[light]["group_id"]);
+        method = 'PUT'
+        for key, value in data.iteritems():
+            if key == "on":
+                sent_data["status"] = value
+            elif key == "bri":
+                sent_data["brightness"] = value
+            elif key == "ct":
+                sent_data["color_temp"] = value
     try:
-        urllib2.urlopen(url, timeout = 3).read()
+        opener = urllib2.build_opener(urllib2.HTTPHandler)
+        request = urllib2.Request(url, data=json.dumps(sent_data))
+        request.add_header("Content-Type",'application/json')
+        request.get_method = lambda: method
+        opener.open(request)
     except:
         bridge_config["lights"][light]["state"]["reachable"] = False
+        print("request error")
     else:
         bridge_config["lights"][light]["state"]["reachable"] = True
     print("LightRequest: " + url)
-
-class Vividict(dict):
-    def __missing__(self, key):
-        value = self[key] = type(self)()
-        return value
 
 bridge_config = defaultdict(lambda:defaultdict(str))#Vividict()
 new_lights = {}
@@ -207,7 +221,7 @@ def scan_for_lights():
                                 i += 1
                             bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": "LST001" if device_data["hue"] == "strip" else "LCT001", "swversion": "66009461"}
                             new_lights.update({str(i): {"name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x)}})
-                            lights_address[str(i)] = {"ip": ip, "light_nr": x}
+                            lights_address[str(i)] = {"ip": ip, "light_nr": x, "protocol": "native"}
             except Exception, e:
                 print(ip + " is unknow device " + str(e))
 
