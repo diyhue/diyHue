@@ -13,7 +13,7 @@ from urlparse import urlparse, parse_qs
 mac = '%012x' % get_mac()
 
 run_service = True
-socket.setdefaulttimeout(2) //don't wait more than 2 seconds for a connection response
+socket.setdefaulttimeout(2) #don't wait more than 2 seconds for a connection response
 
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -135,6 +135,11 @@ def sendLightRequest(light, data):
                 sent_data["brightness"] = value
             elif key == "ct":
                 sent_data["color_temp"] = value
+            elif key == "hue":
+                sent_data["hue"] = value / 180
+            elif key == "sat":
+                sent_data["saturation"] = value * 100 / 255
+            print(json.dumps(sent_data))
     try:
         opener = urllib2.build_opener(urllib2.HTTPHandler)
         request = urllib2.Request(url, data=json.dumps(sent_data))
