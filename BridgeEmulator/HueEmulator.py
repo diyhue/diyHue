@@ -208,7 +208,7 @@ def sendLightRequest(light, data):
         request = urllib2.Request(url, data=json.dumps(sent_data))
         request.add_header("Content-Type",'application/json')
         request.get_method = lambda: method
-        opener.open(request, timeout=2)
+        opener.open(request, timeout=3)
     except:
         bridge_config["lights"][light]["state"]["reachable"] = False
         print("request error")
@@ -216,9 +216,9 @@ def sendLightRequest(light, data):
         bridge_config["lights"][light]["state"]["reachable"] = True
     print("LightRequest: " + url)
 
-bridge_config = defaultdict(lambda:defaultdict(str))#Vividict()
-new_lights = {}
+bridge_config = defaultdict(lambda:defaultdict(str))
 lights_address = {}
+new_lights = {}
 
 try:
     with open('config.json', 'r') as fp:
@@ -479,8 +479,8 @@ class S(BaseHTTPRequestHandler):
                 if url_pices[3] == "groups": #state is applied to a group
                     if "scene" in put_dictionary: #if group is 0 and there is a scene applied
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
-                            sendLightRequest(light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
                             bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
+                            Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
                             if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]: #color mode must be setup by bridge
                                 bridge_config["lights"][light]["state"]["colormode"] = "xy"
                             else:
@@ -495,11 +495,11 @@ class S(BaseHTTPRequestHandler):
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
                     elif url_pices[4] == "0":
                         for light in bridge_config["lights"].iterkeys():
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
                             for group in bridge_config["groups"].iterkeys():
                                 bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
                                 if put_dictionary["on"]:
@@ -508,9 +508,9 @@ class S(BaseHTTPRequestHandler):
                     else: # the state is applied to particular group (url_pices[4])
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                                 bridge_config["lights"][light]["state"].update(put_dictionary)
-                                sendLightRequest(light, put_dictionary)
+                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
                 elif url_pices[3] == "lights": #state is applied to a light
-                    sendLightRequest(url_pices[4], put_dictionary)
+                    Thread(target=sendLightRequest, args=[url_pices[4], put_dictionary]).start()
                     for key in put_dictionary.iterkeys():
                         if key in ["ct", "xy", "hue"]: #colormode must be set by bridge
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
@@ -542,9 +542,9 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         url_pices = self.path.split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
+            del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del lights_address[url_pices[4]]
-            del bridge_config[url_pices[3]][url_pices[4]]
             self.wfile.write(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}]))
 
 def run(server_class=HTTPServer, handler_class=S):
