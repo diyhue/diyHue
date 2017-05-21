@@ -6,7 +6,7 @@ nmap package for lights autodiscover
 
 ## TO DO
  - control IKEA Trådfri lights from HUE applications
- - Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.
+ - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
 
 ## LIGHT STRIPS:
 Wi-fi connection is setup using WiFiManager https://github.com/tzapu/WiFiManager
