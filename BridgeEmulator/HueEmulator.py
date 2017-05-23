@@ -444,13 +444,6 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
                 print(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
-        elif len(url_pices) == 3: #this must be a new device registration
-                #create new user hash
-                s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
-                username = s.encode('hex')
-                bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"][0]}
-                self.wfile.write(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
-                print(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path == '/milight':
             #register new mi-light
             i = 1
@@ -460,6 +453,13 @@ class S(BaseHTTPRequestHandler):
             new_lights.update({str(i): {"name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"]}})
             lights_address[str(i)] = {"device_id": post_dictionary["device_id"], "device_type": post_dictionary["device_type"], "group_id": int(post_dictionary["group_id"]), "ip": post_dictionary["ip"], "protocol": "milight"}
             self.wfile.write(json.dumps([{"success": {"milight": post_dictionary}}], sort_keys=True, indent=4, separators=(',', ': ')))
+        elif "devicetype" in post_dictionary: #this must be a new device registration
+                #create new user hash
+                s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
+                username = s.encode('hex')
+                bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
+                self.wfile.write(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
+                print(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
         self.end_headers()
         save_config()
 
@@ -491,16 +491,14 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
                             Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
-                            if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]: #color mode must be setup by bridge
-                                bridge_config["lights"][light]["state"]["colormode"] = "xy"
-                            else:
-                                bridge_config["lights"][light]["state"]["colormode"] = "ct"
+                            update_group_stats(light)
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["bri"] > 254:
                             bridge_config["groups"][url_pices[4]]["action"]["bri"] = 254
                         elif bridge_config["groups"][url_pices[4]]["action"]["bri"] < 1:
                             bridge_config["groups"][url_pices[4]]["action"]["bri"] = 1
+                        bridge_config["groups"][url_pices[4]]["state"]["bri"] = bridge_config["groups"][url_pices[4]]["action"]["bri"]
                         del put_dictionary["bri_inc"]
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
@@ -530,7 +528,7 @@ class S(BaseHTTPRequestHandler):
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
-                if url_pices[3] == "sensors": #if was a sensor action then process the rules
+                if url_pices[3] == "sensors" and "flag" in put_dictionary: #if a scheduler change te flag of a logical sensor then process the rules.
                     rules_processor()
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
