@@ -32,6 +32,11 @@ try:
 except Exception:
     print("lights adress file was not loaded")
 
+def get_ip_address():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    return s.getsockname()[0]
+
 bridge_config["config"]["ipaddress"] = get_ip_address()
 bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
 bridge_config["config"]["bridgeid"] = mac.upper()
@@ -42,11 +47,6 @@ def save_config():
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
     with open('lights_address.json', 'w') as fp:
         json.dump(lights_address, fp, sort_keys=True, indent=4, separators=(',', ': '))
-
-def get_ip_address():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    return s.getsockname()[0]
 
 def ssdp_search():
     SSDP_ADDR = '239.255.255.250'
@@ -245,7 +245,7 @@ def sendLightRequest(light, data):
                 sent_data["5706"] = value
     try:
         if lights_address[light]["protocol"] == "ikea_tradfri":
-            check_output("coap-client -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ "3311": [{ "5850": 0 }] }' \"" + url + "\"", shell=True).split("\n")
+            check_output("coap-client -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [{ \"5850\": 0 }] }' \"" + url + "\"", shell=True).split("\n")
         else:
             sendRequest(url, method, json.dumps(sent_data))
     except:
