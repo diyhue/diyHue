@@ -14,10 +14,38 @@ mac = '%012x' % get_mac()
 
 run_service = True
 
+bridge_config = defaultdict(lambda:defaultdict(str))
+lights_address = {}
+new_lights = {}
+
+try:
+    with open('config.json', 'r') as fp:
+        bridge_config = json.load(fp)
+        print("config loaded")
+except Exception:
+    print("config file was not loaded")
+
+try:
+    with open('lights_address.json', 'r') as fp:
+        lights_address = json.load(fp)
+        print("lights address loaded")
+except Exception:
+    print("lights adress file was not loaded")
+
 def get_ip_address():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     return s.getsockname()[0]
+
+bridge_config["config"]["ipaddress"] = get_ip_address()
+bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
+bridge_config["config"]["bridgeid"] = mac.upper()
+
+def save_config():
+    with open('config.json', 'w') as fp:
+        json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
+    with open('lights_address.json', 'w') as fp:
+        json.dump(lights_address, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
 def ssdp_search():
     SSDP_ADDR = '239.255.255.250'
@@ -54,16 +82,16 @@ def scheduler_processor():
                     if int(pices[0][1:]) & (1 << 6 - datetime.today().weekday()):
                         if pices[1] == datetime.now().strftime("%H:%M:%S"):
                             print("execute schedule: " + schedule)
-                            sendActionRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
+                            sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
                 elif bridge_config["schedules"][schedule]["localtime"].startswith("PT"):
                     if bridge_config["schedules"][schedule]["starttime"] == datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"):
                         print("execute timmer: " + schedule)
-                        sendActionRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
+                        sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
                         bridge_config["schedules"][schedule]["status"] = "disabled"
                 else:
                     if bridge_config["schedules"][schedule]["localtime"] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                         print("execute schedule: " + schedule)
-                        sendActionRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
+                        sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]))
         sleep(1)
         if (datetime.now().strftime("%M:%S") == "00:00"): #auto save configuration every hour
             save_config()
@@ -100,17 +128,19 @@ def rules_processor():
             if execute:
                 print("rule " + rule + " is triggered")
                 for action in bridge_config["rules"][rule]["actions"]:
-                    Thread(target=sendActionRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]), seconds_delay]).start()
+                    Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]), seconds_delay]).start()
 
-def sendActionRequest(url, method, data, delay=0):
+def sendRequest(url, method, data, delay=0):
     if delay != 0:
         print("delay action with " + str(delay) + " seconds")
         sleep(delay)
+    if not url.startswith( 'http://' ):
+        url = "http://127.0.0.1" + url
     opener = urllib2.build_opener(urllib2.HTTPHandler)
-    request = urllib2.Request("http://127.0.0.1" + url, data=data)
+    request = urllib2.Request(url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    opener.open(request)
+    opener.open(request, timeout=3)
 
 def convert_xy(x, y, bri):
     Y = bri / 250.0
@@ -202,48 +232,27 @@ def sendLightRequest(light, data):
                 sent_data["saturation"] = value * 100 / 255
             elif key == "xy":
                 (sent_data["r"], sent_data["g"], sent_data["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
-            print(json.dumps(sent_data))
+        print(json.dumps(sent_data))
+    elif lights_address[light]["protocol"] == "ikea_tradfri":
+        url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + lights_address[light]["device_id"]
+        for key, value in data.iteritems():
+            if key == "on":
+                sent_data["5850"] = value
+            elif key == "bri":
+                sent_data["5851"] = value
+            elif key == "ct":
+                sent_data["5706"] = value
     try:
-        opener = urllib2.build_opener(urllib2.HTTPHandler)
-        request = urllib2.Request(url, data=json.dumps(sent_data))
-        request.add_header("Content-Type",'application/json')
-        request.get_method = lambda: method
-        opener.open(request, timeout=3)
+        if lights_address[light]["protocol"] == "ikea_tradfri":
+            check_output("coap-client -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [{ \"5850\": 0 }] }' \"" + url + "\"", shell=True).split("\n")
+        else:
+            sendRequest(url, method, json.dumps(sent_data))
     except:
         bridge_config["lights"][light]["state"]["reachable"] = False
         print("request error")
     else:
         bridge_config["lights"][light]["state"]["reachable"] = True
     print("LightRequest: " + url)
-
-bridge_config = defaultdict(lambda:defaultdict(str))
-lights_address = {}
-new_lights = {}
-
-try:
-    with open('config.json', 'r') as fp:
-        bridge_config = json.load(fp)
-        print("config loaded")
-except Exception:
-    print("config file was not loaded")
-
-try:
-    with open('lights_address.json', 'r') as fp:
-        lights_address = json.load(fp)
-        print("lights address loaded")
-except Exception:
-    print("lights adress file was not loaded")
-
-bridge_config["config"]["ipaddress"] = get_ip_address()
-bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
-bridge_config["config"]["bridgeid"] = mac.upper()
-
-
-def save_config():
-    with open('config.json', 'w') as fp:
-        json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
-    with open('lights_address.json', 'w') as fp:
-        json.dump(lights_address, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
 def update_group_stats(light):
     for group in bridge_config["groups"]:
@@ -330,6 +339,18 @@ def description():
 </iconList>
 </device>
 </root>"""
+
+
+def update_all_lights():
+    ## apply last state on startup to all bulbs, usefull ins if there was a power outage
+    for light in bridge_config["lights"]:
+        payload = {}
+        payload["on"] = bridge_config["lights"][light]["state"]["on"]
+        payload["bri"] = bridge_config["lights"][light]["state"]["bri"]
+        payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+        Thread(target=sendLightRequest, args=[light, payload]).start()
+        sleep(0.5)
+        print("update status for light " + light)
 
 class S(BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -434,13 +455,6 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
                 print(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
-        elif len(url_pices) == 3: #this must be a new device registration
-                #create new user hash
-                s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
-                username = s.encode('hex')
-                bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"][0]}
-                self.wfile.write(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
-                print(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path == '/milight':
             #register new mi-light
             i = 1
@@ -450,6 +464,13 @@ class S(BaseHTTPRequestHandler):
             new_lights.update({str(i): {"name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"]}})
             lights_address[str(i)] = {"device_id": post_dictionary["device_id"], "device_type": post_dictionary["device_type"], "group_id": int(post_dictionary["group_id"]), "ip": post_dictionary["ip"], "protocol": "milight"}
             self.wfile.write(json.dumps([{"success": {"milight": post_dictionary}}], sort_keys=True, indent=4, separators=(',', ': ')))
+        elif "devicetype" in post_dictionary: #this must be a new device registration
+                #create new user hash
+                s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
+                username = s.encode('hex')
+                bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
+                self.wfile.write(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
+                print(json.dumps([{"success": {"username": username}}], sort_keys=True, indent=4, separators=(',', ': ')))
         self.end_headers()
         save_config()
 
@@ -481,16 +502,14 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
                             Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
-                            if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]: #color mode must be setup by bridge
-                                bridge_config["lights"][light]["state"]["colormode"] = "xy"
-                            else:
-                                bridge_config["lights"][light]["state"]["colormode"] = "ct"
+                            update_group_stats(light)
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["bri"] > 254:
                             bridge_config["groups"][url_pices[4]]["action"]["bri"] = 254
                         elif bridge_config["groups"][url_pices[4]]["action"]["bri"] < 1:
                             bridge_config["groups"][url_pices[4]]["action"]["bri"] = 1
+                        bridge_config["groups"][url_pices[4]]["state"]["bri"] = bridge_config["groups"][url_pices[4]]["action"]["bri"]
                         del put_dictionary["bri_inc"]
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
@@ -520,7 +539,7 @@ class S(BaseHTTPRequestHandler):
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
-                if url_pices[3] == "sensors": #if was a sensor action then process the rules
+                if url_pices[3] == "sensors" and "flag" in put_dictionary: #if a scheduler change te flag of a logical sensor then process the rules.
                     rules_processor()
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
@@ -557,6 +576,7 @@ if __name__ == "__main__":
     try:
         Thread(target=ssdp_search).start()
         Thread(target=scheduler_processor).start()
+        update_all_lights()
         run()
     except:
         print("server stopped")

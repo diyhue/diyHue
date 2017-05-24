@@ -115,21 +115,29 @@ void loop() {
     }
   }
   if (digitalRead(button2_pin) == HIGH) {
-    sendHttpRequest(2000);
     counter = 0;
     int i = 0;
     while (digitalRead(button2_pin) == HIGH && i < 30) {
       delay(20);
       i++;
     }
+    if (i < 30) {
+      sendHttpRequest(2000);
+    } else {
+      sendHttpRequest(2001);
+    }
   }
   if (digitalRead(button3_pin) == HIGH) {
-    sendHttpRequest(3000);
     counter = 0;
     int i = 0;
     while (digitalRead(button3_pin) == HIGH && i < 30) {
       delay(20);
       i++;
+    }
+    if (i < 30) {
+      sendHttpRequest(3000);
+    } else {
+      sendHttpRequest(3001);
     }
   }
   if (digitalRead(button4_pin) == HIGH) {

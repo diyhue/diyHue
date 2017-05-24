@@ -243,9 +243,12 @@ void setup() {
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
-  for (int i = 0; i < lightsCount; i++) {
-    apply_scene(EEPROM.read(2), i);
-    step_level[i][0] = rgb[i][0] / 350.0f; step_level[i][1] = rgb[i][1] / 350.0f; step_level[i][2] = rgb[i][2] / 350.0f;
+  for (uint8_t light = 0; light < lightsCount; light++) {
+    float transitiontime = (10 - (pixelCount / 40)) * 4;
+    apply_scene(EEPROM.read(2), light);
+    for (uint8_t j = 0; j < 3; j++) {
+      step_level[light][j] = ((float)rgb[light][j] - current_rgb[light][j]) / transitiontime;
+    }
   }
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
