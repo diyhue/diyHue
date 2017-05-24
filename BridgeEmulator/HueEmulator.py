@@ -42,6 +42,14 @@ bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" +
 bridge_config["config"]["bridgeid"] = mac.upper()
 
 
+## apply last state on startup to all bulbs, usefull in if there was a power outage
+for light in bridge_config["lights"]:
+    payload["on"] = bridge_config["lights"][light]["state"]["on"]
+    payload["bri"] = bridge_config["lights"][light]["state"]["bri"]
+    payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+    sendLightRequest(light, payload)
+
+
 def save_config():
     with open('config.json', 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
