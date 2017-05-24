@@ -41,15 +41,6 @@ bridge_config["config"]["ipaddress"] = get_ip_address()
 bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
 bridge_config["config"]["bridgeid"] = mac.upper()
 
-
-## apply last state on startup to all bulbs, usefull in if there was a power outage
-for light in bridge_config["lights"]:
-    payload["on"] = bridge_config["lights"][light]["state"]["on"]
-    payload["bri"] = bridge_config["lights"][light]["state"]["bri"]
-    payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
-    sendLightRequest(light, payload)
-
-
 def save_config():
     with open('config.json', 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
@@ -241,7 +232,7 @@ def sendLightRequest(light, data):
                 sent_data["saturation"] = value * 100 / 255
             elif key == "xy":
                 (sent_data["r"], sent_data["g"], sent_data["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
-            print(json.dumps(sent_data))
+        print(json.dumps(sent_data))
     elif lights_address[light]["protocol"] == "ikea_tradfri":
         url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + lights_address[light]["device_id"]
         for key, value in data.iteritems():
@@ -348,6 +339,18 @@ def description():
 </iconList>
 </device>
 </root>"""
+
+
+def update_all_lights():
+    ## apply last state on startup to all bulbs, usefull ins if there was a power outage
+    for light in bridge_config["lights"]:
+        payload = {}
+        payload["on"] = bridge_config["lights"][light]["state"]["on"]
+        payload["bri"] = bridge_config["lights"][light]["state"]["bri"]
+        payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+        Thread(target=sendLightRequest, args=[light, payload]).start()
+        sleep(0.5)
+        print("update status for light " + light)
 
 class S(BaseHTTPRequestHandler):
     def _set_headers(self):
@@ -573,6 +576,7 @@ if __name__ == "__main__":
     try:
         Thread(target=ssdp_search).start()
         Thread(target=scheduler_processor).start()
+        update_all_lights()
         run()
     except:
         print("server stopped")
