@@ -1,7 +1,8 @@
 ## diyHue
-This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri lights (usign Tradfri Bridge), Mi-Light lights (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided schetches for Dimmer Switch and Tap Switch  
+This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri lights (usign Tradfri Bridge), Mi-Light lights (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Dimmer Switch and Tap Switch  
 
-![phihue_e27_starterset_430x300 jpg](https://cloud.githubusercontent.com/assets/2480569/8511601/e692e61c-231f-11e5-842d-4fedd6f900b4.jpg)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
+
 
 ### Requirements:
  - python
@@ -10,6 +11,7 @@ This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri 
 ## TO DO
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
+ - Cleanup the code
  
 ## Working futures:
   - Control lights (all functions)
@@ -27,7 +29,7 @@ This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri 
   
 
 ## IKEA TRADFRI
-Open http://{bridgeIP}/tradfri, type Ikea bridge ip and security key in form and then click "Save". If everything was fine you will see all lights paired with Tradfri bridge in Hue applications.
+Open http://{bridgeIP}/tradfri, type Ikea bridge ip and security key and click "Save". If everything was fine you will see all lights paired with Tradfri bridge in Hue application.
 Important: coap-client-linux binary is compiled for arm devices like raspberry pi. If you will use an x86 computer then you will need to recompile this.
 
 ## MI-LIGHT:
