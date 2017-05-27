@@ -320,6 +320,20 @@ def scan_for_lights():
             except Exception, e:
                 print(ip + " is unknow device " + str(e))
 
+def syncWithTradfri():
+    for light in lights_address:
+        if lights_address[light]["protocol"] == "ikea_tradfri":
+            light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" \"coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"]) +"\"", shell=True).split("\n")[3])
+            bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
+            bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
+            if light_stats["3311"][0]["5706"] == "f5faf6":
+                bridge_config["lights"][light]["state"]["ct"] = 170
+            elif light_stats["3311"][0]["5706"] == "f1e0b5":
+                bridge_config["lights"][light]["state"]["ct"] = 320
+            elif light_stats["3311"][0]["5706"] == "efd275":
+                bridge_config["lights"][light]["state"]["ct"] = 470
+
+
 def description():
     return """<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
 <specVersion>
@@ -499,7 +513,6 @@ class S(BaseHTTPRequestHandler):
                         rules_processor()
         else:
             url_pices = self.path.split('/')
-            pprint(url_pices)
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -507,6 +520,8 @@ class S(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(bridge_config))
                 elif len(url_pices) == 4:
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
+                    if url_pices[3] == "lights":
+                        syncWithTradfri()
                 elif len(url_pices) == 5:
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
