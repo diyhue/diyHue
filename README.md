@@ -68,4 +68,3 @@ Credits:
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
 
-
