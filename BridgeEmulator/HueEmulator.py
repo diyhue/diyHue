@@ -3,6 +3,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from time import strftime, sleep
 from datetime import datetime, timedelta
 from pprint import pprint
+from math import log
 from subprocess import check_output
 import json, socket, hashlib, urllib2, struct, random
 from threading import Thread
@@ -217,7 +218,7 @@ def sendLightRequest(light, data):
             else:
                 url += "&" + key + "=" + str(value)
     elif lights_address[light]["protocol"] == "milight":
-        url = "http://" + lights_address[light]["ip"] + "/gateways/" + lights_address[light]["device_id"] + "/" + lights_address[light]["device_type"] + "/" + str(lights_address[light]["group_id"]);
+        url = "http://" + lights_address[light]["ip"] + "/gateways/" + lights_address[light]["device_id"] + "/" + lights_address[light]["mode"] + "/" + str(lights_address[light]["group"]);
         method = 'PUT'
         for key, value in data.iteritems():
             if key == "on":
@@ -234,17 +235,34 @@ def sendLightRequest(light, data):
                 (sent_data["r"], sent_data["g"], sent_data["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
         print(json.dumps(sent_data))
     elif lights_address[light]["protocol"] == "ikea_tradfri":
-        url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + lights_address[light]["device_id"]
+        url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"])
         for key, value in data.iteritems():
             if key == "on":
-                sent_data["5850"] = value
+                sent_data["5850"] = int(value)
+            elif key == "transitiontime":
+                sent_data["5712"] = value
             elif key == "bri":
                 sent_data["5851"] = value
             elif key == "ct":
-                sent_data["5706"] = value
+                if value < 270:
+                    sent_data["5706"] = "f5faf6"
+                elif value < 385:
+                    sent_data["5706"] = "f1e0b5"
+                else:
+                    sent_data["5706"] = "efd275"
+            elif key == "xy":
+                sent_data["5709"] = int(value[0] * 65535)
+                sent_data["5710"] = int(value[1] * 65535)
+        if "5712" not in sent_data:
+            sent_data["5712"] = 4
+        if "5850" in sent_data and sent_data["5850"] == 0:
+            sent_data.clear() #setting brightnes will turn on the ligh even if there was a reqest to power off
+            sent_data["5850"] = 0
+        pprint(sent_data)
+
     try:
         if lights_address[light]["protocol"] == "ikea_tradfri":
-            check_output("coap-client -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [{ \"5850\": 0 }] }' \"" + url + "\"", shell=True).split("\n")
+            print(check_output("./coap-client-linux -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [" + json.dumps(sent_data) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
         else:
             sendRequest(url, method, json.dumps(sent_data))
     except:
@@ -340,6 +358,67 @@ def description():
 </device>
 </root>"""
 
+def webform_tradfri():
+    return """<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<title>Tradfri Setup</title>
+<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
+</head>
+<body>
+<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
+<fieldset>
+<legend>Tradfri Setup</legend>
+<div class=\"pure-control-group\"><label for=\"ip\">Bridge IP</label><input id=\"ip\" name=\"ip\" type=\"text\" placeholder=\"168.168.xxx.xxx\"></div>
+<div class=\"pure-control-group\"><label for=\"code\">Security Code</label><input id=\"code\" name=\"code\" type=\"text\" placeholder=\"1a2b3c4d5e6f7g8h\"></div>
+<div class=\"pure-controls\"><label for=\"cb\" class=\"pure-checkbox\"></label><button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
+</fieldset>
+</form>
+</body>
+</html>"""
+
+
+def webform_milight():
+    return """<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<title>Milight Setup</title>
+<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
+</head>
+<body>
+<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
+<fieldset>
+<legend>Milight Setup</legend>
+<div class=\"pure-control-group\"><label for=\"ip\">Hub ip</label><input id=\"ip\" name=\"ip\" type=\"text\" placeholder=\"168.168.xxx.xxx\"></div>
+<div class=\"pure-control-group\"><label for=\"device_id\">Device id</label><input id=\"device_id\" name=\"device_id\" type=\"text\" placeholder=\"0x1234\"></div>
+<div class=\"pure-control-group\">
+<label for=\"mode\">Mode</label>
+<select id=\"mode\" name=\"mode\">
+<option value=\"rgbw\">RGBW</option>
+<option value=\"cct\">CCT</option>
+<option value=\"rgb+cct\">RGB+CCT</option>
+<option value=\"rgb\">RGB</option>
+</select>
+</div>
+<div class=\"pure-control-group\">
+<label for=\"group\">Group</label>
+<select id=\"group\" name=\"group\">
+<option value=\"1\">1</option>
+<option value=\"2\">2</option>
+<option value=\"3\">3</option>
+<option value=\"4\">4</option>
+</select>
+</div>
+<div class=\"pure-controls\"><button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
+</fieldset>
+</form>
+</body>
+</html>"""
+
 
 def update_all_lights():
     ## apply last state on startup to all bulbs, usefull ins if there was a power outage
@@ -362,12 +441,43 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         if self.path == '/description.xml':
             self.wfile.write(description())
-        if self.path == '/milight':
-            milight_lights = {}
-            for light in lights_address:
-                if lights_address[light]["protocol"] == "milight":
-                    milight_lights[light] = lights_address[light]
-            self.wfile.write(json.dumps(milight_lights, sort_keys=True, indent=4, separators=(',', ': ')))
+        elif self.path.startswith("/tradfri"):
+            get_parameters = parse_qs(urlparse(self.path).query)
+            if "code" in get_parameters:
+                tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001\"", shell=True).split("\n")[3])
+                pprint(tradri_devices)
+                lights_found = 0
+                for device in tradri_devices:
+                    device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001/" + str(device) +"\"", shell=True).split("\n")[3])
+                    if "3311" in device_parameters:
+                        lights_found += 1
+                        #register new tradfri light
+                        print("register tradfi light " + device_parameters["9001"])
+                        i = 1
+                        while (str(i)) in bridge_config["lights"]:
+                            i += 1
+                        bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": device_parameters["9001"], "uniqueid": "1234567" + str(device), "modelid": "LLM010", "swversion": "66009461"}
+                        new_lights.update({str(i): {"name": device_parameters["9001"]}})
+                        lights_address[str(i)] = {"device_id": device, "security_code": get_parameters["code"][0], "ip": get_parameters["ip"][0], "protocol": "ikea_tradfri"}
+                if lights_found == 0:
+                    self.wfile.write(webform_tradfri() + "<br> No lights where found")
+                else:
+                    self.wfile.write(webform_tradfri() + "<br> " + str(lights_found) + " lights where found")
+            else:
+                self.wfile.write(webform_tradfri())
+        elif self.path.startswith("/milight"):
+            get_parameters = parse_qs(urlparse(self.path).query)
+            if "device_id" in get_parameters:
+                #register new mi-light
+                i = 1
+                while (str(i)) in bridge_config["lights"]:
+                    i += 1
+                bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "MiLight " + get_parameters["mode"][0] + " " + get_parameters["device_id"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
+                new_lights.update({str(i): {"name": "MiLight " + get_parameters["mode"][0] + " " + get_parameters["device_id"][0]}})
+                lights_address[str(i)] = {"device_id": get_parameters["device_id"][0], "mode": get_parameters["mode"][0], "group": int(get_parameters["group"][0]), "ip": get_parameters["ip"][0], "protocol": "milight"}
+                self.wfile.write(webform_milight() + "<br> Light added")
+            else:
+                self.wfile.write(webform_milight())
         elif self.path.startswith("/switch"):
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
@@ -455,15 +565,6 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
                 print(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
-        elif self.path == '/milight':
-            #register new mi-light
-            i = 1
-            while (str(i)) in bridge_config["lights"]:
-                i += 1
-            bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"], "uniqueid": "1234567890abcdef", "modelid": "LCT001", "swversion": "66009461"}
-            new_lights.update({str(i): {"name": "MiLight " + post_dictionary["device_type"] + " " + post_dictionary["device_id"]}})
-            lights_address[str(i)] = {"device_id": post_dictionary["device_id"], "device_type": post_dictionary["device_type"], "group_id": int(post_dictionary["group_id"]), "ip": post_dictionary["ip"], "protocol": "milight"}
-            self.wfile.write(json.dumps([{"success": {"milight": post_dictionary}}], sort_keys=True, indent=4, separators=(',', ': ')))
         elif "devicetype" in post_dictionary: #this must be a new device registration
                 #create new user hash
                 s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
