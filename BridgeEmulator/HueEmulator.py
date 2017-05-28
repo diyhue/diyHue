@@ -414,7 +414,7 @@ def webform_milight():
 <select id=\"mode\" name=\"mode\">
 <option value=\"rgbw\">RGBW</option>
 <option value=\"cct\">CCT</option>
-<option value=\"rgb+cct\">RGB+CCT</option>
+<option value=\"rgb_cct\">RGB+CCT</option>
 <option value=\"rgb\">RGB</option>
 </select>
 </div>
