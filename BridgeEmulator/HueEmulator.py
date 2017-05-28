@@ -3,7 +3,6 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from time import strftime, sleep
 from datetime import datetime, timedelta
 from pprint import pprint
-from math import log
 from subprocess import check_output
 import json, socket, hashlib, urllib2, struct, random
 from threading import Thread
@@ -19,6 +18,7 @@ bridge_config = defaultdict(lambda:defaultdict(str))
 lights_address = {}
 new_lights = {}
 
+#load config files
 try:
     with open('config.json', 'r') as fp:
         bridge_config = json.load(fp)
@@ -143,7 +143,7 @@ def sendRequest(url, method, data, delay=0):
     request.get_method = lambda: method
     opener.open(request, timeout=3)
 
-def convert_xy(x, y, bri):
+def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
     Y = bri / 250.0
     z = 1.0 - x - y
 
@@ -208,8 +208,8 @@ def convert_xy(x, y, bri):
     return [int(r * 255), int(g * 255), int(b * 255)]
 
 def sendLightRequest(light, data):
-    sent_data = {}
-    if lights_address[light]["protocol"] == "native":
+    payload = {}
+    if lights_address[light]["protocol"] == "native": #ESP8266 light or strip
         url = "http://" + lights_address[light]["ip"] + "/set?light=" + str(lights_address[light]["light_nr"]);
         method = 'GET'
         for key, value in data.iteritems():
@@ -217,54 +217,54 @@ def sendLightRequest(light, data):
                 url += "&x=" + str(value[0]) + "&y=" + str(value[1])
             else:
                 url += "&" + key + "=" + str(value)
-    elif lights_address[light]["protocol"] == "milight":
+    elif lights_address[light]["protocol"] == "milight": #MiLight bulb
         url = "http://" + lights_address[light]["ip"] + "/gateways/" + lights_address[light]["device_id"] + "/" + lights_address[light]["mode"] + "/" + str(lights_address[light]["group"]);
         method = 'PUT'
         for key, value in data.iteritems():
             if key == "on":
-                sent_data["status"] = value
+                payload["status"] = value
             elif key == "bri":
-                sent_data["brightness"] = value
+                payload["brightness"] = value
             elif key == "ct":
-                sent_data["color_temp"] = int((500 - value) / 1.6 + 153)
+                payload["color_temp"] = int((500 - value) / 1.6 + 153)
             elif key == "hue":
-                sent_data["hue"] = value / 180
+                payload["hue"] = value / 180
             elif key == "sat":
-                sent_data["saturation"] = value * 100 / 255
+                payload["saturation"] = value * 100 / 255
             elif key == "xy":
-                (sent_data["r"], sent_data["g"], sent_data["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
-        print(json.dumps(sent_data))
-    elif lights_address[light]["protocol"] == "ikea_tradfri":
+                (payload["r"], payload["g"], payload["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+        print(json.dumps(payload))
+    elif lights_address[light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
         url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"])
         for key, value in data.iteritems():
             if key == "on":
-                sent_data["5850"] = int(value)
+                payload["5850"] = int(value)
             elif key == "transitiontime":
-                sent_data["5712"] = value
+                payload["5712"] = value
             elif key == "bri":
-                sent_data["5851"] = value
+                payload["5851"] = value
             elif key == "ct":
                 if value < 270:
-                    sent_data["5706"] = "f5faf6"
+                    payload["5706"] = "f5faf6"
                 elif value < 385:
-                    sent_data["5706"] = "f1e0b5"
+                    payload["5706"] = "f1e0b5"
                 else:
-                    sent_data["5706"] = "efd275"
+                    payload["5706"] = "efd275"
             elif key == "xy":
-                sent_data["5709"] = int(value[0] * 65535)
-                sent_data["5710"] = int(value[1] * 65535)
-        if "5712" not in sent_data:
-            sent_data["5712"] = 4
-        if "5850" in sent_data and sent_data["5850"] == 0:
-            sent_data.clear() #setting brightnes will turn on the ligh even if there was a reqest to power off
-            sent_data["5850"] = 0
-        pprint(sent_data)
+                payload["5709"] = int(value[0] * 65535)
+                payload["5710"] = int(value[1] * 65535)
+        if "5712" not in payload:
+            payload["5712"] = 4
+        if "5850" in payload and payload["5850"] == 0:
+            payload.clear() #setting brightnes will turn on the ligh even if there was a request to power off
+            payload["5850"] = 0
+        pprint(payload)
 
     try:
         if lights_address[light]["protocol"] == "ikea_tradfri":
-            print(check_output("./coap-client-linux -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [" + json.dumps(sent_data) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
+            print(check_output("./coap-client-linux -m put -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
         else:
-            sendRequest(url, method, json.dumps(sent_data))
+            sendRequest(url, method, json.dumps(payload))
     except:
         bridge_config["lights"][light]["state"]["reachable"] = False
         print("request error")
@@ -272,7 +272,7 @@ def sendLightRequest(light, data):
         bridge_config["lights"][light]["state"]["reachable"] = True
     print("LightRequest: " + url)
 
-def update_group_stats(light):
+def update_group_stats(light): #set group stats based on lights status in that group
     for group in bridge_config["groups"]:
         if light in bridge_config["groups"][group]["lights"]:
             for key, value in bridge_config["lights"][light]["state"].iteritems():
@@ -291,7 +291,7 @@ def update_group_stats(light):
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
 
-def scan_for_lights():
+def scan_for_lights(): #scan for ESP8266 lights and strips
     print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + get_ip_address() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).split("\n")
@@ -320,7 +320,7 @@ def scan_for_lights():
             except Exception, e:
                 print(ip + " is unknow device " + str(e))
 
-def syncWithTradfri():
+def syncWithTradfri(): #update Hue Bridge lights states from Ikea Tradfri gateway
     for light in lights_address:
         if lights_address[light]["protocol"] == "ikea_tradfri":
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" \"coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"]) +"\"", shell=True).split("\n")[3])
@@ -414,7 +414,7 @@ def webform_milight():
 <select id=\"mode\" name=\"mode\">
 <option value=\"rgbw\">RGBW</option>
 <option value=\"cct\">CCT</option>
-<option value=\"rgb+cct\">RGB+CCT</option>
+<option value=\"rgb_cct\">RGB+CCT</option>
 <option value=\"rgb\">RGB</option>
 </select>
 </div>
@@ -435,7 +435,7 @@ def webform_milight():
 
 
 def update_all_lights():
-    ## apply last state on startup to all bulbs, usefull ins if there was a power outage
+    ## apply last state on startup to all bulbs, usefull if there was a power outage
     for light in bridge_config["lights"]:
         payload = {}
         payload["on"] = bridge_config["lights"][light]["state"]["on"]
@@ -455,7 +455,7 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         if self.path == '/description.xml':
             self.wfile.write(description())
-        elif self.path.startswith("/tradfri"):
+        elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
                 tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001\"", shell=True).split("\n")[3])
@@ -479,7 +479,7 @@ class S(BaseHTTPRequestHandler):
                     self.wfile.write(webform_tradfri() + "<br> " + str(lights_found) + " lights where found")
             else:
                 self.wfile.write(webform_tradfri())
-        elif self.path.startswith("/milight"):
+        elif self.path.startswith("/milight"): #setup milight bulb
             get_parameters = parse_qs(urlparse(self.path).query)
             if "device_id" in get_parameters:
                 #register new mi-light
@@ -492,36 +492,36 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(webform_milight() + "<br> Light added")
             else:
                 self.wfile.write(webform_milight())
-        elif self.path.startswith("/switch"):
+        elif self.path.startswith("/switch"): #request from an ESP8266 switch or sensor
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
-            if "devicetype" in get_parameters:
+            if "devicetype" in get_parameters: #register device request
                 sensor_is_new = True
                 for sensor in bridge_config["sensors"]:
-                    if get_parameters["mac"][0] == bridge_config["sensors"][sensor]["uniqueid"]:
+                    if get_parameters["mac"][0] == bridge_config["sensors"][sensor]["uniqueid"]:# if sensor is already present
                         sensor_is_new = False
                 if sensor_is_new:
                     print("registering new sensor " + get_parameters["devicetype"][0])
-                    i = 1
+                    i = 1 #find first empty sensor id
                     while (str(i)) in bridge_config["sensors"]:
                         i += 1
                     bridge_config["sensors"][str(i)] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if get_parameters["devicetype"][0] == "ZLLSwitch" else "Tap Switch", "type": get_parameters["devicetype"][0], "modelid": "RWL021" if get_parameters["devicetype"][0] == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if get_parameters["devicetype"][0] == "ZLLSwitch" else "", "uniqueid": get_parameters["mac"][0]}
-            else:
+            else: #switch action request
                 for sensor in bridge_config["sensors"]:
-                    if get_parameters["mac"][0] == bridge_config["sensors"][sensor]["uniqueid"]:
+                    if get_parameters["mac"][0] == bridge_config["sensors"][sensor]["uniqueid"]: #match senser id based on mac address
                         bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                        rules_processor()
+                        rules_processor() #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
-            if url_pices[2] in bridge_config["config"]["whitelist"]:
+            if url_pices[2] in bridge_config["config"]["whitelist"]: #if username is in whitelist
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                if len(url_pices) == 3:
+                if len(url_pices) == 3: #print entire config
                     self.wfile.write(json.dumps(bridge_config))
-                elif len(url_pices) == 4:
-                    self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
-                    if url_pices[3] == "lights":
+                elif len(url_pices) == 4: #print specified object config
+                    if url_pices[3] == "lights": #add changes from IKEA Tradfri gateway to bridge
                         syncWithTradfri()
+                    self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
                 elif len(url_pices) == 5:
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
@@ -531,9 +531,9 @@ class S(BaseHTTPRequestHandler):
                         self.wfile.write(json.dumps(bridge_config[url_pices[3]][url_pices[4]]))
                 elif len(url_pices) == 6:
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]))
-            elif (url_pices[2] == "nouser" or url_pices[2] == "config") :
+            elif (url_pices[2] == "nouser" or url_pices[2] == "config"): #used by applications to discover the bridge
                 self.wfile.write(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 59, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "modelid": bridge_config["config"]["modelid"]}))
-            else:
+            else: #user is not in whitelist
                 self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}]))
 
 
@@ -550,10 +550,10 @@ class S(BaseHTTPRequestHandler):
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
                     Thread(target=scan_for_lights).start()
-                    sleep(7) #give no more than 7 seconds for light scanning (otherwise will face app disconnection)
+                    sleep(7) #give no more than 7 seconds for light scanning (otherwise will face app disconnection timeout)
                     self.wfile.write(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}]))
                 else: #create object
-                    # find the first unused if for new objecy
+                    # find the first unused id for new object
                     i = 1
                     while (str(i)) in bridge_config[url_pices[3]]:
                         i += 1
