@@ -10,7 +10,7 @@ This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri 
 ## TO DO
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
- 
+
 ## Working futures:
   - Control lights (all functions)
   - Control groups (all functions)
@@ -24,7 +24,7 @@ This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri 
 ## Not working:
   - Home & Away futures
   - Schedules with random time (no application use this)
-  
+
 
 ## IKEA TRADFRI
 Open http://{bridgeIP}/tradfri, type Ikea bridge ip and security key in form and then click "Save". If everything was fine you will see all lights paired with Tradfri bridge in Hue applications.
@@ -32,7 +32,7 @@ Important: coap-client-linux binary is compiled for arm devices like raspberry p
 
 ## MI-LIGHT:
 esp8266_milight_hub is required https://github.com/sidoh/esp8266_milight_hub.
-Open http://{bridgeIP}/milight, complete the form and click Save. You need to repet this step for every light as there is no way to retrive the list of lights from milight hub. 
+Open http://{bridgeIP}/milight, complete the form and click Save. You need to repet this step for every light as there is no way to retrive the list of lights from milight hub.
 
 ## NEOPIXEL STRIPS:
 Wi-fi connection is setup using WiFiManager https://github.com/tzapu/WiFiManager
@@ -62,9 +62,20 @@ list of arguments that can be passed in url:
   - transitiontime: duration of the transition from the light’s current state to the new stat. default 4 represent 0.4 seconds.
   - bri_inc: uncrease or decrease the brightness with a specified value
 
+## SWITCHES:
+
+Dimmer Switch and Tap Switch are almost identical, the only difference is that dimmer switch can control the lights also without the bridge (for this reason bridgeIp is declared as array to setup more ip's), and the buttons codes are different.
+
+#### How is working:
+On sensor power up there will be a GET request sent to bridge , ex: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLSwitch. Bridge will check based on mac address if the switch is already registered or not. If not it will register and then it will be available for configuration in Hue application. After 3-5 seconds ESP8266 will enter in deep sleep mode and will consume less than 20uA. On every button press there will be a short negative pulse on ESP8266 RST pin that will wake up the device, read input pins to check what button is pressed and send a request like this: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&button=1000. Bridge will process all rules and perform the action configured for this button switch.
+
+## MOTION SENSOR:
+
+#### How is working:
+Exactly like switches the sensor will be registered on power up with GET request http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLPresence and configuration will be done from Hue application. ESP8266 will wake up from deep sleep on every PIR output change (negative to positive or positive to negative). GPIO5 pin is used to read if wake up was triggered because new motion was detected or there is no motion anymore. Request example: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&presence=true (presence=false if there is no motion anymore). Is important to choose a low power PIR that can run on batteries for many months and that is able to keep positive output for at last 5 seconds when triggered.
+
 Contributions are welcomed  
 
-Credits: 
+Credits:
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
-
