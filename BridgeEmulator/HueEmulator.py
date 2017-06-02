@@ -559,7 +559,7 @@ class S(BaseHTTPRequestHandler):
                             sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"]:
                             bridge_config["sensors"][sensor]["state"].update({"lightlevel":5864, "dark":True, "daylight":False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                            sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                            sensors_state[sensor]["state"]["dark"] = "2017-01-01T00:00:00"
                 rules_processor() #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
@@ -699,12 +699,15 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["lights"].iterkeys():
                             bridge_config["lights"][light]["state"].update(put_dictionary)
                             Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
-                            for group in bridge_config["groups"].iterkeys():
-                                bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
-                                if put_dictionary["on"]:
-                                    bridge_config["groups"][group]["state"]["any_on"] = put_dictionary["on"]
-                                    bridge_config["groups"][group]["state"]["all_on"] = put_dictionary["on"]
+                        for group in bridge_config["groups"].iterkeys():
+                            bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
+                            if "on" in put_dictionary:
+                                bridge_config["groups"][group]["state"]["any_on"] = put_dictionary["on"]
+                                bridge_config["groups"][group]["state"]["all_on"] = put_dictionary["on"]
                     else: # the state is applied to particular group (url_pices[4])
+                        if "on" in put_dictionary:
+                            bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
+                            bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                                 bridge_config["lights"][light]["state"].update(put_dictionary)
                                 Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
