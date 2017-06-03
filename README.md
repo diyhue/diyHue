@@ -11,7 +11,6 @@ This project emulates a Philips Hue Bridge that is able to control IKEA Tradfri 
 ## TO DO
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
- - Cleanup the code
  
 ## Working futures:
   - Control lights (all functions)
