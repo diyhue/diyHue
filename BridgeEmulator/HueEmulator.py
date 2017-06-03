@@ -555,11 +555,13 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                             sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and bridge_config["sensors"][sensor]["config"]["on"]:
+                            if str(bridge_config["sensors"][sensor]["state"]["presence"]).lower() != get_parameters["presence"][0]:
+                                sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                            sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"]:
-                            bridge_config["sensors"][sensor]["state"].update({"lightlevel":5864, "dark":True, "daylight":False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                            sensors_state[sensor]["state"]["dark"] = "2017-01-01T00:00:00"
+                            if str(bridge_config["sensors"][sensor]["state"]["dark"]).lower() != get_parameters["dark"][0]:
+                                sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                            bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                 rules_processor() #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
@@ -669,6 +671,12 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["scenes"][url_pices[4]]["lightstates"]:
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["on"] = bridge_config["lights"][light]["state"]["on"]
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                            if "xy" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
+                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["xy"]
+                            elif "ct" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
+                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["ct"]
+                            elif "hue" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
+                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"]
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
                 if url_pices[3] == "sensors":
                     for key, value in put_dictionary.iteritems():
@@ -681,6 +689,12 @@ class S(BaseHTTPRequestHandler):
                     if "scene" in put_dictionary: #if group is 0 and there is a scene applied
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
+                            if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
+                                bridge_config["lights"][light]["state"]["colormode"] = "xy"
+                            elif "ct" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
+                                bridge_config["lights"][light]["state"]["colormode"] = "ct"
+                            elif "hue" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
+                                bridge_config["lights"][light]["state"]["colormode"] = "hue"
                             Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
                             update_group_stats(light)
                     elif "bri_inc" in put_dictionary:
@@ -760,9 +774,9 @@ def run(server_class=HTTPServer, handler_class=S):
 
 if __name__ == "__main__":
     try:
+        update_all_lights()
         Thread(target=ssdp_search).start()
         Thread(target=scheduler_processor).start()
-        update_all_lights()
         run()
     except:
         print("server stopped")
