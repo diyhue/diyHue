@@ -16,7 +16,7 @@
 //IPAddress subnet_mask(255, 255, 255,   0);
 
 uint8_t rgbw[lightsCount][4], color_mode[lightsCount], scene;
-bool light_state[lightsCount];
+bool light_state[lightsCount], in_transition;
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
 float step_level[lightsCount][4], current_rgbw[lightsCount][4], x[lightsCount], y[lightsCount];
 byte mac[6];
@@ -405,7 +405,7 @@ void setup() {
         hue[light] = server.arg(i).toInt();
         color_mode[light] = 3;
       }
-      else if (server.argName(i) == "alert") {
+      else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state[light]) {
           current_rgbw[light][0] = 0; current_rgbw[light][1] = 0; current_rgbw[light][2] = 0; current_rgbw[light][3] = 0;
         } else {
@@ -615,6 +615,7 @@ void lightEngine() {
   for (int i = 0; i < lightsCount; i++) {
     if (light_state[i]) {
       if (rgbw[i][0] != current_rgbw[i][0] || rgbw[i][1] != current_rgbw[i][1] || rgbw[i][2] != current_rgbw[i][2] || rgbw[i][3] != current_rgbw[i][3]) {
+        in_transition = true;
         for (uint8_t k = 0; k <= 3; k++) {
           if (rgbw[i][k] != current_rgbw[i][k]) current_rgbw[i][k] += step_level[i][k];
           if ((step_level[i][k] > 0.0 && current_rgbw[i][k] > rgbw[i][k]) || (step_level[i][k] < 0.0 && current_rgbw[i][k] < rgbw[i][k])) current_rgbw[i][k] = rgbw[i][k];
@@ -627,6 +628,7 @@ void lightEngine() {
       }
     } else {
       if (current_rgbw[i][0] != 0 || current_rgbw[i][1] != 0 || current_rgbw[i][2] != 0 || current_rgbw[i][3] != 0) {
+        in_transition = true;
         for (uint8_t k = 0; k <= 3; k++) {
           if (current_rgbw[i][k] != 0) current_rgbw[i][k] -= step_level[i][k];
           if (current_rgbw[i][k] < 0) current_rgbw[i][k] = 0;
@@ -638,7 +640,10 @@ void lightEngine() {
         strip.Show();
       }
     }
-    delay(2);
+  }
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
   }
 }
 

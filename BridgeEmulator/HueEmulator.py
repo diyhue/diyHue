@@ -168,7 +168,8 @@ def sendRequest(url, method, data):
     request = urllib2.Request(url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    opener.open(request, timeout=3)
+    response = opener.open(request, timeout=3).read()
+    return response
 
 def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
     Y = bri / 250.0
@@ -244,6 +245,10 @@ def sendLightRequest(light, data):
                 url += "&x=" + str(value[0]) + "&y=" + str(value[1])
             else:
                 url += "&" + key + "=" + str(value)
+    elif lights_address[light]["protocol"] == "hue": #Original Hue light
+        url = "http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state";
+        method = 'PUT'
+        payload = data
     elif lights_address[light]["protocol"] == "milight": #MiLight bulb
         url = "http://" + lights_address[light]["ip"] + "/gateways/" + lights_address[light]["device_id"] + "/" + lights_address[light]["mode"] + "/" + str(lights_address[light]["group"]);
         method = 'PUT'
@@ -466,6 +471,30 @@ def webform_milight():
 </body>
 </html>"""
 
+def webform_hue():
+    return """<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<title>Hue Bridge Setup</title>
+<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
+</head>
+<body>
+<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
+<fieldset>
+<legend>Hue Bridge Setup</legend>
+<div class=\"pure-control-group\"><label for=\"ip\">Hub ip</label><input id=\"ip\" name=\"ip\" type=\"text\" placeholder=\"168.168.xxx.xxx\"></div>
+<div class=\"pure-controls\">
+<label class="pure-checkbox">
+First press the link button on Hue Bridge
+</label>
+<button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
+</fieldset>
+</form>
+</body>
+</html>"""
+
 
 def update_all_lights():
     ## apply last state on startup to all bulbs, usefull if there was a power outage
@@ -488,6 +517,8 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         if self.path == '/description.xml':
             self.wfile.write(description())
+        elif self.path == '/favicon.ico':
+            self.send_response(404)
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
@@ -525,6 +556,26 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(webform_milight() + "<br> Light added")
             else:
                 self.wfile.write(webform_milight())
+        elif self.path.startswith("/hue"): #setup hue bridge
+            get_parameters = parse_qs(urlparse(self.path).query)
+            if "ip" in get_parameters:
+                response = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/", "POST", "{\"devicetype\":\"Hue Emulator\"}"))
+                if "success" in response[0]:
+                    hue_lights = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/" + response[0]["success"]["username"] + "/lights", "GET", "{}"))
+                    lights_found = 0
+                    for hue_light in hue_lights:
+                        i = 1
+                        while (str(i)) in bridge_config["lights"]:
+                            i += 1
+                        bridge_config["lights"][str(i)] = hue_lights[hue_light]
+                        lights_address[str(i)] = {"username": response[0]["success"]["username"], "light_id": hue_light, "ip": get_parameters["ip"][0], "protocol": "hue"}
+                        lights_found += 1
+                    if lights_found == 0:
+                        self.wfile.write(webform_hue() + "<br> No lights where found")
+                    else:
+                        self.wfile.write(webform_hue() + "<br> " + str(lights_found) + " lights where found")
+                else:
+                    self.wfile.write(webform_hue() + "<br> unable to connect to hue bridge")
         elif self.path.startswith("/switch"): #request from an ESP8266 switch or sensor
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
@@ -552,16 +603,16 @@ class S(BaseHTTPRequestHandler):
                     if bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]): #match senser id based on mac address
                         print("match sensor " + str(sensor))
                         if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
-                            bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
+                            bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                             sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and bridge_config["sensors"][sensor]["config"]["on"]:
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and bridge_config["sensors"][sensor]["config"]["on"] and "presence" in get_parameters:
                             if str(bridge_config["sensors"][sensor]["state"]["presence"]).lower() != get_parameters["presence"][0]:
                                 sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                            bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"]:
+                            bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"] and "lightlevel" in get_parameters:
                             if str(bridge_config["sensors"][sensor]["state"]["dark"]).lower() != get_parameters["dark"][0]:
                                 sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                            bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
+                            bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                 rules_processor() #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
