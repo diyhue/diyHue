@@ -21,7 +21,7 @@
 //IPAddress subnet_mask(255, 255, 255,   0);
 
 uint8_t rgbw[4], color_mode, scene, pins[4];
-bool light_state;
+bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
 float step_level[4], current_rgbw[4], x, y;
 byte mac[6];
@@ -383,7 +383,7 @@ void setup() {
         hue = server.arg(i).toInt();
         color_mode = 3;
       }
-      else if (server.argName(i) == "alert") {
+      else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state) {
           current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
         } else {
@@ -586,19 +586,24 @@ void lightEngine() {
   for (uint8_t color = 0; color < pwm_channels; color++) {
     if (light_state) {
       if (rgbw[color] != current_rgbw[color] ) {
+        in_transition = true;
         current_rgbw[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
         analogWrite(pins[color], (int)(current_rgbw[color] * 4));
       }
     } else {
       if (current_rgbw[color] != 0) {
+        in_transition = true;
         current_rgbw[color] -= step_level[color];
         if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
         analogWrite(pins[color], (int)(current_rgbw[color] * 4));
       }
     }
   }
-  delay(1);
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
+  }
 }
 
 void loop() {
