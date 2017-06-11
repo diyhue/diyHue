@@ -27,7 +27,7 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
 
 
 ## HUE LIGHTS
-  Open http://{bridgeIP}/hue, type the bridge ip and before to click "Save" press the link button on the Hue Bridge. The total number of lights copied to Bridge Emulator will be displayed.
+  Open http://{bridgeIP}/hue, type the bridge ip and before to click "Save" press the link button on the Hue Bridge. The total number of lights copied to Bridge Emulator will be display.
 
 ## IKEA TRADFRI
 Open http://{bridgeIP}/tradfri, type Ikea bridge ip and security key and click "Save". If everything was fine you will see all lights paired with Tradfri bridge in Hue application.
