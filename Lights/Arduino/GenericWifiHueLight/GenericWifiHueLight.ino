@@ -234,7 +234,7 @@ void setup() {
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgbw[0] / 350.0f; step_level[1] = rgbw[1] / 350.0f; step_level[2] = rgbw[2] / 350.0f; step_level[3] = rgbw[3] / 350.0f;
+  step_level[0] = rgbw[0] / 150.0; step_level[1] = rgbw[1] / 150.0; step_level[2] = rgbw[2] / 150.0; step_level[3] = rgbw[3] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -402,7 +402,7 @@ void setup() {
     } else if (color_mode == 3 && light_state == true) {
       convert_hue();
     }
-    transitiontime *= 60.0;
+    transitiontime *= 16;
     for (uint8_t color = 0; color < pwm_channels; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
@@ -421,7 +421,7 @@ void setup() {
   });
 
   server.on("/", []() {
-    float transitiontime = 200;
+    float transitiontime = 100;
     if (server.hasArg("startup")) {
       if (  EEPROM.read(1) != server.arg("startup").toInt()) {
         EEPROM.write(1, server.arg("startup").toInt());
