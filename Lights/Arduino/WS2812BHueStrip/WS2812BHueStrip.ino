@@ -7,8 +7,8 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define lightsCount 4
-#define pixelCount 300
+#define lightsCount 3
+#define pixelCount 60
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
@@ -244,7 +244,7 @@ void setup() {
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   for (uint8_t light = 0; light < lightsCount; light++) {
-    float transitiontime = (10 - (pixelCount / 40)) * 4;
+    float transitiontime = (17 - (pixelCount / 40)) * 4;
     apply_scene(EEPROM.read(2), light);
     for (uint8_t j = 0; j < 3; j++) {
       step_level[light][j] = ((float)rgb[light][j] - current_rgb[light][j]) / transitiontime;
@@ -285,7 +285,7 @@ void setup() {
 
   server.on("/switch", []() {
     server.send(200, "text/plain", "OK");
-    float transitiontime = (10 - (pixelCount / 40)) * 4;
+    float transitiontime = (17 - (pixelCount / 40)) * 4;
     int button;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "button") {
@@ -411,7 +411,7 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
-    transitiontime *= 10 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+    transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
     if (color_mode[light] == 1 && light_state[light] == true) {
       convert_xy(light);
@@ -444,7 +444,7 @@ void setup() {
   });
 
   server.on("/", []() {
-    float transitiontime = (10 - (pixelCount / 40)) * 4;
+    float transitiontime = (17 - (pixelCount / 40)) * 4;
     if (server.hasArg("startup")) {
       if (  EEPROM.read(1) != server.arg("startup").toInt()) {
         EEPROM.write(1, server.arg("startup").toInt());
