@@ -226,8 +226,6 @@ void setup() {
   pins[1] = green_pin;
   pins[2] = blue_pin;
   pins[3] = white_pin;
-  WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
   analogWriteRange(1024);
   analogWriteFreq(4096);
 
@@ -238,7 +236,13 @@ void setup() {
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
-  } else {
+    for (uint8_t i = 0; i < 200; i++) {
+      lightEngine();
+    }
+  }
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("New Hue Light");
+  if (! light_state)  {
     while (WiFi.status() != WL_CONNECTED) {
       analogWrite(pins[0], 10);
       delay(250);
@@ -413,7 +417,16 @@ void setup() {
   });
 
   server.on("/get", []() {
-    server.send(200, "text/plain", "{\"R\":" + (String)rgbw[0] + ", \"G\": " + (String)rgbw[1] + ", \"B\":" + (String)rgbw[2] + ", \"W\":" + (String)rgbw[3] + ", \"bri\":" + (String)bri + ", \"xy\": [" + (String)x + "," + (String)y + "], \"ct\":" + (String)ct + ", \"sat\": " + (String)sat + ", \"hue\": " + (String)hue + ", \"colormode\":" + color_mode + "}");
+    String colormode;
+    String power_status;
+    power_status = light_state ? "true" : "false";
+    if (color_mode == 1)
+      colormode = "xy";
+    else if (color_mode == 2)
+      colormode = "ct";
+    else if (color_mode == 3)
+      colormode = "hs";
+    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri + ", \"xy\": [" + (String)x + ", " + (String)y + "], \"ct\":" + (String)ct + ", \"sat\": " + (String)sat + ", \"hue\": " + (String)hue + ", \"colormode\": \"" + colormode + "\"}");
   });
 
   server.on("/detect", []() {
