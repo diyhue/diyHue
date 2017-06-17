@@ -232,6 +232,41 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
+void lightEngine() {
+  for (int i = 0; i < lightsCount; i++) {
+    if (light_state[i]) {
+      if (rgb[i][0] != current_rgb[i][0] || rgb[i][1] != current_rgb[i][1] || rgb[i][2] != current_rgb[i][2]) {
+        in_transition = true;
+        for (uint8_t k = 0; k < 3; k++) {
+          if (rgb[i][k] != current_rgb[i][k]) current_rgb[i][k] += step_level[i][k];
+          if ((step_level[i][k] > 0.0 && current_rgb[i][k] > rgb[i][k]) || (step_level[i][k] < 0.0 && current_rgb[i][k] < rgb[i][k])) current_rgb[i][k] = rgb[i][k];
+        }
+        for (int j = 0; j < pixelCount / lightsCount ; j++)
+        {
+          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
+        }
+        strip.Show();
+      }
+    } else {
+      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0) {
+        in_transition = true;
+        for (uint8_t k = 0; k < 3; k++) {
+          if (current_rgb[i][k] != 0) current_rgb[i][k] -= step_level[i][k];
+          if (current_rgb[i][k] < 0) current_rgb[i][k] = 0;
+        }
+        for (int j = 0; j < pixelCount / lightsCount ; j++)
+        {
+          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
+        }
+        strip.Show();
+      }
+    }
+  }
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
+  }
+}
 
 void setup() {
   strip.Begin();
@@ -613,42 +648,6 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-}
-
-void lightEngine() {
-  for (int i = 0; i < lightsCount; i++) {
-    if (light_state[i]) {
-      if (rgb[i][0] != current_rgb[i][0] || rgb[i][1] != current_rgb[i][1] || rgb[i][2] != current_rgb[i][2]) {
-        in_transition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (rgb[i][k] != current_rgb[i][k]) current_rgb[i][k] += step_level[i][k];
-          if ((step_level[i][k] > 0.0 && current_rgb[i][k] > rgb[i][k]) || (step_level[i][k] < 0.0 && current_rgb[i][k] < rgb[i][k])) current_rgb[i][k] = rgb[i][k];
-        }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
-        strip.Show();
-      }
-    } else {
-      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0) {
-        in_transition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (current_rgb[i][k] != 0) current_rgb[i][k] -= step_level[i][k];
-          if (current_rgb[i][k] < 0) current_rgb[i][k] = 0;
-        }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
-        strip.Show();
-      }
-    }
-  }
-  if (in_transition) {
-    delay(6);
-    in_transition = false;
-  }
 }
 
 void loop() {

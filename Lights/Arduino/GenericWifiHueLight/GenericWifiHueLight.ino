@@ -218,6 +218,29 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
+void lightEngine() {
+  for (uint8_t color = 0; color < pwm_channels; color++) {
+    if (light_state) {
+      if (rgbw[color] != current_rgbw[color] ) {
+        in_transition = true;
+        current_rgbw[color] += step_level[color];
+        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
+        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+      }
+    } else {
+      if (current_rgbw[color] != 0) {
+        in_transition = true;
+        current_rgbw[color] -= step_level[color];
+        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
+        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+      }
+    }
+  }
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
+  }
+}
 
 void setup() {
   EEPROM.begin(512);
@@ -593,30 +616,6 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-}
-
-void lightEngine() {
-  for (uint8_t color = 0; color < pwm_channels; color++) {
-    if (light_state) {
-      if (rgbw[color] != current_rgbw[color] ) {
-        in_transition = true;
-        current_rgbw[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
-      }
-    } else {
-      if (current_rgbw[color] != 0) {
-        in_transition = true;
-        current_rgbw[color] -= step_level[color];
-        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
-      }
-    }
-  }
-  if (in_transition) {
-    delay(6);
-    in_transition = false;
-  }
 }
 
 void loop() {
