@@ -1,7 +1,7 @@
 ## diyHue
-This project emulates a Philips Hue Bridge that is able to control Hue lights (using original Hue Bridge), IKEA Tradfri lights (usign Tradfri Bridge), Mi-Light lights (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Dimmer Switch, Tap Switch and Motion Sensor.
+This project emulates a Philips Hue Bridge that is able to control Hue lights (using original Hue Bridge), IKEA Tradfri lights (usign Tradfri Bridge), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized for all lights except MiLight bulbs so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
+![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
 
 ### Requirements:
  - python
@@ -77,6 +77,8 @@ On sensor power on there will be a GET request sent to bridge , ex: http://{brid
 #### How is working:
 Exactly like switches the sensor will be registered on power on with GET request http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLPresence and configuration will be done from Hue application. ESP8266 will wake up from deep sleep on every PIR output change (negative to positive or positive to negative) and at every 10 minutes to send light sensor data. GPIO5 pin is used to read if wake up was triggered because new motion was detected or if there is no motion anymore. Request example: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&lightlevel=46900&dark=false&daylight=true&presence=true. Is important to choose a low power PIR that can run on batteries for many months and that is able to keep positive output for at last 5 seconds when triggered. The PIR used in my example is HC-SR501, most common used in DIY projects. To increase the battery life i remove the voltage regulator to 3.3V because this become useless on batteries. Photoresistor used by me has a range 33Kohm - 1Kohm. GPIO4 will output +3V only when light level is measured to lower power consumption.  
 IMPORTANT: Some PIR sensors trigger lot of false positive because of RF interferences with ESP8266. You can try to put a couple of layers of aluminum foil between the PIR and the ESP8266. I recommend to use a PIR that is able to detect such interferences (maybe wireless pir's have this future by default)
+
+[![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
 
 Contributions are welcomed  
 

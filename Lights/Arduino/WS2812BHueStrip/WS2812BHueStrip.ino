@@ -232,14 +232,46 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
+void lightEngine() {
+  for (int i = 0; i < lightsCount; i++) {
+    if (light_state[i]) {
+      if (rgb[i][0] != current_rgb[i][0] || rgb[i][1] != current_rgb[i][1] || rgb[i][2] != current_rgb[i][2]) {
+        in_transition = true;
+        for (uint8_t k = 0; k < 3; k++) {
+          if (rgb[i][k] != current_rgb[i][k]) current_rgb[i][k] += step_level[i][k];
+          if ((step_level[i][k] > 0.0 && current_rgb[i][k] > rgb[i][k]) || (step_level[i][k] < 0.0 && current_rgb[i][k] < rgb[i][k])) current_rgb[i][k] = rgb[i][k];
+        }
+        for (int j = 0; j < pixelCount / lightsCount ; j++)
+        {
+          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
+        }
+        strip.Show();
+      }
+    } else {
+      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0) {
+        in_transition = true;
+        for (uint8_t k = 0; k < 3; k++) {
+          if (current_rgb[i][k] != 0) current_rgb[i][k] -= step_level[i][k];
+          if (current_rgb[i][k] < 0) current_rgb[i][k] = 0;
+        }
+        for (int j = 0; j < pixelCount / lightsCount ; j++)
+        {
+          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
+        }
+        strip.Show();
+      }
+    }
+  }
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
+  }
+}
 
 void setup() {
   strip.Begin();
   strip.Show();
   EEPROM.begin(512);
-
-  WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -255,7 +287,13 @@ void setup() {
     for (int i = 0; i < lightsCount; i++) {
       light_state[i] = true;
     }
-  } else {
+    for (int j = 0; j < 200; j++) {
+      lightEngine();
+    }
+    WiFiManager wifiManager;
+    wifiManager.autoConnect("New Hue Light");
+  }
+  if (! light_state[0]) {
     infoLight(white);
     while (WiFi.status() != WL_CONNECTED) {
       infoLight(red);
@@ -431,12 +469,18 @@ void setup() {
 
   server.on("/get", []() {
     uint8_t light;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "light") {
-        light = server.arg(i).toInt() - 1;
-      }
-    }
-    server.send(200, "text/plain", "{\"R\":" + (String)current_rgb[light][0] + ", \"G\": " + (String)current_rgb[light][1] + ", \"B\":" + (String)current_rgb[light][2] + ", \"bri\":" + (String)bri[light] + ", \"xy\": [" + (String)x[light] + "," + (String)y[light] + "], \"ct\":" + (String)ct[light] + ", \"sat\": " + (String)sat[light] + ", \"hue\": " + (String)hue[light] + ", \"colormode\":" + color_mode[light] + "}");
+    if (server.hasArg("light"))
+      light = server.arg("light").toInt() - 1;
+    String colormode;
+    String power_status;
+    power_status = light_state[light] ? "true" : "false";
+    if (color_mode[light] == 1)
+      colormode = "xy";
+    else if (color_mode[light] == 2)
+      colormode = "ct";
+    else if (color_mode[light] == 3)
+      colormode = "hs";
+    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri[light] + ", \"xy\": [" + (String)x[light] + ", " + (String)y[light] + "], \"ct\":" + (String)ct[light] + ", \"sat\": " + (String)sat[light] + ", \"hue\": " + (String)hue[light] + ", \"colormode\": \"" + colormode + "\"}");
   });
 
   server.on("/detect", []() {
@@ -604,42 +648,6 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-}
-
-void lightEngine() {
-  for (int i = 0; i < lightsCount; i++) {
-    if (light_state[i]) {
-      if (rgb[i][0] != current_rgb[i][0] || rgb[i][1] != current_rgb[i][1] || rgb[i][2] != current_rgb[i][2]) {
-        in_transition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (rgb[i][k] != current_rgb[i][k]) current_rgb[i][k] += step_level[i][k];
-          if ((step_level[i][k] > 0.0 && current_rgb[i][k] > rgb[i][k]) || (step_level[i][k] < 0.0 && current_rgb[i][k] < rgb[i][k])) current_rgb[i][k] = rgb[i][k];
-        }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
-        strip.Show();
-      }
-    } else {
-      if (current_rgb[i][0] != 0 || current_rgb[i][1] != 0 || current_rgb[i][2] != 0) {
-        in_transition = true;
-        for (uint8_t k = 0; k < 3; k++) {
-          if (current_rgb[i][k] != 0) current_rgb[i][k] -= step_level[i][k];
-          if (current_rgb[i][k] < 0) current_rgb[i][k] = 0;
-        }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
-        strip.Show();
-      }
-    }
-  }
-  if (in_transition) {
-    delay(6);
-    in_transition = false;
-  }
 }
 
 void loop() {

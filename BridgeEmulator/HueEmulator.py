@@ -161,14 +161,14 @@ def rules_processor(scheduler=False):
                 for action in bridge_config["rules"][rule]["actions"]:
                     Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
 
-def sendRequest(url, method, data):
+def sendRequest(url, method, data, time_out=3):
     if not url.startswith( 'http://' ):
         url = "http://127.0.0.1" + url
     opener = urllib2.build_opener(urllib2.HTTPHandler)
     request = urllib2.Request(url, data=data)
     request.add_header("Content-Type",'application/json')
     request.get_method = lambda: method
-    response = opener.open(request, timeout=3).read()
+    response = opener.open(request, timeout=time_out).read()
     return response
 
 def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
@@ -246,7 +246,7 @@ def sendLightRequest(light, data):
             else:
                 url += "&" + key + "=" + str(value)
     elif lights_address[light]["protocol"] == "hue": #Original Hue light
-        url = "http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state";
+        url = "http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state"
         method = 'PUT'
         payload = data
     elif lights_address[light]["protocol"] == "milight": #MiLight bulb
@@ -358,9 +358,21 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
             except Exception, e:
                 print(ip + " is unknow device " + str(e))
 
-def syncWithTradfri(): #update Hue Bridge lights states from Ikea Tradfri gateway
+def syncWithLights(): #update Hue Bridge lights states
     for light in lights_address:
-        if lights_address[light]["protocol"] == "ikea_tradfri":
+        if lights_address[light]["protocol"] == "native":
+            try:
+                light_data = json.loads(sendRequest("http://" + lights_address[light]["ip"] + "/get?light=" + str(lights_address[light]["light_nr"]), "GET", "{}", 0.5))
+            except:
+                bridge_config["lights"][light]["state"]["reachable"] = False
+                print("request error")
+            else:
+                bridge_config["lights"][light]["state"]["reachable"] = True
+                bridge_config["lights"][light]["state"].update(light_data)
+        elif lights_address[light]["protocol"] == "hue":
+            light_data = json.loads(sendRequest("http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state"), "GET", "{}", 1))
+            bridge_config["lights"][light]["state"].update(light_data)
+        elif lights_address[light]["protocol"] == "ikea_tradfri":
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" \"coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"]) +"\"", shell=True).split("\n")[3])
             bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
             bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
@@ -370,7 +382,6 @@ def syncWithTradfri(): #update Hue Bridge lights states from Ikea Tradfri gatewa
                 bridge_config["lights"][light]["state"]["ct"] = 320
             elif light_stats["3311"][0]["5706"] == "efd275":
                 bridge_config["lights"][light]["state"]["ct"] = 470
-
 
 def description():
     return """<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
@@ -502,7 +513,11 @@ def update_all_lights():
         payload = {}
         payload["on"] = bridge_config["lights"][light]["state"]["on"]
         payload["bri"] = bridge_config["lights"][light]["state"]["bri"]
-        payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+        if bridge_config["lights"][light]["state"]["colormode"] in ["xy", "ct"]:
+            payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+        elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+            payload["hue"] = bridge_config["lights"][light]["state"]["hue"]
+            payload["sat"] = bridge_config["lights"][light]["state"]["sat"]
         Thread(target=sendLightRequest, args=[light, payload]).start()
         sleep(0.5)
         print("update status for light " + light)
@@ -518,7 +533,7 @@ class S(BaseHTTPRequestHandler):
         if self.path == '/description.xml':
             self.wfile.write(description())
         elif self.path == '/favicon.ico':
-            self.send_response(404)
+            self.wfile.write("file not found")
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
@@ -623,7 +638,7 @@ class S(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(bridge_config))
                 elif len(url_pices) == 4: #print specified object config
                     if url_pices[3] == "lights": #add changes from IKEA Tradfri gateway to bridge
-                        syncWithTradfri()
+                        syncWithLights()
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
                 elif len(url_pices) == 5:
                     if url_pices[4] == "new": #return new lights and sensors only
@@ -728,7 +743,13 @@ class S(BaseHTTPRequestHandler):
                                 del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["ct"]
                             elif "hue" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
                                 del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"]
-                            bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"]
+                            if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
+                                bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+                            elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
+                                bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
+
                 if url_pices[3] == "sensors":
                     for key, value in put_dictionary.iteritems():
                         bridge_config[url_pices[3]][url_pices[4]][key].update(value)
@@ -744,8 +765,8 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["lights"][light]["state"]["colormode"] = "xy"
                             elif "ct" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
                                 bridge_config["lights"][light]["state"]["colormode"] = "ct"
-                            elif "hue" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
-                                bridge_config["lights"][light]["state"]["colormode"] = "hue"
+                            elif "hue" or "sat" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
+                                bridge_config["lights"][light]["state"]["colormode"] = "hs"
                             Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
                             update_group_stats(light)
                     elif "bri_inc" in put_dictionary:
@@ -779,8 +800,10 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "lights": #state is applied to a light
                     Thread(target=sendLightRequest, args=[url_pices[4], put_dictionary]).start()
                     for key in put_dictionary.iterkeys():
-                        if key in ["ct", "xy", "hue"]: #colormode must be set by bridge
+                        if key in ["ct", "xy"]: #colormode must be set by bridge
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
+                        elif key in ["hue", "sat"]:
+                            bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
                     update_group_stats(url_pices[4])
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:

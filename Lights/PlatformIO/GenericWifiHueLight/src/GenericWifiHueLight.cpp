@@ -23,7 +23,7 @@
 //IPAddress subnet_mask(255, 255, 255,   0);
 
 uint8_t rgbw[4], color_mode, scene, pins[4];
-bool light_state;
+bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
 float step_level[4], current_rgbw[4], x, y;
 byte mac[6];
@@ -220,6 +220,29 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
+void lightEngine() {
+  for (uint8_t color = 0; color < pwm_channels; color++) {
+    if (light_state) {
+      if (rgbw[color] != current_rgbw[color] ) {
+        in_transition = true;
+        current_rgbw[color] += step_level[color];
+        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
+        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+      }
+    } else {
+      if (current_rgbw[color] != 0) {
+        in_transition = true;
+        current_rgbw[color] -= step_level[color];
+        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
+        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+      }
+    }
+  }
+  if (in_transition) {
+    delay(6);
+    in_transition = false;
+  }
+}
 
 void setup() {
   EEPROM.begin(512);
@@ -228,19 +251,23 @@ void setup() {
   pins[1] = green_pin;
   pins[2] = blue_pin;
   pins[3] = white_pin;
-  WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
   analogWriteRange(1024);
   analogWriteFreq(4096);
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgbw[0] / 350.0f; step_level[1] = rgbw[1] / 350.0f; step_level[2] = rgbw[2] / 350.0f; step_level[3] = rgbw[3] / 350.0f;
+  step_level[0] = rgbw[0] / 150.0; step_level[1] = rgbw[1] / 150.0; step_level[2] = rgbw[2] / 150.0; step_level[3] = rgbw[3] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
-  } else {
+    for (uint8_t i = 0; i < 200; i++) {
+      lightEngine();
+    }
+  }
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("New Hue Light");
+  if (! light_state)  {
     while (WiFi.status() != WL_CONNECTED) {
       analogWrite(pins[0], 10);
       delay(250);
@@ -385,7 +412,7 @@ void setup() {
         hue = server.arg(i).toInt();
         color_mode = 3;
       }
-      else if (server.argName(i) == "alert") {
+      else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state) {
           current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
         } else {
@@ -404,7 +431,7 @@ void setup() {
     } else if (color_mode == 3 && light_state == true) {
       convert_hue();
     }
-    transitiontime *= 60.0;
+    transitiontime *= 16;
     for (uint8_t color = 0; color < pwm_channels; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
@@ -415,7 +442,16 @@ void setup() {
   });
 
   server.on("/get", []() {
-    server.send(200, "text/plain", "{\"R\":" + (String)rgbw[0] + ", \"G\": " + (String)rgbw[1] + ", \"B\":" + (String)rgbw[2] + ", \"W\":" + (String)rgbw[3] + ", \"bri\":" + (String)bri + ", \"xy\": [" + (String)x + "," + (String)y + "], \"ct\":" + (String)ct + ", \"sat\": " + (String)sat + ", \"hue\": " + (String)hue + ", \"colormode\":" + color_mode + "}");
+    String colormode;
+    String power_status;
+    power_status = light_state ? "true" : "false";
+    if (color_mode == 1)
+      colormode = "xy";
+    else if (color_mode == 2)
+      colormode = "ct";
+    else if (color_mode == 3)
+      colormode = "hs";
+    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri + ", \"xy\": [" + (String)x + ", " + (String)y + "], \"ct\":" + (String)ct + ", \"sat\": " + (String)sat + ", \"hue\": " + (String)hue + ", \"colormode\": \"" + colormode + "\"}");
   });
 
   server.on("/detect", []() {
@@ -423,7 +459,7 @@ void setup() {
   });
 
   server.on("/", []() {
-    float transitiontime = 200;
+    float transitiontime = 100;
     if (server.hasArg("startup")) {
       if (  EEPROM.read(1) != server.arg("startup").toInt()) {
         EEPROM.write(1, server.arg("startup").toInt());
@@ -582,25 +618,6 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-}
-
-void lightEngine() {
-  for (uint8_t color = 0; color < pwm_channels; color++) {
-    if (light_state) {
-      if (rgbw[color] != current_rgbw[color] ) {
-        current_rgbw[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
-      }
-    } else {
-      if (current_rgbw[color] != 0) {
-        current_rgbw[color] -= step_level[color];
-        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
-      }
-    }
-  }
-  delay(1);
 }
 
 void loop() {
