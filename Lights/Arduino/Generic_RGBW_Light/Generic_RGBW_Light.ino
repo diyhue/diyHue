@@ -226,7 +226,7 @@ void apply_scene(uint8_t new_scene) {
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < 4; color++) {
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
       if (rgbw[color] != current_rgbw[color] ) {
         in_transition = true;
@@ -254,7 +254,7 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  for (uint8_t ch = 0; ch < 4; ch++) {
+  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
     pinMode(io_info[ch][2], OUTPUT);
   }
 
@@ -339,7 +339,7 @@ void setup() {
     } else if (button == 4000) {
       light_state = false;
     }
-    for (uint8_t color = 0; color < pwm_channels; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / 54;
       } else {
@@ -434,7 +434,7 @@ void setup() {
       convert_hue();
     }
     transitiontime *= 16;
-    for (uint8_t color = 0; color < pwm_channels; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
       } else {
@@ -519,7 +519,7 @@ void setup() {
         current_rgbw[3] = 255;
       }
     }
-    for (uint8_t color = 0; color < pwm_channels; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = ((float)rgbw[color] - current_rgbw[color]) / transitiontime;
       } else {

@@ -227,7 +227,7 @@ void apply_scene(uint8_t new_scene) {
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < 5; color++) {
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
       if (rgb_cct[color] != current_rgb_cct[color] ) {
         in_transition = true;
@@ -255,7 +255,7 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  for (uint8_t ch = 0; ch < 5; ch++) {
+  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
     pinMode(io_info[ch][2], OUTPUT);
   }
 
@@ -265,7 +265,7 @@ void setup() {
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgb_cct[0] / 150.0; step_level[1] = rgb_cct[1] / 150.0; step_level[2] = rgb_cct[2] / 150.0; step_level[3] = rgb_cct[3] / 150.0; step_level[4] = rgb_cct[4] / 150.0;
+  step_level[0] = rgb_cct[0] / 150.0; step_level[1] = rgb_cct[1] / 150.0; step_level[2] = rgb_cct[2] / 150.0; step_level[3] = rgb_cct[3] / 150.0; step_level[4] = rgb_cct[4] / 150.0; 
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -340,7 +340,7 @@ void setup() {
     } else if (button == 4000) {
       light_state = false;
     }
-    for (uint8_t color = 0; color < 5; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / 54;
       } else {
@@ -435,7 +435,7 @@ void setup() {
       convert_hue();
     }
     transitiontime *= 16;
-    for (uint8_t color = 0; color < 5; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
       } else {
@@ -520,7 +520,7 @@ void setup() {
         current_rgb_cct[3] = 255;
       }
     }
-    for (uint8_t color = 0; color < 5; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
         step_level[color] = ((float)rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
       } else {
