@@ -5,22 +5,29 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
+#include "pwm.c"
 
+#define PWM_CHANNELS 4
+const uint32_t period = 1024;
 
+//define pins
+uint32 io_info[PWM_CHANNELS][3] = {
+  // MUX, FUNC, PIN
+  {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
+  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
+  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
+  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
+};
 
-#define red_pin 12
-#define green_pin 13
-#define blue_pin 14
-#define white_pin 5
-
-#define pwm_channels 4 // put 3 for rgb, 4 for rgbw
+// initial duty: all off
+uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0};
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgbw[4], color_mode, scene, pins[4];
+uint8_t rgbw[4], color_mode, scene;
 bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
 float step_level[4], current_rgbw[4], x, y;
@@ -219,20 +226,22 @@ void apply_scene(uint8_t new_scene) {
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < pwm_channels; color++) {
+  for (uint8_t color = 0; color < 4; color++) {
     if (light_state) {
       if (rgbw[color] != current_rgbw[color] ) {
         in_transition = true;
         current_rgbw[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+        pwm_set_duty((int)(current_rgbw[color] * 4), color);
+        pwm_start();
       }
     } else {
       if (current_rgbw[color] != 0) {
         in_transition = true;
         current_rgbw[color] -= step_level[color];
         if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        analogWrite(pins[color], (int)(current_rgbw[color] * 4));
+        pwm_set_duty((int)(current_rgbw[color] * 4), color);
+        pwm_start();
       }
     }
   }
@@ -245,12 +254,12 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  pins[0] = red_pin;
-  pins[1] = green_pin;
-  pins[2] = blue_pin;
-  pins[3] = white_pin;
-  analogWriteRange(1024);
-  analogWriteFreq(4096);
+  for (uint8_t ch = 0; ch < 4; ch++) {
+    pinMode(io_info[ch][2], OUTPUT);
+  }
+
+  pwm_init(period, pwm_duty_init, PWM_CHANNELS, io_info);
+  pwm_start();
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -266,18 +275,13 @@ void setup() {
   WiFiManager wifiManager;
   wifiManager.autoConnect("New Hue Light");
   if (! light_state)  {
-    while (WiFi.status() != WL_CONNECTED) {
-      analogWrite(pins[0], 10);
-      delay(250);
-      analogWrite(pins[0], 0);
-      delay(250);
-    }
     // Show that we are connected
-    analogWrite(pins[1], 10);
+    pwm_set_duty(100, 1);
+    pwm_start();
     delay(500);
-    analogWrite(pins[1], 0);
+    pwm_set_duty(0, 1);
+    pwm_start();
   }
-
   WiFi.macAddress(mac);
 
   // Port defaults to 8266
