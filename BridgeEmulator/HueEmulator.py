@@ -264,7 +264,8 @@ def sendLightRequest(light, data):
             elif key == "sat":
                 payload["saturation"] = value * 100 / 255
             elif key == "xy":
-                (payload["r"], payload["g"], payload["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+                payload["color"] = {}
+                (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
         print(json.dumps(payload))
     elif lights_address[light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
         url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"])
@@ -370,7 +371,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
         elif lights_address[light]["protocol"] == "hue":
-            light_data = json.loads(sendRequest("http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state"), "GET", "{}", 1))
+            light_data = json.loads(sendRequest("http://" + lights_address[light]["ip"] + "/api/" + lights_address[light]["username"] + "/lights/" + lights_address[light]["light_id"] + "/state"), "GET", "{}", 1)
             bridge_config["lights"][light]["state"].update(light_data)
         elif lights_address[light]["protocol"] == "ikea_tradfri":
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" \"coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"]) +"\"", shell=True).split("\n")[3])
