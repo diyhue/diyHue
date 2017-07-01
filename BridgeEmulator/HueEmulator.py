@@ -264,7 +264,8 @@ def sendLightRequest(light, data):
             elif key == "sat":
                 payload["saturation"] = value * 100 / 255
             elif key == "xy":
-                (payload["r"], payload["g"], payload["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+                payload["color"] = {}
+                (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
         print(json.dumps(payload))
     elif lights_address[light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
         url = "coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"])
