@@ -377,11 +377,14 @@ def syncWithLights(): #update Hue Bridge lights states
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + lights_address[light]["security_code"] + "\" \"coaps://" + lights_address[light]["ip"] + ":5684/15001/" + str(lights_address[light]["device_id"]) +"\"", shell=True).split("\n")[3])
             bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
             bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
-            if light_stats["3311"][0]["5706"] == "f5faf6":
-                bridge_config["lights"][light]["state"]["ct"] = 170
-            elif light_stats["3311"][0]["5706"] == "f1e0b5":
-                bridge_config["lights"][light]["state"]["ct"] = 320
-            elif light_stats["3311"][0]["5706"] == "efd275":
+            if "5706" in light_stats["3311"][0]:
+                if light_stats["3311"][0]["5706"] == "f5faf6":
+                    bridge_config["lights"][light]["state"]["ct"] = 170
+                elif light_stats["3311"][0]["5706"] == "f1e0b5":
+                    bridge_config["lights"][light]["state"]["ct"] = 320
+                elif light_stats["3311"][0]["5706"] == "efd275":
+                    bridge_config["lights"][light]["state"]["ct"] = 470
+            else:
                 bridge_config["lights"][light]["state"]["ct"] = 470
 
 def description():
