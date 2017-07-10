@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from time import strftime, sleep
 from datetime import datetime, timedelta
@@ -356,7 +356,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                             bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": "LST001" if device_data["hue"] == "strip" else "LCT001", "swversion": "66009461"}
                             new_lights.update({str(i): {"name": "Hue " + device_data["type"] + " " + device_data["hue"] + " " + str(x)}})
                             lights_address[str(i)] = {"ip": ip, "light_nr": x, "protocol": "native"}
-            except Exception, e:
+            except Exception as e:
                 print(ip + " is unknow device " + str(e))
 
 def syncWithLights(): #update Hue Bridge lights states
@@ -661,7 +661,7 @@ class S(BaseHTTPRequestHandler):
 
     def do_POST(self):
         self._set_headers()
-        print "in post method"
+        print ("in post method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         post_dictionary = json.loads(self.data_string)
         url_pices = self.path.split('/')
@@ -718,7 +718,7 @@ class S(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         self._set_headers()
-        print "in PUT method"
+        print ("in PUT method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         put_dictionary = json.loads(self.data_string)
         url_pices = self.path.split('/')
@@ -847,7 +847,7 @@ class S(BaseHTTPRequestHandler):
 def run(server_class=HTTPServer, handler_class=S):
     server_address = ('', 80)
     httpd = server_class(server_address, handler_class)
-    print 'Starting httpd...'
+    print ('Starting httpd...')
     httpd.serve_forever()
 
 if __name__ == "__main__":
@@ -861,4 +861,4 @@ if __name__ == "__main__":
     finally:
         run_service = False
         save_config()
-        print 'config saved'
+        print ('config saved')
