@@ -85,6 +85,21 @@ def ssdp_search():
                           sock.sendto(Response_message, address)
               sleep(1)
 
+def ssdp_broadcast():
+    print("start ssdp broadcast")
+    SSDP_ADDR = '239.255.255.250'
+    SSDP_PORT = 1900
+    MSEARCH_Interval = 2
+    multicast_group_s = (SSDP_ADDR, SSDP_PORT)
+    message = 'NOTIFY * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://' + get_ip_address() + ':80/description.xml\r\nSERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.16.0\r\nNTS: ssdp:alive\r\nNT: upnp:rootdevice\r\nUSN: uuid:2f402f80-da50-11e1-9b23-' + mac + '::upnp:rootdevice'
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(MSEARCH_Interval+0.5)
+    ttl = struct.pack('b', 1)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+    while True:
+          sent = sock.sendto(message,multicast_group_s)
+          sleep(10)
+
 def scheduler_processor():
     while run_service:
         for schedule in bridge_config["schedules"].iterkeys():
@@ -201,13 +216,9 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
         g = g / b
         b = 1
 
-  # Apply gamma correction  if device_data["hue"] == "strip" else
     r = 12.92 * r if r <= 0.0031308 else (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
     g = 12.92 * g if g <= 0.0031308 else (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
     b = 12.92 * b if b <= 0.0031308 else (1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055
-    #r = r <= 0.0031308 ? 12.92 * r : (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
-    #g = g <= 0.0031308 ? 12.92 * g : (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
-    #b = b <= 0.0031308 ? 12.92 * b : (1.0 + 0.055) * pow(b, (1.0 / 2.4)) - 0.055
 
     if r > b and r > g:
     # red is biggest
@@ -366,6 +377,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 light_data = json.loads(sendRequest("http://" + lights_address[light]["ip"] + "/get?light=" + str(lights_address[light]["light_nr"]), "GET", "{}", 0.5))
             except:
                 bridge_config["lights"][light]["state"]["reachable"] = False
+                bridge_config["lights"][light]["state"]["on"] = False
                 print("request error")
             else:
                 bridge_config["lights"][light]["state"]["reachable"] = True
@@ -854,6 +866,7 @@ if __name__ == "__main__":
     try:
         update_all_lights()
         Thread(target=ssdp_search).start()
+        Thread(target=ssdp_broadcast).start()
         Thread(target=scheduler_processor).start()
         run()
     except:
