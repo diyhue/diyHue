@@ -101,6 +101,9 @@ def ssdp_broadcast():
     while True:
         sent = sock.sendto(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"],multicast_group_s)
         print(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"]) #this is for debugging and will be removed
+        sleep(10)
+        sent = sock.sendto(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"],multicast_group_s)
+        print(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"]) #this is for debugging and will be removed
         counter+= 1
         if counter > 2:
             counter = 0
