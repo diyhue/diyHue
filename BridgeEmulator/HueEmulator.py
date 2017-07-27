@@ -91,14 +91,20 @@ def ssdp_broadcast():
     SSDP_PORT = 1900
     MSEARCH_Interval = 2
     multicast_group_s = (SSDP_ADDR, SSDP_PORT)
-    message = 'NOTIFY * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://' + get_ip_address() + ':80/description.xml\r\nSERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.16.0\r\nNTS: ssdp:alive\r\nNT: upnp:rootdevice\r\nUSN: uuid:2f402f80-da50-11e1-9b23-' + mac + '::upnp:rootdevice'
+    message = 'NOTIFY * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://' + get_ip_address() + ':80/description.xml\r\nSERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.16.0\r\nNTS: ssdp:alive\r\n'
+    custom_message ={0: {"nt": "upnp:rootdevice", "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac + "::upnp:rootdevice"}, 1: {"nt": "uuid:2f402f80-da50-11e1-9b23-" + mac, "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac}, 2: {"nt": "urn:schemas-upnp-org:device:basic:1", "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac}}
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(MSEARCH_Interval+0.5)
     ttl = struct.pack('b', 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+    counter = 0
     while True:
-          sent = sock.sendto(message,multicast_group_s)
-          sleep(10)
+        sent = sock.sendto(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"],multicast_group_s)
+        print(message + "NT: " + custom_message[counter]["nt"] + "\r\nUSN: " + custom_message[counter]["usn"]) #this is for debugging and will be removed
+        counter+= 1
+        if counter > 2:
+            counter = 0
+        sleep(10)
 
 def scheduler_processor():
     while run_service:
