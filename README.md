@@ -10,6 +10,8 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
 ## TO DO
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
+ - On/Off control for other home devices using virtual lights
+ - Alarm (email notification + eps8266 horn)
 
 ## Working futures:
   - Control lights (all functions)
