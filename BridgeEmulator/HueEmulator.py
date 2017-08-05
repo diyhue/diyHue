@@ -960,4 +960,4 @@ if __name__ == "__main__":
     finally:
         run_service = False
         save_config()
-        print 'config saved'
+        print ('config saved')
