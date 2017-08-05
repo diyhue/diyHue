@@ -860,6 +860,12 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         url_pices = self.path.split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
+            if url_pices[3] == "resourcelinks":
+                for link in bridge_config["resourcelinks"][url_pices[4]]["links"]:
+                    pices = link.split('/')
+                    if pices[1] not in ["groups","lights"]:
+                        del bridge_config[pices[1]][pices[2]]
+                        print("delete " + link)
             del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del lights_address[url_pices[4]]
