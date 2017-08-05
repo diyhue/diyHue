@@ -1,12 +1,11 @@
 {
-    "mail_from": "marius.motea@gmail.com",
-    "mail_password": "rX305351",
+    "mail_from": "your_email@gmail.com",
+    "mail_password": "pass",
     "mail_recipients": [
-        "m.motea@oberthur.com"
+        "first_recipient@mail.com"
     ],
     "mail_subject": "HUE ALARM TRIGGERED!",
-    "mail_username": "marius.motea@gmail.com",
+    "mail_username": "username@gmail.com",
     "smtp_port": 465,
-    "smtp_server": "smtp.gmail.com",
-    "virtual_light": "11"
+    "smtp_server": "smtp.gmail.com"
 }
