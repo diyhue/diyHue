@@ -18,6 +18,7 @@ bridge_config = defaultdict(lambda:defaultdict(str))
 lights_address = {}
 new_lights = {}
 sensors_state = {}
+capabilities = {"groups": {"available": 64},"lights": {"available": 63},"resourcelinks": {"available": 64},"rules": {"actions": {"available": 400},"available": 200,"conditions": {"available": 400}},"scenes": {"available": 200,"lightstates": {"available": 2048}},"schedules": {"available": 100},"sensors": {"available": 63,"clip": {"available": 63},"zgp": {"available": 63},"zll": {"available": 63}}}
 
 #load config files
 try:
@@ -662,6 +663,8 @@ class S(BaseHTTPRequestHandler):
                 if len(url_pices) == 3: #print entire config
                     self.wfile.write(json.dumps(bridge_config))
                 elif len(url_pices) == 4: #print specified object config
+                    if url_pices[3] == "capabilities":
+                        self.wfile.write(json.dumps(capabilities))
                     if url_pices[3] == "lights": #add changes from IKEA Tradfri gateway to bridge
                         syncWithLights()
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
