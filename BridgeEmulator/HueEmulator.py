@@ -176,7 +176,7 @@ def scheduler_processor():
                     timmer = schedule_time[2:]
                     (h, m, s) = timmer.split(':')
                     d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() + d).strftime("%Y-%m-%dT%H:%M:%S"):
+                    if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).strftime("%Y-%m-%dT%H:%M:%S"):
                         print("execute timmer: " + schedule + " withe delay " + str(delay))
                         sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                         bridge_config["schedules"][schedule]["status"] = "disabled"
@@ -193,6 +193,8 @@ def check_rule_condition(rule, ignore_ddx=False):
     for condition in bridge_config["rules"][rule]["conditions"]:
         url_pices = condition["address"].split('/')
         if condition["operator"] == "eq":
+            if url_pices[1] == "sensors" and sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] != datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
+                return [False, 0]
             if condition["value"] == "true":
                 if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
                     return [False, 0]
@@ -719,12 +721,12 @@ class S(BaseHTTPRequestHandler):
                     generate_sensors_state()
             else: #switch action request
                 for sensor in bridge_config["sensors"]:
-                    if bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]): #match senser id based on mac address
+                    if bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]) and bridge_config["sensors"][sensor]["config"]["on"]: #match senser id based on mac address
                         print("match sensor " + str(sensor))
                         if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
                             bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                             sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and bridge_config["sensors"][sensor]["config"]["on"] and "presence" in get_parameters:
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and "presence" in get_parameters:
                             if str(bridge_config["sensors"][sensor]["state"]["presence"]).lower() != get_parameters["presence"][0]:
                                 sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
@@ -733,11 +735,11 @@ class S(BaseHTTPRequestHandler):
                             if "virtual_light" in alarm_config and bridge_config["lights"][alarm_config["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensor]["state"]["presence"] == True:
                                 send_email(bridge_config["sensors"][sensor]["name"])
                                 #triger_horn() need development
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"] and "lightlevel" in get_parameters:
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and "lightlevel" in get_parameters:
                             if str(bridge_config["sensors"][sensor]["state"]["dark"]).lower() != get_parameters["dark"][0]:
                                 sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                rules_processor() #process the rules to perform the action configured by application
+                        rules_processor() #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
             if url_pices[2] in bridge_config["config"]["whitelist"]: #if username is in whitelist
@@ -792,12 +794,9 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "groups":
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
-                        post_dictionary.update({"created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
+                        post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                         if post_dictionary["localtime"].startswith("PT"):
-                            timmer = post_dictionary["localtime"][2:]
-                            (h, m, s) = timmer.split(':')
-                            d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                            post_dictionary.update({"starttime": (datetime.utcnow() + d).strftime("%Y-%m-%dT%H:%M:%S")})
+                            post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                         if not "status" in post_dictionary:
                             post_dictionary.update({"status": "enabled"})
                     elif url_pices[3] == "rules":
