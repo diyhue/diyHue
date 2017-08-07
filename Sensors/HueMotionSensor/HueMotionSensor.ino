@@ -1,6 +1,5 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
-#include <EEPROM.h>
 
 extern "C" {
 #include "gpio.h"
@@ -8,17 +7,17 @@ extern "C" {
 }
 
 /// BEGIN SETUP SENSOR PARAMETERS ///
-const char* ssid = "MikroTik";
-const char* password = "nustiuceparola";
+const char* ssid = "wifi-name";
+const char* password = "wifi-pass";
 
 //Set bridge ip
 const char* bridgeIp = "192.168.10.200";
 
 // seconds to sleep between light level is mesured and sent to bridge
-const int sleepTimeS = 900;
+const int sleepTimeS = 1200; // 1200 seconds => 20 minutes
 
 // depending on photoresistor you need to setup this value to trigger dark state when light level in room become low enough
-#define lightmultiplier 20
+#define lightmultiplier 30
 
 IPAddress strip_ip ( 192,  168,   10,  97);
 IPAddress gateway_ip ( 192,  168,   10,   1);
@@ -26,33 +25,24 @@ IPAddress subnet_mask(255, 255, 255,   0);
 
 /// END SETUP SENSOR PARAMETERS ////
 
-const char* switchType = "ZLLPresence";
-int counter, luminance;
-byte mac[6];
+int counter;
+byte rtcStore[6];
 
-void goingToSleep() {
+
+void goingToSleep(int seepSeconds, bool sleepRfMode) {
   yield();
   delay(100);
-  ESP.deepSleep(sleepTimeS * 1000000);
-  yield();
-}
-
-String macToStr(const uint8_t* mac) {
-  String result;
-  for (int i = 0; i < 6; ++i) {
-    result += String(mac[i], 16);
-    if (i < 5)
-      result += ':';
+  if (sleepRfMode) {
+    ESP.deepSleep(seepSeconds * 1000000, WAKE_RF_DISABLED);
+  } else {
+    ESP.deepSleep(1, WAKE_RF_DEFAULT);
   }
-  return result;
+  yield();
+  delay(200);
 }
 
-
-void setup() {
-  EEPROM.begin(512);
-  pinMode(5, INPUT);
-  pinMode(A0, INPUT);
-
+void sendRequest(uint8_t op) {
+  byte mac[6];
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
@@ -62,55 +52,122 @@ void setup() {
     delay(20);
   }
 
-  rst_info *rinfo;
-  rinfo = ESP.getResetInfoPtr();
-
-
-  WiFiClient client;
-
   String url = "/switch?mac=" + macToStr(mac);
-  if ((*rinfo).reason != REASON_DEEP_SLEEP_AWAKE) {
-    url += "&devicetype=" + (String)switchType;
-  } else {
-    //check if wake up was triggered by PIR or by internal clock (GPIO16)
-    if ((EEPROM.read(0) == 1 && digitalRead(5) == HIGH) || (EEPROM.read(0) == 0 && digitalRead(5) == LOW)) {
+  if (op == 0) {
+    url += "&devicetype=ZLLPresence";
+  } else if (op == 1) {
+    rtcStore[1] = 1;
+    url += "&presence=true";
+  } else if (op == 2) {
+    rtcStore[1] = 0;
+    url += "&presence=false";
+  } else if (op == 3) {
 
-      // sent light
-      luminance = (1024 - analogRead(A0)) * lightmultiplier;
+    int lightlevel = ((255 * rtcStore[4]) + rtcStore[5]) * lightmultiplier;
 
-      url += "&lightlevel=";
-      url += String(luminance);
-      if (luminance < 16000) {
-        url += "&dark=true";
-      } else {
-        url += "&dark=false";
-      }
-
-      if (luminance > 23000) {
-        url += "&daylight=true";
-      } else {
-        url += "&daylight=false";
-      }
+    url += "&lightlevel=";
+    url += String(lightlevel);
+    if (lightlevel < 16000) {
+      url += "&dark=true";
+      rtcStore[3] = 1;
     } else {
-      if (digitalRead(5) == HIGH) {
-        EEPROM.write(0, 1);
-        url += "&presence=true";
-      } else {
-        EEPROM.write(0, 0);
-        url += "&presence=false";
-      }
-      EEPROM.commit();
+      url += "&dark=false";
+      rtcStore[3] = 0;
+    }
+
+    if (lightlevel > 23000) {
+      url += "&daylight=true";
+    } else {
+      url += "&daylight=false";
     }
   }
+
+  WiFiClient client;
 
   client.connect(bridgeIp, 80);
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + bridgeIp + "\r\n" +
                "Connection: close\r\n\r\n");
-
 }
 
-void loop() {
-  goingToSleep();
-  delay(200);
+String macToStr(const uint8_t* mac) {
+  String result;
+  for (uint8_t i = 0; i < 6; ++i) {
+    result += String(mac[i], 16);
+    if (i < 5)
+      result += ':';
+  }
+  return result;
 }
+
+
+void setup() {
+  system_rtc_mem_read(64, rtcStore, 6);
+  if (rtcStore[0] == 1) {
+    // wake up in rf mode
+    rtcStore[0] = 0;
+    sendRequest(rtcStore[1]);
+    system_rtc_mem_write(64, rtcStore, 6);
+    if (rtcStore[2] == 1) {
+      goingToSleep(30, true);
+    } else {
+      goingToSleep(sleepTimeS, true);
+    }
+
+  } else {
+    //wake up in non rf mode to avoid rf interferences
+    pinMode(4, OUTPUT);
+    digitalWrite(4, HIGH);
+    pinMode(5, INPUT);
+    pinMode(A0, INPUT);
+    rtcStore[0] = 1;
+
+    rst_info *rinfo;
+    rinfo = ESP.getResetInfoPtr();
+    uint8_t operation;
+
+    if ((*rinfo).reason != REASON_DEEP_SLEEP_AWAKE) {
+      operation = 0; //register the senzor
+    } else if (digitalRead(5) == HIGH) {
+      if (rtcStore[2] == 0) {
+        operation = 1;
+        rtcStore[2] = 1;
+      } else {
+        if (rtcStore[3]  == 0) {
+          operation = 3;
+        } else {
+          //check again in 30seconds
+          goingToSleep(30, true);
+        }
+      }
+    } else {
+      if (rtcStore[2] == 0) {
+        operation = 3;
+      } else {
+        operation = 2;
+        rtcStore[2] = 0;
+      }
+      delay(1000);
+    }
+
+    if (operation == 3) {
+      int luminance = analogRead(A0);
+      rtcStore[4] = 0;
+      while (luminance > 255) {
+        luminance -= 255;
+        rtcStore[4]++;
+      }
+      rtcStore[5] = luminance;
+    }
+
+    rtcStore[1] = operation;
+
+    system_rtc_mem_write(64, rtcStore, 6);
+
+    //reboot in rf mode
+    goingToSleep(0, false);
+
+  }
+}
+
+void loop() { }

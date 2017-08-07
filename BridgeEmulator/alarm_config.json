@@ -1,0 +1,11 @@
+{
+    "mail_from": "your_email@gmail.com",
+    "mail_password": "pass",
+    "mail_recipients": [
+        "first_recipient@mail.com"
+    ],
+    "mail_subject": "HUE ALARM TRIGGERED!",
+    "mail_username": "username@gmail.com",
+    "smtp_port": 465,
+    "smtp_server": "smtp.gmail.com"
+}
