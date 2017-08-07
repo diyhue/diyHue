@@ -176,7 +176,7 @@ def scheduler_processor():
                     timmer = schedule_time[2:]
                     (h, m, s) = timmer.split(':')
                     d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() + d).strftime("%Y-%m-%dT%H:%M:%S"):
+                    if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).strftime("%Y-%m-%dT%H:%M:%S"):
                         print("execute timmer: " + schedule + " withe delay " + str(delay))
                         sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                         bridge_config["schedules"][schedule]["status"] = "disabled"
