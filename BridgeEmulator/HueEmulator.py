@@ -70,7 +70,7 @@ try:
                     i = 1
                     while (str(i)) in bridge_config["lights"]:
                         i += 1
-                    bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Alarm", "uniqueid": "1234567ffffff", "modelid": "LLC012", "swversion": "66009461"}
+                    bridge_config["lights"][str(i)] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.690456, 0.295907], "ct": 461, "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}, "type": "Extended color light", "name": "Alarm", "uniqueid": "1234567ffffff", "modelid": "LLC012", "swversion": "66009461"}
                     alarm_config["virtual_light"] = str(i)
                     with open('alarm_config.json', 'w') as fp:
                             json.dump(alarm_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
@@ -186,62 +186,75 @@ def scheduler_processor():
                         sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
         if (datetime.now().strftime("%M:%S") == "00:00"): #auto save configuration every hour
             save_config()
-        rules_processor(True)
         sleep(1)
 
+def check_rule_condition(rule, ignore_ddx=False):
+    ddx = 0
+    for condition in bridge_config["rules"][rule]["conditions"]:
+        url_pices = condition["address"].split('/')
+        if condition["operator"] == "eq":
+            if condition["value"] == "true":
+                if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                    return [False, 0]
+            elif condition["value"] == "false":
+                if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                    return [False, 0]
+            else:
+                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
+                    return [False, 0]
+        elif condition["operator"] == "gt":
+            if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
+                return [False, 0]
+        elif condition["operator"] == "lt":
+            if int(not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
+                return [False, 0]
+        elif condition["operator"] == "dx":
+            if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
+                return [False, 0]
+        elif condition["operator"] == "in":
+            periods = condition["value"].split('/')
+            if condition["value"][0] == "T":
+                timeStart = datetime.strptime(periods[0], "T%H:%M:%S").time()
+                timeEnd = datetime.strptime(periods[1], "T%H:%M:%S").time()
+                now_time = datetime.now().time()
+                if timeStart < timeEnd:
+                    if not timeStart <= now_time <= timeEnd:
+                        return [False, 0]
+                else:
+                    if not (timeStart <= now_time or now_time <= timeEnd):
+                        return [False, 0]
+        elif condition["operator"] == "ddx" and ignore_ddx is False:
+            if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
+                    return [False, 0]
+            else:
+                ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
+    return [True, ddx]
 
-def rules_processor(scheduler=False):
+def ddx_recheck(rule, ddx_delay):
+    sleep(ddx_delay)
+    rule_state = check_rule_condition(rule, True)
+    if rule_state[0]: #if all conditions are meet again
+        print("delayed rule " + rule + " is triggered")
+        bridge_config["rules"][rule]["lasttriggered"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        bridge_config["rules"][rule]["timestriggered"] += 1
+        for action in bridge_config["rules"][rule]["actions"]:
+            Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
+
+def rules_processor():
     bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") #required for operator dx to address /config/localtime
     for rule in bridge_config["rules"].iterkeys():
         if bridge_config["rules"][rule]["status"] == "enabled":
-            execute = True
-            for condition in bridge_config["rules"][rule]["conditions"]:
-                url_pices = condition["address"].split('/')
-                if condition["operator"] == "eq":
-                    if condition["value"] == "true":
-                        if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
-                            execute = False
-                    elif condition["value"] == "false":
-                        if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
-                            execute = False
-                    else:
-                        if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
-                            execute = False
-                elif condition["operator"] == "gt":
-                    if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
-                        execute = False
-                elif condition["operator"] == "lt":
-                    if int(not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
-                        execute = False
-                elif condition["operator"] == "dx":
-                    if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
-                        execute = False
-                elif condition["operator"] == "ddx":
-                    if not scheduler:
-                        execute = False
-                    else:
-                        ddx_time = datetime.strptime(condition["value"],"PT%H:%M:%S")
-                        if not (datetime.strptime(sensors_state[url_pices[2]][url_pices[3]][url_pices[4]],"%Y-%m-%dT%H:%M:%S") + timedelta(hours=ddx_time.hour, minutes=ddx_time.minute, seconds=ddx_time.second)) == datetime.now().replace(microsecond=0):
-                            execute = False
-                elif condition["operator"] == "in":
-                    periods = condition["value"].split('/')
-                    if condition["value"][0] == "T":
-                        timeStart = datetime.strptime(periods[0], "T%H:%M:%S").time()
-                        timeEnd = datetime.strptime(periods[1], "T%H:%M:%S").time()
-                        now_time = datetime.now().time()
-                        if timeStart < timeEnd:
-                            if not timeStart <= now_time <= timeEnd:
-                                execute = False
-                        else:
-                            if not (timeStart <= now_time or now_time <= timeEnd):
-                                execute = False
-
-            if execute:
-                print("rule " + rule + " is triggered")
-                bridge_config["rules"][rule]["lasttriggered"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                bridge_config["rules"][rule]["timestriggered"] += 1
-                for action in bridge_config["rules"][rule]["actions"]:
-                    Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
+            rule_result = check_rule_condition(rule)
+            if rule_result[0] and bridge_config["rules"][rule]["lasttriggered"] != datetime.now().strftime("%Y-%m-%dT%H:%M:%S"): #if all condition are meet + anti loopback
+                if rule_result[1] == 0: #if not ddx rule
+                    print("rule " + rule + " is triggered")
+                    bridge_config["rules"][rule]["lasttriggered"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                    bridge_config["rules"][rule]["timestriggered"] += 1
+                    for action in bridge_config["rules"][rule]["actions"]:
+                        Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
+                else: #if ddx rule
+                    print("ddx rule " + rule + " will be re validated after " + str(rule_result[1]) + " seconds")
+                    Thread(target=ddx_recheck, args=[rule, rule_result[1]]).start()
 
 def sendRequest(url, method, data, time_out=3, delay=0):
     if delay != 0:
@@ -717,7 +730,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
 
                             #if alarm is activ trigger the alarm
-                            if "virtual_light" in alarm_config and bridge_config["lights"][alarm_config["virtual_light"]]["state"]["on"]:
+                            if "virtual_light" in alarm_config and bridge_config["lights"][alarm_config["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensor]["state"]["presence"] == True:
                                 send_email(bridge_config["sensors"][sensor]["name"])
                                 #triger_horn() need development
                         elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["config"]["on"] and "lightlevel" in get_parameters:
@@ -844,11 +857,13 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
 
                 if url_pices[3] == "sensors":
+                    pprint(put_dictionary)
                     for key, value in put_dictionary.iteritems():
                         if type(value) is dict:
                             bridge_config[url_pices[3]][url_pices[4]][key].update(value)
                         else:
                             bridge_config[url_pices[3]][url_pices[4]][key] = value
+                    rules_processor()
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
@@ -909,8 +924,7 @@ class S(BaseHTTPRequestHandler):
                 if url_pices[3] == "sensors" and url_pices[5] == "state":
                     for key in put_dictionary.iterkeys():
                         sensors_state[url_pices[4]]["state"].update({key: datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                    if "flag" in put_dictionary: #if a scheduler change te flag of a logical sensor then process the rules.
-                        rules_processor()
+                    rules_processor()
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
                 try:
@@ -935,8 +949,11 @@ class S(BaseHTTPRequestHandler):
                 for link in bridge_config["resourcelinks"][url_pices[4]]["links"]:
                     pices = link.split('/')
                     if pices[1] not in ["groups","lights"]:
-                        del bridge_config[pices[1]][pices[2]]
-                        print("delete " + link)
+                        try:
+                            del bridge_config[pices[1]][pices[2]]
+                            print("delete " + link)
+                        except:
+                            print(link + " not found, very likely it was already deleted by app")
             del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del lights_address[url_pices[4]]
