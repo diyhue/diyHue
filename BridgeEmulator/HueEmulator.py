@@ -188,13 +188,14 @@ def scheduler_processor():
             save_config()
         sleep(1)
 
-def check_rule_condition(rule, ignore_ddx=False):
+def check_rule_conditions(rule, sensor, ignore_ddx=False):
     ddx = 0
+    sensor_found = False
     for condition in bridge_config["rules"][rule]["conditions"]:
         url_pices = condition["address"].split('/')
+        if url_pices[1] == "sensors" and sensor == url_pices[2]:
+            sensor_found = True
         if condition["operator"] == "eq":
-            if url_pices[1] == "sensors" and sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] != datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
-                return [False, 0]
             if condition["value"] == "true":
                 if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
                     return [False, 0]
@@ -230,11 +231,14 @@ def check_rule_condition(rule, ignore_ddx=False):
                     return [False, 0]
             else:
                 ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
-    return [True, ddx]
+    if sensor_found:
+        return [True, ddx]
+    else:
+        return [False, ddx]
 
-def ddx_recheck(rule, ddx_delay):
+def ddx_recheck(rule, sensor, ddx_delay):
     sleep(ddx_delay)
-    rule_state = check_rule_condition(rule, True)
+    rule_state = check_rule_conditions(rule, sensor, True)
     if rule_state[0]: #if all conditions are meet again
         print("delayed rule " + rule + " is triggered")
         bridge_config["rules"][rule]["lasttriggered"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -242,11 +246,11 @@ def ddx_recheck(rule, ddx_delay):
         for action in bridge_config["rules"][rule]["actions"]:
             Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
 
-def rules_processor():
+def rules_processor(sensor):
     bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") #required for operator dx to address /config/localtime
     for rule in bridge_config["rules"].iterkeys():
         if bridge_config["rules"][rule]["status"] == "enabled":
-            rule_result = check_rule_condition(rule)
+            rule_result = check_rule_conditions(rule, sensor)
             if rule_result[0] and bridge_config["rules"][rule]["lasttriggered"] != datetime.now().strftime("%Y-%m-%dT%H:%M:%S"): #if all condition are meet + anti loopback
                 if rule_result[1] == 0: #if not ddx rule
                     print("rule " + rule + " is triggered")
@@ -256,7 +260,7 @@ def rules_processor():
                         Thread(target=sendRequest, args=["/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"])]).start()
                 else: #if ddx rule
                     print("ddx rule " + rule + " will be re validated after " + str(rule_result[1]) + " seconds")
-                    Thread(target=ddx_recheck, args=[rule, rule_result[1]]).start()
+                    Thread(target=ddx_recheck, args=[rule, sensor, rule_result[1]]).start()
 
 def sendRequest(url, method, data, time_out=3, delay=0):
     if delay != 0:
@@ -726,11 +730,12 @@ class S(BaseHTTPRequestHandler):
                         if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
                             bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                             sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                            rules_processor(sensor)
                         elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and "presence" in get_parameters:
                             if str(bridge_config["sensors"][sensor]["state"]["presence"]).lower() != get_parameters["presence"][0]:
                                 sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-
+                            rules_processor(sensor)
                             #if alarm is activ trigger the alarm
                             if "virtual_light" in alarm_config and bridge_config["lights"][alarm_config["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensor]["state"]["presence"] == True:
                                 send_email(bridge_config["sensors"][sensor]["name"])
@@ -739,7 +744,7 @@ class S(BaseHTTPRequestHandler):
                             if str(bridge_config["sensors"][sensor]["state"]["dark"]).lower() != get_parameters["dark"][0]:
                                 sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                        rules_processor() #process the rules to perform the action configured by application
+                            rules_processor(sensor) #process the rules to perform the action configured by application
         else:
             url_pices = self.path.split('/')
             if url_pices[2] in bridge_config["config"]["whitelist"]: #if username is in whitelist
@@ -862,7 +867,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config[url_pices[3]][url_pices[4]][key].update(value)
                         else:
                             bridge_config[url_pices[3]][url_pices[4]][key] = value
-                    rules_processor()
+                    rules_processor(url_pices[4])
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
@@ -923,7 +928,7 @@ class S(BaseHTTPRequestHandler):
                 if url_pices[3] == "sensors" and url_pices[5] == "state":
                     for key in put_dictionary.iterkeys():
                         sensors_state[url_pices[4]]["state"].update({key: datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                    rules_processor()
+                    rules_processor(url_pices[4])
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
                 try:
