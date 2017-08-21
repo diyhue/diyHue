@@ -5,7 +5,7 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
 
 ### Requirements:
  - python
- - nmap package for lights autodiscover
+ - nmap package for lights autodiscover ```sudo apt install namp```
 
 ## TO DO
  - ~~control IKEA Trådfri lights from HUE applications~~
@@ -37,15 +37,15 @@ Important: coap-client-linux binary is compiled for arm devices like raspberry p
 esp8266_milight_hub is required https://github.com/sidoh/esp8266_milight_hub.
 Open http://{bridgeIP}/milight, complete the form and click Save. You need to repet this step for every light as there is no way to retrieve the list of lights from milight hub.
 
-Is possible to convert MiLight bulbs to wifi using any ESP8266 module. I convert one RGB-CCT bulb with ESP-12S module (picture available) in less than 30 minutes. From original board you will need just the 3.3v regulator and the led drivers (NPN transistors for colored leds, MOSFET for white leds) + nearby resistors that are connected to transistors base/gate, other components can be disconnected/removed, mandatory disconnect the IC that control the leds because will enter in conflict with ESP module. I connect GPIO12/13/14 to resistors that point to the base of RGB transistors and GPIO4/5 directly to MOSFET gates (not thru resistors because these are connected to ground). For stability an extra capacitor is required, it seems esp consume a little more power.
+Is possible to convert MiLight bulbs to wifi using any ESP8266 module. I convert one RGB-CCT bulb with ESP-12S module (picture available) in less than 30 minutes. From original board you will need just the 3.3v regulator (not recommended because of low power) and the led drivers (NPN transistors for colored leds, MOSFET for white leds) + nearby resistors that are connected to transistors base/gate, other components can be disconnected/removed, mandatory disconnect the IC that control the leds because will enter in conflict with ESP module. I connect GPIO12/13/14 to resistors that point to the base of RGB transistors and GPIO4/5 directly to MOSFET gates (not thru resistors because these are connected to ground). For stability an extra capacitor is required on power line.
 
 ## NEOPIXEL STRIPS:
-Wi-fi connection is setup using WiFiManager https://github.com/tzapu/WiFiManager
+Wi-fi connection is setup using WiFiManager https://github.com/tzapu/WiFiManager so you must connect to wifi named "New Hue Light" and open in browser http://192.168.4.1/ to setup the connection to your wifi network.
 There is support for both WS2812B (rgb) and SK6812 (rgbw) smart leds (neopixels). Data in pin of the strip must be connected to rx pin of esp8266 device. In order to compile the sketch you must download NeoPixelBus (by Makuna) and WiFiManager (by tzapu) libraries available in Arduino library manager. Is possible to emulate more lights in one strip by setting lightsCount value to any value. I recommend about 3 lights per strip in order to have nice scenes.
 
 ## GENERIC PWM LIGHTS:
 
-Most of wifi bulbs and strip controllers from the market are esp8266 based and control the brightness of leds using pwm. The only real difference from them is the number/order of the output pins. If you intend to buy some cheap wifi bulbs/strips and want to use this project you will need to check how hard is to flash the firmware in that light. So far i use only "Color Dreams" wifi bulbs and i was not able to flash the firmware easy using external serial adapter connected directly to ESP8266 pins. However for me was not that hard to replace the SPI flash chip from these bulbs with ones already flashed on WEMOS d1 mini pro, but i have some electronics skills and was not first time when i replace an SOT8 chip.
+Most of wifi bulbs and strip controllers from the market are esp8266 based and control the brightness of leds using pwm. The only real difference from them is the number/order of the output pins. You will find sketches for almost all typesof bulbs: cct, rgb, rgbw, rgb_cct. If you intend to buy some cheap wifi bulbs/strips and want to use this project you will need to check how hard is to flash the firmware in that light. So far i use only "Color Dreams" wifi bulbs and ~~i was not able to flash the firmware easy using external serial adapter connected directly to ESP8266 pins. However for me was not that hard to replace the SPI flash chip from these bulbs with ones already flashed on WEMOS d1 mini pro, but i have some electronics skills and was not first time when i replace an SOT8 chip~~ is possible to flash with external serial adapter, check issue #26 .
 
 #### Options in skeches:
  - ```lightsCount x ``` //number of emulated lights per strip, available only for neopixels stript

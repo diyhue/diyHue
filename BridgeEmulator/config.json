@@ -1,7 +1,7 @@
 {
     "config": {
         "UTC": "2017-04-26T20:16:20",
-        "apiversion": "1.15.0",
+        "apiversion": "1.19.0",
         "bridgeid": "B827EBC76B26",
         "datastoreversion": 59,
         "dhcp": true,
@@ -17,7 +17,7 @@
         "portalservices": false,
         "proxyaddress": "none",
         "proxyport": 0,
-        "swversion": "01036659",
+        "swversion": "1705121051",
         "timezone": "Europe/Bucharest",
         "whitelist": {},
         "zigbeechannel": 15
