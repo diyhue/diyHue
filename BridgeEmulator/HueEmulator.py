@@ -702,6 +702,8 @@ class S(BaseHTTPRequestHandler):
                         self.wfile.write(webform_hue() + "<br> " + str(lights_found) + " lights where found")
                 else:
                     self.wfile.write(webform_hue() + "<br> unable to connect to hue bridge")
+            else:
+                self.wfile.write(webform_hue())
         elif self.path.startswith("/switch"): #request from an ESP8266 switch or sensor
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
