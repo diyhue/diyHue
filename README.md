@@ -8,6 +8,7 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
  - nmap package for lights autodiscover ```sudo apt install namp```
 
 ## TO DO
+ - Working directly with ZigBee lights, switches and sensors with RaspBee module
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
  - On/Off control for other home devices using virtual lights
