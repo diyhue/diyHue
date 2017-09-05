@@ -185,6 +185,8 @@ def scheduler_processor():
                     if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                         print("execute schedule: " + schedule + " withe delay " + str(delay))
                         sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
+                        if bridge_config["schedules"][schedule]["autodelete"]:
+                            del bridge_config["schedules"][schedule]
         if (datetime.now().strftime("%M:%S") == "00:00"): #auto save configuration every hour
             save_config()
         sleep(1)
@@ -702,6 +704,8 @@ class S(BaseHTTPRequestHandler):
                         self.wfile.write(webform_hue() + "<br> " + str(lights_found) + " lights where found")
                 else:
                     self.wfile.write(webform_hue() + "<br> unable to connect to hue bridge")
+            else:
+                self.wfile.write(webform_hue())
         elif self.path.startswith("/switch"): #request from an ESP8266 switch or sensor
             get_parameters = parse_qs(urlparse(self.path).query)
             pprint(get_parameters)
@@ -796,11 +800,13 @@ class S(BaseHTTPRequestHandler):
                     while (str(i)) in bridge_config[url_pices[3]]:
                         i += 1
                     if url_pices[3] == "scenes":
-                        post_dictionary.update({"lightstates": {}, "version": 2, "picture": "", "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                        post_dictionary.update({"lightstates": {}, "version": 2, "picture": "", "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
+                        if "locked" not in post_dictionary:
+                            post_dictionary["locked"] = False
                     elif url_pices[3] == "groups":
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
-                        post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                        post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": post_dictionary["localtime"]})
                         if post_dictionary["localtime"].startswith("PT"):
                             post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                         if not "status" in post_dictionary:
@@ -812,6 +818,8 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "sensors":
                         if post_dictionary["modelid"] == "PHWA01":
                             post_dictionary.update({"state": {"status": 0}})
+                    elif url_pices[3] == "resourcelinks":
+                        post_dictionary.update({"owner" :url_pices[2]})
                     generate_sensors_state()
                     bridge_config[url_pices[3]][str(i)] = post_dictionary
                     print(json.dumps([{"success": {"id": str(i)}}], sort_keys=True, indent=4, separators=(',', ': ')))
