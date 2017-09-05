@@ -361,7 +361,7 @@ def sendLightRequest(light, data):
                 elif key == "bri":
                     payload["brightness"] = value
                 elif key == "ct":
-                    payload["color_temp"] = int((500 - value) / 1.6 + 153)
+                    payload["color_temp"] = int(value / 1.6 + 153)
                 elif key == "hue":
                     payload["hue"] = value / 180
                 elif key == "sat":
