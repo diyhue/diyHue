@@ -525,7 +525,7 @@ def websocketClient():
                     if "state" in message:
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         for key in message["state"].iterkeys():
-                            sensors_state[bridge_sensor_id]["state"][key] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                            sensors_state[bridge_sensor_id]["state"][key] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         rulesProcessor(bridge_sensor_id)
                         if "buttonevent" in message["state"]:
                             if message["state"]["buttonevent"] in [2001, 3001, 4001, 5001]:
@@ -999,7 +999,7 @@ class S(BaseHTTPRequestHandler):
                                 del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"]
                             if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
                                 bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
-                            elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                            elif bridge_config["lights"][light]["state"]["colormode"] == "hs" and "hue" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
                                 bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
                                 bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
 
