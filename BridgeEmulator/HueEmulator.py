@@ -749,9 +749,10 @@ def updateAllLights():
         if "colormode" in bridge_config["lights"][light]["state"]:
             if bridge_config["lights"][light]["state"]["colormode"] in ["xy", "ct"]:
                 payload[bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
-            elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+            elif bridge_config["lights"][light]["state"]["colormode"] == "hs" and "hue" in bridge_config["lights"][light]["state"]:
                 payload["hue"] = bridge_config["lights"][light]["state"]["hue"]
                 payload["sat"] = bridge_config["lights"][light]["state"]["sat"]
+
         Thread(target=sendLightRequest, args=[light, payload]).start()
         sleep(0.5)
         print("update status for light " + light)
