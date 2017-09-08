@@ -35,8 +35,8 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
   Deconz installation (Warning GUI env required!):
       1. execute raspi-config and turn off the serial login as this will enter in conflict with deconz (do not disable also the hardware serial port)
       2. Follow the steps from here: https://github.com/dresden-elektronik/deconz-rest-plugin  if you receive the error "/usr/include/c++/6/cstdlib:75:25: fatal error: stdlib.h: No such file or directory" then replace ```qmake``` command with ```qmake QMAKE_CFLAGS_ISYSTEM=```
-      3. start deconz and add all zigbee devices. This is done by clicking "Open network" in settings and then reset the devices. Don't configure any device in deconz.
-      4. set seconz to run on port 8080. This is second default port if 80 is used, but better is to use --http-port=8080 argument
+      3. edit deconz systemd script to bind on port 8080: ```sudo vim /etc/systemd/system/deconz.service``` replace ```--http-port=80``` with ```--http-port=8080```
+      4. start deconz service browse http://{hue emulator ip}:8080 and add all zigbee devices. This is done by clicking "Open network" in settings and then reset the devices. Don't configure any device in deconz.
       5. click "Unlock Gateway" in settings to allow hue emulator to register
       6. edit config.json and change the deconz => enabled to true
       7. start hue emulator (must in output the import of all zigbee devices)
