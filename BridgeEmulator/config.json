@@ -1,4 +1,57 @@
 {
+  "alarm_config": {
+        "mail_from": "your_email@gmail.com",
+        "mail_username": "",
+        "mail_password": "",
+        "mail_recipients": [
+            "first_recipient@mail.com",
+            "second_recipient@mail.com"
+        ],
+        "mail_subject": "HUE ALARM TRIGGERED!",
+        "smtp_port": 465,
+        "smtp_server": "smtp.gmail.com"
+    },
+    "capabilities": {
+        "groups": {
+            "available": 64
+        },
+        "lights": {
+            "available": 63
+        },
+        "resourcelinks": {
+            "available": 64
+        },
+        "rules": {
+            "actions": {
+                "available": 400
+            },
+            "available": 200,
+            "conditions": {
+                "available": 400
+            }
+        },
+        "scenes": {
+            "available": 200,
+            "lightstates": {
+                "available": 2048
+            }
+        },
+        "schedules": {
+            "available": 100
+        },
+        "sensors": {
+            "available": 63,
+            "clip": {
+                "available": 63
+            },
+            "zgp": {
+                "available": 63
+            },
+            "zll": {
+                "available": 63
+            }
+        }
+    },
     "config": {
         "UTC": "2017-04-26T20:16:20",
         "apiversion": "1.19.0",
@@ -22,11 +75,16 @@
         "whitelist": {},
         "zigbeechannel": 15
     },
+    "deconz": {
+        "enabled": false,
+        "sensors": {}
+    },
     "groups": {},
     "lights": {},
     "resourcelinks": {},
     "rules": {},
     "scenes": {},
     "schedules": {},
-    "sensors": {}
+    "sensors": {},
+    "lights_address": {}
 }

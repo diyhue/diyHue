@@ -5,11 +5,16 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
 
 ### Requirements:
  - python
- - nmap package for lights autodiscover ```sudo apt install namp```
+ - nmap package for esp8266 lights autodiscover ```sudo apt install namp```
+ - python ws4py package only if zigbee module is used ```sudo pip install ws4py```
+
 
 ## TO DO
+ - Working directly with ZigBee lights, switches and sensors with RaspBee module
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
+ - On/Off control for other home devices using virtual lights
+ - Alarm (~~email notification~~ + eps8266 horn)
 
 ## Working futures:
   - Control lights (all functions)
@@ -23,7 +28,21 @@ This project emulates a Philips Hue Bridge that is able to control Hue lights (u
 
 ## Not working:
   - Home & Away futures (require remote api that is not public)
-  - Schedules with random time (no application use this)
+
+
+## ZIGBEE LIGHTS, SENSORS AND SWITCHES
+  Starting with version 2 the zigbee module is supported in order control zigbee lights directly and to be able to use zigbee switches and sensors (currently only IKEA Tradfri are supported).
+  Deconz installation (Warning GUI env required!):
+      1. execute raspi-config and turn off the serial login as this will enter in conflict with deconz (do not disable also the hardware serial port)
+      2. Follow the steps from here: https://github.com/dresden-elektronik/deconz-rest-plugin  if you receive the error "/usr/include/c++/6/cstdlib:75:25: fatal error: stdlib.h: No such file or directory" then replace ```qmake``` command with ```qmake QMAKE_CFLAGS_ISYSTEM=```
+      3. start deconz and add all zigbee devices. This is done by clicking "Open network" in settings and then reset the devices. Don't configure any device in deconz.
+      4. set seconz to run on port 8080. This is second default port if 80 is used, but better is to use --http-port=8080 argument
+      5. click "Unlock Gateway" in settings to allow hue emulator to register
+      6. edit config.json and change the deconz => enabled to true
+      7. start hue emulator (must in output the import of all zigbee devices)
+
+  To configure IKEA Remotes open http://{hue emulator ip}/deconz . When you click save will look like noting happened, but all rules must be already created. Test the remotes.
+  To configure IKEA Motion Sensor open official Hue application and go to "Accesory Setup"
 
 
 ## HUE LIGHTS
@@ -77,10 +96,14 @@ On sensor power on there will be a GET request sent to bridge , ex: http://{brid
 ## MOTION SENSOR:
 
 #### How is working:
-Exactly like switches the sensor will be registered on power on with GET request http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLPresence and configuration will be done from Hue application. ESP8266 will wake up from deep sleep on every PIR output change (negative to positive or positive to negative) and at every 10 minutes to send light sensor data. GPIO5 pin is used to read if wake up was triggered because new motion was detected or if there is no motion anymore. Request example: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&lightlevel=46900&dark=false&daylight=true&presence=true. Is important to choose a low power PIR that can run on batteries for many months and that is able to keep positive output for at last 5 seconds when triggered. The PIR used in my example is HC-SR501, most common used in DIY projects. To increase the battery life i remove the voltage regulator to 3.3V because this become useless on batteries. Photoresistor used by me has a range 33Kohm - 1Kohm. GPIO4 will output +3V only when light level is measured to lower power consumption.  
-IMPORTANT: Some PIR sensors trigger lot of false positive because of RF interferences with ESP8266. You can try to put a couple of layers of aluminum foil between the PIR and the ESP8266. I recommend to use a PIR that is able to detect such interferences (maybe wireless pir's have this future by default)
+Exactly like switches the sensor will be registered on power on with GET request http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLPresence and configuration will be done from Hue application. ESP8266 will wake up from deep sleep on every PIR positive signal on GPIO5 pin and at every 20 minutes to send light sensor data. Request example: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&lightlevel=46900&dark=false&daylight=true&presence=true. Is important to choose a low power PIR that can run on batteries for many months. The PIR used in my example is HC-SR501, most common used in DIY projects. To increase the battery life i remove the voltage regulator to 3.3V because this become useless on batteries. GPIO4 will output +3V only when light level is measured to lower power consumption.
+
+## ALARM
+Is possible to receive email notification when one motion sensor is triggered while alarm is active. To configure the alarm you must first edit the file config.json and add your smtp credentials. On first execution HueEmulator.py will send a test email and if this is successful sent a new virtual light named "Alarm" will be automatically created. You will need to create a dummy room to control this virtual light. Turn this light on/off to enable/disable the alarm.
 
 [![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
+
+I push updates fast so if you want to notified just add this repo to watch
 
 Contributions are welcomed  
 
