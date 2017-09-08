@@ -1,5 +1,5 @@
 ## diyHue
-This project emulates a Philips Hue Bridge that is able to control ZigBee lights (using Radpbee module or original Hue Bridge or IKEA Tradfri Gateway), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
+This project emulates a Philips Hue Bridge that is able to control ZigBee lights (using Raspbee module or original Hue Bridge or IKEA Tradfri Gateway), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
 
@@ -29,7 +29,6 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 ## Not working:
   - Home & Away futures (require remote api that is not public)
 
-
 ## ZIGBEE LIGHTS, SENSORS AND SWITCHES
   Starting with version 2 the zigbee module is supported in order control zigbee lights directly and to be able to use zigbee switches and sensors (currently only IKEA Tradfri are supported).
   Deconz installation (Warning GUI env required!):
@@ -43,7 +42,6 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
   To configure IKEA Remotes open http://{hue emulator ip}/deconz . When you click save will look like noting happened, but all rules must be already created. Test the remotes.
   To configure IKEA Motion Sensor open official Hue application and go to "Accesory Setup"
-
 
 ## HUE LIGHTS
   Open http://{bridgeIP}/hue, type the bridge ip and before to click "Save" press the link button on the Hue Bridge. The total number of lights copied to Bridge Emulator will be displayed.
@@ -99,6 +97,7 @@ On sensor power on there will be a GET request sent to bridge , ex: http://{brid
 Exactly like switches the sensor will be registered on power on with GET request http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&devicetype=ZLLPresence and configuration will be done from Hue application. ESP8266 will wake up from deep sleep on every PIR positive signal on GPIO5 pin and at every 20 minutes to send light sensor data. Request example: http://{bridgeIP}/switch?mac=xx:xx:xx:xx:xx:xx&lightlevel=46900&dark=false&daylight=true&presence=true. Is important to choose a low power PIR that can run on batteries for many months. The PIR used in my example is HC-SR501, most common used in DIY projects. To increase the battery life i remove the voltage regulator to 3.3V because this become useless on batteries. GPIO4 will output +3V only when light level is measured to lower power consumption.
 
 ## ALARM
+
 Is possible to receive email notification when one motion sensor is triggered while alarm is active. To configure the alarm you must first edit the file config.json and add your smtp credentials. On first execution HueEmulator.py will send a test email and if this is successful sent a new virtual light named "Alarm" will be automatically created. You will need to create a dummy room to control this virtual light. Turn this light on/off to enable/disable the alarm.
 
 [![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
