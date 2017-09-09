@@ -349,7 +349,7 @@ def sendLightRequest(light, data):
                     url += "&x=" + str(value[0]) + "&y=" + str(value[1])
                 else:
                     url += "&" + key + "=" + str(value)
-        elif bridge_config["lights_address"][light]["protocol"] == "hue" or bridge_config["lights_address"][light]["protocol"] == "deconz": #Original Hue light or Deconz light
+        elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
             payload = data
@@ -479,9 +479,9 @@ def syncWithLights(): #update Hue Bridge lights states
             else:
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
-        elif bridge_config["lights_address"][light]["protocol"] == "hue":
-            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"), "GET", "{}", 1)
-            bridge_config["lights"][light]["state"].update(light_data)
+        elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]:
+            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
+            bridge_config["lights"][light]["state"].update(light_data["state"])
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
             bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
