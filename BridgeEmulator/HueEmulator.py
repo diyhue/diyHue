@@ -501,7 +501,7 @@ def longPressButton(sensor, buttonevent):
     sleep(1)
     while bridge_config["sensors"][sensor]["state"]["buttonevent"] == buttonevent:
         print("still pressed")
-        sensors_state[sensor]["state"]["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         rulesProcessor(sensor)
         sleep(0.9)
     return
