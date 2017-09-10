@@ -175,7 +175,7 @@ def schedulerProcessor():
         sleep(1)
 
 def addTradfriDimmer(sensor_id, group_id):
-    rules = [{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": True }, "method":"PUT" },{ "address":"/groups/" + group_id + "/action", "body":{ "bri": 1 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"false" } ], "name":"Remote "+ sensor_id + " turn on" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on":False }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/state/bri", "operator":"eq", "value":"1" }], "name":"Remote "+ sensor_id + " turn off" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":-56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right"}]
+    rules = [{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": True }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"false" } ], "name":"Remote "+ sensor_id + " turn on" }, {"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": False }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true" } ], "name":"Remote "+ sensor_id + " turn off" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":-56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right"}]
     resourcelinkId = nextFreeId("resourcelinks")
     bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/" + sensor_id], "name": "Emulator rules " + sensor_id,"owner": bridge_config["config"]["whitelist"].keys()[0]}
     for rule in rules:
@@ -676,7 +676,10 @@ def webformIndex():
             content += "<label for=\"" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
             for group in bridge_config["groups"].iterkeys():
-                content += "<option value=\"" + group + "\">" + bridge_config["groups"][group]["name"] + "</option>\n"
+                if bridge_config["deconz"]["sensors"][deconzSensor]["room"] == group:
+                    content += "<option value=\"" + group + "\" selected>" + bridge_config["groups"][group]["name"] + "</option>\n"
+                else:
+                    content += "<option value=\"" + group + "\">" + bridge_config["groups"][group]["name"] + "</option>\n"
             content += "</select>\n"
             content += "</div>\n"
     content += """<div class="pure-controls">
@@ -858,6 +861,11 @@ class S(BaseHTTPRequestHandler):
                         addTradfriRemote(key, get_parameters[key][0])
                     elif bridge_config["sensors"][key]["modelid"] == "TRADFRI wireless dimmer":
                         addTradfriDimmer(key, get_parameters[key][0])
+                    #store room id in deconz sensors
+                    for sensor in bridge_config["deconz"]["sensors"].iterkeys():
+                        if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == key:
+                            bridge_config["deconz"]["sensors"][sensor]["room"] = get_parameters[key][0]
+
             else:
                 scanDeconz()
             self.wfile.write(webformIndex())
