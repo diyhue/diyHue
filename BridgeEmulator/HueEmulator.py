@@ -174,10 +174,20 @@ def schedulerProcessor():
             saveConfig()
         sleep(1)
 
+def addTradfriDimmer(sensor_id, group_id):
+    rules = [{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": True }, "method":"PUT" },{ "address":"/groups/" + group_id + "/action", "body":{ "bri": 1 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"false" } ], "name":"Remote "+ sensor_id + " turn on" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on":False }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/state/bri", "operator":"eq", "value":"1" }], "name":"Remote "+ sensor_id + " turn off" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":-56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right"}]
+    resourcelinkId = nextFreeId("resourcelinks")
+    bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/" + sensor_id], "name": "Emulator rules " + sensor_id,"owner": bridge_config["config"]["whitelist"].keys()[0]}
+    for rule in rules:
+        ruleId = nextFreeId("rules")
+        bridge_config["rules"][ruleId] = rule
+        bridge_config["rules"][ruleId].update({"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "lasttriggered": None, "owner": bridge_config["config"]["whitelist"].keys()[0], "recycle": True, "status": "enabled", "timestriggered": 0})
+        bridge_config["resourcelinks"][resourcelinkId]["links"].append("/rules/" + ruleId);
+
 def addTradfriRemote(sensor_id, group_id):
     rules = [{"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": True},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"},{"address": "/groups/" + group_id + "/action/on","operator": "eq","value": "false"}],"name": "Remote " + sensor_id + " button on"}, {"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": False},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"},{"address": "/groups/" + group_id + "/action/on","operator": "eq","value": "true"}],"name": "Remote " + sensor_id + " button off"},{ "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 30, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " up-press" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 56, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " up-long" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -30, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " dn-press" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -56, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " dn-long" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "ct_inc": 50, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " ctl-press" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "ct_inc": 100, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " ctl-long" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "ct_inc": -50, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "5002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " ct-press" }, { "actions": [ { "address": "/groups/" + group_id + "/action", "body": { "ct_inc": -100, "transitiontime": 9 }, "method": "PUT" } ], "conditions": [ { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "5001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" } ], "name": "Dimmer Switch " + sensor_id + " ct-long" }]
     resourcelinkId = nextFreeId("resourcelinks")
-    bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/3"],"name": "Emulator rules " + sensor_id,"owner": bridge_config["config"]["whitelist"].keys()[0]}
+    bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/" + sensor_id], "name": "Emulator rules " + sensor_id,"owner": bridge_config["config"]["whitelist"].keys()[0]}
     for rule in rules:
         ruleId = nextFreeId("rules")
         bridge_config["rules"][ruleId] = rule
@@ -349,7 +359,7 @@ def sendLightRequest(light, data):
                     url += "&x=" + str(value[0]) + "&y=" + str(value[1])
                 else:
                     url += "&" + key + "=" + str(value)
-        elif bridge_config["lights_address"][light]["protocol"] == "hue" or bridge_config["lights_address"][light]["protocol"] == "deconz": #Original Hue light or Deconz light
+        elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
             payload = data
@@ -479,9 +489,9 @@ def syncWithLights(): #update Hue Bridge lights states
             else:
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
-        elif bridge_config["lights_address"][light]["protocol"] == "hue":
-            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"), "GET", "{}", 1)
-            bridge_config["lights"][light]["state"].update(light_data)
+        elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]:
+            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
+            bridge_config["lights"][light]["state"].update(light_data["state"])
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
             light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
             bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
@@ -501,7 +511,7 @@ def longPressButton(sensor, buttonevent):
     sleep(1)
     while bridge_config["sensors"][sensor]["state"]["buttonevent"] == buttonevent:
         print("still pressed")
-        sensors_state[sensor]["state"]["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        sensors_state[sensor]["state"]["lastupdated"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         rulesProcessor(sensor)
         sleep(0.9)
     return
@@ -522,7 +532,7 @@ def websocketClient():
             try:
                 if message["r"] == "sensors":
                     bridge_sensor_id = bridge_config["deconz"]["sensors"][message["id"]]["bridgeid"]
-                    if "state" in message:
+                    if "state" in message and bridge_config["sensors"][bridge_sensor_id]["config"]["on"]:
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         for key in message["state"].iterkeys():
                             sensors_state[bridge_sensor_id]["state"][key] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -533,8 +543,8 @@ def websocketClient():
                     elif "config" in message:
                         bridge_config["sensors"][bridge_sensor_id]["config"].update(message["config"])
 
-            except:
-                print("unable to process the request" + m)
+            except Exception as e:
+                print("unable to process the request" + str(e))
 
     try:
         ws = EchoClient('ws://127.0.0.1:' + str(bridge_config["deconz"]["websocketport"]))
@@ -575,8 +585,8 @@ def scanDeconz():
         for sensor in deconz_sensors:
             if sensor not in bridge_config["deconz"]["sensors"]:
                 new_sensor_id = nextFreeId("sensors")
-                if deconz_sensors[sensor]["modelid"] == "TRADFRI remote control":
-                    print("register TRADFRI remote control")
+                if deconz_sensors[sensor]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
+                    print("register new " + deconz_sensors[sensor]["modelid"])
                     bridge_config["sensors"][new_sensor_id] = {"config": deconz_sensors[sensor]["config"], "manufacturername": deconz_sensors[sensor]["manufacturername"], "modelid": deconz_sensors[sensor]["modelid"], "name": deconz_sensors[sensor]["name"], "state": deconz_sensors[sensor]["state"], "swversion": deconz_sensors[sensor]["swversion"], "type": deconz_sensors[sensor]["type"], "uniqueid": deconz_sensors[sensor]["uniqueid"]}
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
                 elif deconz_sensors[sensor]["modelid"] == "TRADFRI motion sensor":
@@ -661,7 +671,7 @@ def webformIndex():
 <fieldset>
 <legend>Deconz Switches Setup</legend>\n"""
     for deconzSensor in bridge_config["deconz"]["sensors"].iterkeys():
-        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] == "TRADFRI remote control":
+        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
             content += "<div class=\"pure-control-group\">\n"
             content += "<label for=\"" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
@@ -844,7 +854,10 @@ class S(BaseHTTPRequestHandler):
                 for resourcelink in sensorsResourcelinks:
                     del bridge_config["resourcelinks"][resourcelink]
                 for key in get_parameters.iterkeys():
-                    addTradfriRemote(key, get_parameters[key][0])
+                    if bridge_config["sensors"][key]["modelid"] == "TRADFRI remote control":
+                        addTradfriRemote(key, get_parameters[key][0])
+                    elif bridge_config["sensors"][key]["modelid"] == "TRADFRI wireless dimmer":
+                        addTradfriDimmer(key, get_parameters[key][0])
             else:
                 scanDeconz()
             self.wfile.write(webformIndex())
