@@ -489,7 +489,7 @@ def syncWithLights(): #update Hue Bridge lights states
             else:
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
-        elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]:
+        elif bridge_config["lights_address"][light]["protocol"] == "hue":
             light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
             bridge_config["lights"][light]["state"].update(light_data["state"])
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
@@ -525,6 +525,7 @@ def websocketClient():
 
         def closed(self, code, reason=None):
             print(("deconz websocket disconnected", code, reason))
+            del bridge_config["deconz"]["websocketport"]
 
         def received_message(self, m):
             print(m)
@@ -540,8 +541,17 @@ def websocketClient():
                         if "buttonevent" in message["state"]:
                             if message["state"]["buttonevent"] in [2001, 3001, 4001, 5001]:
                                 Thread(target=longPressButton, args=[bridge_sensor_id, message["state"]["buttonevent"]]).start()
+                        if "presence" in message["state"] and message["state"]["presence"] and "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"]:
+                            sendEmail(bridge_config["sensors"][bridge_sensor_id]["name"])
+                            bridge_config["alarm_config"]["virtual_light"]
                     elif "config" in message:
                         bridge_config["sensors"][bridge_sensor_id]["config"].update(message["config"])
+                elif message["r"] == "lights":
+                    bridge_light_id = bridge_config["deconz"]["lights"][message["id"]]["bridgeid"]
+                    if "state" in message:
+                        bridge_config["lights"][bridge_light_id]["state"].update(message["state"])
+                        updateGroupStats(bridge_light_id)
+
 
             except Exception as e:
                 print("unable to process the request" + str(e))
@@ -554,34 +564,32 @@ def websocketClient():
         ws.close()
 
 def scanDeconz():
-    if bridge_config["deconz"]["enabled"]:
-        if "port" in bridge_config["deconz"]:
-            port = bridge_config["deconz"]["port"]
-        else:
-            port = 8080
-
+    if not bridge_config["deconz"]["enabled"]:
         if "username" not in bridge_config["deconz"]:
             try:
-                registration = json.loads(sendRequest("http://127.0.0.1:" + str(port) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
+                registration = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
             except:
                 print("registration fail, is the link button pressed?")
                 return
             if "success" in registration[0]:
                 bridge_config["deconz"]["username"] = registration[0]["success"]["username"]
-        deconz_config = json.loads(sendRequest("http://127.0.0.1:" + str(port) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
+                bridge_config["deconz"]["enabled"] = True
+    if "username" in bridge_config["deconz"]:
+        deconz_config = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
         bridge_config["deconz"]["websocketport"] = deconz_config["websocketport"]
         registered_deconz_lights = []
         for light in bridge_config["lights_address"]:
             if bridge_config["lights_address"][light]["protocol"] == "deconz":
                 registered_deconz_lights.append( bridge_config["lights_address"][light]["light_id"] )
-        deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(port) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
+        deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
             if light not in registered_deconz_lights:
                 new_light_id = nextFreeId("lights")
                 print("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
-                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(port), "protocol": "deconz"}
-        deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(port) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
+                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
+                bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id}
+        deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
             if sensor not in bridge_config["deconz"]["sensors"]:
                 new_sensor_id = nextFreeId("sensors")
@@ -593,6 +601,9 @@ def scanDeconz():
                     print("register TRADFRI remote control as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor()
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId}
+        if "websocketport" in bridge_config["deconz"]:
+            print("Starting deconz websocket")
+            Thread(target=websocketClient).start()
 
 
 
@@ -676,7 +687,7 @@ def webformIndex():
             content += "<label for=\"" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
             for group in bridge_config["groups"].iterkeys():
-                if bridge_config["deconz"]["sensors"][deconzSensor]["room"] == group:
+                if "room" in bridge_config["deconz"]["sensors"][deconzSensor] and bridge_config["deconz"]["sensors"][deconzSensor]["room"] == group:
                     content += "<option value=\"" + group + "\" selected>" + bridge_config["groups"][group]["name"] + "</option>\n"
                 else:
                     content += "<option value=\"" + group + "\">" + bridge_config["groups"][group]["name"] + "</option>\n"
@@ -840,7 +851,6 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(webform_hue())
         elif self.path.startswith("/deconz"): #setup imported deconz sensors
             get_parameters = parse_qs(urlparse(self.path).query)
-            pprint(get_parameters)
             #clean all rules related to deconz Switches
             sensorsResourcelinks = []
             if get_parameters:
@@ -1148,15 +1158,14 @@ def run(server_class=HTTPServer, handler_class=S):
 if __name__ == "__main__":
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
-        Thread(target=websocketClient).start()
     try:
         updateAllLights()
         Thread(target=ssdpSearch).start()
         Thread(target=ssdpBroadcast).start()
         Thread(target=schedulerProcessor).start()
         run()
-    except:
-        print("server stopped")
+    except Exception as e:
+        print("server stopped " + str(e))
     finally:
         run_service = False
         saveConfig()
