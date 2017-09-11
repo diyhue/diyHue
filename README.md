@@ -36,11 +36,8 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - Follow the steps from here: https://github.com/dresden-elektronik/deconz-rest-plugin  if you receive the error "/usr/include/c++/6/cstdlib:75:25: fatal error: stdlib.h: No such file or directory" then replace ```qmake``` command with ```qmake QMAKE_CFLAGS_ISYSTEM=```
  - edit deconz systemd script to bind on port 8080: ```sudo vim /etc/systemd/system/deconz.service``` replace ```--http-port=80``` with ```--http-port=8080```
  - start deconz service, browse to http://{hue emulator ip}:8080 and add all zigbee devices. This is done by clicking "Open network" in settings and then reset the devices. Don't configure any device in deconz.
- - click "Unlock Gateway" in settings to allow hue emulator to register
- - edit config.json and change the deconz => enabled to true
  - start hue emulator (must in output the import of all zigbee devices)
-
-  To configure IKEA Remotes open http://{hue emulator ip}/deconz . When you click save will look like noting happened, but all rules must be already created. Test the remotes.
+ - click "Unlock Gateway" in settings to allow hue emulator to register, then open http://{hue emulator ip}/deconz to automatically register bridge emulator with deconz. In order to configure IKEA switches you must configure first the rooms
   To configure IKEA Motion Sensor open official Hue application and go to "Accesory Setup"
 
 ## HUE LIGHTS
