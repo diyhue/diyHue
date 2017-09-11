@@ -223,7 +223,7 @@ def checkRuleConditions(rule, sensor, ignore_ddx=False):
             if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
                 return [False, 0]
         elif condition["operator"] == "lt":
-            if int(not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
+            if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
                 return [False, 0]
         elif condition["operator"] == "dx":
             if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
