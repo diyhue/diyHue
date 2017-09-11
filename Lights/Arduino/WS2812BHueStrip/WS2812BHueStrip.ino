@@ -290,9 +290,10 @@ void setup() {
     for (int j = 0; j < 200; j++) {
       lightEngine();
     }
-    WiFiManager wifiManager;
-    wifiManager.autoConnect("New Hue Light");
   }
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("New Hue Light");
+
   if (! light_state[0]) {
     infoLight(white);
     while (WiFi.status() != WL_CONNECTED) {
