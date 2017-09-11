@@ -77,6 +77,8 @@
     },
     "deconz": {
         "enabled": false,
+        "lights": {},
+        "port": 8080,
         "sensors": {}
     },
     "groups": {},
