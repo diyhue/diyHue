@@ -175,7 +175,7 @@ def schedulerProcessor():
         sleep(1)
 
 def addTradfriDimmer(sensor_id, group_id):
-    rules = [{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": True, "bri": 1 }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"false" } ], "name":"Remote "+ sensor_id + " turn on" }, {"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": False }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true" }, { "address":"/groups/" + group_id + "/state/bri", "operator":"lt", "value": "126" } ], "name":"Remote "+ sensor_id + " turn off" },{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri": 255 }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true" }, { "address":"/groups/" + group_id + "/state/bri", "operator":"gt", "value": "126" } ], "name":"Remote "+ sensor_id + " fast max bri" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":-56, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right"}]
+    rules = [{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": True, "bri": 1 }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"false" } ], "name":"Remote "+ sensor_id + " turn on" }, {"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": False }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"999" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true"}], "name":"Remote "+ sensor_id + "instant turn off" },{"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "on": False }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true"}, { "address":"/groups/" + group_id + "/action/bri", "operator":"eq", "value":"1"}], "name":"Remote "+ sensor_id + " turn off" }, {"actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri": 255 }, "method":"PUT" }], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" }, { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1000" }, { "address":"/groups/" + group_id + "/action/on", "operator":"eq", "value":"true" }], "name":"Remote "+ sensor_id + " fast max bri" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":32, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"2001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right" }, { "actions":[ { "address":"/groups/" + group_id + "/action", "body":{ "bri_inc":-32, "transitiontime":9 }, "method":"PUT" } ], "conditions":[ { "address":"/sensors/" + sensor_id + "/state/buttonevent", "operator":"eq", "value":"1001" }, { "address":"/sensors/" + sensor_id + "/state/lastupdated", "operator":"dx" } ], "name":"Dimmer Switch "+ sensor_id + " rotate right"}]
     resourcelinkId = nextFreeId("resourcelinks")
     bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/" + sensor_id], "name": "Emulator rules " + sensor_id,"owner": bridge_config["config"]["whitelist"].keys()[0]}
     for rule in rules:
@@ -194,12 +194,21 @@ def addTradfriRemote(sensor_id, group_id):
         bridge_config["rules"][ruleId].update({"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "lasttriggered": None, "owner": bridge_config["config"]["whitelist"].keys()[0], "recycle": True, "status": "enabled", "timestriggered": 0})
         bridge_config["resourcelinks"][resourcelinkId]["links"].append("/rules/" + ruleId);
 
-def addHueMotionSensor():
+def addHueMotionSensor(uniqueid):
     new_sensor_id = nextFreeId("sensors")
-    bridge_config["sensors"][new_sensor_id] = {"name": "Hue temperature sensor 1", "uniqueid": new_sensor_id + "0f:12:23:34:45:56:d0:5b-02-0402", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
-    bridge_config["sensors"][str(int(new_sensor_id) + 1)] = {"name": "Entrance Lights sensor", "uniqueid": new_sensor_id + "0f:12:23:34:45:56:d0:5b-02-0406", "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
-    bridge_config["sensors"][str(int(new_sensor_id) + 2)] = {"name": "Hue ambient light sensor 1", "uniqueid": new_sensor_id + "0f:12:23:34:45:56:d0:5b-02-0400", "type": "ZLLLightLevel", "swversion": "6.1.0.18912", "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False,"battery": 100, "reachable": True, "alert": "none", "tholddark": 21597, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+    if uniqueid == "":
+        uniqueid = new_sensor_id + ":0f:12:23:34:45"
+    bridge_config["sensors"][new_sensor_id] = {"name": "Hue temperature sensor 1", "uniqueid": uniqueid + ":56:d0:5b-02-0402", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+    bridge_config["sensors"][str(int(new_sensor_id) + 1)] = {"name": "Entrance Lights sensor", "uniqueid": uniqueid + ":56:d0:5b-02-0402", "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
+    bridge_config["sensors"][str(int(new_sensor_id) + 2)] = {"name": "Hue ambient light sensor 1", "uniqueid": uniqueid + ":56:d0:5b-02-0402", "type": "ZLLLightLevel", "swversion": "6.1.0.18912", "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False,"battery": 100, "reachable": True, "alert": "none", "tholddark": 21597, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
     return(str(int(new_sensor_id) + 1))
+
+def addHueSwitch(uniqueid, sensorsType):
+    new_sensor_id = nextFreeId("sensors")
+    if uniqueid == "":
+        uniqueid = "00:00:00:00:00:40:" + new_sensor_id + ":83-f2"
+    bridge_config["sensors"][new_sensor_id] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if sensorsType == "ZLLSwitch" else "Tap Switch", "type": sensorsType, "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "", "uniqueid": uniqueid}
+    return(new_sensor_id)
 
 
 def checkRuleConditions(rule, sensor, ignore_ddx=False):
@@ -534,11 +543,22 @@ def websocketClient():
                 if message["r"] == "sensors":
                     bridge_sensor_id = bridge_config["deconz"]["sensors"][message["id"]]["bridgeid"]
                     if "state" in message and bridge_config["sensors"][bridge_sensor_id]["config"]["on"]:
+                        #special condition for tradfri dimmer switch that detect buttonevent 1000 direction
+                        if "buttonevent" in message["state"] and bridge_config["sensors"][bridge_sensor_id]["modelid"] == "TRADFRI wireless dimmer" and message["state"]["buttonevent"] == 1000:
+                            if bridge_config["sensors"][bridge_sensor_id]["state"]["buttonevent"] in [1001,1003]:
+                                message["state"]["buttonevent"] = 999
+
+                        #change codes for emulated hue Switches
+                        if "hueType" in bridge_config["deconz"]["sensors"][message["id"]]:
+                            rewriteDict = {"ZGPSwitch": {1002: 34, 3002: 16, 4002: 17, 5002: 18}, "ZLLSwitch" : {1002 : 1000, 2002: 2000, 2001: 2001, 2003: 2002, 3001: 3001, 3002: 3000, 3003: 3002, 4002: 4000, 5002: 4000} }
+                            message["state"]["buttonevent"] = rewriteDict[bridge_config["deconz"]["sensors"][message["id"]]["hueType"]][message["state"]["buttonevent"]]
+
+                        #end change codes for emulated hue Switches
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         for key in message["state"].iterkeys():
                             sensors_state[bridge_sensor_id]["state"][key] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         rulesProcessor(bridge_sensor_id)
-                        if "buttonevent" in message["state"]:
+                        if "buttonevent" in message["state"] and bridge_config["sensors"][bridge_sensor_id]["modelid"] in ["TRADFRI remote control","RWL021"]:
                             if message["state"]["buttonevent"] in [2001, 3001, 4001, 5001]:
                                 Thread(target=longPressButton, args=[bridge_sensor_id, message["state"]["buttonevent"]]).start()
                         if "presence" in message["state"] and message["state"]["presence"] and "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"]:
@@ -581,6 +601,7 @@ def scanDeconz():
         for light in bridge_config["lights_address"]:
             if bridge_config["lights_address"][light]["protocol"] == "deconz":
                 registered_deconz_lights.append( bridge_config["lights_address"][light]["light_id"] )
+        #lights
         deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
             if light not in registered_deconz_lights:
@@ -589,6 +610,7 @@ def scanDeconz():
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
                 bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
                 bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id}
+        #sensors
         deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
             if sensor not in bridge_config["deconz"]["sensors"]:
@@ -599,8 +621,10 @@ def scanDeconz():
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
                 elif deconz_sensors[sensor]["modelid"] == "TRADFRI motion sensor":
                     print("register TRADFRI remote control as Philips Motion Sensor")
-                    newMotionSensorId = addHueMotionSensor()
+                    newMotionSensorId = addHueMotionSensor("")
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId}
+                else:
+                    bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
         if "websocketport" in bridge_config["deconz"]:
             print("Starting deconz websocket")
             Thread(target=websocketClient).start()
@@ -686,6 +710,9 @@ def webformIndex():
             content += "<div class=\"pure-control-group\">\n"
             content += "<label for=\"" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
+            if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] == "TRADFRI remote control":
+                content += "<option value=\"ZGPSwitch\">Hue Tap Switch</option>\n"
+                content += "<option value=\"ZLLSwitch\">Hue Dimmer Switch</option>\n"
             for group in bridge_config["groups"].iterkeys():
                 if "room" in bridge_config["deconz"]["sensors"][deconzSensor] and bridge_config["deconz"]["sensors"][deconzSensor]["room"] == group:
                     content += "<option value=\"" + group + "\" selected>" + bridge_config["groups"][group]["name"] + "</option>\n"
@@ -867,14 +894,24 @@ class S(BaseHTTPRequestHandler):
                 for resourcelink in sensorsResourcelinks:
                     del bridge_config["resourcelinks"][resourcelink]
                 for key in get_parameters.iterkeys():
-                    if bridge_config["sensors"][key]["modelid"] == "TRADFRI remote control":
-                        addTradfriRemote(key, get_parameters[key][0])
-                    elif bridge_config["sensors"][key]["modelid"] == "TRADFRI wireless dimmer":
-                        addTradfriDimmer(key, get_parameters[key][0])
-                    #store room id in deconz sensors
-                    for sensor in bridge_config["deconz"]["sensors"].iterkeys():
-                        if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == key:
-                            bridge_config["deconz"]["sensors"][sensor]["room"] = get_parameters[key][0]
+                    if get_parameters[key][0] in ["ZLLSwitch", "ZGPSwitch"]:
+                        try:
+                            del bridge_config["sensors"][key]
+                        except:
+                            pass
+                        hueSwitchId = addHueSwitch("", get_parameters[key][0])
+                        for sensor in bridge_config["deconz"]["sensors"].iterkeys():
+                            if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == key:
+                                bridge_config["deconz"]["sensors"][sensor] = {"hueType": get_parameters[key][0], "bridgeid": hueSwitchId}
+                    else:
+                        if bridge_config["sensors"][key]["modelid"] == "TRADFRI remote control":
+                            addTradfriRemote(key, get_parameters[key][0])
+                        elif bridge_config["sensors"][key]["modelid"] == "TRADFRI wireless dimmer":
+                            addTradfriDimmer(key, get_parameters[key][0])
+                        #store room id in deconz sensors
+                        for sensor in bridge_config["deconz"]["sensors"].iterkeys():
+                            if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == key:
+                                bridge_config["deconz"]["sensors"][sensor]["room"] = get_parameters[key][0]
 
             else:
                 scanDeconz()
@@ -890,12 +927,12 @@ class S(BaseHTTPRequestHandler):
                 if sensor_is_new:
                     print("registering new sensor " + get_parameters["devicetype"][0])
                     new_sensor_id = nextFreeId("sensors")
-                    if get_parameters["devicetype"][0] == "ZLLSwitch" or get_parameters["devicetype"][0] == "ZGPSwitch":
-                        print("ZLLSwitch")
-                        bridge_config["sensors"][new_sensor_id] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if get_parameters["devicetype"][0] == "ZLLSwitch" else "Tap Switch", "type": get_parameters["devicetype"][0], "modelid": "RWL021" if get_parameters["devicetype"][0] == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if get_parameters["devicetype"][0] == "ZLLSwitch" else "", "uniqueid": get_parameters["mac"][0]}
+                    if get_parameters["devicetype"][0] in ["ZLLSwitch","ZGPSwitch"]:
+                        print(get_parameters["devicetype"][0])
+                        addHueSwitch(get_parameters["mac"][0], get_parameters["devicetype"][0])
                     elif get_parameters["devicetype"][0] == "ZLLPresence":
                         print("ZLLPresence")
-                        addHueMotionSensor()
+                        addHueMotionSensor(get_parameters["mac"][0])
                     generateSensorsState()
             else: #switch action request
                 for sensor in bridge_config["sensors"]:
@@ -1112,6 +1149,8 @@ class S(BaseHTTPRequestHandler):
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
                 if url_pices[3] == "sensors" and url_pices[5] == "state":
+                    if "status" in put_dictionary:
+                        sleep(0.5) #this delay will not avoid triggering ON button 2 times on Hue Dimmer Switch rules
                     for key in put_dictionary.iterkeys():
                         sensors_state[url_pices[4]]["state"].update({key: datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                     rulesProcessor(url_pices[4])
@@ -1147,6 +1186,13 @@ class S(BaseHTTPRequestHandler):
             del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
+                for light in bridge_config["deconz"]["lights"].keys():
+                    if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
+                        del bridge_config["deconz"]["lights"][light]
+            if url_pices[3] == "sensors":
+                for sensor in bridge_config["deconz"]["sensors"].keys():
+                    if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
+                        del bridge_config["deconz"]["sensors"][sensor]
             self.wfile.write(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}]))
 
 def run(server_class=HTTPServer, handler_class=S):
