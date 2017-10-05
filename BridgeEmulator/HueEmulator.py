@@ -113,7 +113,7 @@ def ssdpSearch():
     while run_service:
               data, address = sock.recvfrom(1024)
               if data[0:19]== 'M-SEARCH * HTTP/1.1':
-                   if data.find("ssdp:all") != -1:
+                   if data.find("ssdp:discover") != -1:
                        sleep(random.randrange(0, 3))
                        print("Sending M Search response")
                        for x in xrange(3):
