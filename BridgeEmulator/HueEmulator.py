@@ -113,7 +113,7 @@ def ssdpSearch():
     while run_service:
               data, address = sock.recvfrom(1024)
               if data[0:19]== 'M-SEARCH * HTTP/1.1':
-                   if data.find("ssdp:all") != -1:
+                   if data.find("ssdp:discover") != -1:
                        sleep(random.randrange(0, 3))
                        print("Sending M Search response")
                        for x in xrange(3):
@@ -552,8 +552,15 @@ def websocketClient():
                         if "hueType" in bridge_config["deconz"]["sensors"][message["id"]]:
                             rewriteDict = {"ZGPSwitch": {1002: 34, 3002: 16, 4002: 17, 5002: 18}, "ZLLSwitch" : {1002 : 1000, 2002: 2000, 2001: 2001, 2003: 2002, 3001: 3001, 3002: 3000, 3003: 3002, 4002: 4000, 5002: 4000} }
                             message["state"]["buttonevent"] = rewriteDict[bridge_config["deconz"]["sensors"][message["id"]]["hueType"]][message["state"]["buttonevent"]]
-
                         #end change codes for emulated hue Switches
+
+                        #move dark attribute to ZLLLightLevel on emulated Hue Motion Sensor
+                        if "dark" in message["state"] and "presence" in message["state"] and bridge_config["sensors"][bridge_sensor_id]["modelid"] == "SML001":
+                            bridge_config["sensors"][str(int(bridge_sensor_id) + 1)]["state"]["dark"] = message["state"]["dark"]
+                            bridge_config["sensors"][str(int(bridge_sensor_id) + 1)]["state"]["daylight"] = not message["state"]["dark"]
+                            bridge_config["sensors"][str(int(bridge_sensor_id) + 1)]["state"]["lastupdated"] = message["state"]["lastupdated"]
+                            del message["state"]["dark"]
+
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         for key in message["state"].iterkeys():
                             sensors_state[bridge_sensor_id]["state"][key] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -879,11 +886,9 @@ class S(BaseHTTPRequestHandler):
         elif self.path.startswith("/deconz"): #setup imported deconz sensors
             get_parameters = parse_qs(urlparse(self.path).query)
             #clean all rules related to deconz Switches
-            sensorsResourcelinks = []
             if get_parameters:
-                for resourcelink in bridge_config["resourcelinks"].iterkeys():
+                for resourcelink in bridge_config["resourcelinks"].keys():
                     if bridge_config["resourcelinks"][resourcelink]["classid"] == 15555:
-                        sensorsResourcelinks.append(resourcelink)
                         for link in bridge_config["resourcelinks"][resourcelink]["links"]:
                             pices = link.split('/')
                             if pices[1] == "rules":
@@ -891,8 +896,7 @@ class S(BaseHTTPRequestHandler):
                                     del bridge_config["rules"][pices[2]]
                                 except:
                                     print("unable to delete the rule " + pices[2])
-                for resourcelink in sensorsResourcelinks:
-                    del bridge_config["resourcelinks"][resourcelink]
+                        del bridge_config["resourcelinks"][resourcelink]
                 for key in get_parameters.iterkeys():
                     if get_parameters[key][0] in ["ZLLSwitch", "ZGPSwitch"]:
                         try:
@@ -961,20 +965,20 @@ class S(BaseHTTPRequestHandler):
             if url_pices[2] in bridge_config["config"]["whitelist"]: #if username is in whitelist
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                if len(url_pices) == 3: #print entire config
+                if len(url_pices) == 3 or (len(url_pices) == 4 and url_pices[3] == ""): #print entire config
                     self.wfile.write(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]}))
-                elif len(url_pices) == 4: #print specified object config
+                elif len(url_pices) == 4 or (len(url_pices) == 5 and url_pices[4] == ""): #print specified object config
                     if url_pices[3] == "lights": #add changes from IKEA Tradfri gateway to bridge
                         syncWithLights()
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]]))
-                elif len(url_pices) == 5:
+                elif len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == ""):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self.wfile.write(json.dumps(new_lights))
                         new_lights.clear()
                     else:
                         self.wfile.write(json.dumps(bridge_config[url_pices[3]][url_pices[4]]))
-                elif len(url_pices) == 6:
+                elif len(url_pices) == 6 or (len(url_pices) == 7 and url_pices[6] == ""):
                     self.wfile.write(json.dumps(bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]))
             elif (url_pices[2] == "nouser" or url_pices[2] == "config"): #used by applications to discover the bridge
                 self.wfile.write(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 59, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "modelid": bridge_config["config"]["modelid"]}))
