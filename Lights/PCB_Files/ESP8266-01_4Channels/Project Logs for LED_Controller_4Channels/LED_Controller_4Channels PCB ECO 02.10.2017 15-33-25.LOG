@@ -1,0 +1,81 @@
+Added Component: Designator=C1(RAD-0.3)
+Added Component: Designator=C2(RB7.6-15)
+Added Component: Designator=C3(CAPR5-4X5)
+Added Component: Designator=P1(HDR1X5)
+Added Component: Designator=P_IN(HDR1X2)
+Added Component: Designator=Q_B(D-Pack)
+Added Component: Designator=Q_G(D-Pack)
+Added Component: Designator=Q_R(D-Pack)
+Added Component: Designator=Q_W(D-Pack)
+Added Component: Designator=R1(AXIAL-0.4)
+Added Component: Designator=R2(AXIAL-0.4)
+Added Component: Designator=R3(AXIAL-0.4)
+Added Component: Designator=R4(AXIAL-0.4)
+Added Component: Designator=R5(AXIAL-0.4)
+Added Component: Designator=R6(AXIAL-0.4)
+Added Component: Designator=R7(AXIAL-0.4)
+Added Component: Designator=R8(AXIAL-0.4)
+Added Component: Designator=VR_3.3V(TO-220-AB)
+Added Pin To Net: NetName=GND Pin=C1-1
+Added Pin To Net: NetName=GND Pin=C2-2
+Added Pin To Net: NetName=GND Pin=C3-2
+Added Pin To Net: NetName=GND Pin=P_IN-1
+Added Pin To Net: NetName=GND Pin=Q_B-3
+Added Pin To Net: NetName=GND Pin=Q_G-3
+Added Pin To Net: NetName=GND Pin=Q_R-3
+Added Pin To Net: NetName=GND Pin=Q_W-3
+Added Pin To Net: NetName=GND Pin=VR_3.3V-2
+Added Net: Name=GND
+Added Pin To Net: NetName=NetIC1_1 Pin=R7-2
+Added Net: Name=NetIC1_1
+Added Pin To Net: NetName=NetIC1_3 Pin=R4-2
+Added Pin To Net: NetName=NetIC1_3 Pin=R6-2
+Added Net: Name=NetIC1_3
+Added Pin To Net: NetName=NetIC1_4 Pin=R2-2
+Added Net: Name=NetIC1_4
+Added Pin To Net: NetName=NetIC1_5 Pin=R3-2
+Added Pin To Net: NetName=NetIC1_5 Pin=R5-2
+Added Net: Name=NetIC1_5
+Added Pin To Net: NetName=NetIC1_6 Pin=R1-2
+Added Net: Name=NetIC1_6
+Added Pin To Net: NetName=NetIC1_8 Pin=R8-2
+Added Net: Name=NetIC1_8
+Added Pin To Net: NetName=NetP1_1 Pin=P1-1
+Added Pin To Net: NetName=NetP1_1 Pin=Q_R-2
+Added Net: Name=NetP1_1
+Added Pin To Net: NetName=NetP1_2 Pin=P1-2
+Added Pin To Net: NetName=NetP1_2 Pin=Q_G-2
+Added Net: Name=NetP1_2
+Added Pin To Net: NetName=NetP1_3 Pin=P1-3
+Added Pin To Net: NetName=NetP1_3 Pin=Q_B-2
+Added Net: Name=NetP1_3
+Added Pin To Net: NetName=NetP1_4 Pin=P1-4
+Added Pin To Net: NetName=NetP1_4 Pin=Q_W-2
+Added Net: Name=NetP1_4
+Added Pin To Net: NetName=NetQ_B_1 Pin=Q_B-1
+Added Pin To Net: NetName=NetQ_B_1 Pin=R7-1
+Added Net: Name=NetQ_B_1
+Added Pin To Net: NetName=NetQ_G_1 Pin=Q_G-1
+Added Pin To Net: NetName=NetQ_G_1 Pin=R6-1
+Added Net: Name=NetQ_G_1
+Added Pin To Net: NetName=NetQ_R_1 Pin=Q_R-1
+Added Pin To Net: NetName=NetQ_R_1 Pin=R5-1
+Added Net: Name=NetQ_R_1
+Added Pin To Net: NetName=NetQ_W_1 Pin=Q_W-1
+Added Pin To Net: NetName=NetQ_W_1 Pin=R8-1
+Added Net: Name=NetQ_W_1
+Added Pin To Net: NetName=VCC_3.3 Pin=C3-1
+Added Pin To Net: NetName=VCC_3.3 Pin=R1-1
+Added Pin To Net: NetName=VCC_3.3 Pin=R2-1
+Added Pin To Net: NetName=VCC_3.3 Pin=R3-1
+Added Pin To Net: NetName=VCC_3.3 Pin=R4-1
+Added Pin To Net: NetName=VCC_3.3 Pin=VR_3.3V-3
+Added Net: Name=VCC_3.3
+Added Pin To Net: NetName=VCC_12 Pin=C1-2
+Added Pin To Net: NetName=VCC_12 Pin=C2-1
+Added Pin To Net: NetName=VCC_12 Pin=P1-5
+Added Pin To Net: NetName=VCC_12 Pin=P_IN-2
+Added Pin To Net: NetName=VCC_12 Pin=VR_3.3V-1
+Added Net: Name=VCC_12
+Added Class: Name=LED_Controller_4Channels
+Added Room: Name=LED_Controller_4Channels

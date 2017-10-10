@@ -1,0 +1,10 @@
+Removed Pin From Net: NetName=VCC_12 Pin=C2-1
+Removed Pin From Net: NetName=GND Pin=C2-2
+Removed Member From Class: ClassName=LED_Controller_4Channels Member=C2
+Change Component Designator: OldDesignator=3.3V NewDesignator=VR_3.3V
+Change Component Designator: OldDesignator=ESP8266 NewDesignator=IC
+Added Component: Designator=C?(CAPR5-4X5)
+Added Pin To Net: NetName=VCC_12 Pin=C?-1
+Added Pin To Net: NetName=GND Pin=C?-2
+Added Member To Class: ClassName=LED_Controller_4Channels Member=Component C? Cap2
+Added Room: Name=LED_Controller_4Channels
