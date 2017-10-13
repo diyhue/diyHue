@@ -576,21 +576,27 @@ def syncWithLights(): #update Hue Bridge lights states
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
         elif bridge_config["lights_address"][light]["protocol"] == "hue":
-            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
-            bridge_config["lights"][light]["state"].update(light_data["state"])
+            try:
+                light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
+                bridge_config["lights"][light]["state"].update(light_data["state"])
+            except:
+                bridge_config["lights"][light]["state"]["reachable"] = False
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
-            light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
-            bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
-            bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
-            if "5706" in light_stats["3311"][0]:
-                if light_stats["3311"][0]["5706"] == "f5faf6":
-                    bridge_config["lights"][light]["state"]["ct"] = 170
-                elif light_stats["3311"][0]["5706"] == "f1e0b5":
-                    bridge_config["lights"][light]["state"]["ct"] = 320
-                elif light_stats["3311"][0]["5706"] == "efd275":
+            try:
+                light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
+                bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
+                bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
+                if "5706" in light_stats["3311"][0]:
+                    if light_stats["3311"][0]["5706"] == "f5faf6":
+                        bridge_config["lights"][light]["state"]["ct"] = 170
+                    elif light_stats["3311"][0]["5706"] == "f1e0b5":
+                        bridge_config["lights"][light]["state"]["ct"] = 320
+                    elif light_stats["3311"][0]["5706"] == "efd275":
+                        bridge_config["lights"][light]["state"]["ct"] = 470
+                else:
                     bridge_config["lights"][light]["state"]["ct"] = 470
-            else:
-                bridge_config["lights"][light]["state"]["ct"] = 470
+            except:
+                bridge_config["lights"][light]["state"]["reachable"] = False
 
 def longPressButton(sensor, buttonevent):
     print("long press detected")
