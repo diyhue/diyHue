@@ -448,7 +448,7 @@ def sendLightRequest(light, data):
         elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
-            payload = data
+            payload.update(data)
         elif bridge_config["lights_address"][light]["protocol"] == "milight": #MiLight bulb
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]);
             method = 'PUT'
@@ -502,6 +502,18 @@ def sendLightRequest(light, data):
                     for key, value in payload.iteritems(): #ikea bulbs don't accept all arguments at once
                         print(check_output("./coap-client-linux -m put -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
                         sleep(0.5)
+            elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
+                print("scene details:")
+                print(json.dumps(payload))
+                if "xy" in payload:
+                    sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
+                    del(payload["xy"])
+                    sleep(0.6)
+                elif "ct" in payload:
+                    sendRequest(url, method, json.dumps({"on": True, "ct": payload["ct"]}))
+                    del(payload["ct"])
+                    sleep(0.6)
+                sendRequest(url, method, json.dumps(payload))
             else:
                 sendRequest(url, method, json.dumps(payload))
         except:
@@ -1158,9 +1170,10 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         print ("in PUT method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
-        print(self.data_string)
         put_dictionary = json.loads(self.data_string)
         url_pices = self.path.split('/')
+        print(self.path)
+        print(self.data_string)
         if url_pices[2] in bridge_config["config"]["whitelist"]:
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
