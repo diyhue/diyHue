@@ -101,9 +101,9 @@ void convert_xy(uint8_t light)
   float Z = (Y / y[light]) * z;
 
   // sRGB D65 conversion
-  float r =  X * 1.656492f - Y * 0.354851f - Z * 0.255038f;
-  float g = -X * 0.707196f + Y * 1.655397f + Z * 0.036152f;
-  float b =  X * 0.051713f - Y * 0.121364f + Z * 1.011530f;
+  float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
+  float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
+  float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
   if (r > b && r > g && r > 1.0f) {
     // red is too big
