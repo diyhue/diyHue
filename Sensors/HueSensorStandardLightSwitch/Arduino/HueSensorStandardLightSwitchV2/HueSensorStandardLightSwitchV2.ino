@@ -1,7 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
-#include <WiFiManager.h>
 
 extern "C" {
 #include "gpio.h"
@@ -16,9 +15,10 @@ const char* password = "__PASSWORD__";
 #define button1_pin 2
 #define button2_pin 3
 
-
-bool button1_high = true;
-bool button2_high = true;
+bool btn1_trig = false;
+bool btn1_state = HIGH;
+bool btn2_trig = false;
+bool btn2_state = HIGH;
 
 
 const char* switchType = "ZGPSwitch";
@@ -65,6 +65,51 @@ void sendHttpRequest(int button) {
                  "Connection: close\r\n\r\n");
 }
 
+
+void ISR_S1() {
+  for (int i = 0; i < 5000; i++)
+  {
+    _NOP();
+  }
+
+  btn1_trig = true;
+  if (digitalRead(button1_pin) == HIGH)
+  {
+    //Serial.println("S1_Rising!");
+    btn1_state = HIGH;
+  }
+  else
+  {
+    //Serial.println("S1_Falling!");
+    btn1_state = LOW;
+  }
+}
+
+
+
+void ISR_S2() {
+
+  for (int i = 0; i < 5000; i++)
+  {
+    _NOP();
+  }
+
+  btn2_trig = true;
+
+  if (digitalRead(button2_pin) == HIGH)
+  {
+    //Serial.println("S2_Rising!");
+    btn2_state = HIGH;
+  }
+  else
+  {
+    //Serial.println("S2_Falling!");
+    btn2_state = LOW;
+  }
+
+}
+
+
 void setup() {
 
   Serial.begin(250000);
@@ -79,21 +124,24 @@ void setup() {
   pinMode(button2_pin, INPUT);
   //pinMode(button3_pin, INPUT);
   //pinMode(button4_pin, INPUT);
+
+
+  attachInterrupt(digitalPinToInterrupt(button1_pin), ISR_S1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(button2_pin), ISR_S2, CHANGE);
+
+
+
   digitalWrite(16, LOW);
 
-  //WiFi.mode(WIFI_STA);
-  //WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
-
-  WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Tab-Switch");
-
-
   WiFi.macAddress(mac);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(50);
   }
+  Serial.println("Connected");
 
   ArduinoOTA.begin();
 
@@ -115,17 +163,13 @@ void setup() {
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                  "Host: " + bridgeIp + "\r\n" +
                  "Connection: close\r\n\r\n");
-
-    Serial.println(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + bridgeIp + "\r\n" +
-                   "Connection: close\r\n\r\n");
   }
 
   if (digitalRead(button1_pin) == LOW)
-    button1_high = false;
+    btn1_state = LOW;
 
   if (digitalRead(button2_pin) == LOW)
-    button2_high = false;
+    btn2_state = LOW;
 
 }
 
@@ -133,28 +177,48 @@ void loop() {
   ArduinoOTA.handle();
   delay(1);
 
-  Serial.println("read...");
-  delay(500);
+  //Serial.println("read...");
+  delay(10);
 
-  if (digitalRead(button1_pin) == HIGH && button1_high == false) {
+
+  if (btn1_trig == true)
+  {
+    btn1_trig = false;
+    if (btn1_state == HIGH)
+      sendHttpRequest(34);
+    else
+      sendHttpRequest(16);
+  }
+
+
+  if (btn2_trig == true)
+  {
+    btn2_trig = false;
+    if (btn2_state == HIGH)
+      sendHttpRequest(17);
+    else
+      sendHttpRequest(18);
+  }
+
+  /*if (digitalRead(button1_pin) == HIGH && button1_high == false) {
     sendHttpRequest(34);
     button1_high = true;
-  }
+    }
 
-  if (digitalRead(button1_pin) == LOW && button1_high == true) {
+    if (digitalRead(button1_pin) == LOW && button1_high == true) {
     sendHttpRequest(16);
     button1_high = false;
-  }
+    }
 
-  if (digitalRead(button2_pin) == HIGH && button2_high == false) {
+    if (digitalRead(button2_pin) == HIGH && button2_high == false) {
     sendHttpRequest(17);
     button2_high = true;
-  }
+    }
 
-  if (digitalRead(button2_pin) == LOW && button2_high == true) {
+    if (digitalRead(button2_pin) == LOW && button2_high == true) {
     sendHttpRequest(18);
     button2_high = false;
-  }
+    }*/
 
   /*if (digitalRead(button2_pin) == HIGH) {
     sendHttpRequest(18);
