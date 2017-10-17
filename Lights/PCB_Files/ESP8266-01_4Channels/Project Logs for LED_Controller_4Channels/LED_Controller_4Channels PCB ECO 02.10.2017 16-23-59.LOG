@@ -1,8 +1,0 @@
-Removed Pin From Net: NetName=GND Pin=C1-1
-Removed Pin From Net: NetName=VCC_12 Pin=C1-2
-Change Component DesignItemId : Designator=C1 Old DesignItemId=Cap New DesignItemId=Cap2
-Change Component Footprint: Designator=C1 Old Footprint=RAD-0.3 New Footprint=CAPR5-4X5
-Change Component Comment : Designator=C1 Old Comment=Cap New Comment=Cap2
-Added Pin To Net: NetName=VCC_12 Pin=C1-1
-Added Pin To Net: NetName=GND Pin=C1-2
-Added Room: Name=LED_Controller_4Channels

@@ -1,5 +1,0 @@
-Removed Pin From Net: NetName=NetIC_1 Pin=P1-4
-Added Pin To Net: NetName=NetP1_4 Pin=P1-4
-Added Pin To Net: NetName=NetP1_4 Pin=Q_B-2
-Added Net: Name=NetP1_4
-Added Room: Name=LED_Controller_4Channels

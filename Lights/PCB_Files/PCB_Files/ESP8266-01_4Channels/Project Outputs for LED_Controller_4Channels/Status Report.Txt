@@ -1,0 +1,22 @@
+Output: Gerber Files
+Type  : Gerber
+From  : Variant [[No Variations]] of Project [LED_Controller_4Channels.PrjPcb]
+   Generated File[LED_Controller_4Channels.GTL]
+   Generated File[LED_Controller_4Channels.GBL]
+   Generated File[LED_Controller_4Channels.GTO]
+   Generated File[LED_Controller_4Channels.GTP]
+   Generated File[LED_Controller_4Channels.GTS]
+   Generated File[LED_Controller_4Channels.GBS]
+   Generated File[LED_Controller_4Channels.GBP]
+   Generated File[LED_Controller_4Channels.GBO]
+   Generated File[LED_Controller_4Channels.GD1]
+   Generated File[LED_Controller_4Channels.GG1]
+   Generated File[LED_Controller_4Channels.RUL]
+   Generated File[LED_Controller_4Channels.EXTREP]
+   Generated File[LED_Controller_4Channels.REP]
+
+
+Files Generated   : 13
+Documents Printed : 0
+
+Finished Output Generation At 19:24:17 On 17.10.2017
