@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <WiFiManager.h>
 
 extern "C" {
 #include "gpio.h"
@@ -70,8 +71,8 @@ void setup() {
   Serial.println();
   Serial.println("Setup!");
 
-  pinMode(0,OUTPUT);
-  digitalWrite(0,LOW);
+  pinMode(0, OUTPUT);
+  digitalWrite(0, LOW);
 
   pinMode(16, OUTPUT);
   pinMode(button1_pin, INPUT);
@@ -80,9 +81,14 @@ void setup() {
   //pinMode(button4_pin, INPUT);
   digitalWrite(16, LOW);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  //WiFi.mode(WIFI_STA);
+  //WiFi.begin(ssid, password);
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("New Hue Tab-Switch");
+
+
   WiFi.macAddress(mac);
 
   while (WiFi.status() != WL_CONNECTED) {
