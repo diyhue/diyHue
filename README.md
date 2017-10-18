@@ -5,7 +5,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ### Requirements:
  - python
- - nmap package for esp8266 lights autodiscover ```sudo apt install namp```
+ - nmap package for esp8266 lights autodiscover ```sudo apt install nmap```
  - python ws4py package only if zigbee module is used ```sudo pip install ws4py```
 
 
