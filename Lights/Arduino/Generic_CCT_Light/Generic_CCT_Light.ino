@@ -121,7 +121,7 @@ void setup() {
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = cct[0] / 150.0; step_level[1] = cct[1] / 150.0; step_level[2] = cct[2] / 150.0; step_level[3] = cct[3] / 150.0;
+  step_level[0] = cct[0] / 150.0; step_level[1] = cct[1] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -313,7 +313,7 @@ void setup() {
       EEPROM.commit();
     } else if (server.hasArg("alert")) {
       if (light_state) {
-        current_cct[0] = 0; current_cct[1] = 0; current_cct[2] = 0; current_cct[3] = 0;
+        current_cct[0] = 0; current_cct[1] = 0;
       } else {
         current_cct[3] = 255;
       }

@@ -15,7 +15,7 @@
 #define PWM_CHANNELS 5
 const uint32_t period = 1024;
 
-//define pins 
+//define pins
 uint32 io_info[PWM_CHANNELS][3] = {
   // MUX, FUNC, PIN
   {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
@@ -182,7 +182,7 @@ void convert_ct() {
 
   rgb_cct[3] = (bri * percent_warm) / 100;
   rgb_cct[4] =  (bri * (100 - percent_warm)) / 100;
-  
+
 }
 
 void handleNotFound() {
@@ -265,7 +265,7 @@ void setup() {
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgb_cct[0] / 150.0; step_level[1] = rgb_cct[1] / 150.0; step_level[2] = rgb_cct[2] / 150.0; step_level[3] = rgb_cct[3] / 150.0; step_level[4] = rgb_cct[4] / 150.0; 
+  step_level[0] = rgb_cct[0] / 150.0; step_level[1] = rgb_cct[1] / 150.0; step_level[2] = rgb_cct[2] / 150.0; step_level[3] = rgb_cct[3] / 150.0; step_level[4] = rgb_cct[4] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -458,7 +458,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT001\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
