@@ -80,7 +80,7 @@ void lightEngine() {
         in_transition = true;
         current_bri[i] -= step_level[i];
         if (current_bri[i] < 0) current_bri[i] = 0;
-        pwm_set_duty((int)(bri[i] * 4), i);
+        pwm_set_duty((int)(current_bri[i] * 4), i);
         pwm_start();
       }
     }
