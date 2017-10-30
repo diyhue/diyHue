@@ -243,10 +243,9 @@ void setup() {
     uint8_t light;
     if (server.hasArg("light"))
       light = server.arg("light").toInt() - 1;
-    String colormode;
     String power_status;
     power_status = light_state[light] ? "true" : "false";
-    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri[light] + "\"}");
+    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri[light] + "}");
   });
 
   server.on("/detect", []() {
