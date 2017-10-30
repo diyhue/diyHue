@@ -47,6 +47,8 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Google Home (require remote api)
   - Eneco Toon (very likely it use cloud service detection)
   
+Please submit [here](https://github.com/mariusmotea/diyHue/issues/27) any other device/application that is working with this emulator.
+  
 Check [Wiki page](https://github.com/mariusmotea/diyHue/wiki) for more details  
   
 [![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
