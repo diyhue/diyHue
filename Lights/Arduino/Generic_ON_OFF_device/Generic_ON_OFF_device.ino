@@ -11,9 +11,9 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define devicesCount 2
+#define devicesCount 4
 
-uint8_t devicesPins[devicesCount] = {4, 5};
+uint8_t devicesPins[devicesCount] = {12, 13, 14, 5};
 
 
 // if you want to setup static ip uncomment these 3 lines and line 72
@@ -39,16 +39,6 @@ void handleNotFound() {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-}
-
-void deviceEngine() {
-  for (uint8_t ch = 0; ch < devicesCount; ch++) {
-    if (digitalRead(ch == HIGH) && device_state[ch] == false ) {
-      digitalWrite(ch, LOW);
-    } else if (digitalRead(ch == LOW) && device_state[ch] == true ) {
-      digitalWrite(ch, HIGH);
-    }
-  }
 }
 
 
@@ -86,26 +76,6 @@ void setup() {
   ArduinoOTA.begin();
 
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    for (int i = 0; i < devicesCount; i++) {
-      if (button == 1000) {
-        if (device_state[i] == false) {
-          device_state[i] = true;
-        }
-      } else if (button == 4000) {
-        device_state[i] = false;
-      }
-    }
-  });
-
-
   server.on("/set", []() {
     uint8_t device;
 
@@ -120,6 +90,7 @@ void setup() {
             EEPROM.commit();
           }
           device_state[device] = true;
+          digitalWrite(devicesPins[device], HIGH);
         }
         else {
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
@@ -127,6 +98,7 @@ void setup() {
             EEPROM.commit();
           }
           device_state[device] = false;
+          digitalWrite(devicesPins[device], LOW);
         }
       }
     }
@@ -134,9 +106,11 @@ void setup() {
   });
 
   server.on("/get", []() {
-    String colormode;
+    uint8_t light;
+    if (server.hasArg("light"))
+      light = server.arg("light").toInt() - 1;
     String power_status;
-    power_status = device_state ? "true" : "false";
+    power_status = device_state[light] ? "true" : "false";
     server.send(200, "text/plain", "{\"on\": " + power_status + "}");
   });
 
@@ -157,14 +131,15 @@ void setup() {
 
       if (server.hasArg("on")) {
         if (server.arg("on") == "true") {
-          device_state[device] = true; {
-            if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
-              EEPROM.write(0, 1);
-              EEPROM.commit();
-            }
+          device_state[device] = true;
+          digitalWrite(devicesPins[device], HIGH);
+          if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
+            EEPROM.write(0, 1);
+            EEPROM.commit();
           }
         } else {
           device_state[device] = false;
+          digitalWrite(devicesPins[device], LOW);
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
             EEPROM.write(0, 0);
             EEPROM.commit();
@@ -212,5 +187,4 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
-  deviceEngine();
 }
