@@ -500,7 +500,7 @@ def sendLightRequest(light, data):
                 else:
                     transitiontime = 4
                     for key, value in payload.iteritems(): #ikea bulbs don't accept all arguments at once
-                        print(check_output("./coap-client-linux -m put -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
+                        print(check_output("./coap-client-linux -m put -u \"Hue_emulator\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
                         sleep(0.5)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 print("scene details:")
@@ -591,7 +591,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 bridge_config["lights"][light]["state"]["reachable"] = False
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
             try:
-                light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
+                light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Hue_emulator\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
                 bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
                 bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
                 if "5706" in light_stats["3311"][0]:
@@ -954,11 +954,14 @@ class S(BaseHTTPRequestHandler):
             self._set_headers_html()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
-                tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001\"", shell=True).split("\n")[3])
+                #register new identity
+                preshared_key = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" -e '{\"9090\":\"Hue_emulator\"}' \"coaps://" + get_parameters["ip"][0] + ":5684/15011/9063\"", shell=True).split("\n")[3])
+
+                tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Hue_emulator\" -k \"" + preshared_key["9091"] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001\"", shell=True).split("\n")[3])
                 pprint(tradri_devices)
                 lights_found = 0
                 for device in tradri_devices:
-                    device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001/" + str(device) +"\"", shell=True).split("\n")[3])
+                    device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"Hue_emulator\" -k \"" + preshared_key["9091"] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001/" + str(device) +"\"", shell=True).split("\n")[3])
                     if "3311" in device_parameters:
                         lights_found += 1
                         #register new tradfri light
@@ -966,7 +969,7 @@ class S(BaseHTTPRequestHandler):
                         new_light_id = nextFreeId("lights")
                         bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": device_parameters["9001"], "uniqueid": "1234567" + str(device), "modelid": "LLM010", "swversion": "66009461"}
                         new_lights.update({new_light_id: {"name": device_parameters["9001"]}})
-                        bridge_config["lights_address"][new_light_id] = {"device_id": device, "security_code": get_parameters["code"][0], "ip": get_parameters["ip"][0], "protocol": "ikea_tradfri"}
+                        bridge_config["lights_address"][new_light_id] = {"device_id": device, "preshared_key": preshared_key["9091"], "ip": get_parameters["ip"][0], "protocol": "ikea_tradfri"}
                 if lights_found == 0:
                     self.wfile.write(webformTradfri() + "<br> No lights where found")
                 else:
