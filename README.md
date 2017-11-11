@@ -34,6 +34,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Home Assistant
   - Domoticz
   - Openhab
+  - Kodi Hue Ambilight
  
  ## Working smartphone applications:
   - Hue (official application)
@@ -46,6 +47,16 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Home & Away future from Hue app (require remote api)
   - Google Home (require remote api)
   - Eneco Toon (very likely it use cloud service detection)
+  
+## Supported lights:
+  - WS2812B and SK6812 smart led strips
+  - Pwm RGB-CCT
+  - Pwm RGBW
+  - Pwm RGB
+  - Pwm CCT
+  - Pwm Dimming (up to 6 lights for every esp8266)
+  - On/Off plugs/lights (up to 6 lights for every esp8266)
+  - On/Off 433Mhz devices (multiple devices for every esp8266). Credits Mevel
   
 Please submit [here](https://github.com/mariusmotea/diyHue/issues/27) any other device/application that is working with this emulator.
   
