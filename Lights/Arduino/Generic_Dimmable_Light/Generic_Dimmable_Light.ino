@@ -23,7 +23,8 @@ uint32 io_info[lightsCount][3] = {
 };
 
 // initial duty: all off
-uint32 pwm_duty_init[lightsCount] = {0, 0};
+uint32 pwm_duty_init[lightsCount];
+//uint32 pwm_duty_init[lightsCount] = {512, 255}; this will set startup brightness to 50% on first light and 25% on second one
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
