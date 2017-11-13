@@ -124,9 +124,9 @@ void convert_xy(uint8_t light)
   }
 
   // Apply gamma correction
-  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
-  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
-  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
+  r = pow(r, (1.0f / 0.45f));
+  g = pow(g, (1.0f / 0.45f));
+  b = pow(b, (1.0f / 0.45f));
 
   if (r > b && r > g) {
     // red is biggest
