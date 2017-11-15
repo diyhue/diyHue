@@ -1238,7 +1238,7 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["lights"][light]["state"]["colormode"] = "ct"
                             elif "hue" or "sat" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
                                 bridge_config["lights"][light]["state"]["colormode"] = "hs"
-                            Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
+                            sendLightRequest(light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]])
                             updateGroupStats(light)
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
@@ -1251,7 +1251,7 @@ class S(BaseHTTPRequestHandler):
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                            sendLightRequest(light, put_dictionary])
                     elif "ct_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["ct"] += int(put_dictionary["ct_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["ct"] > 500:
@@ -1263,13 +1263,13 @@ class S(BaseHTTPRequestHandler):
                         put_dictionary.update({"ct": bridge_config["groups"][url_pices[4]]["action"]["ct"]})
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                            sendLightRequest(light, put_dictionary])
                     elif "scene_inc" in put_dictionary:
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
                     elif url_pices[4] == "0": #if group is 0 the scene applied to all lights
                         for light in bridge_config["lights"].iterkeys():
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                            sendLightRequest(light, put_dictionary])
                         for group in bridge_config["groups"].iterkeys():
                             bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
                             if "on" in put_dictionary:
@@ -1282,9 +1282,9 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["groups"][url_pices[4]]["state"]["on"] = put_dictionary["on"]
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                                 bridge_config["lights"][light]["state"].update(put_dictionary)
-                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                                sendLightRequest(light, put_dictionary])
                 elif url_pices[3] == "lights": #state is applied to a light
-                    Thread(target=sendLightRequest, args=[url_pices[4], put_dictionary]).start()
+                    sendLightRequest(url_pices[4], put_dictionary])
                     for key in put_dictionary.iterkeys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
