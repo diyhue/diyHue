@@ -34,6 +34,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Home Assistant
   - Domoticz
   - Openhab
+  - Philips Ambilight TV's 
   - Kodi Hue Ambilight
  
  ## Working smartphone applications:
