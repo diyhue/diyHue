@@ -1252,7 +1252,7 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["lights"][light]["state"]["colormode"] = "ct"
                             elif "hue" or "sat" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
                                 bridge_config["lights"][light]["state"]["colormode"] = "hs"
-                            sendLightRequest(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
+                            sendLightRequest(light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
                             updateGroupStats(light)
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
