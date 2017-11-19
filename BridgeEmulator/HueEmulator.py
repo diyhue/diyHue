@@ -779,7 +779,8 @@ def scanDeconz():
 
 
 def description():
-    return """<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
+    return """<?xml version="1.0" encoding="UTF-8" ?>
+<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
 <specVersion>
 <major>1</major>
 <minor>0</minor>
@@ -795,7 +796,16 @@ def description():
 <modelNumber>BSB002</modelNumber>
 <modelURL>http://www.meethue.com</modelURL>
 <serialNumber>""" + mac.upper() + """</serialNumber>
-<UDN>MYUUID</UDN>
+<UDN>uuid:2f402f80-da50-11e1-9b23-""" + mac + """</UDN>
+<serviceList>
+<service>
+<serviceType>(null)</serviceType>
+<serviceId>(null)</serviceId>
+<controlURL>(null)</controlURL>
+<eventSubURL>(null)</eventSubURL>
+<SCPDURL>(null)</SCPDURL>
+</service>
+</serviceList>
 <presentationURL>index.html</presentationURL>
 <iconList>
 <icon>
