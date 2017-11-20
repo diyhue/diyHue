@@ -92,6 +92,10 @@ void convert_hue(uint8_t light)
 
 void convert_xy(uint8_t light)
 {
+  int optimal_bri = bri[light];
+  if (optimal_bri < 5) {
+    optimal_bri = 5;
+  }
   float Y = y[light];
   float X = x[light];
   float Z = 1.0f - x[light] - y[light];
@@ -131,11 +135,41 @@ void convert_xy(uint8_t light)
     }
   }
 
+  // Apply gamma correction
+  r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
+  g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
+  b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
+
+  if (r > b && r > g) {
+    // red is biggest
+    if (r > 1.0f) {
+      g = g / r;
+      b = b / r;
+      r = 1.0f;
+    }
+  }
+  else if (g > b && g > r) {
+    // green is biggest
+    if (g > 1.0f) {
+      r = r / g;
+      b = b / g;
+      g = 1.0f;
+    }
+  }
+  else if (b > r && b > g) {
+    // blue is biggest
+    if (b > 1.0f) {
+      r = r / b;
+      g = g / b;
+      b = 1.0f;
+    }
+  }
+
   r = r < 0 ? 0 : r;
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb[light][0] = (int) (r * bri[light]); rgb[light][1] = (int) (g * bri[light]); rgb[light][2] = (int) (b * bri[light]);
+  rgb[light][0] = (int) (r * optimal_bri); rgb[light][1] = (int) (g * optimal_bri); rgb[light][2] = (int) (b * optimal_bri);
 }
 
 void convert_ct(uint8_t light) {
