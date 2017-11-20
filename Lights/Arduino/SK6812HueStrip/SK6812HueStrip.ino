@@ -136,7 +136,7 @@ void convert_xy(uint8_t light)
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb[light][0] = (int) (r * bri[light]); rgb[light][1] = (int) (g * bri[light]); rgb[light][2] = (int) (b * bri[light]);
+  rgbw[light][0] = (int) (r * bri[light]); rgbw[light][1] = (int) (g * bri[light]); rgbw[light][2] = (int) (b * bri[light]); rgbw[light][3] = 0;
 }
 
 void convert_ct(uint8_t light) {
