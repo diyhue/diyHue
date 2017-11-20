@@ -93,36 +93,14 @@ void convert_hue(uint8_t light)
 
 void convert_xy(uint8_t light)
 {
-  float Y = bri[light] / 250.0f;
-
-  float z = 1.0f - x[light] - y[light];
-
-  float X = (Y / y[light]) * x[light];
-  float Z = (Y / y[light]) * z;
+  float Y = y[light];
+  float X = x[light];
+  float Z = 1.0f - x[light] - y[light];
 
   // sRGB D65 conversion
   float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
   float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
-
-  if (r > b && r > g && r > 1.0f) {
-    // red is too big
-    g = g / r;
-    b = b / r;
-    r = 1.0f;
-  }
-  else if (g > b && g > r && g > 1.0f) {
-    // green is too big
-    r = r / g;
-    b = b / g;
-    g = 1.0f;
-  }
-  else if (b > r && b > g && b > 1.0f) {
-    // blue is too big
-    r = r / b;
-    g = g / b;
-    b = 1.0f;
-  }
 
   // Apply gamma correction
   r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
@@ -158,7 +136,7 @@ void convert_xy(uint8_t light)
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgbw[light][0] = (int) (r * 255.0f); rgbw[light][1] = (int) (g * 255.0f); rgbw[light][2] = (int) (b * 255.0f); rgbw[light][3] = 0;
+  rgb[light][0] = (int) (r * bri[light]); rgb[light][1] = (int) (g * bri[light]); rgb[light][2] = (int) (b * bri[light]);
 }
 
 void convert_ct(uint8_t light) {
