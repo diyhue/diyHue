@@ -102,42 +102,18 @@ void convert_hue()
 
 void convert_xy()
 {
-  float Y = bri / 250.0f;
-
   float z = 1.0f - x - y;
 
-  float X = (Y / y) * x;
-  float Z = (Y / y) * z;
-
   // sRGB D65 conversion
-  float r =  X * 1.656492f - Y * 0.354851f - Z * 0.255038f;
-  float g = -X * 0.707196f + Y * 1.655397f + Z * 0.036152f;
-  float b =  X * 0.051713f - Y * 0.121364f + Z * 1.011530f;
-
-  if (r > b && r > g && r > 1.0f) {
-    // red is too big
-    g = g / r;
-    b = b / r;
-    r = 1.0f;
-  }
-  else if (g > b && g > r && g > 1.0f) {
-    // green is too big
-    r = r / g;
-    b = b / g;
-    g = 1.0f;
-  }
-  else if (b > r && b > g && b > 1.0f) {
-    // blue is too big
-    r = r / b;
-    g = g / b;
-    b = 1.0f;
-  }
+  float r =  x * 3.2406f - y * 1.5372f - z * 0.4986f;
+  float g = -x * 0.9689f + y * 1.8758f + z * 0.0415f;
+  float b =  x * 0.0557f - y * 0.2040f + z * 1.0570f;
 
   // Apply gamma correction
-  r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
-  g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
-  b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
-  
+  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
+  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
+  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
+
   if (r > b && r > g) {
     // red is biggest
     if (r > 1.0f) {
@@ -167,7 +143,7 @@ void convert_xy()
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb_cct[0] = (int) (r * 255.0f); rgb_cct[1] = (int) (g * 255.0f); rgb_cct[2] = (int) (b * 255.0f); rgb_cct[3] = 0; rgb_cct[4] = 0;
+  rgb_cct[0] = (int) (r * bri); rgb_cct[1] = (int) (g * bri); rgb_cct[2] = (int) (b * bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
 }
 
 void convert_ct() {
@@ -455,7 +431,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"type\": \"rgb\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT001\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
