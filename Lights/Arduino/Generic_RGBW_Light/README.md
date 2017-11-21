@@ -1,4 +1,6 @@
-## Custom light instruction
+# Custom light instruction
+
+![Circuit Diagram](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/schematic.JPG)
 
 Start with placing components on your board to make sure you got room for the paths/wires without soldering yourself into trouble :)
 
@@ -24,9 +26,10 @@ Start with placing components on your board to make sure you got room for the pa
 You can use any 12v RGBW or RGBWW strip that has 5 connectors for this build. I recomend the RGBWW strips from what i have experienced so far, the RGBW ones dont make proper yellow/warm light.
 
 
+![Top](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/Over.jpg)
+![Back](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/Under.jpg)
 
-
-# Components
+## Components
 
 [IRLB8721-TO220 MOSFETS (4x)](https://www.aliexpress.com/item/10PCS-IRLB8721-TO220-IRLB8721PBF-TO-220-free-shipping/32714364118.html)
 
@@ -37,3 +40,8 @@ You can use any 12v RGBW or RGBWW strip that has 5 connectors for this build. I 
 [Female Headers (4x)](https://www.aliexpress.com/item/10-10-pcs-Single-Row-Pin-Female-Header-Socket-2-54mm-Pitch-1-10p-12p-20p/32783590196.html)
 
 [Prototyping board (1x)](https://www.aliexpress.com/item/20pcs-5x7-4x6-3x7-2x8-cm-double-Side-Copper-prototype-pcb-Universal-Board-for-Arduino/1847727667.html)
+
+
+# Feican RGBW bulb
+
+https://raw.githubusercontent.com/mariusmotea/diyHue/master/Images/Color_Dream_bulb_with_flash_replaced.jpg
