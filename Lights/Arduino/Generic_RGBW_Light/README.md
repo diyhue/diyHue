@@ -26,7 +26,8 @@ Start with placing components on your board to make sure you got room for the pa
 You can use any 12v RGBW or RGBWW strip that has 5 connectors for this build. I recomend the RGBWW strips from what i have experienced so far, the RGBW ones dont make proper yellow/warm light.
 
 
-
+![Top](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/Over.jpg)
+![Back](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/Under.jpg)
 
 ## Components
 
