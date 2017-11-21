@@ -1,4 +1,4 @@
-## Custom light instruction
+# Custom light instruction
 
 ![Circuit Diagram](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_RGBW_Light/images/schematic.JPG)
 
@@ -28,7 +28,7 @@ You can use any 12v RGBW or RGBWW strip that has 5 connectors for this build. I 
 
 
 
-# Components
+## Components
 
 [IRLB8721-TO220 MOSFETS (4x)](https://www.aliexpress.com/item/10PCS-IRLB8721-TO220-IRLB8721PBF-TO-220-free-shipping/32714364118.html)
 
@@ -41,6 +41,6 @@ You can use any 12v RGBW or RGBWW strip that has 5 connectors for this build. I 
 [Prototyping board (1x)](https://www.aliexpress.com/item/20pcs-5x7-4x6-3x7-2x8-cm-double-Side-Copper-prototype-pcb-Universal-Board-for-Arduino/1847727667.html)
 
 
-## Feican RGBW bulb
+# Feican RGBW bulb
 
 https://raw.githubusercontent.com/mariusmotea/diyHue/master/Images/Color_Dream_bulb_with_flash_replaced.jpg
