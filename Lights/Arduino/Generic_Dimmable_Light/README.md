@@ -24,12 +24,13 @@ This build is very simular to the Generic RGBW light build. (didnt take picture 
 ![Top](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_Dimmable_Light/images/Over.jpg?raw=true)
 ![Back](https://github.com/mariusmotea/diyHue/blob/master/Lights/Arduino/Generic_Dimmable_Light/images/Under.jpg?raw=true)
 
+## Components
 [IRLB8721-TO220 MOSFETS (2x)](https://www.aliexpress.com/item/10PCS-IRLB8721-TO220-IRLB8721PBF-TO-220-free-shipping/32714364118.html)
 
 [Wemos D1 mini (1x)](https://www.aliexpress.com/item/ESP8266-ESP12-ESP-12-WeMos-D1-Mini-WIFI-Dev-Kit-Development-Board-NodeMCU-Lua/32653918483.html)
 
-[1k OHM resistor (2x)] (https://www.aliexpress.com/item/100pcs-1-4W-Metal-Film-Resistor-1K-ohm-1KR-1-Tolerance-Precision-RoHS-Lead-Free-In/1851964338.html)
+[1k OHM resistor (2x)](https://www.aliexpress.com/item/100pcs-1-4W-Metal-Film-Resistor-1K-ohm-1KR-1-Tolerance-Precision-RoHS-Lead-Free-In/1851964338.html)
 
-[Female Headers (2x)] (https://www.aliexpress.com/item/10-10-pcs-Single-Row-Pin-Female-Header-Socket-2-54mm-Pitch-1-10p-12p-20p/32783590196.html)
+[Female Headers (2x)](https://www.aliexpress.com/item/10-10-pcs-Single-Row-Pin-Female-Header-Socket-2-54mm-Pitch-1-10p-12p-20p/32783590196.html)
 
 [Prototyping board (1x)](https://www.aliexpress.com/item/20pcs-5x7-4x6-3x7-2x8-cm-double-Side-Copper-prototype-pcb-Universal-Board-for-Arduino/1847727667.html)
