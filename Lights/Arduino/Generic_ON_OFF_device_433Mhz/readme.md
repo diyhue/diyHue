@@ -18,12 +18,12 @@ Showing up as regular Hue Bulbs with ON/OFF feature.
 </br>
 
 <div style='float: center'>
-  <img style='width: 300px' src="images/Fritzing.jpg"></img>
+  <img style='width: 300px' src="images/Fritzing.JPG"></img>
 </div>
 <br>
 </br>
 <div style='float: center'>
-  <img style='width: 300px' src="images/Schematic.jpg"></img>
+  <img style='width: 300px' src="images/Schematic.JPG"></img>
 </div>
 <br>
 </br>
