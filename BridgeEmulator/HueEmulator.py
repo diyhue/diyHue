@@ -375,34 +375,15 @@ def sendRequest(url, method, data, time_out=2, delay=0):
     return response
 
 def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
-    Y = bri / 250.0
-    z = 1.0 - x - y
-
-    X = (Y / y) * x
-    Z = (Y / y) * z
+    X = x
+    Y = y
+    Z = 1.0 - x - y
 
   # sRGB D65 conversion
-    r =  X * 1.656492 - Y * 0.354851 - Z * 0.255038
-    g = -X * 0.707196 + Y * 1.655397 + Z * 0.036152
-    b =  X * 0.051713 - Y * 0.121364 + Z * 1.011530
+    r =  X * 3.2406 - Y * 1.5372 - Z * 0.4986
+    g = -X * 0.9689 + Y * 1.8758 + Z * 0.0415
+    b =  X * 0.0557 - Y * 0.2040 + Z * 1.0570
 
-    if r > b and r > g and r > 1:
-    # red is too big
-        g = g / r
-        b = b / r
-        r = 1
-
-    elif g > b and g > r and g > 1:
-    #green is too big
-        r = r / g
-        b = b / g
-        g = 1
-
-    elif b > r and b > g and b > 1:
-    # blue is too big
-        r = r / b
-        g = g / b
-        b = 1
 
     r = 12.92 * r if r <= 0.0031308 else (1.0 + 0.055) * pow(r, (1.0 / 2.4)) - 0.055
     g = 12.92 * g if g <= 0.0031308 else (1.0 + 0.055) * pow(g, (1.0 / 2.4)) - 0.055
@@ -414,25 +395,25 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
             g = g / r
             b = b / r
             r = 1
-        elif g > b and g > r:
-        # green is biggest
-            if g > 1:
-                r = r / g
-                b = b / g
-                g = 1
+    elif g > b and g > r:
+    # green is biggest
+        if g > 1:
+            r = r / g
+            b = b / g
+            g = 1
 
-        elif b > r and b > g:
-        # blue is biggest
-            if b > 1:
-                r = r / b
-                g = g / b
-                b = 1
+    elif b > r and b > g:
+    # blue is biggest
+        if b > 1:
+            r = r / b
+            g = g / b
+            b = 1
 
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
     b = 0 if b < 0 else b
 
-    return [int(r * 255), int(g * 255), int(b * 255)]
+    return [int(r * bri), int(g * bri), int(b * bri)]
 
 def sendLightRequest(light, data):
     payload = {}
