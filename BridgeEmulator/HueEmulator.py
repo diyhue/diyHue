@@ -777,10 +777,9 @@ def scanDeconz():
 
 
 
-
 def description():
     return """<?xml version="1.0" encoding="UTF-8" ?>
-<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
+<root xmlns="urn:schemas-upnp-org:device-1-0">
 <specVersion>
 <major>1</major>
 <minor>0</minor>
@@ -795,8 +794,8 @@ def description():
 <modelName>Philips hue bridge 2015</modelName>
 <modelNumber>BSB002</modelNumber>
 <modelURL>http://www.meethue.com</modelURL>
-<serialNumber>""" + mac.upper() + """</serialNumber>
-<UDN>uuid:2f402f80-da50-11e1-9b23-""" + mac + """</UDN>
+<serialNumber>00008800bbee</serialNumber>
+<UDN>uuid:2f402f80-da50-11e1-9b23-00008800bbee</UDN>
 <serviceList>
 <service>
 <serviceType>(null)</serviceType>
@@ -818,13 +817,7 @@ def description():
 <icon>
 <mimetype>image/png</mimetype>
 <height>120</height>
-<width>120</width>
-<depth>24</depth>
-<url>hue_logo_3.png</url>
-</icon>
-</iconList>
-</device>
-</root>"""
+<width>120</width> """
 
 def webformTradfri():
     return """<!doctype html>
@@ -982,9 +975,14 @@ class S(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
+    def _set_headers_xml(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/xml')
+        self.end_headers()
+
     def do_GET(self):
         if self.path == '/description.xml':
-            self._set_headers_html()
+            self._set_headers_xml()
             self.wfile.write(description())
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             self._set_headers_html()
@@ -1377,7 +1375,7 @@ if __name__ == "__main__":
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
     try:
-        #updateAllLights()
+        updateAllLights()
         Thread(target=ssdpSearch).start()
         Thread(target=ssdpBroadcast).start()
         Thread(target=schedulerProcessor).start()
