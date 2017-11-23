@@ -778,8 +778,8 @@ def scanDeconz():
 
 
 def description():
-    return """<?xml version="1.0" encoding="UTF-8" ?>
-<root xmlns="urn:schemas-upnp-org:device-1-0">
+    return """<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
+<root xmlns=\"urn:schemas-upnp-org:device-1-0\">
 <specVersion>
 <major>1</major>
 <minor>0</minor>
@@ -817,7 +817,14 @@ def description():
 <icon>
 <mimetype>image/png</mimetype>
 <height>120</height>
-<width>120</width> """
+<width>120</width>
+<depth>24</depth>
+<url>hue_logo_3.png</url>
+</icon>
+</iconList>
+</device>
+</root>
+"""
 
 def webformTradfri():
     return """<!doctype html>
