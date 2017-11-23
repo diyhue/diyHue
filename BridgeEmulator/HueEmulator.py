@@ -619,12 +619,12 @@ def longPressButton(sensor, buttonevent):
 
 
 def scanTradfri():
-    if "tradfri_psk" in bridge_config:
-        tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["tradfri_psk"] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001\"", shell=True).split("\n")[3])
+    if "tradfri" in bridge_config:
+        tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["tradfri"]["psk"] + "\" \"coaps://" + bridge_config["tradfri"]["ip"] + ":5684/15001\"", shell=True).split("\n")[3])
         pprint(tradri_devices)
         lights_found = 0
         for device in tradri_devices:
-            device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["tradfri_psk"] + "\" \"coaps://" + get_parameters["ip"][0] + ":5684/15001/" + str(device) +"\"", shell=True).split("\n")[3])
+            device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["tradfri"]["psk"] + "\" \"coaps://" + bridge_config["tradfri"]["ip"] + ":5684/15001/" + str(device) +"\"", shell=True).split("\n")[3])
             if "3311" in device_parameters:
                 new_light = True
                 for light in bridge_config["lights_address"]:
@@ -638,7 +638,7 @@ def scanTradfri():
                     new_light_id = nextFreeId("lights")
                     bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": device_parameters["9001"], "uniqueid": "1234567" + str(device), "modelid": "LLM010", "swversion": "66009461"}
                     new_lights.update({new_light_id: {"name": device_parameters["9001"]}})
-                    bridge_config["lights_address"][new_light_id] = {"device_id": device, "preshared_key": bridge_config["tradfri_psk"], "ip": get_parameters["ip"][0], "protocol": "ikea_tradfri"}
+                    bridge_config["lights_address"][new_light_id] = {"device_id": device, "preshared_key": bridge_config["tradfri"]["psk"], "ip": bridge_config["tradfri"]["ip"], "protocol": "ikea_tradfri"}
         return lights_found
     else:
         return 0
@@ -997,7 +997,7 @@ class S(BaseHTTPRequestHandler):
             if "code" in get_parameters:
                 #register new identity
                 registration = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" -e '{\"9090\":\"Hue-EMulator\"}' \"coaps://" + get_parameters["ip"][0] + ":5684/15011/9063\"", shell=True).split("\n")[3])
-                bridge_config["tradfri_psk"] = registration["9091"]
+                bridge_config["tradfri"] = {"psk": registration["9091"], "ip": get_parameters["ip"][0]}
                 lights_found = scanTradfri()
                 if lights_found == 0:
                     self.wfile.write(webformTradfri() + "<br> No lights where found")
