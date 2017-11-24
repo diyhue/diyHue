@@ -555,24 +555,14 @@ def scanForLights(): #scan for ESP8266 lights and strips
 
 def syncWithLights(): #update Hue Bridge lights states
     for light in bridge_config["lights_address"]:
-        if bridge_config["lights_address"][light]["protocol"] == "native":
-            try:
+        try:
+            if bridge_config["lights_address"][light]["protocol"] == "native":
                 light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}", 0.5))
-            except:
-                bridge_config["lights"][light]["state"]["reachable"] = False
-                bridge_config["lights"][light]["state"]["on"] = False
-                print("request error")
-            else:
-                bridge_config["lights"][light]["state"]["reachable"] = True
                 bridge_config["lights"][light]["state"].update(light_data)
-        elif bridge_config["lights_address"][light]["protocol"] == "hue":
-            try:
+            elif bridge_config["lights_address"][light]["protocol"] == "hue":
                 light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
                 bridge_config["lights"][light]["state"].update(light_data["state"])
-            except:
-                bridge_config["lights"][light]["state"]["reachable"] = False
-        elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
-            try:
+            elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
                 light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
                 bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
                 bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
@@ -585,8 +575,23 @@ def syncWithLights(): #update Hue Bridge lights states
                         bridge_config["lights"][light]["state"]["ct"] = 470
                 else:
                     bridge_config["lights"][light]["state"]["ct"] = 470
-            except:
-                bridge_config["lights"][light]["state"]["reachable"] = False
+            elif bridge_config["lights_address"][light]["protocol"] == "milight":
+                light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]), "GET", "{}", 1))
+                if light_data["state"] == "ON":
+                    bridge_config["lights"][light]["state"]["on"] = True
+                else:
+                    bridge_config["lights"][light]["state"]["on"] = True
+                if "brightness" in light_data:
+                    bridge_config["lights"][light]["state"]["bri"] = light_data["brightness"]
+                if "color_temp" in light_data:
+                    bridge_config["lights"][light]["state"]["colormode"] = "ct"
+                    bridge_config["lights"][light]["state"]["ct"] = light_data["color_temp"] * 1.6
+        except:
+            bridge_config["lights"][light]["state"]["reachable"] = False
+            bridge_config["lights"][light]["state"]["on"] = False
+            print("request error")
+        else:
+            bridge_config["lights"][light]["state"]["reachable"] = True
 
 def longPressButton(sensor, buttonevent):
     print("long press detected")
