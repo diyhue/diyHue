@@ -16,11 +16,6 @@
 
 uint8_t PWM_PINS[PWM_CHANNELS] = {4, 3, 5, 6}; //RGBW order
 
-#define MY92XX_RED          4
-#define MY92XX_GREEN        3
-#define MY92XX_BLUE         5
-
-
 my92xx * _my92xx;
 
 // if you want to setup static ip uncomment these 3 lines and line 72
