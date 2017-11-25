@@ -580,7 +580,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 if light_data["state"] == "ON":
                     bridge_config["lights"][light]["state"]["on"] = True
                 else:
-                    bridge_config["lights"][light]["state"]["on"] = True
+                    bridge_config["lights"][light]["state"]["on"] = False
                 if "brightness" in light_data:
                     bridge_config["lights"][light]["state"]["bri"] = light_data["brightness"]
                 if "color_temp" in light_data:
