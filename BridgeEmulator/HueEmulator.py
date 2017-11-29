@@ -1306,7 +1306,6 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
                         elif key in ["hue", "sat"]:
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
-                    updateGroupStats(url_pices[4])
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
@@ -1331,6 +1330,8 @@ class S(BaseHTTPRequestHandler):
                 response_dictionary.append({"success":{response_location + key: value}})
             self.wfile.write(json.dumps(response_dictionary,sort_keys=True, indent=4, separators=(',', ': ')))
             print(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
+            if url_pices[3] == "lights":
+                updateGroupStats(url_pices[4])
         else:
             self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
 
