@@ -200,8 +200,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
-  pinMode(button1_pin, INPUT);
-  pinMode(button2_pin, INPUT);
+  if (use_hardware_switch == true) {
+    pinMode(button1_pin, INPUT);
+    pinMode(button2_pin, INPUT);
+  }
 
 
   server.on("/switch", []() {
