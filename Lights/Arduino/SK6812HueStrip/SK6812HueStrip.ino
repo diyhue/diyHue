@@ -8,7 +8,11 @@
 #include <EEPROM.h>
 
 #define lightsCount 3
-#define pixelCount 30
+#define pixelCount 60
+
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors.
+#define button1_pin 4 // on and bri up
+#define button2_pin 5 // off and bri down
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
@@ -211,6 +215,24 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
+void process_lightdata(uint8_t light,float transitiontime) {
+  transitiontime *= 16 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+  if (color_mode[light] == 1 && light_state[light] == true) {
+    convert_xy(light);
+  } else if (color_mode[light] == 2 && light_state[light] == true) {
+    convert_ct(light);
+  } else if (color_mode[light] == 3 && light_state[light] == true) {
+    convert_hue(light);
+  }
+  for (uint8_t i = 0; i <= 3; i++) {
+    if (light_state[light]) {
+      step_level[light][i] = ((float)rgbw[light][i] - current_rgbw[light][i]) / transitiontime;
+    } else {
+      step_level[light][i] = current_rgbw[light][i] / transitiontime;
+    }
+  }
+}
+
 void lightEngine() {
   for (int i = 0; i < lightsCount; i++) {
     if (light_state[i]) {
@@ -244,6 +266,50 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
+  } else if (use_hardware_switch == true) {
+    if (digitalRead(button1_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button1_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = true;
+        }
+        else {
+          // there was a long press
+          bri[light] += 56;
+          if (bri[light] > 254) {
+            // don't increase the brightness more then maximum value
+            bri[light] = 254;
+          }
+        }
+        process_lightdata(light,4);
+      }
+    } else if (digitalRead(button2_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button2_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = false;
+        }
+        else {
+          // there was a long press
+          bri[light] -= 56;
+          if (bri[light] < 1) {
+            // don't decrease the brightness less than minimum value.
+            bri[light] = 1;
+          }
+        }
+        process_lightdata(light,4);
+      }
+    }
   }
 }
 
@@ -299,7 +365,8 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
-
+  pinMode(button1_pin, INPUT);
+  pinMode(button2_pin, INPUT);
 
   server.on("/switch", []() {
     server.send(200, "text/plain", "OK");
@@ -356,7 +423,7 @@ void setup() {
 
   server.on("/set", []() {
     uint8_t light;
-    float transitiontime = 4;
+    int transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "light") {
         light = server.arg(i).toInt() - 1;
@@ -433,22 +500,8 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
-    transitiontime *= 16 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+    process_lightdata(light, transitiontime);
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
-    if (color_mode[light] == 1 && light_state[light] == true) {
-      convert_xy(light);
-    } else if (color_mode[light] == 2 && light_state[light] == true) {
-      convert_ct(light);
-    } else if (color_mode[light] == 3 && light_state[light] == true) {
-      convert_hue(light);
-    }
-    for (uint8_t j = 0; j <= 3; j++) {
-      if (light_state[light]) {
-        step_level[light][j] = ((float)rgbw[light][j] - current_rgbw[light][j]) / transitiontime;
-      } else {
-        step_level[light][j] = current_rgbw[light][j] / transitiontime;
-      }
-    }
   });
 
   server.on("/get", []() {
@@ -639,5 +692,3 @@ void loop() {
   server.handleClient();
   lightEngine();
 }
-
-
