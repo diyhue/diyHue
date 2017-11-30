@@ -10,6 +10,10 @@
 #define lightsCount 3
 #define pixelCount 60
 
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
+#define button1_pin 4 // on and bri up
+#define button2_pin 5 // off and bri down
+
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
@@ -92,41 +96,24 @@ void convert_hue(uint8_t light)
 
 void convert_xy(uint8_t light)
 {
-  float Y = bri[light] / 250.0f;
-
-  float z = 1.0f - x[light] - y[light];
-
-  float X = (Y / y[light]) * x[light];
-  float Z = (Y / y[light]) * z;
+  int optimal_bri = bri[light];
+  if (optimal_bri < 5) {
+    optimal_bri = 5;
+  }
+  float Y = y[light];
+  float X = x[light];
+  float Z = 1.0f - x[light] - y[light];
 
   // sRGB D65 conversion
   float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
   float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
-  if (r > b && r > g && r > 1.0f) {
-    // red is too big
-    g = g / r;
-    b = b / r;
-    r = 1.0f;
-  }
-  else if (g > b && g > r && g > 1.0f) {
-    // green is too big
-    r = r / g;
-    b = b / g;
-    g = 1.0f;
-  }
-  else if (b > r && b > g && b > 1.0f) {
-    // blue is too big
-    r = r / b;
-    g = g / b;
-    b = 1.0f;
-  }
 
   // Apply gamma correction
-  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
-  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
-  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
+  r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
+  g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
+  b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
 
   if (r > b && r > g) {
     // red is biggest
@@ -157,7 +144,7 @@ void convert_xy(uint8_t light)
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb[light][0] = (int) (r * 255.0f); rgb[light][1] = (int) (g * 255.0f); rgb[light][2] = (int) (b * 255.0f);
+  rgb[light][0] = (int) (r * optimal_bri); rgb[light][1] = (int) (g * optimal_bri); rgb[light][2] = (int) (b * optimal_bri);
 }
 
 void convert_ct(uint8_t light) {
@@ -232,6 +219,24 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
+void process_lightdata(uint8_t light,float transitiontime) {
+  transitiontime *= 16 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+  if (color_mode[light] == 1 && light_state[light] == true) {
+    convert_xy(light);
+  } else if (color_mode[light] == 2 && light_state[light] == true) {
+    convert_ct(light);
+  } else if (color_mode[light] == 3 && light_state[light] == true) {
+    convert_hue(light);
+  }
+  for (uint8_t i = 0; i <= 3; i++) {
+    if (light_state[light]) {
+      step_level[light][i] = ((float)rgb[light][i] - current_rgb[light][i]) / transitiontime;
+    } else {
+      step_level[light][i] = current_rgb[light][i] / transitiontime;
+    }
+  }
+}
+
 void lightEngine() {
   for (int i = 0; i < lightsCount; i++) {
     if (light_state[i]) {
@@ -265,6 +270,48 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
+  } else if (use_hardware_switch == true) {
+    if (digitalRead(button1_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button1_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = true;
+        }
+        else {
+          // there was a long press
+          bri[light] += 56;
+          if (bri[light] > 255) {
+            // don't increase the brightness more then maximum value
+            bri[light] = 255;
+          }
+        }
+      }
+    } else if (digitalRead(button2_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button2_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = false;
+        }
+        else {
+          // there was a long press
+          bri[light] -= 56;
+          if (bri[light] < 1) {
+            // don't decrease the brightness less than minimum value.
+            bri[light] = 1;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -320,6 +367,8 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+  pinMode(button1_pin, INPUT);
+  pinMode(button2_pin, INPUT);
 
 
   server.on("/switch", []() {
