@@ -220,7 +220,7 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
 }
 
 void process_lightdata(uint8_t light,float transitiontime) {
-  transitiontime *= 16 - (pixelCount / 40); //every extra led add a small delay that need to be counted
+  transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
   if (color_mode[light] == 1 && light_state[light] == true) {
     convert_xy(light);
   } else if (color_mode[light] == 2 && light_state[light] == true) {
@@ -499,22 +499,8 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
-    transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
-    if (color_mode[light] == 1 && light_state[light] == true) {
-      convert_xy(light);
-    } else if (color_mode[light] == 2 && light_state[light] == true) {
-      convert_ct(light);
-    } else if (color_mode[light] == 3 && light_state[light] == true) {
-      convert_hue(light);
-    }
-    for (uint8_t j = 0; j < 3; j++) {
-      if (light_state[light]) {
-        step_level[light][j] = ((float)rgb[light][j] - current_rgb[light][j]) / transitiontime;
-      } else {
-        step_level[light][j] = current_rgb[light][j] / transitiontime;
-      }
-    }
+    process_lightdata(light, transitiontime);
   });
 
   server.on("/get", []() {
