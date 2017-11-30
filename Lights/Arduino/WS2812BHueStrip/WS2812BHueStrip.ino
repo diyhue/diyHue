@@ -228,7 +228,7 @@ void process_lightdata(uint8_t light,float transitiontime) {
   } else if (color_mode[light] == 3 && light_state[light] == true) {
     convert_hue(light);
   }
-  for (uint8_t i = 0; i <= 3; i++) {
+  for (uint8_t i = 0; i < 3; i++) {
     if (light_state[light]) {
       step_level[light][i] = ((float)rgb[light][i] - current_rgb[light][i]) / transitiontime;
     } else {
