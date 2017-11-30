@@ -7,23 +7,28 @@
 #include <EEPROM.h>
 #include "pwm.c"
 
-#define lightsCount 3
+#define lightsCount 4
+
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors.
+#define button1_pin 4 // on and bri up
+#define button2_pin 5 // off and bri down
 
 const uint32_t period = 1024;
 
 //define pins
 uint32 io_info[lightsCount][3] = {
   // MUX, FUNC, PIN
-  //{PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12, 12},
-  //{PERIPHS_IO_MUX_MTDO_U, FUNC_GPIO15, 15},
-  //{PERIPHS_IO_MUX_MTCK_U, FUNC_GPIO13, 13},
-  //{PERIPHS_IO_MUX_MTMS_U, FUNC_GPIO14, 14},
-  {PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
-  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
+  {PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12, 12},
+  {PERIPHS_IO_MUX_MTDO_U, FUNC_GPIO15, 15},
+  {PERIPHS_IO_MUX_MTCK_U, FUNC_GPIO13, 13},
+  {PERIPHS_IO_MUX_MTMS_U, FUNC_GPIO14, 14},
+  //{PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
+  //{PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
 };
 
 // initial duty: all off
-uint32 pwm_duty_init[lightsCount] = {0, 0};
+uint32 pwm_duty_init[lightsCount];
+//uint32 pwm_duty_init[lightsCount] = {512, 255}; this will set startup brightness to 50% on first light and 25% on second one
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
@@ -64,6 +69,15 @@ void apply_scene(uint8_t new_scene,  uint8_t light) {
   }
 }
 
+void process_lightdata(uint8_t light, float transitiontime) {
+  transitiontime *= 16;
+  if (light_state[light]) {
+    step_level[light] = (bri[light] - current_bri[light]) / transitiontime;
+  } else {
+    step_level[light] = current_bri[light] / transitiontime;
+  }
+}
+
 
 void lightEngine() {
   for (int i = 0; i < lightsCount; i++) {
@@ -88,6 +102,50 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
+  } else if (use_hardware_switch == true) {
+    if (digitalRead(button1_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button1_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = true;
+        }
+        else {
+          // there was a long press
+          bri[light] += 56;
+          if (bri[light] > 254) {
+            // don't increase the brightness more then maximum value
+            bri[light] = 254;
+          }
+        }
+        process_lightdata(light, 4);
+      }
+    } else if (digitalRead(button2_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button2_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      for (int light = 0; light < lightsCount; light++) {
+        if (i < 30) {
+          // there was a short press
+          light_state[light] = false;
+        }
+        else {
+          // there was a long press
+          bri[light] -= 56;
+          if (bri[light] < 1) {
+            // don't decrease the brightness less than minimum value.
+            bri[light] = 1;
+          }
+        }
+        process_lightdata(light, 4);
+      }
+    }
   }
 }
 
@@ -142,6 +200,8 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+  pinMode(button1_pin, INPUT);
+  pinMode(button2_pin, INPUT);
 
 
   server.on("/switch", []() {
@@ -179,11 +239,11 @@ void setup() {
       } else if (button == 4000) {
         light_state[i] = false;
       }
-        if (light_state[i]) {
-          step_level[i] = ((float)bri[i] - current_bri[i]) / transitiontime;
-        } else {
-          step_level[i] = current_bri[i] / transitiontime;
-        }
+      if (light_state[i]) {
+        step_level[i] = ((float)bri[i] - current_bri[i]) / transitiontime;
+      } else {
+        step_level[i] = current_bri[i] / transitiontime;
+      }
     }
   });
 
@@ -230,13 +290,8 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
+    process_lightdata(light, transitiontime);
     server.send(200, "text/plain", "OK, bri:" + (String)bri[light] + ", state:" + light_state[light]);
-    transitiontime *= 16;
-    if (light_state[light]) {
-      step_level[light] = (bri[light] - current_bri[light]) / transitiontime;
-    } else {
-      step_level[light] = current_bri[light] / transitiontime;
-    }
   });
 
   server.on("/get", []() {
