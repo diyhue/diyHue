@@ -1,5 +1,5 @@
 /*
-  This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight RGB_CCT bulb.
+  This can control bulbs with 2 pwm channel
 */
 
 
@@ -14,6 +14,10 @@
 
 #define PWM_CHANNELS 2
 const uint32_t period = 1024;
+
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
+#define button1_pin 1 // on and bri up
+#define button2_pin 3 // off and bri down
 
 //define pins
 uint32 io_info[PWM_CHANNELS][3] = {
@@ -82,6 +86,20 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
+void process_lightdata(float transitiontime) {
+  if (light_state == true) {
+    convert_ct();
+  }
+  transitiontime *= 16;
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+    if (light_state) {
+      step_level[color] = (cct[color] - current_cct[color]) / transitiontime;
+    } else {
+      step_level[color] = current_cct[color] / transitiontime;
+    }
+  }
+}
+
 void lightEngine() {
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
@@ -105,6 +123,46 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
+  } else if (use_hardware_switch == true) {
+    if (digitalRead(button1_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button1_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      if (i < 30) {
+        // there was a short press
+        light_state = true;
+      }
+      else {
+        // there was a long press
+        bri += 56;
+        if (bri > 254) {
+          // don't increase the brightness more then maximum value
+          bri = 254;
+        }
+      }
+      process_lightdata(4);
+    } else if (digitalRead(button2_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button2_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      if (i < 30) {
+        // there was a short press
+        light_state = false;
+      }
+      else {
+        // there was a long press
+        bri -= 56;
+        if (bri < 1) {
+          // don't decrease the brightness less than minimum value.
+          bri = 1;
+        }
+      }
+      process_lightdata(4);
+    }
   }
 }
 
@@ -154,6 +212,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+  if (use_hardware_switch == true) {
+    pinMode(button1_pin, INPUT);
+    pinMode(button2_pin, INPUT);
+  }
 
   server.on("/switch", []() {
     server.send(200, "text/plain", "OK");
@@ -246,17 +308,7 @@ void setup() {
       }
     }
     server.send(200, "text/plain", "OK, bri:" + (String)bri + ", ct:" + ct + ", colormode: ct, state:" + light_state);
-    if (light_state == true) {
-      convert_ct();
-    }
-    transitiontime *= 16;
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-      if (light_state) {
-        step_level[color] = (cct[color] - current_cct[color]) / transitiontime;
-      } else {
-        step_level[color] = current_cct[color] / transitiontime;
-      }
-    }
+    process_lightdata(transitiontime);
   });
 
   server.on("/get", []() {

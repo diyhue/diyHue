@@ -15,11 +15,15 @@
 #define PWM_CHANNELS 5
 const uint32_t period = 1024;
 
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
+#define button1_pin 1 // on and bri up
+#define button2_pin 3 // off and bri down
+
 //define pins
 uint32 io_info[PWM_CHANNELS][3] = {
   // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
   {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
+  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
   {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
   {PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
   {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
@@ -105,12 +109,17 @@ void convert_hue()
 
 void convert_xy()
 {
-  float z = 1.0f - x - y;
+
+  int optimal_bri = int( 10 + bri / 1.04);
+
+  float Y = y;
+  float X = x;
+  float Z = 1.0f - x - y;
 
   // sRGB D65 conversion
-  float r =  x * 3.2406f - y * 1.5372f - z * 0.4986f;
-  float g = -x * 0.9689f + y * 1.8758f + z * 0.0415f;
-  float b =  x * 0.0557f - y * 0.2040f + z * 1.0570f;
+  float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
+  float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
+  float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
   // Apply gamma correction
   r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
@@ -145,19 +154,23 @@ void convert_xy()
   r = r < 0 ? 0 : r;
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
+  
+  rgb_cct[0] = (int) (r * optimal_bri); rgb_cct[1] = (int) (g * optimal_bri); rgb_cct[2] = (int) (b * optimal_bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
 
-  rgb_cct[0] = (int) (r * bri); rgb_cct[1] = (int) (g * bri); rgb_cct[2] = (int) (b * bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
 }
 
 void convert_ct() {
+
+  int optimal_bri = int( 10 + bri / 1.04);
+
   rgb_cct[0] = 0;
   rgb_cct[1] = 0;
   rgb_cct[2] = 0;
 
   uint8 percent_warm = ((ct - 150) * 100) / 350;
 
-  rgb_cct[3] = (bri * percent_warm) / 100;
-  rgb_cct[4] =  (bri * (100 - percent_warm)) / 100;
+  rgb_cct[3] = (optimal_bri * percent_warm) / 100;
+  rgb_cct[4] =  (optimal_bri * (100 - percent_warm)) / 100;
 
 }
 
@@ -202,6 +215,24 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
+void process_lightdata(float transitiontime) {
+  if (color_mode == 1 && light_state == true) {
+    convert_xy();
+  } else if (color_mode == 2 && light_state == true) {
+    convert_ct();
+  } else if (color_mode == 3 && light_state == true) {
+    convert_hue();
+  }
+  transitiontime *= 16;
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+    if (light_state) {
+      step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
+    } else {
+      step_level[color] = current_rgb_cct[color] / transitiontime;
+    }
+  }
+}
+
 void lightEngine() {
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
@@ -225,6 +256,46 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
+  } else if (use_hardware_switch == true) {
+    if (digitalRead(button1_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button1_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      if (i < 30) {
+        // there was a short press
+        light_state = true;
+      }
+      else {
+        // there was a long press
+        bri += 56;
+        if (bri > 254) {
+          // don't increase the brightness more then maximum value
+          bri = 254;
+        }
+      }
+      process_lightdata(4);
+    } else if (digitalRead(button2_pin) == HIGH) {
+      int i = 0;
+      while (digitalRead(button2_pin) == HIGH && i < 30) {
+        delay(20);
+        i++;
+      }
+      if (i < 30) {
+        // there was a short press
+        light_state = false;
+      }
+      else {
+        // there was a long press
+        bri -= 56;
+        if (bri < 1) {
+          // don't decrease the brightness less than minimum value.
+          bri = 1;
+        }
+      }
+      process_lightdata(4);
+    }
   }
 }
 
@@ -274,6 +345,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
+  if (use_hardware_switch == true) {
+    pinMode(button1_pin, INPUT);
+    pinMode(button2_pin, INPUT);
+  }
 
   server.on("/switch", []() {
     server.send(200, "text/plain", "OK");
@@ -328,7 +403,7 @@ void setup() {
 
   server.on("/set", []() {
     light_state = true;
-    float transitiontime = 4;
+    int transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "on") {
         if (server.arg(i) == "True" || server.arg(i) == "true") {
@@ -402,22 +477,8 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
-    server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state);
-    if (color_mode == 1 && light_state == true) {
-      convert_xy();
-    } else if (color_mode == 2 && light_state == true) {
-      convert_ct();
-    } else if (color_mode == 3 && light_state == true) {
-      convert_hue();
-    }
-    transitiontime *= 16;
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-      if (light_state) {
-        step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
-      } else {
-        step_level[color] = current_rgb_cct[color] / transitiontime;
-      }
-    }
+    server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state + ", r:" + (String)rgb_cct[0] + ", g:" + (String)rgb_cct[1] + ", b:" + (String)rgb_cct[2]);
+    process_lightdata(transitiontime);
   });
 
   server.on("/get", []() {
