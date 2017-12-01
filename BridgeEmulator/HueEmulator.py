@@ -780,8 +780,8 @@ def description():
 <modelName>Philips hue bridge 2015</modelName>
 <modelNumber>BSB002</modelNumber>
 <modelURL>http://www.meethue.com</modelURL>
-<serialNumber>00008800bbee</serialNumber>
-<UDN>uuid:2f402f80-da50-11e1-9b23-00008800bbee</UDN>
+<serialNumber>""" + mac.upper() + """</serialNumber>
+<UDN>uuid:2f402f80-da50-11e1-9b23-""" + mac + """</UDN>
 <serviceList>
 <service>
 <serviceType>(null)</serviceType>
