@@ -109,6 +109,7 @@ void convert_hue()
 
 void convert_xy()
 {
+
   int optimal_bri = int( 10 + bri / 1.04);
 
   float Y = y;
@@ -153,8 +154,9 @@ void convert_xy()
   r = r < 0 ? 0 : r;
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
-
+  
   rgb_cct[0] = (int) (r * optimal_bri); rgb_cct[1] = (int) (g * optimal_bri); rgb_cct[2] = (int) (b * optimal_bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
+
 }
 
 void convert_ct() {

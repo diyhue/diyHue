@@ -13,7 +13,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
- - On/Off control for other home devices using virtual lights
+ - ~~On/Off control for other home devices using virtual lights~~
  - Alarm (~~email notification~~ + eps8266 horn)
 
 ## Working futures:
@@ -25,9 +25,41 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Go to sleep
   - Switches (custom esp8266 switches)
   - Autodiscover lights
+  
+## Working devices and applications:
+  - Amazon Alexa (control only the lights)
+  - Logitech Harmony
+  - Tradfri Gateway
+  - Hue Bridge (original + other emulators)
+  - Home Assistant
+  - Domoticz
+  - Openhab
+  - Philips Ambilight TV's 
+  - Kodi Hue Ambilight
+ 
+ ## Working smartphone applications:
+  - Hue (official application)
+  - hueManiac
+  - OnSwitch
+  - HueSwitcher
+  - LampShade
 
 ## Not working:
-  - Home & Away futures (require remote api that is not public)  
+  - Home & Away future from Hue app (require remote api)
+  - Google Home (require remote api)
+  - Eneco Toon (very likely it use cloud service detection)
+  
+## Supported lights:
+  - WS2812B and SK6812 smart led strips
+  - Pwm RGB-CCT
+  - Pwm RGBW
+  - Pwm RGB
+  - Pwm CCT
+  - Pwm Dimming (up to 6 lights for every esp8266)
+  - On/Off plugs/lights (up to 6 lights for every esp8266)
+  - On/Off 433Mhz devices (multiple devices for every esp8266). Credits Mevel
+  
+Please submit [here](https://github.com/mariusmotea/diyHue/issues/27) any other device/application that is working with this emulator.
   
 Check [Wiki page](https://github.com/mariusmotea/diyHue/wiki) for more details  
   
