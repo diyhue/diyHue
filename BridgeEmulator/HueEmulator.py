@@ -522,76 +522,112 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             avg_bri = bri / len(bridge_config["groups"][group]["lights"])
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
+def detectLight(threadInfo,ip): 
+    try:
+        f = urllib2.urlopen("http://" + ip + "/detect")
+        device_data = json.loads(f.read())
+        threadInfo.put((ip, device_data))
+    except Exception as e:
+        print(ip + " is unknow device " + str(e))
 
 def scanForLights(): #scan for ESP8266 lights and strips
     print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).split("\n")
     del device_ips[-1] #delete last empty element in list
+    
+    threadInfo = Queue.Queue();
+    lightThreads = []
     for ip in device_ips:
         if ip != getIpAddress():
-            try:
-                f = urllib2.urlopen("http://" + ip + "/detect")
-                device_data = json.loads(f.read())
-                if device_data.keys()[0] == "hue":
-                    print(ip + " is a hue " + device_data['hue'])
-                    device_exist = False
-                    for light in bridge_config["lights"].iterkeys():
-                        if bridge_config["lights"][light]["uniqueid"].startswith( device_data["mac"] ):
-                            device_exist = True
-                            bridge_config["lights_address"][light]["ip"] = ip
-                    if not device_exist:
-                        print("is a new device")
-                        for x in xrange(1, int(device_data["lights"]) + 1):
-                            new_light_id = nextFreeId("lights")
-                            light_types = {"LCT001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "66009461"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
-                            bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
-                            new_lights.update({new_light_id: {"name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x)}})
-                            bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
-            except Exception as e:
-                print(ip + " is unknow device " + str(e))
+            lightThreads.append( Thread(target=scanForLight, args=[threadInfo,ip]) )
+            lightThreads[-1].start()
+
+    for detectLight in lightThreads:
+        detectLight.join()
+
+    while not threadInfo.empty():
+        (ip, device_data) = threadInfo.get()
+        if device_data.keys()[0] == "hue":
+            print(ip + " is a hue " + device_data['hue'])
+            device_exist = False
+            for light in bridge_config["lights"].iterkeys():
+                if bridge_config["lights"][light]["uniqueid"].startswith( device_data["mac"] ):
+                    device_exist = True
+                    bridge_config["lights_address"][light]["ip"] = ip
+            if not device_exist:
+                print("is a new device")
+                for x in xrange(1, int(device_data["lights"]) + 1):
+                    new_light_id = nextFreeId("lights")
+                    light_types = {"LCT001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "66009461"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
+                    bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
+                    new_lights.update({new_light_id: {"name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x)}})
+                    bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
     scanDeconz()
     scanTradfri()
 
+# don't change global data here
+def getLightData(threadInfo,light):
+    light_data = None
+    try:
+        if bridge_config["lights_address"][light]["protocol"] == "native":
+            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}"))
+        elif bridge_config["lights_address"][light]["protocol"] == "hue":
+            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
+        elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
+            light_data = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
+        elif bridge_config["lights_address"][light]["protocol"] == "milight":
+            light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]), "GET", "{}"))
+    except:
+        print("request error")
+
+    threadInfo.put((light, light_data))
+
 def syncWithLights(): #update Hue Bridge lights states
+    threadInfo = Queue.Queue();
+    lightThreads = []
     for light in bridge_config["lights_address"]:
-        try:
-            if bridge_config["lights_address"][light]["protocol"] == "native":
-                light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}", 0.5))
-                bridge_config["lights"][light]["state"].update(light_data)
-            elif bridge_config["lights_address"][light]["protocol"] == "hue":
-                light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"], "GET", "{}", 1))
-                bridge_config["lights"][light]["state"].update(light_data["state"])
-            elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
-                light_stats = json.loads(check_output("./coap-client-linux -m get -u \"Hue-EMulator\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
-                bridge_config["lights"][light]["state"]["on"] = bool(light_stats["3311"][0]["5850"])
-                bridge_config["lights"][light]["state"]["bri"] = light_stats["3311"][0]["5851"]
-                if "5706" in light_stats["3311"][0]:
-                    if light_stats["3311"][0]["5706"] == "f5faf6":
-                        bridge_config["lights"][light]["state"]["ct"] = 170
-                    elif light_stats["3311"][0]["5706"] == "f1e0b5":
-                        bridge_config["lights"][light]["state"]["ct"] = 320
-                    elif light_stats["3311"][0]["5706"] == "efd275":
-                        bridge_config["lights"][light]["state"]["ct"] = 470
-                else:
-                    bridge_config["lights"][light]["state"]["ct"] = 470
-            elif bridge_config["lights_address"][light]["protocol"] == "milight":
-                light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]), "GET", "{}", 1))
-                if light_data["state"] == "ON":
-                    bridge_config["lights"][light]["state"]["on"] = True
-                else:
-                    bridge_config["lights"][light]["state"]["on"] = False
-                if "brightness" in light_data:
-                    bridge_config["lights"][light]["state"]["bri"] = light_data["brightness"]
-                if "color_temp" in light_data:
-                    bridge_config["lights"][light]["state"]["colormode"] = "ct"
-                    bridge_config["lights"][light]["state"]["ct"] = light_data["color_temp"] * 1.6
-        except:
+        lightThreads.append( Thread(target=getLightData, args=[threadInfo,light]) )
+        lightThreads[-1].start()
+
+    for detectLight in lightThreads:
+        detectLight.join()
+    
+    while not threadInfo.empty():
+        (light, light_data) = threadInfo.get()
+        if light_data == None:
             bridge_config["lights"][light]["state"]["reachable"] = False
             bridge_config["lights"][light]["state"]["on"] = False
-            print("request error")
-        else:
-            bridge_config["lights"][light]["state"]["reachable"] = True
+            continue
+
+        bridge_config["lights"][light]["state"]["reachable"] = True
+
+        if bridge_config["lights_address"][light]["protocol"] == "native":
+            bridge_config["lights"][light]["state"].update(light_data)
+        elif bridge_config["lights_address"][light]["protocol"] == "hue":
+            bridge_config["lights"][light]["state"].update(light_data["state"])
+        elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
+            bridge_config["lights"][light]["state"]["on"] = bool(light_data["3311"][0]["5850"])
+            bridge_config["lights"][light]["state"]["bri"] = light_data["3311"][0]["5851"]
+            if "5706" in light_data["3311"][0]:
+                if light_data["3311"][0]["5706"] == "f5faf6":
+                    bridge_config["lights"][light]["state"]["ct"] = 170
+                elif light_data["3311"][0]["5706"] == "f1e0b5":
+                    bridge_config["lights"][light]["state"]["ct"] = 320
+                elif light_data["3311"][0]["5706"] == "efd275":
+                    bridge_config["lights"][light]["state"]["ct"] = 470
+            else:
+                bridge_config["lights"][light]["state"]["ct"] = 470
+        elif bridge_config["lights_address"][light]["protocol"] == "milight":
+            if light_data["state"] == "ON":
+                bridge_config["lights"][light]["state"]["on"] = True
+            else:
+                bridge_config["lights"][light]["state"]["on"] = False
+            if "brightness" in light_data:
+                bridge_config["lights"][light]["state"]["bri"] = light_data["brightness"]
+            if "color_temp" in light_data:
+                bridge_config["lights"][light]["state"]["colormode"] = "ct"
+                bridge_config["lights"][light]["state"]["ct"] = light_data["color_temp"] * 1.6
 
 def longPressButton(sensor, buttonevent):
     print("long press detected")
