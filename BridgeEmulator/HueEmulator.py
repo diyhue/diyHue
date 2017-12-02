@@ -9,7 +9,7 @@ from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
 from urlparse import urlparse, parse_qs
-
+import Queue
 mac = '%012x' % get_mac()
 
 run_service = True
