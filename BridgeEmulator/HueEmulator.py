@@ -522,7 +522,7 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             avg_bri = bri / len(bridge_config["groups"][group]["lights"])
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
-def detectLight(threadInfo,ip): 
+def scanForLight(threadInfo,ip): 
     try:
         f = urllib2.urlopen("http://" + ip + "/detect")
         device_data = json.loads(f.read())
