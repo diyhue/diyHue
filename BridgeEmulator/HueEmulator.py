@@ -578,6 +578,8 @@ def getLightData(threadInfo,light):
             light_data = json.loads(check_output("./coap-client-linux -m get -u \"Client_identity\" -k \"" + bridge_config["lights_address"][light]["security_code"] + "\" \"coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"]) +"\"", shell=True).split("\n")[3])
         elif bridge_config["lights_address"][light]["protocol"] == "milight":
             light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]), "GET", "{}"))
+        elif bridge_config["lights_address"][light]["protocol"] == "deconz":
+            return    
     except:
         print("request error")
 
