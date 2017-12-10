@@ -815,7 +815,7 @@ def description():
 <URLBase>http://""" + getIpAddress() + """:80/</URLBase>
 <device>
 <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
-<friendlyName>og hue bridge (""" + getIpAddress() + """)</friendlyName>
+<friendlyName>Philips hue (""" + getIpAddress() + """)</friendlyName>
 <manufacturer>Royal Philips Electronics</manufacturer>
 <manufacturerURL>http://www.philips.com</manufacturerURL>
 <modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
