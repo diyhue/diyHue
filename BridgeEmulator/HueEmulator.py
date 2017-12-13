@@ -640,6 +640,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 bridge_config["lights"][light]["state"]["reachable"] = False
                 bridge_config["lights"][light]["state"]["on"] = False
                 print("light " + light + " in unreachable")
+        sleep(10) #wait at last 10 seconds before next sync
         i = 0
         while i < 300: #sync with lights every 300 seconds or instant if one user is connected
             for user in bridge_config["config"]["whitelist"].iterkeys():
