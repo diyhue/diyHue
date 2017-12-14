@@ -559,14 +559,6 @@ def scanForLight(threadInfo,ip):
     except Exception as e:
         print(ip + " is unknow device " + str(e))
 
-def scanForLight(threadInfo,ip):
-    try:
-        f = urllib2.urlopen("http://" + ip + "/detect")
-        device_data = json.loads(f.read())
-        threadInfo.put((ip, device_data))
-    except Exception as e:
-        print(ip + " is unknow device " + str(e))
-
 def scanForLights(): #scan for ESP8266 lights and strips
     print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
     #return all host that listen on port 80
