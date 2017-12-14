@@ -551,6 +551,13 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             avg_bri = bri / len(bridge_config["groups"][group]["lights"])
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
+def scanForLight(threadInfo,ip): 
+    try:
+        f = urllib2.urlopen("http://" + ip + "/detect")
+        device_data = json.loads(f.read())
+        threadInfo.put((ip, device_data))
+    except Exception as e:
+        print(ip + " is unknow device " + str(e))
 
 def scanForLight(threadInfo,ip):
     try:
@@ -595,7 +602,6 @@ def scanForLights(): #scan for ESP8266 lights and strips
                     bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
     scanDeconz()
     scanTradfri()
-
 
 def syncWithLights(): #update Hue Bridge lights states
     while True:
@@ -648,7 +654,6 @@ def syncWithLights(): #update Hue Bridge lights states
                     i = 300
                     break
             sleep(1)
-
 
 
 def longPressButton(sensor, buttonevent):
