@@ -551,7 +551,7 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             avg_bri = bri / len(bridge_config["groups"][group]["lights"])
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
 
-def scanForLight(threadInfo,ip): 
+def scanForLight(threadInfo,ip):
     try:
         f = urllib2.urlopen("http://" + ip + "/detect")
         device_data = json.loads(f.read())
@@ -1186,11 +1186,20 @@ class S(BaseHTTPRequestHandler):
     def do_POST(self):
         self._set_headers()
         print ("in post method")
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
-        post_dictionary = json.loads(self.data_string)
-        url_pices = self.path.split('/')
         print(self.path)
-        print(self.data_string)
+        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        if self.path == "/updater":
+            print("check for updates")
+            update_data = json.loads(sendRequest("http://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
+            for category in update_data.iterkeys():
+                for key in update_data[category].iterkeys():
+                    print("patch " + category + " -> " + key )
+                    bridge_config[category][key] = update_data[category][key]
+            self.wfile.write(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}]))
+        else:
+            post_dictionary = json.loads(self.data_string)
+            print(self.data_string)
+        url_pices = self.path.split('/')
         if len(url_pices) == 4: #data was posted to a location
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
@@ -1229,7 +1238,7 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
                 print(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
-        elif "devicetype" in post_dictionary and bridge_config["config"]["linkbutton"]: #this must be a new device registration
+        elif self.path.startswith("/api") and "devicetype" in post_dictionary and bridge_config["config"]["linkbutton"]: #this must be a new device registration
                 #create new user hash
                 s = hashlib.new('ripemd160', post_dictionary["devicetype"][0]        ).digest()
                 username = s.encode('hex')
