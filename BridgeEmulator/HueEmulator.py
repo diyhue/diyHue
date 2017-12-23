@@ -939,6 +939,7 @@ def webform_milight():
 <option value=\"cct\">CCT</option>
 <option value=\"rgb_cct\">RGB+CCT</option>
 <option value=\"rgb\">RGB</option>
+<option value=\"fut089\">Fut089/B8</option>
 </select>
 </div>
 <div class=\"pure-control-group\">
@@ -948,6 +949,10 @@ def webform_milight():
 <option value=\"2\">2</option>
 <option value=\"3\">3</option>
 <option value=\"4\">4</option>
+<option value=\"5\">5</option>
+<option value=\"6\">6</option>
+<option value=\"7\">7</option>
+<option value=\"8\">8</option>
 </select>
 </div>
 <div class=\"pure-controls\"><button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
