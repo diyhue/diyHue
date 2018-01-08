@@ -630,7 +630,7 @@ def syncWithLights(): #update Hue Bridge lights states
                     if "color_temp" in light_data:
                         bridge_config["lights"][light]["state"]["colormode"] = "ct"
                         bridge_config["lights"][light]["state"]["ct"] = light_data["color_temp"] * 1.6
-                    elif light_data["bulb_mode"] == "color":
+                    elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
                 bridge_config["lights"][light]["state"]["reachable"] = True
