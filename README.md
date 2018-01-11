@@ -15,6 +15,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
  - ~~On/Off control for other home devices using virtual lights~~
  - Alarm (~~email notification~~ + eps8266 horn)
+ - Hue Entertainment support
 
 ## Working futures:
   - Control lights (all functions)
