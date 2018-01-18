@@ -14,7 +14,7 @@ from uuid import getnode as get_mac
 #from urlparse import urlparse, parse_qs
 from urllib.parse import urlparse, parse_qs
 
-update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
+update_lights_on_startup = True # if set to true all lights will be updated with last know state on startup.
 
 mac = '%012x' % get_mac()
 
@@ -364,6 +364,7 @@ def ddxRecheck(rule, sensor, current_time, ddx_delay, ddx_sensor):
 
 def rulesProcessor(sensor, current_time=datetime.now().strftime("%Y-%m-%dT%H:%M:%S")):
     bridge_config["config"]["localtime"] = current_time #required for operator dx to address /config/localtime
+    actionsToExecute = []
     for rule in bridge_config["rules"].keys():
         if bridge_config["rules"][rule]["status"] == "enabled":
             rule_result = checkRuleConditions(rule, sensor, current_time)
@@ -373,11 +374,12 @@ def rulesProcessor(sensor, current_time=datetime.now().strftime("%Y-%m-%dT%H:%M:
                     bridge_config["rules"][rule]["lasttriggered"] = current_time
                     bridge_config["rules"][rule]["timestriggered"] += 1
                     for action in bridge_config["rules"][rule]["actions"]:
-                        sendRequest("/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]))
+                        actionsToExecute.append(action)
                 else: #if ddx rule
                     print("ddx rule " + rule + " will be re validated after " + str(rule_result[1]) + " seconds")
                     Thread(target=ddxRecheck, args=[rule, sensor, current_time, rule_result[1], rule_result[2]]).start()
-                return
+    for action in actionsToExecute:
+        sendRequest("/api/" +    list(bridge_config["config"]["whitelist"])[0] + action["address"], action["method"], json.dumps(action["body"]))
 
 def sendRequest(url, method, data, timeout=3, delay=0):
     if delay != 0:
@@ -1228,6 +1230,8 @@ class S(BaseHTTPRequestHandler):
                         if not "status" in post_dictionary:
                             post_dictionary.update({"status": "enabled"})
                     elif url_pices[3] == "sensors":
+                        if "state" not in post_dictionary:
+                            post_dictionary["state"] = {}
                         if post_dictionary["modelid"] == "PHWA01":
                             post_dictionary.update({"state": {"status": 0}})
                     elif url_pices[3] == "resourcelinks":
@@ -1366,8 +1370,6 @@ class S(BaseHTTPRequestHandler):
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
                 if url_pices[3] == "sensors" and url_pices[5] == "state":
-                    if "status" in put_dictionary:
-                        sleep(0.5) #this delay will not avoid triggering ON button 2 times on Hue Dimmer Switch rules
                     current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                     for key in put_dictionary.keys():
                         sensors_state[url_pices[4]]["state"].update({key: current_time})
@@ -1430,4 +1432,3 @@ if __name__ == "__main__":
         run_service = False
         saveConfig()
         print ('config saved')
-
