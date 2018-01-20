@@ -72,6 +72,7 @@ I push updates fast so if you want to notified just add this repo to watch
 Contributions are welcomed  
 
 You may want to see also my new project [qtHue](https://github.com/mariusmotea/qtHue) that provide a simple user interface for controlling the lights.
+![qtHue](https://github.com/mariusmotea/qtHue/blob/master/Screenshot.png?raw=true)
 
 
 Credits:
