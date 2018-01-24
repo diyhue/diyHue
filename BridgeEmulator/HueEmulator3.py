@@ -980,6 +980,30 @@ First press the link button on Hue Bridge
 </body>
 </html>"""
 
+def webform_linkbutton():
+    return """<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<title>Hue LinkButton</title>
+<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
+</head>
+<body>
+<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
+<fieldset>
+<legend>Hue LinkSync Button</legend>
+<div class=\"pure-control-group\"><input style="display:none" id=\"linkbutton\" name=\"linkbutton\" type=\"text\" value=\"true\"></div>
+<div class=\"pure-controls\">
+<label class="pure-checkbox">
+Click on Activate button to allow association for 30 sec.
+</label>
+<button type=\"submit\" class=\"pure-button pure-button-primary\">Activate</button></div>
+</fieldset>
+</form>
+</body>
+</html>"""
+
 
 def updateAllLights():
     ## apply last state on startup to all bulbs, usefull if there was a power outage
@@ -1044,26 +1068,37 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(bytes(webform_milight(), "utf8"))
         elif self.path.startswith("/hue"): #setup hue bridge
-            self._set_headers_html()
-            get_parameters = parse_qs(urlparse(self.path).query)
-            if "ip" in get_parameters:
-                response = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/", "POST", "{\"devicetype\":\"Hue Emulator\"}"))
-                if "success" in response[0]:
-                    hue_lights = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/" + response[0]["success"]["username"] + "/lights", "GET", "{}"))
-                    lights_found = 0
-                    for hue_light in hue_lights:
-                        new_light_id = nextFreeId("lights")
-                        bridge_config["lights"][new_light_id] = hue_lights[hue_light]
-                        bridge_config["lights_address"][new_light_id] = {"username": response[0]["success"]["username"], "light_id": hue_light, "ip": get_parameters["ip"][0], "protocol": "hue"}
-                        lights_found += 1
-                    if lights_found == 0:
-                        self.wfile.write(bytes(webform_hue() + "<br> No lights where found", "utf8"))
-                    else:
-                        self.wfile.write(bytes(webform_hue() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+            if "linkbutton" in self.path:
+                self._set_headers_html()
+                get_parameters = parse_qs(urlparse(self.path).query)
+                if "linkbutton" in get_parameters:
+                    bridge_config["config"]["linkbutton"] = False
+                    bridge_config["config"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
+                    saveConfig()
+                    self.wfile.write(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                 else:
-                    self.wfile.write(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
+                    self.wfile.write(bytes(webform_linkbutton(), "utf8"))
             else:
-                self.wfile.write(bytes(webform_hue(), "utf8"))
+                self._set_headers_html()
+                get_parameters = parse_qs(urlparse(self.path).query)
+                if "ip" in get_parameters:
+                    response = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/", "POST", "{\"devicetype\":\"Hue Emulator\"}"))
+                    if "success" in response[0]:
+                        hue_lights = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/" + response[0]["success"]["username"] + "/lights", "GET", "{}"))
+                        lights_found = 0
+                        for hue_light in hue_lights:
+                            new_light_id = nextFreeId("lights")
+                            bridge_config["lights"][new_light_id] = hue_lights[hue_light]
+                            bridge_config["lights_address"][new_light_id] = {"username": response[0]["success"]["username"], "light_id": hue_light, "ip": get_parameters["ip"][0], "protocol": "hue"}
+                            lights_found += 1
+                        if lights_found == 0:
+                            self.wfile.write(bytes(webform_hue() + "<br> No lights where found", "utf8"))
+                        else:
+                            self.wfile.write(bytes(webform_hue() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+                    else:
+                        self.wfile.write(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
+                else:
+                    self.wfile.write(bytes(webform_hue(), "utf8"))
         elif self.path.startswith("/deconz"): #setup imported deconz sensors
             self._set_headers_html()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -1252,6 +1287,17 @@ class S(BaseHTTPRequestHandler):
                     response[0]["success"]["clientkey"] = "E3B550C65F78022EFD9E52E28378583"
                 self.wfile.write(bytes(json.dumps(response), "utf8"))
                 print(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+        elif self.path.startswith("/api") and "devicetype" in post_dictionary and not bridge_config["config"]["linkbutton"]: #new registration by linkbutton
+                if int(bridge_config["config"]["lastlinkbuttonpushed"])+30 >= int(datetime.now().strftime("%s")):
+                    username = hashlib.new('ripemd160', post_dictionary["devicetype"][0].encode('utf-8')).hexdigest()[:32]
+                    bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
+                    response = [{"success": {"username": username}}]
+                    if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
+                        response[0]["success"]["clientkey"] = "E3B550C65F78022EFD9E52E28378583"
+                    self.wfile.write(bytes(json.dumps(response), "utf8"))
+                    print(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+                else:
+                    self.wfile.write(bytes(json.dumps([{"error": {"type": 101, "address": self.path, "description": "link button not pressed" }}],sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
         self.end_headers()
         saveConfig()
 
