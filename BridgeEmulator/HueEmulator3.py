@@ -986,7 +986,7 @@ def webform_linkbutton():
 <head>
 <meta charset=\"utf-8\">
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-<title>Hue Bridge Setup</title>
+<title>Hue LinkButton</title>
 <link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
 </head>
 <body>
