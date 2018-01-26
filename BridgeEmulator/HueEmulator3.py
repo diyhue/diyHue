@@ -8,6 +8,7 @@ from subprocess import check_output
 import json, socket, hashlib, struct, random, sys
 import requests
 import urllib.request, urllib.parse
+import base64
 from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
@@ -992,13 +993,22 @@ def webform_linkbutton():
 <body>
 <form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
 <fieldset>
-<legend>Hue LinkSync Button</legend>
-<div class=\"pure-control-group\"><input style="display:none" id=\"linkbutton\" name=\"linkbutton\" type=\"text\" value=\"true\"></div>
+<legend>Hue LinkButton</legend>
+
+<div class="pure-control-group">
+<label for="username">Username</label><input id="username" name="username" type="text" placeholder="Hue" data-cip-id="username">
+</div>
+<div class="pure-control-group">
+<label for="password">Password</label><input id="password" name="password" type="text" placeholder="HuePassword" data-cip-id="password">
+</div>
+
 <div class=\"pure-controls\">
 <label class="pure-checkbox">
 Click on Activate button to allow association for 30 sec.
 </label>
-<button type=\"submit\" class=\"pure-button pure-button-primary\">Activate</button></div>
+<input class=\"pure-button pure-button-primary\" type=\"submit\" name=\"action\" value=\"Activate\">
+<input class=\"pure-button pure-button-primary\" type=\"submit\" name=\"action\" value=\"ChangePassword\">
+<input class=\"pure-button pure-button-primary\" type=\"submit\" name=\"action\" value=\"Exit\"></div>
 </fieldset>
 </form>
 </body>
@@ -1031,6 +1041,12 @@ class S(BaseHTTPRequestHandler):
     def _set_headers_xml(self):
         self.send_response(200)
         self.send_header('Content-type', 'application/xml')
+        self.end_headers()
+
+    def _set_AUTHHEAD(self):
+        self.send_response(401)
+        self.send_header('WWW-Authenticate', 'Basic realm=\"Hue\"')
+        self.send_header('Content-type', 'text/html')
         self.end_headers()
 
     def do_GET(self):
@@ -1068,16 +1084,37 @@ class S(BaseHTTPRequestHandler):
             else:
                 self.wfile.write(bytes(webform_milight(), "utf8"))
         elif self.path.startswith("/hue"): #setup hue bridge
-            if "linkbutton" in self.path:
-                self._set_headers_html()
-                get_parameters = parse_qs(urlparse(self.path).query)
-                if "linkbutton" in get_parameters:
-                    bridge_config["config"]["linkbutton"] = False
-                    bridge_config["config"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
-                    saveConfig()
-                    self.wfile.write(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
+            if "linkbutton" in self.path: #Hub button emulated
+                if self.headers['Authorization'] == None:
+                    self._set_AUTHHEAD()
+                    self.wfile.write(bytes('You are not authenticated', "utf8"))
+                    pass
+                elif self.headers['Authorization'] == 'Basic ' + bridge_config["config"]["linkbutton_auth"]:
+                    get_parameters = parse_qs(urlparse(self.path).query)
+                    if "action=Activate" in self.path:
+                        self._set_headers_html()
+                        bridge_config["config"]["linkbutton"] = False
+                        bridge_config["config"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
+                        saveConfig()
+                        self.wfile.write(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
+                    elif "action=Exit" in self.path:
+                        self._set_AUTHHEAD()
+                        self.wfile.write(bytes('You are succesfully disconnected', "utf8"))
+                    elif "action=ChangePassword" in self.path:
+                        self._set_headers_html()
+                        tmp_password = str(base64.b64encode(bytes(get_parameters["username"][0] + ":" + get_parameters["password"][0], "utf8"))).split('\'')
+                        bridge_config["config"]["linkbutton_auth"] = tmp_password[1]
+                        saveConfig()
+                        self.wfile.write(bytes(webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again', "utf8"))
+                    else:
+                        self._set_headers_html()
+                        self.wfile.write(bytes(webform_linkbutton(), "utf8"))
+                    pass
                 else:
-                    self.wfile.write(bytes(webform_linkbutton(), "utf8"))
+                    self._set_AUTHHEAD()
+                    self.wfile.write(bytes(self.headers.headers['Authorization'], "utf8"))
+                    self.wfile.write(bytes('not authenticated', "utf8"))
+                    pass
             else:
                 self._set_headers_html()
                 get_parameters = parse_qs(urlparse(self.path).query)
