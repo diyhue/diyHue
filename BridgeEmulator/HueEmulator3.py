@@ -549,15 +549,13 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
                     bridge_config["groups"][group]["action"][key] = value
             any_on = False
             all_on = True
-            bri = 0
             for group_light in bridge_config["groups"][group]["lights"]:
                 if bridge_config["lights"][light]["state"]["on"] == True:
                     any_on = True
                 else:
                     all_on = False
-                bri += bridge_config["lights"][light]["state"]["bri"]
-            avg_bri = bri / len(bridge_config["groups"][group]["lights"])
-            bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on, "bri": avg_bri, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
+            bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on,}
+            bridge_config["groups"][group]["action"]["on"] = any_on
 
 def scanForLights(): #scan for ESP8266 lights and strips
     print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
@@ -633,10 +631,11 @@ def syncWithLights(): #update Hue Bridge lights states
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
                 bridge_config["lights"][light]["state"]["reachable"] = True
+                updateGroupStats(light)
             except:
                 bridge_config["lights"][light]["state"]["reachable"] = False
                 bridge_config["lights"][light]["state"]["on"] = False
-                print("light " + light + " in unreachable")
+                print("light " + light + " is unreachable")
         sleep(10) #wait at last 10 seconds before next sync
         i = 0
         while i < 300: #sync with lights every 300 seconds or instant if one user is connected
@@ -999,7 +998,7 @@ def webform_linkbutton():
 <label for="username">Username</label><input id="username" name="username" type="text" placeholder="Hue" data-cip-id="username">
 </div>
 <div class="pure-control-group">
-<label for="password">Password</label><input id="password" name="password" type="text" placeholder="HuePassword" data-cip-id="password">
+<label for="password">Password</label><input id="password" name="password" type="password" placeholder="HuePassword" data-cip-id="password">
 </div>
 
 <div class=\"pure-controls\">
@@ -1013,7 +1012,6 @@ Click on Activate button to allow association for 30 sec.
 </form>
 </body>
 </html>"""
-
 
 def updateAllLights():
     ## apply last state on startup to all bulbs, usefull if there was a power outage
@@ -1089,12 +1087,12 @@ class S(BaseHTTPRequestHandler):
                     self._set_AUTHHEAD()
                     self.wfile.write(bytes('You are not authenticated', "utf8"))
                     pass
-                elif self.headers['Authorization'] == 'Basic ' + bridge_config["config"]["linkbutton_auth"]:
+                elif self.headers['Authorization'] == 'Basic ' + bridge_config["linkbutton"]["linkbutton_auth"]:
                     get_parameters = parse_qs(urlparse(self.path).query)
                     if "action=Activate" in self.path:
                         self._set_headers_html()
                         bridge_config["config"]["linkbutton"] = False
-                        bridge_config["config"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
+                        bridge_config["linkbutton"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
                         saveConfig()
                         self.wfile.write(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
@@ -1103,7 +1101,7 @@ class S(BaseHTTPRequestHandler):
                     elif "action=ChangePassword" in self.path:
                         self._set_headers_html()
                         tmp_password = str(base64.b64encode(bytes(get_parameters["username"][0] + ":" + get_parameters["password"][0], "utf8"))).split('\'')
-                        bridge_config["config"]["linkbutton_auth"] = tmp_password[1]
+                        bridge_config["linkbutton"]["linkbutton_auth"] = tmp_password[1]
                         saveConfig()
                         self.wfile.write(bytes(webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again', "utf8"))
                     else:
@@ -1325,7 +1323,7 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(json.dumps(response), "utf8"))
                 print(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path.startswith("/api") and "devicetype" in post_dictionary and not bridge_config["config"]["linkbutton"]: #new registration by linkbutton
-                if int(bridge_config["config"]["lastlinkbuttonpushed"])+30 >= int(datetime.now().strftime("%s")):
+                if int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])+30 >= int(datetime.now().strftime("%s")):
                     username = hashlib.new('ripemd160', post_dictionary["devicetype"][0].encode('utf-8')).hexdigest()[:32]
                     bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
                     response = [{"success": {"username": username}}]
@@ -1424,8 +1422,9 @@ class S(BaseHTTPRequestHandler):
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
                     elif url_pices[4] == "0": #if group is 0 the scene applied to all lights
                         for light in bridge_config["lights"].keys():
-                            bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                            if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
+                                bridge_config["lights"][light]["state"].update(put_dictionary)
+                                sendLightRequest(light, put_dictionary)
                         for group in bridge_config["groups"].keys():
                             bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
                             if "on" in put_dictionary:
@@ -1435,10 +1434,10 @@ class S(BaseHTTPRequestHandler):
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
-                            bridge_config["groups"][url_pices[4]]["state"]["on"] = put_dictionary["on"]
+                        bridge_config["groups"][url_pices[4]]["action"].update(put_dictionary)
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
-                                bridge_config["lights"][light]["state"].update(put_dictionary)
-                                sendLightRequest(light, put_dictionary)
+                            bridge_config["lights"][light]["state"].update(put_dictionary)
+                            sendLightRequest(light, put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
                     sendLightRequest(url_pices[4], put_dictionary)
                     for key in put_dictionary.keys():
