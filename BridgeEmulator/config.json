@@ -61,9 +61,7 @@
         "factorynew": false,
         "gateway": "192.168.1.1",
         "ipaddress": "192.168.10.200",
-        "lastlinkbuttonpushed": "1516979101",
         "linkbutton": true,
-        "linkbutton_auth": "SHVlOkh1ZQ==",
         "localtime": "2017-04-26T23:16:20",
         "mac": "b8:27:eb:c7:6b:26",
         "modelid": "BSB002",
@@ -90,5 +88,9 @@
     "scenes": {},
     "schedules": {},
     "sensors": {},
-    "lights_address": {}
+    "lights_address": {},
+    "linkbutton": {
+        "lastlinkbuttonpushed": "1517072396",
+        "linkbutton_auth": "SHVlOkh1ZQ=="
+    }
 }
