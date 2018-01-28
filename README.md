@@ -80,3 +80,4 @@ Credits:
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
   - StefanBruens https://github.com/StefanBruens/ESP8266_new_pwm
+  - Cédric @ticed35 for linkbutton implementation.
