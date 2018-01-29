@@ -38,6 +38,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Openhab
   - Philips Ambilight TV's 
   - Kodi Hue Ambilight
+  - Jeedom
  
  ## Working smartphone applications:
   - Hue (official application)
