@@ -1244,6 +1244,15 @@ class S(BaseHTTPRequestHandler):
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self.wfile.write(bytes(json.dumps(new_lights), "utf8"))
                         new_lights.clear()
+                    elif url_pices[3] == "groups" and url_pices[4] == "0":
+                        any_on = False
+                        all_on = True
+                        for group_state in bridge_config["groups"].keys():
+                            if bridge_config["groups"][group_state]["state"]["any_on"] == True:
+                                any_on = True
+                            else:
+                                all_on = False
+                        self.wfile.write(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":True,"bri":254,"hue":47258,"sat":253,"effect":"none","xy":[0.1424,0.0824],"ct":153,"alert":"none","colormode":"xy"}}), "utf8"))
                     else:
                         self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]]), "utf8"))
                 elif len(url_pices) == 6 or (len(url_pices) == 7 and url_pices[6] == ""):
