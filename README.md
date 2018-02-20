@@ -4,6 +4,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
 
+### fix for existing users 13.feb.2018
+Pull request https://github.com/mariusmotea/diyHue/pull/173  improve bulbs color. To apply this fix you need to replace in config.json file `LCT001` with `LCT015` and restart the service. I recommend to upgrade to latest version and upgrade lights firmware.
+
 ### Requirements:
  - python
  - nmap package for esp8266 lights autodiscover ```sudo apt install nmap```
@@ -71,6 +74,8 @@ Check [Wiki page](https://github.com/mariusmotea/diyHue/wiki) for more details
 I push updates fast so if you want to notified just add this repo to watch
 
 Contributions are welcomed  
+
+Hue living color light project for 3D printing: https://www.thingiverse.com/thing:2773413
 
 ## qtHue
 You may want to see also my new project [qtHue](https://github.com/mariusmotea/qtHue) that provide a simple user interface for controlling the lights.

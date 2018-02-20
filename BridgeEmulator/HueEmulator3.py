@@ -581,7 +581,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             print("is a new device")
                             for x in range(1, int(device_data["lights"]) + 1):
                                 new_light_id = nextFreeId("lights")
-                                light_types = {"LCT001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "66009461"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
+                                light_types = {"LCT001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "66009461"}, "LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x)}})
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
@@ -1244,6 +1244,15 @@ class S(BaseHTTPRequestHandler):
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self.wfile.write(bytes(json.dumps(new_lights), "utf8"))
                         new_lights.clear()
+                    elif url_pices[3] == "groups" and url_pices[4] == "0":
+                        any_on = False
+                        all_on = True
+                        for group_state in bridge_config["groups"].keys():
+                            if bridge_config["groups"][group_state]["state"]["any_on"] == True:
+                                any_on = True
+                            else:
+                                all_on = False
+                        self.wfile.write(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":True,"bri":254,"hue":47258,"sat":253,"effect":"none","xy":[0.1424,0.0824],"ct":153,"alert":"none","colormode":"xy"}}), "utf8"))
                     else:
                         self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]]), "utf8"))
                 elif len(url_pices) == 6 or (len(url_pices) == 7 and url_pices[6] == ""):

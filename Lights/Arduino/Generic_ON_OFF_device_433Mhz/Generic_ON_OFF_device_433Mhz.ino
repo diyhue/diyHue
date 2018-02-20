@@ -208,8 +208,8 @@ void setup() {
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
-    http_content += "<a class=\"pure-button"; if (device_state) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
-    http_content += "<a class=\"pure-button"; if (!device_state) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
+    http_content += "<a class=\"pure-button"; if (device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
+    http_content += "<a class=\"pure-button"; if (!device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
     http_content += "</div>";
     http_content += "</fieldset>";
     http_content += "</form>";
