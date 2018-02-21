@@ -43,7 +43,7 @@ def sendEmail(triggered_sensor):
 
 #load config files
 try:
-    with open('config.json', 'r') as fp:
+    with open('/opt/hue-emulator/config.json', 'r') as fp:
         bridge_config = json.load(fp)
         print("Config loaded")
 except Exception:
@@ -92,7 +92,7 @@ bridge_config["config"]["gateway"] = getIpAddress()
 bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
 bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
 
-def saveConfig(filename='config.json'):
+def saveConfig(filename='/opt/hue-emulator/config.json'):
     with open(filename, 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
