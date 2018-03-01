@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 apt install -y git nmap python3 python3-pip
 export LC_ALL=C
 pip3 install requests ws4py
