@@ -12,7 +12,6 @@ import base64
 from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
-#from urlparse import urlparse, parse_qs
 from urllib.parse import urlparse, parse_qs
 
 update_lights_on_startup = True # if set to true all lights will be updated with last know state on startup.
@@ -833,6 +832,7 @@ def scanDeconz():
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
         generateSensorsState()
 
         if "websocketport" in bridge_config["deconz"]:
