@@ -476,12 +476,12 @@ def sendLightRequest(light, data):
             for key, value in data.items():
                 if key == "on":
                     if value:
-                        url += "&switchcmd=On" 
+                        url += "&switchcmd=On"
                     else:
-                        url += "&switchcmd=Off" 
+                        url += "&switchcmd=Off"
                 elif key == "bri":
                     url += "&switchcmd=Set%20Level&level=" + str(round(float(value)/255*100)) # domoticz range from 0 to 100 (for zwave devices) instead of 0-255 of bridge
-                    
+
         elif bridge_config["lights_address"][light]["protocol"] == "milight": #MiLight bulb
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"]);
             method = 'PUT'
@@ -643,15 +643,15 @@ def syncWithLights(): #update Hue Bridge lights states
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
-                        
+
                 elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #domoticz protocol
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=devices&rid=" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
                     if light_data["result"][0]["Status"] == "Off":
                          bridge_config["lights"][light]["state"]["on"] = False
                     else:
                          bridge_config["lights"][light]["state"]["on"] = True
-                    bridge_config["lights"][light]["state"]["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))    
-                    
+                    bridge_config["lights"][light]["state"]["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))
+
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 updateGroupStats(light)
             except:
@@ -1507,7 +1507,10 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         url_pices = self.path.split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
-            del bridge_config[url_pices[3]][url_pices[4]]
+            if len(url_pices) == 6:
+                del bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]
+            else:
+                del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
                 for light in bridge_config["deconz"]["lights"].keys():
