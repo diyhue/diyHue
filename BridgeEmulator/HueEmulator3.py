@@ -14,7 +14,7 @@ from collections import defaultdict
 from uuid import getnode as get_mac
 from urllib.parse import urlparse, parse_qs
 
-update_lights_on_startup = True # if set to true all lights will be updated with last know state on startup.
+update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 mac = '%012x' % get_mac()
 
@@ -729,37 +729,29 @@ def websocketClient():
                             message["state"]["buttonevent"] = rewriteDict[bridge_config["deconz"]["sensors"][message["id"]]["hueType"]][message["state"]["buttonevent"]]
                         #end change codes for emulated hue Switches
 
-                        #convert tradfri monion sensor notification to look like Hue Motion Sensor
-                        if message["state"] and bridge_config["sensors"][bridge_sensor_id]["modelid"] == "SML001":
-                            if "triggered" not in bridge_config["deconz"]["sensors"][message["id"]]:
-                                bridge_config["deconz"]["sensors"][message["id"]]["triggered"] = False
-                                bridge_config["deconz"]["sensors"][message["id"]]["last_triggered"] = "2017-01-31T00:00:00"
-
+                        #convert tradfri motion sensor notification to look like Hue Motion Sensor
+                        if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "TRADFRI motion sensor":
                             #find the light sensor id
                             light_sensor = "0"
                             for sensor in bridge_config["sensors"].keys():
-                                if bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_sensor_id]["uniqueid"][:-1] + "0":
+                                if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_sensor_id]["uniqueid"][:-1] + "0":
                                     light_sensor = sensor
                                     break
-
-                            if bridge_config["deconz"]["sensors"][message["id"]]["triggered"]: # conditions to turn on the lights where meet
-                                if not message["state"]["presence"]:
-                                    bridge_config["deconz"]["sensors"][message["id"]]["triggered"] = False
-                                    bridge_config["deconz"]["sensors"][message["id"]]["last_triggered"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                                    print("clear triggered flag")
-                                else:
-                                    message["state"] = {}
+                            if message["state"]["dark"]:
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
                             else:
-                                if message["state"]["presence"] and (message["state"]["dark"] or datetime.strptime(bridge_config["deconz"]["sensors"][message["id"]]["last_triggered"], "%Y-%m-%dT%H:%M:%S") > datetime.now() - timedelta(minutes=10)): # if motion detected when dark is true
-                                    bridge_config["deconz"]["sensors"][message["id"]]["triggered"] = True
-                                    bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
-                                    message["state"]["dark"] = True # override because artificial light may change this to False
-                                    print("set triggered flag")
-                                else:
-                                    bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
-                                bridge_config["sensors"][light_sensor]["state"]["dark"] = message["state"]["dark"]
-                                bridge_config["sensors"][light_sensor]["state"]["daylight"] = not message["state"]["dark"]
-                                bridge_config["sensors"][light_sensor]["state"]["lastupdated"] = message["state"]["lastupdated"]
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
+                            if message["state"]["dark"] and not sensors_state[bridge_sensor_id]["state"]["dark"]:
+                                sensors_state[bridge_sensor_id]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                            bridge_config["sensors"][light_sensor]["state"]["dark"] = message["state"]["dark"]
+                            bridge_config["sensors"][light_sensor]["state"]["daylight"] = not message["state"]["dark"]
+                            bridge_config["sensors"][light_sensor]["state"]["lastupdated"] = message["state"]["lastupdated"]
+
+                        #convert xiaomi motion sensor to hue sensor
+                        if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "lumi.sensor_motion.aq2" and message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["type"] == "ZHALightLevel":
+                            bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
+                            return
+                        ##############
 
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -779,7 +771,6 @@ def websocketClient():
                     if "state" in message:
                         bridge_config["lights"][bridge_light_id]["state"].update(message["state"])
                         updateGroupStats(bridge_light_id)
-
             except Exception as e:
                 print("unable to process the request" + str(e))
 
@@ -804,19 +795,22 @@ def scanDeconz():
     if "username" in bridge_config["deconz"]:
         deconz_config = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
         bridge_config["deconz"]["websocketport"] = deconz_config["websocketport"]
-        registered_deconz_lights = []
-        for light in bridge_config["lights_address"]:
-            if bridge_config["lights_address"][light]["protocol"] == "deconz":
-                registered_deconz_lights.append( bridge_config["lights_address"][light]["light_id"] )
+
         #lights
         deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
-            if light not in registered_deconz_lights:
+            if light not in bridge_config["deconz"]["lights"]:
                 new_light_id = nextFreeId("lights")
                 print("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
                 bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
                 bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id}
+            else: #temporary patch for config compatibility with new release
+                bridge_config["deconz"]["lights"][light]["modelid"] = deconz_lights[light]["modelid"]
+                bridge_config["deconz"]["lights"][light]["type"] = deconz_lights[light]["type"]
+
+
+
         #sensors
         deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
@@ -825,14 +819,28 @@ def scanDeconz():
                 if deconz_sensors[sensor]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
                     print("register new " + deconz_sensors[sensor]["modelid"])
                     bridge_config["sensors"][new_sensor_id] = {"config": deconz_sensors[sensor]["config"], "manufacturername": deconz_sensors[sensor]["manufacturername"], "modelid": deconz_sensors[sensor]["modelid"], "name": deconz_sensors[sensor]["name"], "state": deconz_sensors[sensor]["state"], "swversion": deconz_sensors[sensor]["swversion"], "type": deconz_sensors[sensor]["type"], "uniqueid": deconz_sensors[sensor]["uniqueid"]}
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
                 elif deconz_sensors[sensor]["modelid"] == "TRADFRI motion sensor":
                     print("register TRADFRI motion sensor as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor("")
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"]}
+
+                elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion.aq2":
+                    if deconz_sensors[sensor]["type"] == "ZHALightLevel":
+                        print("register new Xiaomi light sensor")
+                        bridge_config["sensors"][new_sensor_id] = {"name": "Hue ambient light sensor 1", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:], "type": "ZLLLightLevel", "swversion": "6.1.0.18912", "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False,"battery": 100, "reachable": True, "alert": "none", "tholddark": 21597, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+                        bridge_config["sensors"][str(int(new_sensor_id) + 1)] = {"name": "Hue temperature sensor 1", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:-1] + "2", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
+                    elif deconz_sensors[sensor]["type"] == "ZHAPresence":
+                        print("register new Xiaomi motion sensor")
+                        bridge_config["sensors"][new_sensor_id] = {"name": "Entrance Lights sensor", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:], "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
+                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
+            else: #temporary patch for config compatibility with new release
+                bridge_config["deconz"]["sensors"][sensor]["modelid"] = deconz_sensors[sensor]["modelid"]
+                bridge_config["deconz"]["sensors"][sensor]["type"] = deconz_sensors[sensor]["type"]
         generateSensorsState()
 
         if "websocketport" in bridge_config["deconz"]:
