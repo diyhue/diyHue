@@ -5,7 +5,9 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
+extern "C" {
+#include "pwm.h"
+}
 
 #define PWM_CHANNELS 3
 const uint32_t period = 1024;
@@ -32,6 +34,7 @@ uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0};
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
+uint8_t rgb_multiplier[] = {100, 90, 30}; // light multiplier in percentage, max = 100
 uint8_t rgb[3], color_mode, scene;
 bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
@@ -114,6 +117,11 @@ void convert_xy()
   g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
   b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
 
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
   if (r > b && r > g) {
     // red is biggest
     if (r > 1.0f) {
@@ -158,9 +166,16 @@ void convert_ct() {
     g = 288.1221695283 * pow(hectemp - 60, -0.0755148492);
     b = 255;
   }
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+  
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
+  
   rgb[0] = r * (bri / 255.0f); rgb[1] = g * (bri / 255.0f); rgb[2] = b * (bri / 255.0f);
 }
 
@@ -651,3 +666,4 @@ void loop() {
   server.handleClient();
   lightEngine();
 }
+
