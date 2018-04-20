@@ -741,8 +741,8 @@ def websocketClient():
                                 bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
                             else:
                                 bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
-                            if message["state"]["dark"] and not sensors_state[bridge_sensor_id]["state"]["dark"]:
-                                sensors_state[bridge_sensor_id]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                            if message["state"]["dark"] and not bridge_config["sensors"][light_sensor]["state"]["dark"]:
+                                sensors_state[light_sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             bridge_config["sensors"][light_sensor]["state"]["dark"] = message["state"]["dark"]
                             bridge_config["sensors"][light_sensor]["state"]["daylight"] = not message["state"]["dark"]
                             bridge_config["sensors"][light_sensor]["state"]["lastupdated"] = message["state"]["lastupdated"]
