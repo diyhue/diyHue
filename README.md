@@ -45,7 +45,7 @@ Pull request https://github.com/mariusmotea/diyHue/pull/173  improve bulbs color
  
  ## Working smartphone applications:
   - Hue (official application)
-  - hueManiac
+  - hueManic
   - OnSwitch
   - HueSwitcher
   - LampShade
