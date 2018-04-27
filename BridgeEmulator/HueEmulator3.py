@@ -464,6 +464,13 @@ def sendLightRequest(light, data):
                     url += "&x=" + str(value[0]) + "&y=" + str(value[1])
                 else:
                     url += "&" + key + "=" + str(value)
+        elif bridge_config["lights_address"][light]["protocol"] == "native_json":
+            url = "http://" + bridge_config["lights_address"][light]["ip"] + "/state"
+            method = 'PUT'
+            payload.update(data)
+            if bridge_config["lights_address"][light]["light_nr"] > 1:
+                payload["light"] = bridge_config["lights_address"][light]["light_nr"]
+
         elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
@@ -570,7 +577,6 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             bridge_config["groups"][group]["action"]["on"] = any_on
 
 def scanForLights(): #scan for ESP8266 lights and strips
-    print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').split("\n")
     pprint(device_ips)
@@ -590,13 +596,17 @@ def scanForLights(): #scan for ESP8266 lights and strips
                                 device_exist = True
                                 bridge_config["lights_address"][light]["ip"] = ip
                         if not device_exist:
-                            print("is a new device")
+                            light_name = "Hue " + device_data["hue"] + " " + device_data["modelid"]
+                            light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
+                            if "name" in device_data:
+                                light_name = device_data["name"]
+                            print("Add new light: " + light_name)
                             for x in range(1, int(device_data["lights"]) + 1):
                                 new_light_id = nextFreeId("lights")
-                                light_types = {"LCT001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "66009461"}, "LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
-                                new_lights.update({new_light_id: {"name": "Hue " + device_data["hue"] + " " + device_data["modelid"] + " " + str(x)}})
-                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
+                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
+                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native_json" if "type" in device_data and device_data["type"] == "json" else "native"}
+            print(json.dumps([{"success": {"/lights": "Searching for new devices"}}], sort_keys=True, indent=4, separators=(',', ': ')))
         except:
             print("ip " + ip + " is unknow device")
     scanDeconz()
@@ -609,7 +619,7 @@ def syncWithLights(): #update Hue Bridge lights states
         print("sync with lights")
         for light in bridge_config["lights_address"]:
             try:
-                if bridge_config["lights_address"][light]["protocol"] == "native":
+                if bridge_config["lights_address"][light]["protocol"] in ["native","native_json"]:
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}"))
                     bridge_config["lights"][light]["state"].update(light_data)
                 elif bridge_config["lights_address"][light]["protocol"] == "hue":
@@ -1523,11 +1533,11 @@ class S(BaseHTTPRequestHandler):
                 del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
-                for light in bridge_config["deconz"]["lights"].keys():
+                for light in list(bridge_config["deconz"]["lights"]):
                     if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["lights"][light]
             if url_pices[3] == "sensors":
-                for sensor in bridge_config["deconz"]["sensors"].keys():
+                for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
             self.wfile.write(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}]), "utf8"))
