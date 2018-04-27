@@ -7,8 +7,8 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define lightsCount 3
-#define pixelCount 60
+#define lightsCount 1
+#define pixelCount 38
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
@@ -20,6 +20,7 @@
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
+float rgb_multiplier[] = {100, 65, 30}; // light multiplier in percentage
 uint8_t rgb[lightsCount][3], color_mode[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
@@ -33,7 +34,7 @@ RgbColor green = RgbColor(0, 255, 0);
 RgbColor white = RgbColor(255);
 RgbColor black = RgbColor(0);
 
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(pixelCount);
+NeoPixelBus<NeoBrgFeature, Neo800KbpsMethod> strip(pixelCount);
 
 void convert_hue(uint8_t light)
 {
@@ -97,13 +98,12 @@ void convert_hue(uint8_t light)
 
 void convert_xy(uint8_t light)
 {
-  int optimal_bri = bri[light];
-  if (optimal_bri < 5) {
-    optimal_bri = 5;
-  }
-  float Y = y[light];
-  float X = x[light];
-  float Z = 1.0f - x[light] - y[light];
+  float Y = bri[light] / 250.0f;
+
+  float z = 1.0f - x[light] - y[light];
+
+  float X = (Y / y[light]) * x[light];
+  float Z = (Y / y[light]) * z;
 
   // sRGB D65 conversion
   float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
@@ -111,9 +111,33 @@ void convert_xy(uint8_t light)
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
   // Apply gamma correction
-  r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
-  g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
-  b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
+  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
+  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
+  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
+  if (r > b && r > g && r > 1.0f) {
+    // red is too big
+    g = g / r;
+    b = b / r;
+    r = 1.0f;
+  }
+  else if (g > b && g > r && g > 1.0f) {
+    // green is too big
+    r = r / g;
+    b = b / g;
+    g = 1.0f;
+  }
+  else if (b > r && b > g && b > 1.0f) {
+    // blue is too big
+    r = r / b;
+    g = g / b;
+    b = 1.0f;
+  }
 
   if (r > b && r > g) {
     // red is biggest
@@ -144,8 +168,9 @@ void convert_xy(uint8_t light)
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb[light][0] = (int) (r * optimal_bri); rgb[light][1] = (int) (g * optimal_bri); rgb[light][2] = (int) (b * optimal_bri);
+  rgb[light][0] = (int) (r * 255.0f); rgb[light][1] = (int) (g * 255.0f); rgb[light][2] = (int) (b * 255.0f);
 }
+
 
 void convert_ct(uint8_t light) {
   int hectemp = 10000 / ct[light];
@@ -162,6 +187,12 @@ void convert_ct(uint8_t light) {
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+  
   rgb[light][0] = r * (bri[light] / 255.0f); rgb[light][1] = g * (bri[light] / 255.0f); rgb[light][2] = b * (bri[light] / 255.0f);
 }
 
@@ -219,7 +250,7 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
-void process_lightdata(uint8_t light,float transitiontime) {
+void process_lightdata(uint8_t light, float transitiontime) {
   transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
   if (color_mode[light] == 1 && light_state[light] == true) {
     convert_xy(light);

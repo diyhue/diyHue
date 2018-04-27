@@ -1,0 +1,16 @@
+[Unit]
+Description=Hue Emulator Service
+After=multi-user.target
+
+[Service]
+Type=idle
+Restart=always
+RestartSec=30
+StartLimitInterval=200
+StartLimitBurst=5
+
+WorkingDirectory=/opt/hue-emulator
+ExecStart=/opt/hue-emulator/HueEmulator3.py
+
+[Install]
+WantedBy=multi-user.target

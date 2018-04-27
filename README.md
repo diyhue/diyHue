@@ -1,7 +1,11 @@
 ## diyHue
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=J5NHHR47MVTMW)  
 This project emulates a Philips Hue Bridge that is able to control ZigBee lights (using Raspbee module or original Hue Bridge or IKEA Tradfri Gateway), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
+
+### fix for existing users 13.feb.2018
+Pull request https://github.com/mariusmotea/diyHue/pull/173  improve bulbs color. To apply this fix you need to replace in config.json file `LCT001` with `LCT015` and restart the service. I recommend to upgrade to latest version and upgrade lights firmware.
 
 ### Requirements:
  - python
@@ -15,6 +19,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
  - ~~On/Off control for other home devices using virtual lights~~
  - Alarm (~~email notification~~ + eps8266 horn)
+ - Hue Entertainment support
 
 ## Working futures:
   - Control lights (all functions)
@@ -36,10 +41,11 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Openhab
   - Philips Ambilight TV's 
   - Kodi Hue Ambilight
+  - Jeedom
  
  ## Working smartphone applications:
   - Hue (official application)
-  - hueManiac
+  - hueManic
   - OnSwitch
   - HueSwitcher
   - LampShade
@@ -69,7 +75,15 @@ I push updates fast so if you want to notified just add this repo to watch
 
 Contributions are welcomed  
 
+Hue living color light project for 3D printing: https://www.thingiverse.com/thing:2773413
+
+## qtHue
+You may want to see also my new project [qtHue](https://github.com/mariusmotea/qtHue) that provide a simple user interface for controlling the lights.
+![qtHue](https://github.com/mariusmotea/qtHue/blob/master/Screenshot.png?raw=true)
+
+
 Credits:
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
   - StefanBruens https://github.com/StefanBruens/ESP8266_new_pwm
+  - Cédric @ticed35 for linkbutton implementation.

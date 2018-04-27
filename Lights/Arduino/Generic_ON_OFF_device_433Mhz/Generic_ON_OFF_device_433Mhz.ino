@@ -1,7 +1,14 @@
 
 
 /*
-  This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight RGB_CCT bulb.
+  This can control Generic Power Outlets with Remote Control over 433Mhz.
+  Maximum 8 Devices.
+  Simulates 2 Remotes with 4 Items each.
+  Showing 8 Individual Hue Bulbs
+  
+  Edit Config as needed
+  by Mevel
+
 */
 
 #include <ESP8266WiFi.h>
@@ -15,16 +22,22 @@
 
 RCSwitch mySwitch = RCSwitch();
 
-#define devicesCount 4
 
-uint8_t devicesPins[devicesCount] = {12, 13, 14, 5};
+//############ CONFIG ############
 
-uint8_t transmitterPin = 4; //Pin the Transmitter is attached to
-uint8_t transmitterDelay = 100; // Delay between sending commands
-uint8_t repeatTransmit = 2; // Number of Transmit attempts (sometimes one Transmit is not enough)
+#define devicesCount 8 // 4 or 8 --> Maximum 8
+char* houseCodeA = "11110"; //Group A --> Remote Code for Socket 1-4
+char* houseCodeB = "11100"; //Group B --> Remote Code for Socket 5-8
 
-char* deviceId[] = {"10000", "01000", "00100", "00010"}; // Button Codes
-char* houseCode = "11110"; //Housecode set in Handheld Remote
+//##########END OF CONFIG ##############
+
+
+
+uint8_t devicesPins[devicesCount] = {12, 13, 14, 5, 12, 13, 14, 5}; //irrelevant
+uint8_t transmitterPin = 4;     // What Pin is the Transmitter conected?
+uint8_t transmitterDelay = 100; // Delay between sending commands in ms
+uint8_t repeatTransmit = 2; // Number of Transmit attempts
+char* deviceId[] = {"10000", "01000", "00100", "00010", "10000", "01000", "00100", "00010"};
 int c;
 
 
@@ -59,8 +72,15 @@ void SwitchOn433(uint8_t c) {
 
   for (int x = 0; x < repeatTransmit; x++) {
 
-    mySwitch.switchOn(houseCode, deviceId[c]);
-    delay(transmitterDelay);
+    if (c <= 3) {
+      mySwitch.switchOn(houseCodeA, deviceId[c]);
+      delay(transmitterDelay);
+    }
+    else {
+      mySwitch.switchOn(houseCodeB, deviceId[c]);
+      delay(transmitterDelay);
+
+    }
 
   }
 
@@ -69,12 +89,19 @@ void SwitchOff433(uint8_t c) {
 
   for (int x = 0; x < repeatTransmit; x++) {
 
-    mySwitch.switchOff(houseCode, deviceId[c]);
-    delay(transmitterDelay);
+
+    if (c <= 3) {
+      mySwitch.switchOff(houseCodeA, deviceId[c]);
+      delay(transmitterDelay);
+
+    } else {
+
+      mySwitch.switchOff(houseCodeB, deviceId[c]);
+      delay(transmitterDelay);
+    }
 
   }
 }
-
 
 void setup() {
   EEPROM.begin(512);
@@ -208,8 +235,8 @@ void setup() {
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
-    http_content += "<a class=\"pure-button"; if (device_state) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
-    http_content += "<a class=\"pure-button"; if (!device_state) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
+    http_content += "<a class=\"pure-button"; if (device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
+    http_content += "<a class=\"pure-button"; if (!device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
     http_content += "</div>";
     http_content += "</fieldset>";
     http_content += "</form>";

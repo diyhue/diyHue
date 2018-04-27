@@ -5,14 +5,17 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
+extern "C" {
+#include "pwm.h"
+}
 
 #define PWM_CHANNELS 3
 const uint32_t period = 1024;
 
-#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
-#define button1_pin 1 // on and bri up
-#define button2_pin 3 // off and bri down
+#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
+//For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
+#define button1_pin 1 // on and brightness up
+#define button2_pin 3 // off and brightness down
 
 //define pins
 uint32 io_info[PWM_CHANNELS][3] = {
@@ -31,6 +34,7 @@ uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0};
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
+uint8_t rgb_multiplier[] = {100, 90, 30}; // light multiplier in percentage, max = 100
 uint8_t rgb[3], color_mode, scene;
 bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
@@ -113,6 +117,11 @@ void convert_xy()
   g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
   b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
 
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+
   if (r > b && r > g) {
     // red is biggest
     if (r > 1.0f) {
@@ -157,9 +166,16 @@ void convert_ct() {
     g = 288.1221695283 * pow(hectemp - 60, -0.0755148492);
     b = 255;
   }
+
+  // Apply multiplier for white correction
+  r = r * rgb_multiplier[0] / 100;
+  g = g * rgb_multiplier[1] / 100;
+  b = b * rgb_multiplier[2] / 100;
+  
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
+  
   rgb[0] = r * (bri / 255.0f); rgb[1] = g * (bri / 255.0f); rgb[2] = b * (bri / 255.0f);
 }
 
@@ -482,7 +498,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT001\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
@@ -540,7 +556,7 @@ void setup() {
     } else if (server.hasArg("alert")) {
       if (light_state) {
         current_rgb[0] = 0; current_rgb[1] = 0; current_rgb[2] = 0;
-      } 
+      }
     }
     for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
@@ -650,3 +666,4 @@ void loop() {
   server.handleClient();
   lightEngine();
 }
+
