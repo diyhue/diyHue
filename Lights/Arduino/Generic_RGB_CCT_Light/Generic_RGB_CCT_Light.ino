@@ -2,7 +2,6 @@
   This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight RGB_CCT bulb.
 */
 
-
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -11,19 +10,18 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 #include "pwm.c"
+#include <ArduinoJson.h>
 
+
+#define light_name "Hue RGB-CCT light"
 #define PWM_CHANNELS 5
 const uint32_t period = 1024;
-
-#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
-//For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
-#define button1_pin 1 // on and brightness up
-#define button2_pin 3 // off and brightness down
 
 //define pins
 uint32 io_info[PWM_CHANNELS][3] = {
   // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
+
+  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14}, 
   {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
   {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
   {PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
@@ -39,9 +37,9 @@ uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0, 0};
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgb_cct[5], color_mode, scene;
+uint8_t rgb_cct[5], bri, sat, color_mode, scene;
 bool light_state, in_transition;
-int transitiontime, ct, hue, bri, sat;
+int hue, ct;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
 
@@ -110,17 +108,12 @@ void convert_hue()
 
 void convert_xy()
 {
-
-  int optimal_bri = int( 10 + bri / 1.04);
-
-  float Y = y;
-  float X = x;
-  float Z = 1.0f - x - y;
+  float z = 1.0f - x - y;
 
   // sRGB D65 conversion
-  float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
-  float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
-  float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
+  float r =  x * 3.2406f - y * 1.5372f - z * 0.4986f;
+  float g = -x * 0.9689f + y * 1.8758f + z * 0.0415f;
+  float b =  x * 0.0557f - y * 0.2040f + z * 1.0570f;
 
   // Apply gamma correction
   r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
@@ -156,13 +149,17 @@ void convert_xy()
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgb_cct[0] = (int) (r * optimal_bri); rgb_cct[1] = (int) (g * optimal_bri); rgb_cct[2] = (int) (b * optimal_bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
-
+  rgb_cct[0] = (int) (r * bri); rgb_cct[1] = (int) (g * bri); rgb_cct[2] = (int) (b * bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
 }
 
 void convert_ct() {
+  uint8_t optimal_bri;
 
-  int optimal_bri = int( 10 + bri / 1.04);
+  if (bri < 5) {
+    optimal_bri = 5;
+  } else {
+    optimal_bri = bri;
+  }
 
   rgb_cct[0] = 0;
   rgb_cct[1] = 0;
@@ -170,8 +167,8 @@ void convert_ct() {
 
   uint8 percent_warm = ((ct - 150) * 100) / 350;
 
-  rgb_cct[3] = (optimal_bri * percent_warm) / 100;
-  rgb_cct[4] =  (optimal_bri * (100 - percent_warm)) / 100;
+  rgb_cct[3] = (int) optimal_bri * percent_warm / 100;
+  rgb_cct[4] = (int) optimal_bri * (100 - percent_warm) / 100;
 
 }
 
@@ -216,24 +213,6 @@ void apply_scene(uint8_t new_scene) {
   }
 }
 
-void process_lightdata(float transitiontime) {
-  if (color_mode == 1 && light_state == true) {
-    convert_xy();
-  } else if (color_mode == 2 && light_state == true) {
-    convert_ct();
-  } else if (color_mode == 3 && light_state == true) {
-    convert_hue();
-  }
-  transitiontime *= 16;
-  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-    if (light_state) {
-      step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
-    } else {
-      step_level[color] = current_rgb_cct[color] / transitiontime;
-    }
-  }
-}
-
 void lightEngine() {
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
@@ -257,46 +236,6 @@ void lightEngine() {
   if (in_transition) {
     delay(6);
     in_transition = false;
-  } else if (use_hardware_switch == true) {
-    if (digitalRead(button1_pin) == HIGH) {
-      int i = 0;
-      while (digitalRead(button1_pin) == HIGH && i < 30) {
-        delay(20);
-        i++;
-      }
-      if (i < 30) {
-        // there was a short press
-        light_state = true;
-      }
-      else {
-        // there was a long press
-        bri += 56;
-        if (bri > 254) {
-          // don't increase the brightness more then maximum value
-          bri = 254;
-        }
-      }
-      process_lightdata(4);
-    } else if (digitalRead(button2_pin) == HIGH) {
-      int i = 0;
-      while (digitalRead(button2_pin) == HIGH && i < 30) {
-        delay(20);
-        i++;
-      }
-      if (i < 30) {
-        // there was a short press
-        light_state = false;
-      }
-      else {
-        // there was a long press
-        bri -= 56;
-        if (bri < 1) {
-          // don't decrease the brightness less than minimum value.
-          bri = 1;
-        }
-      }
-      process_lightdata(4);
-    }
   }
 }
 
@@ -322,7 +261,8 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
   if (! light_state)  {
     // Show that we are connected
     pwm_set_duty(100, 1);
@@ -346,75 +286,41 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
-  if (use_hardware_switch == true) {
-    pinMode(button1_pin, INPUT);
-    pinMode(button2_pin, INPUT);
-  }
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    if (button == 1000) {
-      if (light_state == false) {
-        light_state = true;
-        scene = 0;
+  server.on("/state", []() {
+    DynamicJsonBuffer newBuffer;
+    JsonObject& root = newBuffer.parseObject(server.arg("plain"));
+    if (!root.success()) {
+      server.send(404, "text/plain", "FAIL. " + server.arg("plain"));
+    } else {
+      float transitiontime = 4;
+
+      if (root.containsKey("xy")) {
+        x = root["xy"][0];
+        y = root["xy"][1];
+        color_mode = 1;
+      } else if (root.containsKey("ct")) {
+        ct = root["ct"];
+        color_mode = 2;
       } else {
-        apply_scene(scene);
-        scene++;
-        if (scene == 11) {
-          scene = 0;
+        if (root.containsKey("hue")) {
+          hue = root["hue"];
+          color_mode = 3;
+        }
+        if (root.containsKey("sat")) {
+          sat = root["sat"];
+          color_mode = 3;
         }
       }
-    } else if (button == 2000) {
-      if (light_state == false) {
-        bri = 30;
-        light_state = true;
-      } else {
-        bri += 30;
-      }
-      if (bri > 255) bri = 255;
-      if (color_mode == 1) convert_xy();
-      else if (color_mode == 2) convert_ct();
-      else if (color_mode == 3) convert_hue();
-    } else if (button == 3000 && light_state == true) {
-      bri -= 30;
-      if (bri < 1) bri = 1;
-      else {
-        if (color_mode == 1) convert_xy();
-        else if (color_mode == 2) convert_ct();
-        else if (color_mode == 3) convert_hue();
-      }
-    } else if (button == 4000) {
-      light_state = false;
-    }
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-      if (light_state) {
-        step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / 54;
-      } else {
-        step_level[color] = current_rgb_cct[color] / 54;
-      }
-    }
-  });
 
-
-  server.on("/set", []() {
-    light_state = true;
-    int transitiontime = 4;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "on") {
-        if (server.arg(i) == "True" || server.arg(i) == "true") {
+      if (root.containsKey("on")) {
+        if (root["on"]) {
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 1) {
             EEPROM.write(0, 1);
             EEPROM.commit();
           }
           light_state = true;
-        }
-        else {
+        } else {
           if (EEPROM.read(1) == 0 && EEPROM.read(0) != 0) {
             EEPROM.write(0, 0);
             EEPROM.commit();
@@ -422,81 +328,83 @@ void setup() {
           light_state = false;
         }
       }
-      else if (server.argName(i) == "r") {
-        rgb_cct[0] = server.arg(i).toInt();
-        color_mode = 0;
+
+      if (root.containsKey("bri")) {
+        bri = root["bri"];
       }
-      else if (server.argName(i) == "g") {
-        rgb_cct[1] = server.arg(i).toInt();
-        color_mode = 0;
-      }
-      else if (server.argName(i) == "b") {
-        rgb_cct[2] = server.arg(i).toInt();
-        color_mode = 0;
-      }
-      else if (server.argName(i) == "w") {
-        rgb_cct[3] = server.arg(i).toInt();
-        color_mode = 0;
-      }
-      else if (server.argName(i) == "x") {
-        x = server.arg(i).toFloat();
-        color_mode = 1;
-      }
-      else if (server.argName(i) == "y") {
-        y = server.arg(i).toFloat();
-        color_mode = 1;
-      }
-      else if (server.argName(i) == "bri") {
-        if (server.arg(i).toInt() != 0)
-          bri = server.arg(i).toInt();
-      }
-      else if (server.argName(i) == "bri_inc") {
-        bri += server.arg(i).toInt();
+
+      if (root.containsKey("bri_inc")) {
+        bri += (int) root["bri_inc"];
         if (bri > 255) bri = 255;
         else if (bri < 0) bri = 0;
       }
-      else if (server.argName(i) == "ct") {
-        ct = server.arg(i).toInt();
-        color_mode = 2;
+
+      if (root.containsKey("transitiontime")) {
+        transitiontime = root["transitiontime"];
       }
-      else if (server.argName(i) == "sat") {
-        sat = server.arg(i).toInt();
-        color_mode = 3;
-      }
-      else if (server.argName(i) == "hue") {
-        hue = server.arg(i).toInt();
-        color_mode = 3;
-      }
-      else if (server.argName(i) == "alert" && server.arg(i) == "select") {
+
+      if (root.containsKey("alert") && root["alert"] == "select") {
         if (light_state) {
           current_rgb_cct[0] = 0; current_rgb_cct[1] = 0; current_rgb_cct[2] = 0; current_rgb_cct[3] = 0;
         } else {
           current_rgb_cct[0] = 255; current_rgb_cct[1] = 255; current_rgb_cct[2] = 255; current_rgb_cct[3] = 255;
         }
       }
-      else if (server.argName(i) == "transitiontime") {
-        transitiontime = server.arg(i).toInt();
+
+      server.send(200, "text/plain", "OK, : " + server.arg("plain"));
+      if (color_mode == 1) {
+        convert_xy();
+      } else if (color_mode == 2) {
+        convert_ct();
+      } else if (color_mode == 3) {
+        convert_hue();
+      }
+      transitiontime *= 16;
+      for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+        if (light_state) {
+          step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
+        } else {
+          step_level[color] = current_rgb_cct[color] / transitiontime;
+        }
       }
     }
-    server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state + ", r:" + (String)rgb_cct[0] + ", g:" + (String)rgb_cct[1] + ", b:" + (String)rgb_cct[2]);
-    process_lightdata(transitiontime);
   });
 
   server.on("/get", []() {
-    String colormode;
-    String power_status;
-    power_status = light_state ? "true" : "false";
+    DynamicJsonBuffer newBuffer;
+    JsonObject& root = newBuffer.createObject();
+
+    root["on"] = light_state;
+    root["bri"] = bri;
+    JsonArray& xy = root.createNestedArray("xy");
+    xy.add(x);
+    xy.add(y);
+    root["ct"] = ct;
+    root["hue"] = hue;
+    root["sat"] = sat;
     if (color_mode == 1)
-      colormode = "xy";
+      root["colormode"] = "xy";
     else if (color_mode == 2)
-      colormode = "ct";
+      root["colormode"] = "ct";
     else if (color_mode == 3)
-      colormode = "hs";
-    server.send(200, "text/plain", "{\"on\": " + power_status + ", \"bri\": " + (String)bri + ", \"xy\": [" + (String)x + ", " + (String)y + "], \"ct\":" + (String)ct + ", \"sat\": " + (String)sat + ", \"hue\": " + (String)hue + ", \"colormode\": \"" + colormode + "\"}");
+      root["colormode"] = "hs";
+    String output;
+    root.printTo(output);
+    server.send(200, "text/plain", output);
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    DynamicJsonBuffer newBuffer;
+    JsonObject& root = newBuffer.createObject();
+    root["name"] = light_name;
+    root["hue"] = "bulb";
+    root["lights"] = 1;
+    root["modelid"] = "LCT015";
+    root["type"] = "json";
+    root["mac"] = String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX);
+    String output;
+    root.printTo(output);
+    server.send(200, "text/plain", output);
   });
 
   server.on("/", []() {
