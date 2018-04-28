@@ -527,13 +527,13 @@ def sendLightRequest(light, data):
 
         try:
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
+                transitiontime = 4
                 if "transitiontime" in payload:
-                    transitiontime = payload["transitiontime"]
-                else:
-                    transitiontime = 4
-                    for key, value in payload.items(): #ikea bulbs don't accept all arguments at once
-                        print(check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
-                        sleep(0.5)
+                    transitiontime = int(payload["transitiontime"] / (len(payload) -1))
+                    del payload["transitiontime"]
+                for key, value in payload.items(): #ikea bulbs don't accept all arguments at once
+                    print(check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
+                    sleep(0.5)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 if "xy" in payload:
                     sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
