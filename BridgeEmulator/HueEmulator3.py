@@ -544,7 +544,7 @@ def sendLightRequest(light, data):
             pprint(data)
             if "hue" in data or "sat" in data:
                 rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"]);    
-                xyValue = convert_xy(tuple(rgbValue))
+                xyValue = convert_xy(rgbValue[0], rgbValue[1], rgbValue[2])
                 payload["5709"] = int(xyValue[0] * 65535)
                 payload["5710"] = int(xyValue[1] * 65535)
             if "5850" in payload and payload["5850"] == 0:
