@@ -450,8 +450,31 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
     b = 0 if b < 0 else b
-
+    
+    print("XY conversion in - out")
+    pprint("x={} y={} bri={}".format(x, y, bri))
+    pprint("R={} G={} B={} ".format(int(r * bri),int(g * bri),int(b * bri))) 
+    
     return [int(r * bri), int(g * bri), int(b * bri)]
+    
+def hsv_to_rgb(h, s, v):
+        
+        print("RGB conversion in - out")
+        pprint("h={} s={} v={}".format(h, s, v))
+        
+        if s == 0.0: v*=255; return (v, v, v)
+        i = int(h*6.) # XXX assume int() truncates!
+        f = (h*6.)-i; p,q,t = int(255*(v*(1.-s))), int(255*(v*(1.-s*f))), int(255*(v*(1.-s*(1.-f)))); v*=255; i%=6
+        
+        print("CASE I = {}".format(i))
+        print("v={} t={} p={} q={}".format(v, t, p, q))
+        
+        if i == 0: return [v, t, p]
+        if i == 1: return [q, v, p]
+        if i == 2: return [p, v, t]
+        if i == 3: return [p, q, v]
+        if i == 4: return [t, p, v]
+        if i == 5: return [v, p, q]
 
 def sendLightRequest(light, data):
     payload = {}
@@ -518,6 +541,12 @@ def sendLightRequest(light, data):
                 elif key == "xy":
                     payload["5709"] = int(value[0] * 65535)
                     payload["5710"] = int(value[1] * 65535)
+            pprint(data)
+            if "hue" in data or "sat" in data:
+                rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"]);    
+                xyValue = convert_xy(tuple(rgbValue))
+                payload["5709"] = int(xyValue[0] * 65535)
+                payload["5710"] = int(xyValue[1] * 65535)
             if "5850" in payload and payload["5850"] == 0:
                 payload.clear() #setting brightnes will turn on the ligh even if there was a request to power off
                 payload["5850"] = 0
@@ -526,7 +555,7 @@ def sendLightRequest(light, data):
                 pprint(payload)
 
         try:
-            if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":                
+            if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
                 if "5712" not in payload:
                     payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
                 pprint("PAYLOAD:" + json.dumps(payload))
@@ -1478,13 +1507,13 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][light]["state"].update(put_dictionary)
                             sendLightRequest(light, put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
-                    sendLightRequest(url_pices[4], put_dictionary)
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
                         elif key in ["hue", "sat"]:
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
                     updateGroupStats(url_pices[4])
+                    sendLightRequest(url_pices[4], put_dictionary)
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
