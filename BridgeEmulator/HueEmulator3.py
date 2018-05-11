@@ -395,8 +395,8 @@ def sendRequest(url, method, data, timeout=3, delay=0):
         return response.text
     elif method == "GET":
         response = requests.get(url, timeout=timeout, headers=head)
-        return response.text
-
+        return response.text 
+     
 def convert_rgb_xy(red,green,blue):
     red = pow((red + 0.055) / (1.0 + 0.055), 2.4) if red > 0.04045 else red / 12.92
     green = pow((green + 0.055) / (1.0 + 0.055), 2.4) if green > 0.04045 else green / 12.92
@@ -409,7 +409,8 @@ def convert_rgb_xy(red,green,blue):
 
 #Calculate the xy values from the XYZ values
     x = X / (X + Y + Z)
-    y = Y / (X + Y + Z)
+    x = (X / (X + Y + Z) * 65535)
+    y = (Y / (X + Y + Z) * 65535)
     return [x, y]
 
 def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
@@ -449,32 +450,33 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
 
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
-    b = 0 if b < 0 else b
-    
-    print("XY conversion in - out")
-    pprint("x={} y={} bri={}".format(x, y, bri))
-    pprint("R={} G={} B={} ".format(int(r * bri),int(g * bri),int(b * bri))) 
+    b = 0 if b < 0 else b 
     
     return [int(r * bri), int(g * bri), int(b * bri)]
     
 def hsv_to_rgb(h, s, v):
-        
-        print("RGB conversion in - out")
-        pprint("h={} s={} v={}".format(h, s, v))
-        
-        if s == 0.0: v*=255; return (v, v, v)
-        i = int(h*6.) # XXX assume int() truncates!
-        f = (h*6.)-i; p,q,t = int(255*(v*(1.-s))), int(255*(v*(1.-s*f))), int(255*(v*(1.-s*(1.-f)))); v*=255; i%=6
-        
-        print("CASE I = {}".format(i))
-        print("v={} t={} p={} q={}".format(v, t, p, q))
-        
-        if i == 0: return [v, t, p]
-        if i == 1: return [q, v, p]
-        if i == 2: return [p, v, t]
-        if i == 3: return [p, q, v]
-        if i == 4: return [t, p, v]
-        if i == 5: return [v, p, q]
+    if s == 0.0:
+        return v, v, v
+    i = int(h*6.0) # XXX assume int() truncates!
+    f = (h*6.0) - i
+    p = v*(1.0 - s)
+    q = v*(1.0 - s*f)
+    t = v*(1.0 - s*(1.0-f))
+    i = i%6
+    if i == 0:
+        return v, t, p
+    if i == 1:
+        return q, v, p
+    if i == 2:
+        return p, v, t
+    if i == 3:
+        return p, q, v
+    if i == 4:
+        return t, p, v
+    if i == 5:
+        return v, p, q
+    # Cannot get here
+
 
 def sendLightRequest(light, data):
     payload = {}
@@ -540,13 +542,33 @@ def sendLightRequest(light, data):
                         payload["5706"] = "efd275"
                 elif key == "xy":
                     payload["5709"] = int(value[0] * 65535)
-                    payload["5710"] = int(value[1] * 65535)
-            pprint(data)
+                    payload["5710"] = int(value[1] * 65535) 
             if "hue" in data or "sat" in data:
-                rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"]);    
-                xyValue = convert_xy(rgbValue[0], rgbValue[1], rgbValue[2])
-                payload["5709"] = int(xyValue[0] * 65535)
-                payload["5710"] = int(xyValue[1] * 65535)
+                hue = bridge_config["lights"][light]["state"]["hue"] #//round(bridge_config["lights"][light]["state"]["hue"] / 182, 0)
+                sat = bridge_config["lights"][light]["state"]["sat"]
+                bri = bridge_config["lights"][light]["state"]["bri"]
+                
+                #if hue is 0 and sat is 0 and bri is 0:
+                #    print("----EXCEPTION NULL----")
+                                   
+                
+                hue_perc = round((hue / 65535), 3)
+                sat_perc = round((sat / 255), 3)
+                bri_perc = round((bri / 255), 3)
+                
+                print("1 H={} S={} BRI={}".format(hue, bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"]))
+                print("2 H={}-{} S={} BRI={}".format(hue_perc, (hue_perc * 360), sat_perc, bri_perc))
+                
+                #rgbValue = colorsys.hsv_to_rgb(hue_perc, sat_perc, bri_perc)
+                rgbValue = hsv_to_rgb(hue_perc, sat_perc, bri_perc) 
+                
+                print("R={} G={} B={}".format(rgbValue[0], rgbValue[1], rgbValue[2])) 
+                
+                xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
+                print("xy_raw X={} Y={}".format(xyValue[0], xyValue[1]))
+                print("xy_multi X={} Y={}".format(xyValue[0] * 65535, xyValue[1] * 65535))
+                payload["5709"] = int(xyValue[0])
+                payload["5710"] = int(xyValue[1])
             if "5850" in payload and payload["5850"] == 0:
                 payload.clear() #setting brightnes will turn on the ligh even if there was a request to power off
                 payload["5850"] = 0
