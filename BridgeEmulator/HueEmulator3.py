@@ -505,7 +505,7 @@ def sendLightRequest(light, data):
                 if key == "on":
                     payload["5850"] = int(value)
                 elif key == "transitiontime":
-                    payload["transitiontime"] = value
+                    payload["5712"] = value
                 elif key == "bri":
                     payload["5851"] = value
                 elif key == "ct":
@@ -526,14 +526,12 @@ def sendLightRequest(light, data):
                 pprint(payload)
 
         try:
-            if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
-                transitiontime = 4
-                if "transitiontime" in payload:
-                    transitiontime = int(payload["transitiontime"] / (len(payload) -1))
-                    del payload["transitiontime"]
-                for key, value in payload.items(): #ikea bulbs don't accept all arguments at once
-                    print(check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
-                    sleep(0.5)
+            if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":                
+                if "5712" not in payload:
+                    payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
+                pprint("PAYLOAD:" + json.dumps(payload))
+                pprint("Test ./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"")
+                check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 if "xy" in payload:
                     sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
