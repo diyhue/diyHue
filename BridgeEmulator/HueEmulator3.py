@@ -12,7 +12,7 @@ import base64
 from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs 
 
 update_lights_on_startup = True # if set to true all lights will be updated with last know state on startup.
 
@@ -408,7 +408,6 @@ def convert_rgb_xy(red,green,blue):
     Z = red * 0.000088 + green * 0.072310 + blue * 0.986039
 
 #Calculate the xy values from the XYZ values
-    x = X / (X + Y + Z)
     x = (X / (X + Y + Z) * 65535)
     y = (Y / (X + Y + Z) * 65535)
     return [x, y]
@@ -565,8 +564,7 @@ def sendLightRequest(light, data):
                 print("R={} G={} B={}".format(rgbValue[0], rgbValue[1], rgbValue[2])) 
                 
                 xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
-                print("xy_raw X={} Y={}".format(xyValue[0], xyValue[1]))
-                print("xy_multi X={} Y={}".format(xyValue[0] * 65535, xyValue[1] * 65535))
+                print("xy_raw X={} Y={}".format(xyValue[0], xyValue[1])) 
                 payload["5709"] = int(xyValue[0])
                 payload["5710"] = int(xyValue[1])
             if "5850" in payload and payload["5850"] == 0:
