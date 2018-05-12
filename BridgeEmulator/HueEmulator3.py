@@ -474,7 +474,6 @@ def hsv_to_rgb(h, s, v):
     r, g, b = int(r * 255), int(g * 255), int(b * 255) #convert values to 0 - 255
     return r, g, b
 
-
 def sendLightRequest(light, data):
     payload = {}
     if light in bridge_config["lights_address"]:
@@ -582,7 +581,7 @@ def sendLightRequest(light, data):
 
 def updateGroupStats(light): #set group stats based on lights status in that group
     for group in bridge_config["groups"]:
-        if light in bridge_config["groups"][group]["lights"]:
+        if "lights" in group and light in bridge_config["groups"][group]["lights"]:
             for key, value in bridge_config["lights"][light]["state"].items():
                 if key not in ["on", "reachable"]:
                     bridge_config["groups"][group]["action"][key] = value
