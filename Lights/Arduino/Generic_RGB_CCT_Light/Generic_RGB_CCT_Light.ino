@@ -51,6 +51,7 @@ void convert_hue()
   long        i;
 
   rgb_cct[3] = 0;
+  rgb_cct[4] = 0;
   s = sat / 255.0;
   v = bri / 255.0;
 
