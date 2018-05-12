@@ -543,13 +543,26 @@ def sendLightRequest(light, data):
                     payload["5709"] = int(value[0] * 65535)
                     payload["5710"] = int(value[1] * 65535) 
             if "hue" in data or "sat" in data:
-                hue = bridge_config["lights"][light]["state"]["hue"] #//round(bridge_config["lights"][light]["state"]["hue"] / 182, 0)
-                sat = bridge_config["lights"][light]["state"]["sat"]
-                bri = bridge_config["lights"][light]["state"]["bri"]
+                ##hue = bridge_config["lights"][light]["state"]["hue"] #//round(bridge_config["lights"][light]["state"]["hue"] / 182, 0)
+                ##sat = bridge_config["lights"][light]["state"]["sat"]
+                ##bri = bridge_config["lights"][light]["state"]["bri"]
+                
+                if "hue" in data or "bri" in data or "sat" in data:
+                    if("hue" in data):
+                        hue = data["hue"]
+                    else:
+                        hue = bridge_config["lights"][light]["state"]["hue"]
+                    if("sat" in data):
+                        sat = data["sat"]
+                    else:
+                        sat = bridge_config["lights"][light]["state"]["sat"]
+                    if("bri" in data):
+                        bri = data["bri"]
+                    else:
+                        bri = bridge_config["lights"][light]["state"]["bri"]
                 
                 #if hue is 0 and sat is 0 and bri is 0:
-                #    print("----EXCEPTION NULL----")
-                                   
+                #    print("----EXCEPTION NULL----")                                   
                 
                 hue_perc = round((hue / 65535), 3)
                 sat_perc = round((sat / 255), 3)
