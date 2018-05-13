@@ -453,28 +453,39 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     
     return [int(r * bri), int(g * bri), int(b * bri)]
     
-def hsv_to_rgb(h, s, v):
-    if s == 0.0:
-        return v, v, v
-    i = int(h*6.0) # XXX assume int() truncates!
-    f = (h*6.0) - i
-    p = v*(1.0 - s)
-    q = v*(1.0 - s*f)
-    t = v*(1.0 - s*(1.0-f))
-    i = i%6
-    if i == 0:
-        return v, t, p
-    if i == 1:
-        return q, v, p
-    if i == 2:
-        return p, v, t
-    if i == 3:
-        return p, q, v
-    if i == 4:
-        return t, p, v
-    if i == 5:
-        return v, p, q
-    # Cannot get here
+def hsv_to_rgb(h, s, v): 
+    s = float(s / 254)
+    v = float(v / 254)
+    c=v*s
+    x=c*(1-abs(((h/11850)%2)-1))
+    m=v-c
+    if h>=0 and h<10992:
+        r=c
+        g=x
+        b=0
+    elif h>=10992 and h<21845:
+        r=x
+        g=c
+        b=0
+    elif h>=21845 and h<32837:
+        r = 0
+        g = c
+        b = x
+    elif h>=32837 and h<43830:
+        r = 0
+        g = x
+        b = c
+    elif h>=43830 and h<54813:
+        r = x
+        g = 0
+        b = c
+    else:
+        r = c
+        g = 0
+        b = x
+
+    r, g, b = int(r * 255), int(g * 255), int(b * 255)
+    return r, g, b
 
 
 def sendLightRequest(light, data):
@@ -541,32 +552,26 @@ def sendLightRequest(light, data):
                         payload["5706"] = "efd275"
                 elif key == "xy":
                     payload["5709"] = int(value[0] * 65535)
-                    payload["5710"] = int(value[1] * 65535) 
-            if "hue" in data or "sat" in data: 
-                
-                if "hue" in data or "bri" in data or "sat" in data:
-                    if("hue" in data):
-                        hue = data["hue"]
-                    else:
-                        hue = bridge_config["lights"][light]["state"]["hue"]
-                    if("sat" in data):
-                        sat = data["sat"]
-                    else:
-                        sat = bridge_config["lights"][light]["state"]["sat"]
-                    if("bri" in data):
-                        bri = data["bri"]
-                    else:
-                        bri = bridge_config["lights"][light]["state"]["bri"]
-                        
-                hue_perc = round((hue / 65535), 3)
-                sat_perc = round((sat / 255), 3)
-                bri_perc = round((bri / 255), 3)
-                 
-                rgbValue = hsv_to_rgb(hue_perc, sat_perc, bri_perc)
-                print("R={} G={} B={}".format(rgbValue[0], rgbValue[1], rgbValue[2]))
-                
+                    payload["5710"] = int(value[1] * 65535)
+            if "hue" in data or "sat" in data:                 
+                if("hue" in data):
+                    hue = data["hue"]
+                else:
+                    hue = bridge_config["lights"][light]["state"]["hue"]
+                if("sat" in data):
+                    sat = data["sat"]
+                else:
+                    sat = bridge_config["lights"][light]["state"]["sat"]
+                if("bri" in data):
+                    bri = data["bri"]
+                else:
+                    bri = bridge_config["lights"][light]["state"]["bri"]
+
+                #rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"])
+                rgbValue = hsv_to_rgb(hue, sat, bri)
+                pprint(rgbValue) #validate the hsv_to_rgb works corectly
                 xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
-                print("X={} Y={}".format(xyValue[0] * 65535, xyValue[1] * 65535))                
+                pprint(xyValue) #validate the xy values, here you can look the bulb
                 payload["5709"] = int(xyValue[0] * 65535)
                 payload["5710"] = int(xyValue[1] * 65535)
             if "5850" in payload and payload["5850"] == 0:
