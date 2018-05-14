@@ -395,8 +395,8 @@ def sendRequest(url, method, data, timeout=3, delay=0):
         return response.text
     elif method == "GET":
         response = requests.get(url, timeout=timeout, headers=head)
-        return response.text
-
+        return response.text 
+     
 def convert_rgb_xy(red,green,blue):
     red = pow((red + 0.055) / (1.0 + 0.055), 2.4) if red > 0.04045 else red / 12.92
     green = pow((green + 0.055) / (1.0 + 0.055), 2.4) if green > 0.04045 else green / 12.92
@@ -408,8 +408,8 @@ def convert_rgb_xy(red,green,blue):
     Z = red * 0.000088 + green * 0.072310 + blue * 0.986039
 
 #Calculate the xy values from the XYZ values
-    x = X / (X + Y + Z)
-    y = Y / (X + Y + Z)
+    x = (X / (X + Y + Z))
+    y = (Y / (X + Y + Z))
     return [x, y]
 
 def convert_xy(x, y, bri): #needed for milight hub that don't work with xy values
@@ -449,9 +449,44 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
 
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
-    b = 0 if b < 0 else b
-
+    b = 0 if b < 0 else b 
+    
     return [int(r * bri), int(g * bri), int(b * bri)]
+    
+def hsv_to_rgb(h, s, v): 
+    s = float(s / 254)
+    v = float(v / 254)
+    c=v*s
+    x=c*(1-abs(((h/11850)%2)-1))
+    m=v-c
+    if h>=0 and h<10992:
+        r=c
+        g=x
+        b=0
+    elif h>=10992 and h<21845:
+        r=x
+        g=c
+        b=0
+    elif h>=21845 and h<32837:
+        r = 0
+        g = c
+        b = x
+    elif h>=32837 and h<43830:
+        r = 0
+        g = x
+        b = c
+    elif h>=43830 and h<54813:
+        r = x
+        g = 0
+        b = c
+    else:
+        r = c
+        g = 0
+        b = x
+
+    r, g, b = int(r * 255), int(g * 255), int(b * 255)
+    return r, g, b
+
 
 def sendLightRequest(light, data):
     payload = {}
@@ -505,7 +540,7 @@ def sendLightRequest(light, data):
                 if key == "on":
                     payload["5850"] = int(value)
                 elif key == "transitiontime":
-                    payload["transitiontime"] = value
+                    payload["5712"] = value
                 elif key == "bri":
                     payload["5851"] = value
                 elif key == "ct":
@@ -518,6 +553,27 @@ def sendLightRequest(light, data):
                 elif key == "xy":
                     payload["5709"] = int(value[0] * 65535)
                     payload["5710"] = int(value[1] * 65535)
+            if "hue" in data or "sat" in data:                 
+                if("hue" in data):
+                    hue = data["hue"]
+                else:
+                    hue = bridge_config["lights"][light]["state"]["hue"]
+                if("sat" in data):
+                    sat = data["sat"]
+                else:
+                    sat = bridge_config["lights"][light]["state"]["sat"]
+                if("bri" in data):
+                    bri = data["bri"]
+                else:
+                    bri = bridge_config["lights"][light]["state"]["bri"]
+
+                #rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"])
+                rgbValue = hsv_to_rgb(hue, sat, bri)
+                pprint(rgbValue) #validate the hsv_to_rgb works corectly
+                xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
+                pprint(xyValue) #validate the xy values, here you can look the bulb
+                payload["5709"] = int(xyValue[0] * 65535)
+                payload["5710"] = int(xyValue[1] * 65535)
             if "5850" in payload and payload["5850"] == 0:
                 payload.clear() #setting brightnes will turn on the ligh even if there was a request to power off
                 payload["5850"] = 0
@@ -527,13 +583,11 @@ def sendLightRequest(light, data):
 
         try:
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
-                transitiontime = 4
-                if "transitiontime" in payload:
-                    transitiontime = int(payload["transitiontime"] / (len(payload) -1))
-                    del payload["transitiontime"]
-                for key, value in payload.items(): #ikea bulbs don't accept all arguments at once
-                    print(check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps({key : value, "5712": transitiontime}) + "] }' \"" + url + "\"", shell=True).split("\n")[3])
-                    sleep(0.5)
+                if "5712" not in payload:
+                    payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
+                pprint("PAYLOAD:" + json.dumps(payload))
+                pprint("COAP: ./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"")
+                check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 if "xy" in payload:
                     sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
@@ -555,7 +609,7 @@ def sendLightRequest(light, data):
 
 def updateGroupStats(light): #set group stats based on lights status in that group
     for group in bridge_config["groups"]:
-        if light in bridge_config["groups"][group]["lights"]:
+        if "lights" in group and light in bridge_config["groups"][group]["lights"]:
             for key, value in bridge_config["lights"][light]["state"].items():
                 if key not in ["on", "reachable"]:
                     bridge_config["groups"][group]["action"][key] = value
@@ -1480,13 +1534,13 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][light]["state"].update(put_dictionary)
                             sendLightRequest(light, put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
-                    sendLightRequest(url_pices[4], put_dictionary)
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
                         elif key in ["hue", "sat"]:
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
                     updateGroupStats(url_pices[4])
+                    sendLightRequest(url_pices[4], put_dictionary)
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
