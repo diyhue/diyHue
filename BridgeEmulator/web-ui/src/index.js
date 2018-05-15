@@ -4,19 +4,13 @@ import { injectGlobal } from "react-emotion";
 import { compose, withState, lifecycle, withProps } from "recompose";
 import App from "./App";
 
-// TODO: Mock data, used only for development
-import groups from "./groups.json";
-import lights from "./lights.json";
-
 injectGlobal`
   html, body {
     margin: 0;
   }
 `;
 
-// TODO: Get these from the config of Hue Emulator
-const API_KEY = "xxxxxxxxxxxxxxxxxxxxxxxxx";
-const API_HOST = "http://10.0.0.19/";
+const API_KEY = window.config.API_KEY;
 
 const enhance = compose(
   withState("groups", "setGroups", {}),
@@ -35,18 +29,11 @@ const enhance = compose(
   }),
   lifecycle({
     async componentDidMount() {
-      // TODO: Enable these in production
-      // const res = await Promise.all([
-      //   fetch(`${API_HOST}/api/${API_KEY}/groups`),
-      //   fetch(`${API_HOST}/api/${API_KEY}/lights`),
-      // ]);
-      // const json = await Promise.all([
-      //   res[0].json(),
-      //   res[1].json(),
-      // ]);
-
-      // TODO: Comment these in production
-      const json = [groups, lights];
+      const res = await Promise.all([
+        fetch(`/api/${API_KEY}/groups`),
+        fetch(`/api/${API_KEY}/lights`)
+      ]);
+      const json = await Promise.all([res[0].json(), res[1].json()]);
 
       this.props.setGroups(json[0]);
       this.props.setLights(json[1]);
