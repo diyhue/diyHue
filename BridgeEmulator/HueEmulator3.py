@@ -1088,7 +1088,30 @@ class S(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == '/description.xml':
+        if self.path == '/' or self.path == '/index.html':
+            self._set_headers_html()
+            f = open('./web-ui/index.html')
+            self.wfile.write(bytes(f.read(), "utf8"))
+        elif self.path.endswith(".js"):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/javascript')
+            self.end_headers()
+            if self.path == '/config.js':
+                self.wfile.write(bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
+            else:
+                f = open('./web-ui' + self.path)
+                self.wfile.write(bytes(f.read(), "utf8"))
+        elif self.path.endswith(".css"):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/css')
+            self.end_headers()
+            f = open('./web-ui' + self.path)
+            self.wfile.write(bytes(f.read(), "utf8"))
+        elif self.path.endswith(".map"):
+            self._set_headers()
+            f = open('./web-ui' + self.path)
+            self.wfile.write(bytes(f.read(), "utf8"))
+        elif self.path == '/description.xml':
             self._set_headers_xml()
             self.wfile.write(bytes(description(), "utf8"))
         elif self.path == '/save':
