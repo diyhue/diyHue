@@ -81,31 +81,34 @@ const Room = ({
       </ListSubheader>
     }
   >
-    {room.lights.map(id => ({ ...lights[id], id })).map(light => (
-      <ListItem>
-        <ListItemIcon>
-          <IconButton
-            onClick={() => {
-              setDialogOpen(true);
-              setSelectedLight(light);
-            }}
-          >
-            {light.state.on ? (
-              <LightbulbOnIcon color="#FFF000" />
-            ) : (
-              <LightbulbOutlineIcon />
-            )}
-          </IconButton>
-        </ListItemIcon>
-        <ListItemText primary={light.name} />
-        <ListItemSecondaryAction>
-          <Switch
-            checked={light.state.on}
-            onChange={() => setState(light, !light.state.on)}
-          />
-        </ListItemSecondaryAction>
-      </ListItem>
-    ))}
+    {room.lights
+      .filter(id => Boolean(lights[id]))
+      .map(id => ({ ...lights[id], id }))
+      .map(light => (
+        <ListItem>
+          <ListItemIcon>
+            <IconButton
+              onClick={() => {
+                setDialogOpen(true);
+                setSelectedLight(light);
+              }}
+            >
+              {light.state.on ? (
+                <LightbulbOnIcon color="#FFF000" />
+              ) : (
+                <LightbulbOutlineIcon />
+              )}
+            </IconButton>
+          </ListItemIcon>
+          <ListItemText primary={light.name} />
+          <ListItemSecondaryAction>
+            <Switch
+              checked={light.state.on}
+              onChange={() => setState(light, !light.state.on)}
+            />
+          </ListItemSecondaryAction>
+        </ListItem>
+      ))}
     <Dialog
       open={isDialogOpen}
       onClose={() => setDialogOpen(false)}

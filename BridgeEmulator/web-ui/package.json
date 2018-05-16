@@ -4,6 +4,11 @@
   "description": "",
   "keywords": [],
   "main": "src/index.js",
+  "proxy": {
+    "/api": {
+      "target": "http://10.0.0.19"
+    }
+  },
   "dependencies": {
     "@material-ui/core": "1.0.0-rc.0",
     "@material-ui/icons": "1.0.0-rc.0",
