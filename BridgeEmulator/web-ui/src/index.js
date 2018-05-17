@@ -68,7 +68,7 @@ const enhance = compose(
     onColorTemperatureChange: throttle((entity, temp) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"ct": temp})),
     onColorChange: throttle((entity, color) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"xy": rgbToCie(color['rgb']['r'], color['rgb']['g'], color['rgb']['b'])})),
     onBrightnessChange: throttle((entity, bri) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"bri": bri})),
-    onStateChange: (entity, state) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"on": state}),
+    onStateChange: (entity, state) => httpPutRequest(`/api/${API_KEY}/${entity.type === "Room" ? "groups/"+ entity.id + "/action":"lights/" + entity.id + "/state"}`,{"on": state}),
     // this should trigger a state change on ALL the available lights
     onGlobalStateChange: (state) => httpPutRequest(`/api/${API_KEY}/groups/0/action`,{"on": state})
   }),
