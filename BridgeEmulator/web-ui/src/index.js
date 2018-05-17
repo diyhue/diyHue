@@ -21,7 +21,7 @@ export function httpPutRequest(url, data) {
         }
     }).then(res => {
         return res;
-    }).catch(err => err);
+    }).catch(err => console.error(err.message));
 }
 
 const API_KEY = window.config.API_KEY;
