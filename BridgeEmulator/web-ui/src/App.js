@@ -42,6 +42,7 @@ export default ({
       .map(id => ({ ...groups[id], id }))
       .map(group => (
         <Room
+          key={group.id}
           room={group}
           lights={lights}
           setColorTemperature={onColorTemperatureChange}

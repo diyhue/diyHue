@@ -24,7 +24,7 @@ import { HuePicker } from "react-color";
 // TODO: style this slider to match Material Design
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
-import { compose, withState, withHandlers } from "recompose";
+import { compose, withState } from "recompose";
 import color from "./color";
 
 const TemperatureSlider = styled(Slider)`
@@ -74,8 +74,8 @@ const Room = ({
         {room.name}
         <ListItemSecondaryAction>
           <Switch
-            checked={true}
-            onChange={() => setState(room, !room.any_on)}
+            checked={room.state.any_on}
+            onChange={() => setState(room, !room.state.any_on)}
           />
         </ListItemSecondaryAction>
       </ListSubheader>
@@ -85,7 +85,7 @@ const Room = ({
       .filter(id => Boolean(lights[id]))
       .map(id => ({ ...lights[id], id }))
       .map(light => (
-        <ListItem>
+        <ListItem key={light.id}>
           <ListItemIcon>
             <IconButton
               onClick={() => {
@@ -115,7 +115,7 @@ const Room = ({
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      {selectedLight && (
+      {selectedLight ? (
         <Fragment>
           <DialogTitle id="alert-dialog-title">
             {room.name} {selectedLight.name}
@@ -194,7 +194,7 @@ const Room = ({
             </Button>
           </DialogActions>
         </Fragment>
-      )}
+      ) : <span />}
     </Dialog>
   </List>
 );
