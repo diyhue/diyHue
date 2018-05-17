@@ -26,6 +26,8 @@ import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import { compose, withState } from "recompose";
 import color from "./color";
+import { cieToRgb } from './color'
+import { colorTemperatureToRgb } from './color'
 
 const TemperatureSlider = styled(Slider)`
   .rc-slider-rail {
@@ -94,7 +96,7 @@ const Room = ({
               }}
             >
               {light.state.on ? (
-                <LightbulbOnIcon color="#FFF000" />
+                <LightbulbOnIcon color={light.state.colormode === "ct" ? colorTemperatureToRgb(light.state.ct) : cieToRgb(light.state.xy[0], light.state.xy[1], light.state.bri)} />
               ) : (
                 <LightbulbOutlineIcon />
               )}
