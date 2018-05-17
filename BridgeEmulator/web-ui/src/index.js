@@ -11,6 +11,19 @@ injectGlobal`
   }
 `;
 
+export function httpPutRequest(url, data) {
+    return fetch(url, {
+        method: 'PUT',
+        mode: 'CORS',
+        body: JSON.stringify(data),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    }).then(res => {
+        return res;
+    }).catch(err => err);
+}
+
 const API_KEY = window.config.API_KEY;
 const THROTTLE_WAIT = 1000; // 1 second
 
@@ -23,16 +36,12 @@ const enhance = compose(
   // entity may be a light or a room, they have an extra `id` property
   // the second argument is the new value selected by the user
   withProps({
-    onColorTemperatureChange: throttle((entity, temp) =>
-      console.log(entity.id, temp)
-    ),
+    onColorTemperatureChange: throttle((entity, temp) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"ct": temp})),
     onColorChange: throttle((entity, color) => console.log(entity.id, color)),
-    onBrightnessChange: throttle((entity, bri) => console.log(entity.id, bri)),
-    onStateChange: throttle((entity, state) =>
-      console.log(entity.id, entity.type, state)
-    ),
+    onBrightnessChange: throttle((entity, bri) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"bri": bri})),
+    onStateChange: (entity, state) => httpPutRequest(`/api/${API_KEY}/lights/${entity.id}/state`,{"on": state}),
     // this should trigger a state change on ALL the available lights
-    onGlobalStateChange: throttle(state => console.log("all the lights", state))
+    onGlobalStateChange: (state) => httpPutRequest(`/api/${API_KEY}/groups/0/action`,{"on": state})
   }),
   lifecycle({
     async componentDidMount() {
