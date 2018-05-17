@@ -124,6 +124,7 @@ const Room = ({
           </DialogTitle>
           <DialogContent>
             <StyledList>
+            {"bri" in selectedLight.state && (
               <ListItem>
                 <Avatar>
                   <BrightnessIcon color="white" />
@@ -142,6 +143,7 @@ const Room = ({
                   secondary="Brghtness"
                 />
               </ListItem>
+              )}
               {"ct" in selectedLight.state && (
                 <ListItem>
                   <Avatar>
