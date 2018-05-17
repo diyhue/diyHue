@@ -140,7 +140,7 @@ const Room = ({
                   secondary="Brghtness"
                 />
               </ListItem>
-              {["ct", "xy"].includes(selectedLight.state.colormode) && (
+              {"ct" in selectedLight.state && (
                 <ListItem>
                   <Avatar>
                     <TemperatureKelvinIcon color="white" />
@@ -163,7 +163,7 @@ const Room = ({
                   />
                 </ListItem>
               )}
-              {selectedLight.state.colormode !== "ct" && (
+              {("xy" in selectedLight.state || "hue" in selectedLight.state ) && (
                 <ListItem>
                   <Avatar>
                     <PaletteIcon color="white" />
