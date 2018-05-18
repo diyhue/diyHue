@@ -22,11 +22,15 @@
     "react-emotion": "9.1.3",
     "react-scripts": "1.1.4"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "husky": "^0.14.3",
+    "pretty-quick": "^1.5.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "precommit": "pretty-quick --staged"
   }
 }

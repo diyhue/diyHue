@@ -1,0 +1,3 @@
+window.config = {
+  API_KEY: "BRIDGE_API_KEY_HERE",
+};

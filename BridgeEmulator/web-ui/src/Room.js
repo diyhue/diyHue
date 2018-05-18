@@ -24,10 +24,11 @@ import { HuePicker } from "react-color";
 // TODO: style this slider to match Material Design
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
-import { compose, withState } from "recompose";
+import { compose, withState, lifecycle } from "recompose";
+import _throttle from "lodash/fp/throttle";
 import color from "./color";
-import { cieToRgb } from './color'
-import { colorTemperatureToRgb } from './color'
+import { cieToRgb } from "./color";
+import { colorTemperatureToRgb } from "./color";
 
 const TemperatureSlider = styled(Slider)`
   .rc-slider-rail {
@@ -46,6 +47,7 @@ const TemperatureSlider = styled(Slider)`
 
 const StyledList = styled(List)`
   width: 500px;
+  max-width: calc(100vw - 80px);
 `;
 
 const IconButton = styled(MdiIconButton)`
@@ -55,7 +57,24 @@ const IconButton = styled(MdiIconButton)`
 
 const enhance = compose(
   withState("isDialogOpen", "setDialogOpen", false),
-  withState("selectedLight", "setSelectedLight", undefined)
+  withState("selectedLight", "setSelectedLight", undefined),
+  withState(
+    "smallScreen",
+    "setSmallScreen",
+    window.matchMedia("(max-width: 800px)").matches
+  ),
+  lifecycle({
+    componentDidMount() {
+      window.addEventListener(
+        "resize",
+        _throttle(500)(() =>
+          this.props.setSmallScreen(
+            window.matchMedia("(max-width: 800px)").matches
+          )
+        )
+      );
+    }
+  })
 );
 
 const Room = ({
@@ -68,7 +87,8 @@ const Room = ({
   isDialogOpen,
   setDialogOpen,
   selectedLight,
-  setSelectedLight
+  setSelectedLight,
+  smallScreen
 }) => (
   <List
     subheader={
@@ -96,7 +116,17 @@ const Room = ({
               }}
             >
               {light.state.on ? (
-                <LightbulbOnIcon color={light.state.colormode === "ct" ? colorTemperatureToRgb(light.state.ct) : cieToRgb(light.state.xy[0], light.state.xy[1], light.state.bri)} />
+                <LightbulbOnIcon
+                  color={
+                    light.state.colormode === "ct"
+                      ? colorTemperatureToRgb(light.state.ct)
+                      : cieToRgb(
+                          light.state.xy[0],
+                          light.state.xy[1],
+                          light.state.bri
+                        )
+                  }
+                />
               ) : (
                 <LightbulbOutlineIcon />
               )}
@@ -112,6 +142,7 @@ const Room = ({
         </ListItem>
       ))}
     <Dialog
+      fullScreen={smallScreen}
       open={isDialogOpen}
       onClose={() => setDialogOpen(false)}
       aria-labelledby="alert-dialog-title"
@@ -124,25 +155,25 @@ const Room = ({
           </DialogTitle>
           <DialogContent>
             <StyledList>
-            {"bri" in selectedLight.state && (
-              <ListItem>
-                <Avatar>
-                  <BrightnessIcon color="white" />
-                </Avatar>
-                <ListItemText
-                  primary={
-                    <Slider
-                      min={0}
-                      max={255}
-                      defaultValue={
-                        selectedLight.state.on ? selectedLight.state.bri : 0
-                      }
-                      onChange={bri => setBrightness(selectedLight, bri)}
-                    />
-                  }
-                  secondary="Brghtness"
-                />
-              </ListItem>
+              {"bri" in selectedLight.state && (
+                <ListItem>
+                  <Avatar>
+                    <BrightnessIcon color="white" />
+                  </Avatar>
+                  <ListItemText
+                    primary={
+                      <Slider
+                        min={0}
+                        max={255}
+                        defaultValue={
+                          selectedLight.state.on ? selectedLight.state.bri : 0
+                        }
+                        onChange={bri => setBrightness(selectedLight, bri)}
+                      />
+                    }
+                    secondary="Brghtness"
+                  />
+                </ListItem>
               )}
               {"ct" in selectedLight.state && (
                 <ListItem>
@@ -167,7 +198,8 @@ const Room = ({
                   />
                 </ListItem>
               )}
-              {("xy" in selectedLight.state || "hue" in selectedLight.state ) && (
+              {("xy" in selectedLight.state ||
+                "hue" in selectedLight.state) && (
                 <ListItem>
                   <Avatar>
                     <PaletteIcon color="white" />
@@ -198,7 +230,9 @@ const Room = ({
             </Button>
           </DialogActions>
         </Fragment>
-      ) : <span />}
+      ) : (
+        <span />
+      )}
     </Dialog>
   </List>
 );
