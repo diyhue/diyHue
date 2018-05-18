@@ -120,11 +120,13 @@ const Room = ({
                   color={
                     light.state.colormode === "ct"
                       ? colorTemperatureToRgb(light.state.ct)
-                      : cieToRgb(
+                      : light.state.colormode === "xy"
+                      ? cieToRgb(
                           light.state.xy[0],
                           light.state.xy[1],
                           light.state.bri
                         )
+                      : '#fcf794'
                   }
                 />
               ) : (
@@ -208,6 +210,7 @@ const Room = ({
                     primary={
                       <HuePicker
                         width="100%"
+                        color={cieToRgb(selectedLight.state.xy[0],selectedLight.state.xy[1],selectedLight.state.bri)}
                         defaultColor={color[selectedLight.state.colormode](
                           selectedLight
                         )}
