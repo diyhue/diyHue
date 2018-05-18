@@ -1,3 +1,4 @@
 .DS_Store
 BridgeEmulator/web-ui/build
+BridgeEmulator/web-ui/public/config.js
 node_modules
