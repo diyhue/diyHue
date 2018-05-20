@@ -12,6 +12,8 @@
 #include <EEPROM.h>
 #include "pwm.c"
 
+#define light_name "Hue RGB-CCT Light" //default light name
+
 #define PWM_CHANNELS 5
 const uint32_t period = 1024;
 
@@ -39,9 +41,9 @@ uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0, 0};
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgb_cct[5], color_mode, scene;
+uint8_t rgb_cct[5], bri, sat, color_mode, scene;
 bool light_state, in_transition;
-int transitiontime, ct, hue, bri, sat;
+int  ct, hue;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
 
@@ -322,7 +324,9 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+
   if (! light_state)  {
     // Show that we are connected
     pwm_set_duty(100, 1);
@@ -350,56 +354,6 @@ void setup() {
     pinMode(button1_pin, INPUT);
     pinMode(button2_pin, INPUT);
   }
-
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    if (button == 1000) {
-      if (light_state == false) {
-        light_state = true;
-        scene = 0;
-      } else {
-        apply_scene(scene);
-        scene++;
-        if (scene == 11) {
-          scene = 0;
-        }
-      }
-    } else if (button == 2000) {
-      if (light_state == false) {
-        bri = 30;
-        light_state = true;
-      } else {
-        bri += 30;
-      }
-      if (bri > 255) bri = 255;
-      if (color_mode == 1) convert_xy();
-      else if (color_mode == 2) convert_ct();
-      else if (color_mode == 3) convert_hue();
-    } else if (button == 3000 && light_state == true) {
-      bri -= 30;
-      if (bri < 1) bri = 1;
-      else {
-        if (color_mode == 1) convert_xy();
-        else if (color_mode == 2) convert_ct();
-        else if (color_mode == 3) convert_hue();
-      }
-    } else if (button == 4000) {
-      light_state = false;
-    }
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-      if (light_state) {
-        step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / 54;
-      } else {
-        step_level[color] = current_rgb_cct[color] / 54;
-      }
-    }
-  });
 
 
   server.on("/set", []() {
@@ -434,8 +388,12 @@ void setup() {
         rgb_cct[2] = server.arg(i).toInt();
         color_mode = 0;
       }
-      else if (server.argName(i) == "w") {
+      else if (server.argName(i) == "ww") {
         rgb_cct[3] = server.arg(i).toInt();
+        color_mode = 0;
+      }
+      else if (server.argName(i) == "cw") {
+        rgb_cct[4] = server.arg(i).toInt();
         color_mode = 0;
       }
       else if (server.argName(i) == "x") {
@@ -496,7 +454,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"name\": \"" light_name "\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
