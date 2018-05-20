@@ -7,22 +7,22 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
+#define light_name "WS2812 Hue Strip" //default light name
 #define lightsCount 3
 #define pixelCount 60
 
-#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
-//For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
-#define button1_pin 4 // on and brightness up
-#define button2_pin 5 // off and brightness down
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
+#define button1_pin 4 // on and bri up
+#define button2_pin 5 // off and bri down
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgb[lightsCount][3], color_mode[lightsCount], scene;
+uint8_t rgb[lightsCount][3], bri[lightsCount], sat[lightsCount], color_mode[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
-int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
+int ct[lightsCount], hue[lightsCount];
 float step_level[lightsCount][3], current_rgb[lightsCount][3], x[lightsCount], y[lightsCount];
 byte mac[6];
 
@@ -109,6 +109,7 @@ void convert_xy(uint8_t light)
   float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
   float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
+
 
   // Apply gamma correction
   r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
@@ -219,7 +220,7 @@ void apply_scene(uint8_t new_scene, uint8_t light) {
   }
 }
 
-void process_lightdata(uint8_t light,float transitiontime) {
+void process_lightdata(uint8_t light, float transitiontime) {
   transitiontime *= 17 - (pixelCount / 40); //every extra led add a small delay that need to be counted
   if (color_mode[light] == 1 && light_state[light] == true) {
     convert_xy(light);
@@ -339,7 +340,8 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
 
   if (! light_state[0]) {
     infoLight(white);
@@ -369,60 +371,6 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
   pinMode(button1_pin, INPUT);
   pinMode(button2_pin, INPUT);
-
-
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    float transitiontime = (17 - (pixelCount / 40)) * 4;
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    for (int i = 0; i < lightsCount; i++) {
-      if (button == 1000) {
-        if (light_state[i] == false) {
-          light_state[i] = true;
-          scene = 0;
-        } else {
-          apply_scene(scene, i);
-          scene++;
-          if (scene == 11) {
-            scene = 0;
-          }
-        }
-      } else if (button == 2000) {
-        if (light_state[i] == false) {
-          bri[i] = 30;
-          light_state[i] = true;
-        } else {
-          bri[i] += 30;
-        }
-        if (bri[i] > 255) bri[i] = 255;
-        if (color_mode[i] == 1) convert_xy(i);
-        else if (color_mode[i] == 2) convert_ct(i);
-        else if (color_mode[i] == 3) convert_hue(i);
-      } else if (button == 3000 && light_state[i] == true) {
-        bri[i] -= 30;
-        if (bri[i] < 1) bri[i] = 1;
-        else {
-          if (color_mode[i] == 1) convert_xy(i);
-          else if (color_mode[i] == 2) convert_ct(i);
-          else if (color_mode[i] == 3) convert_hue(i);
-        }
-      } else if (button == 4000) {
-        light_state[i] = false;
-      }
-      for (uint8_t j = 0; j < 3; j++) {
-        if (light_state[i]) {
-          step_level[i][j] = ((float)rgb[i][j] - current_rgb[i][j]) / transitiontime;
-        } else {
-          step_level[i][j] = current_rgb[i][j] / transitiontime;
-        }
-      }
-    }
-  });
 
   server.on("/set", []() {
     uint8_t light;
@@ -520,7 +468,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"strip\",\"lights\": " + (String)lightsCount + ",\"modelid\": \"LST001\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"strip\",\"lights\": " + (String)lightsCount + ",\"name\": \"" light_name "\",\"modelid\": \"LST001\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
