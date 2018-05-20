@@ -1530,9 +1530,20 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
                         bridge_config["groups"][url_pices[4]]["action"].update(put_dictionary)
+                        #send all unique ip's in thread mode for speed
+                        lightsIps = []
+                        processedLights = []
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                            if bridge_config["lights_address"][light]["ip"] not in lightsIps:
+                                lightsIps.append(bridge_config["lights_address"][light]["ip"])
+                                processedLights.append(light)
+                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                        sleep(0.2) #give some time for the device to process the threaded request
+                        #now send the rest of the requests in non threaded mode
+                        for light in bridge_config["groups"][url_pices[4]]["lights"]:
+                            if light not in processedLights:
+                                sendLightRequest(light, put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
