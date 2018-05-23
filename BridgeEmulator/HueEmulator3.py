@@ -415,8 +415,10 @@ def sendRequest(url, method, data, timeout=3, delay=0):
             api_method = "set_bright"
             param = str(decode["brightness"])
         elif decode["request"] == "set_ct_abx":
-            api_method = decode["request"]
-            param = decode["color_temp"]
+            api_method = "set_ct_abx"
+            temp = decode["color_temp"]
+            param = str(temp) + ", \"smooth\", 500"
+            print(param)
         elif decode["request"] == "set_hsv":
             api_method = decode["request"]
             param = decode["hue"] + ", " + decode["sat"]
@@ -585,7 +587,7 @@ def sendLightRequest(light, data):
                     payload["brightness"] = int(value / 2.55)
                 elif key == "ct":
                     payload["request"] = "set_ct_abx"
-                    payload["color_temp"] = value
+                    payload["color_temp"] = int(1000000 / value)
                 elif key == "hue":
                     payload["request"] = "set_hsv"
                     payload["hue"] = value / 180
