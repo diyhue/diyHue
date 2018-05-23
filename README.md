@@ -4,6 +4,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
 
+
 ### Requirements:
  - python
  - nmap package for esp8266 lights autodiscover ```sudo apt install nmap```
@@ -18,7 +19,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - Alarm (~~email notification~~ + eps8266 horn)
  - Hue Entertainment support
 
-## Working futures:
+## Working HUE futures:
   - Control lights (all functions)
   - Control groups (all functions)
   - Scenes (all functions)
@@ -54,6 +55,8 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   
 ## Supported lights:
   - WS2812B and SK6812 smart led strips
+  - MiLight
+  - Yeelight
   - Pwm RGB-CCT
   - Pwm RGBW
   - Pwm RGB
@@ -80,6 +83,7 @@ You may want to see also my new project [qtHue](https://github.com/mariusmotea/q
 
 
 Credits:
+  - Federico Zivolo (@FezVrasta) for development the internal webgui
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
   - StefanBruens https://github.com/StefanBruens/ESP8266_new_pwm
