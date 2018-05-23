@@ -502,12 +502,6 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
     b = 0 if b < 0 else b 
-    print(r)
-    print(r * bri)
-    print(g)
-    print(g * bri)
-    print(b)
-    print(b * bri)
     return [int(r * bri), int(g * bri), int(b * bri)]
     
 def hsv_to_rgb(h, s, v): 
