@@ -1332,7 +1332,7 @@ class S(BaseHTTPRequestHandler):
             if "yeelightip" in get_parameters:
                 #register new yeelight
                 new_light_id = nextFreeId("lights")
-                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Yeelight Color", "name": "Yeelight " + get_parameters["mode"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
+                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Yeelight " + get_parameters["mode"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
                 new_lights.update({new_light_id: {"name": "YeeLight " + get_parameters["mode"][0]}})
                 bridge_config["lights_address"][new_light_id] = {"device_id": "Yeelight Color", "mode": get_parameters["mode"][0], "ip": get_parameters["yeelightip"][0], "protocol": "yeelight"}
                 self.wfile.write(bytes(webform_yeelight() + "<br> Light added", "utf8"))
