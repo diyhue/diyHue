@@ -401,7 +401,6 @@ def sendRequest(url, method, data, timeout=3, delay=0):
     elif method == "TCP":
         if "//" in url: # cutting out the http://
             http, url = url.split("//",1)
-        print(url)
         decode = json.loads(data)   #initialising vars
         api_method=""
         param = ""
@@ -445,8 +444,6 @@ def sendToYeelight(url, api_method, param):
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_socket.connect((url, int(55443)))
         msg="{\"id\":" + str(1) + ",\"method\":\"" +  api_method +  "\",\"params\":[" + param + "]}\r\n"
-        print("Message")                
-        print(msg)
         tcp_socket.send(msg.encode())
         tcp_socket.close()
     except Exception as e:
@@ -618,11 +615,8 @@ def sendLightRequest(light, data):
                 elif key == "xy":
                     color = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
                     payload["request"] = "set_rgb"
-                    code = (color[0] * 65536) + (color[1] * 256) + color[2]
+                    code = (color[0] * 65536) + (color[1] * 256) + color[2] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
                     payload["rgb"] = code
-                    # (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = 
-                    
-            print("Gehe über zum senden")
             print(json.dumps(payload))
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
             url = "coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"])
@@ -803,7 +797,6 @@ def syncWithLights(): #update Hue Bridge lights states
                             line = {"result": ["invalid command"]}
 
                         if line.get("method") != "props":
-                            # This is probably the response we want.
                             response = line
                         else:
                             print ("error")
