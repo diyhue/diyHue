@@ -399,49 +399,58 @@ def sendRequest(url, method, data, timeout=3, delay=0):
         response = requests.get(url, timeout=timeout, headers=head)
         return response.text 
     elif method == "TCP":
-        print("In der method function")
+        if "//" in url: # cutting out the http://
+            http, url = url.split("//",1)
         print(url)
-        url = "192.168.1.106"
-        print("ich printe dir die URL")
-        print(url)
-        decode = json.loads(data)
+        decode = json.loads(data)   #initialising vars
         api_method=""
         param = ""
-        # print(decode["request"])
-        # print(decode["status"])
-        # if decode["status"] == "true":
-        #   decode  api_method = "toggle"
-        if decode["request"] == "set_bright":
+        # yeelight uses different functions for each action, so it has to check for each function
+        # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
+        # check if hue wants to change brightness
+        if ("set_bright" in data):
             api_method = "set_bright"
             param = str(decode["brightness"])
-        elif decode["request"] == "set_ct_abx":
+            sendToYeelight(url, api_method, param)
+        # check if hue wants to change color temp
+        if ("set_ct_abx" in data):
             api_method = "set_ct_abx"
             temp = decode["color_temp"]
             param = str(temp) + ", \"smooth\", 500"
-            print(param)
-        elif decode["request"] == "set_hsv":
-            api_method = decode["request"]
+            sendToYeelight(url, api_method, param)
+            
+        # check if hue wants to change hue /sat (hsv)
+        if ("set_hsv" in data):
+            api_method = "set_hsv"
             param = decode["hue"] + ", " + decode["sat"]
-        elif decode["request"] == "set_rgb":
-            api_method = decode["request"]
+            sendToYeelight(url, api_method, param)
+        # check if hue wants to change rgb
+        if ("set_rgb" in data):
+            api_method = "set_rgb"
             param = str(decode["rgb"])
-        elif decode["request"] == "set_power":
-            api_method = "toggle"
-            if  decode["power"] == "true":
+            sendToYeelight(url, api_method, param)
+        # check if hue wants to change power
+        if ("set_power" in data):
+            if decode['powerstate'] == True:
+                api_method = "set_power"
                 param = "\"on\""
-            else:
+            elif decode['powerstate'] == False:
+                api_method = "set_power"
                 param = "\"off\""
-
-
-        try:
-            tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            tcp_socket.connect((url, int(55443)))
-            msg="{\"id\":" + str(1) + ",\"method\":\"" +  api_method +  "\",\"params\":[" + param + "]}\r\n"
-            print(msg)
-            tcp_socket.send(msg.encode())
-            tcp_socket.close()
-        except Exception as e:
-            print ("Unexpected error:", e)
+            sendToYeelight(url, api_method, param)
+        #trying to send
+        
+def sendToYeelight(url, api_method, param):
+    try:
+        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_socket.connect((url, int(55443)))
+        msg="{\"id\":" + str(1) + ",\"method\":\"" +  api_method +  "\",\"params\":[" + param + "]}\r\n"
+        print("Message")                
+        print(msg)
+        tcp_socket.send(msg.encode())
+        tcp_socket.close()
+    except Exception as e:
+        print ("Unexpected error:", e)
      
 def convert_rgb_xy(red,green,blue):
     red = pow((red + 0.055) / (1.0 + 0.055), 2.4) if red > 0.04045 else red / 12.92
@@ -586,24 +595,24 @@ def sendLightRequest(light, data):
                     (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
             print(json.dumps(payload))
         elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #YeeLight bulb
-            url = str(bridge_config["lights_address"][light]["ip"])
+            url = "http://" + str(bridge_config["lights_address"][light]["ip"])
             method = 'TCP'
             for key, value in data.items():
                 if key == "on":
-                    payload["request"] = "set_power"
-                    payload["power"] = value
+                    payload["set_power"] = "set_power"
+                    payload["powerstate"] = value
                 elif key == "bri":
-                    payload["request"] = "set_bright"
+                    payload["set_bright"] = "set_bright"
                     payload["brightness"] = int(value / 2.55)
                 elif key == "ct":
-                    payload["request"] = "set_ct_abx"
+                    payload["set_ct_abx"] = "set_ct_abx"
                     payload["color_temp"] = int(1000000 / value)
                 elif key == "hue":
-                    payload["request"] = "set_hsv"
+                    payload["set_hsv"] = "set_hsv"
                     payload["hue"] = value / 180
                     payload["sat"] = bridge_config["lights"][light]["state"]["sat"]
                 elif key == "sat":
-                    payload["request"] = "set_hsv"
+                    payload["set_hsv"] = "set_hsv"
                     payload["saturation"] = value * 100 / 255
                     payload["hue"] = bridge_config["lights"][light]["state"]["hue"]                    
                 elif key == "xy":
@@ -777,7 +786,7 @@ def syncWithLights(): #update Hue Bridge lights states
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
-                elif bridge_config["lights_address"][light]["protocol"] == "yeelight":
+                elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #getting states from the yeelight
                     yeelightip = str(bridge_config["lights_address"][light]["ip"])
                     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     tcp_socket.connect((yeelightip, int(55443)))
@@ -1313,7 +1322,7 @@ class S(BaseHTTPRequestHandler):
                 new_light_id = nextFreeId("lights")
                 bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Yeelight Color", "name": "Yeelight " + get_parameters["mode"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
                 new_lights.update({new_light_id: {"name": "YeeLight " + get_parameters["mode"][0]}})
-                bridge_config["lights_address"][new_light_id] = {"device_id": "testyeelighttest", "mode": get_parameters["mode"][0], "ip": get_parameters["yeelightip"][0], "protocol": "yeelight"}
+                bridge_config["lights_address"][new_light_id] = {"device_id": "Yeelight Color", "mode": get_parameters["mode"][0], "ip": get_parameters["yeelightip"][0], "protocol": "yeelight"}
                 self.wfile.write(bytes(webform_yeelight() + "<br> Light added", "utf8"))
             else:
                 self.wfile.write(bytes(webform_yeelight(), "utf8"))
