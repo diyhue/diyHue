@@ -83,7 +83,7 @@ You may want to see also my new project [qtHue](https://github.com/mariusmotea/q
 
 
 Credits:
-  - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) for development the internal webgui
+  - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) for development of the internal webgui
   - probonopd https://github.com/probonopd/ESP8266HueEmulator
   - sidoh https://github.com/sidoh/esp8266_milight_hub
   - StefanBruens https://github.com/StefanBruens/ESP8266_new_pwm
