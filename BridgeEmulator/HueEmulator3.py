@@ -422,12 +422,17 @@ def sendRequest(url, method, data, timeout=3, delay=0):
         elif decode["request"] == "set_hsv":
             api_method = decode["request"]
             param = decode["hue"] + ", " + decode["sat"]
+        elif decode["request"] == "set_rgb":
+            api_method = decode["request"]
+            param = str(decode["rgb"])
         elif decode["request"] == "set_power":
             api_method = "toggle"
             if  decode["power"] == "true":
                 param = "\"on\""
             else:
                 param = "\"off\""
+
+
         try:
             tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             tcp_socket.connect((url, int(55443)))
@@ -491,7 +496,12 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
     b = 0 if b < 0 else b 
-    
+    print(r)
+    print(r * bri)
+    print(g)
+    print(g * bri)
+    print(b)
+    print(b * bri)
     return [int(r * bri), int(g * bri), int(b * bri)]
     
 def hsv_to_rgb(h, s, v): 
@@ -573,7 +583,7 @@ def sendLightRequest(light, data):
                     payload["saturation"] = value * 100 / 255
                 elif key == "xy":
                     payload["color"] = {}
-                    (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+                    (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
             print(json.dumps(payload))
         elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #YeeLight bulb
             url = str(bridge_config["lights_address"][light]["ip"])
@@ -591,12 +601,18 @@ def sendLightRequest(light, data):
                 elif key == "hue":
                     payload["request"] = "set_hsv"
                     payload["hue"] = value / 180
+                    payload["sat"] = bridge_config["lights"][light]["state"]["sat"]
                 elif key == "sat":
                     payload["request"] = "set_hsv"
                     payload["saturation"] = value * 100 / 255
+                    payload["hue"] = bridge_config["lights"][light]["state"]["hue"]                    
                 elif key == "xy":
-                    payload["color"] = {}
-                    (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
+                    color = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
+                    payload["request"] = "set_rgb"
+                    code = (color[0] * 65536) + (color[1] * 256) + color[2]
+                    payload["rgb"] = code
+                    # (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = 
+                    
             print("Gehe über zum senden")
             print(json.dumps(payload))
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
