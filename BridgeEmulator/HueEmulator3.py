@@ -9,6 +9,7 @@ import json, socket, hashlib, struct, random, sys
 import requests
 import urllib.request, urllib.parse
 import base64
+import socket
 from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
@@ -382,6 +383,7 @@ def rulesProcessor(sensor, current_time=datetime.now().strftime("%Y-%m-%dT%H:%M:
         sendRequest("/api/" +    list(bridge_config["config"]["whitelist"])[0] + action["address"], action["method"], json.dumps(action["body"]))
 
 def sendRequest(url, method, data, timeout=3, delay=0):
+    print(method)
     if delay != 0:
         sleep(delay)
     if not url.startswith( 'http://' ):
@@ -396,6 +398,43 @@ def sendRequest(url, method, data, timeout=3, delay=0):
     elif method == "GET":
         response = requests.get(url, timeout=timeout, headers=head)
         return response.text 
+    elif method == "TCP":
+        print("In der method function")
+        print(url)
+        url = "192.168.1.106"
+        print("ich printe dir die URL")
+        print(url)
+        decode = json.loads(data)
+        api_method=""
+        param = ""
+        # print(decode["request"])
+        # print(decode["status"])
+        # if decode["status"] == "true":
+        #   decode  api_method = "toggle"
+        if decode["request"] == "set_bright":
+            api_method = "set_bright"
+            param = str(decode["brightness"])
+        elif decode["request"] == "set_ct_abx":
+            api_method = decode["request"]
+            param = decode["color_temp"]
+        elif decode["request"] == "set_hsv":
+            api_method = decode["request"]
+            param = decode["hue"] + ", " + decode["sat"]
+        elif decode["request"] == "set_power":
+            api_method = "toggle"
+            if  decode["power"] == "true":
+                param = "\"on\""
+            else:
+                param = "\"off\""
+        try:
+            tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tcp_socket.connect((url, int(55443)))
+            msg="{\"id\":" + str(1) + ",\"method\":\"" +  api_method +  "\",\"params\":[" + param + "]}\r\n"
+            print(msg)
+            tcp_socket.send(msg.encode())
+            tcp_socket.close()
+        except Exception as e:
+            print ("Unexpected error:", e)
      
 def convert_rgb_xy(red,green,blue):
     red = pow((red + 0.055) / (1.0 + 0.055), 2.4) if red > 0.04045 else red / 12.92
@@ -533,6 +572,30 @@ def sendLightRequest(light, data):
                 elif key == "xy":
                     payload["color"] = {}
                     (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
+            print(json.dumps(payload))
+        elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #YeeLight bulb
+            url = str(bridge_config["lights_address"][light]["ip"])
+            method = 'TCP'
+            for key, value in data.items():
+                if key == "on":
+                    payload["request"] = "set_power"
+                    payload["power"] = value
+                elif key == "bri":
+                    payload["request"] = "set_bright"
+                    payload["brightness"] = int(value / 2.55)
+                elif key == "ct":
+                    payload["request"] = "set_ct_abx"
+                    payload["color_temp"] = value
+                elif key == "hue":
+                    payload["request"] = "set_hsv"
+                    payload["hue"] = value / 180
+                elif key == "sat":
+                    payload["request"] = "set_hsv"
+                    payload["saturation"] = value * 100 / 255
+                elif key == "xy":
+                    payload["color"] = {}
+                    (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])        
+            print("Gehe über zum senden")
             print(json.dumps(payload))
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
             url = "coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"])
@@ -696,7 +759,40 @@ def syncWithLights(): #update Hue Bridge lights states
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
+                elif bridge_config["lights_address"][light]["protocol"] == "yeelight":
+                    yeelightip = str(bridge_config["lights_address"][light]["ip"])
+                    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_socket.connect((yeelightip, int(55443)))
+                    msg="{\"id\":" + str(1) + ",\"method\":\"get_prop" + "\",\"params\":[\"power\", \"bright\", \"ct\", \"hue\", \"sat\"]}\r\n"
+                    tcp_socket.send(msg.encode())
+                    data = tcp_socket.recv(16 * 1024)
+                    for line in data.split(b"\r\n"):
+                        if not line:
+                            continue
 
+                        try:
+                            line = json.loads(line.decode("utf8"))
+                        except ValueError:
+                            line = {"result": ["invalid command"]}
+
+                        if line.get("method") != "props":
+                            # This is probably the response we want.
+                            response = line
+                        else:
+                            print ("error")
+                    light_data = response["result"]
+                    light_data = [x if x else None for x in light_data]
+                    tcp_socket.close()
+                    if light_data[0] == "on": #powerstate
+                        bridge_config["lights"][light]["state"]["on"] = True
+                    else:
+                        bridge_config["lights"][light]["state"]["on"] = False
+                    
+                    bridge_config["lights"][light]["state"]["bri"] = int(light_data[1]) * 2.55 #brightness
+                    bridge_config["lights"][light]["state"]["ct"] = light_data[2] #color temp
+                    bridge_config["lights"][light]["state"]["hue"] = light_data[3] #hue
+                    bridge_config["lights"][light]["state"]["sat"] = light_data[4] #sat
+                
                 elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #domoticz protocol
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=devices&rid=" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
                     if light_data["result"][0]["Status"] == "Off":
@@ -1040,6 +1136,32 @@ def webform_milight():
 </body>
 </html>"""
 
+def webform_yeelight():
+    return """<!doctype html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+<title>Yeelight Setup</title>
+<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
+</head>
+<body>
+<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
+<fieldset>
+<legend>Yeelight Setup</legend>
+<div class=\"pure-control-group\"><label for=\"yeelightip\">Hub ip</label><input id=\"yeelightip\" name=\"yeelightip\" type=\"text\" placeholder=\"192.168.xxx.xxx\"></div>
+<div class=\"pure-control-group\">
+<label for=\"mode\">Mode</label>
+<select id=\"mode\" name=\"mode\">
+<option value=\"color\">Color</option>
+</select>
+</div>
+<div class=\"pure-controls\"><button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
+</fieldset>
+</form>
+</body>
+</html>"""
+
 def webform_hue():
     return """<!doctype html>
 <html>
@@ -1165,6 +1287,18 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(webform_milight() + "<br> Light added", "utf8"))
             else:
                 self.wfile.write(bytes(webform_milight(), "utf8"))
+        elif self.path.startswith("/yeelight"): #setup yeelight bulb
+            self._set_headers_html()
+            get_parameters = parse_qs(urlparse(self.path).query)
+            if "yeelightip" in get_parameters:
+                #register new yeelight
+                new_light_id = nextFreeId("lights")
+                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Yeelight Color", "name": "Yeelight " + get_parameters["mode"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
+                new_lights.update({new_light_id: {"name": "YeeLight " + get_parameters["mode"][0]}})
+                bridge_config["lights_address"][new_light_id] = {"device_id": "testyeelighttest", "mode": get_parameters["mode"][0], "ip": get_parameters["yeelightip"][0], "protocol": "yeelight"}
+                self.wfile.write(bytes(webform_yeelight() + "<br> Light added", "utf8"))
+            else:
+                self.wfile.write(bytes(webform_yeelight(), "utf8"))
         elif self.path.startswith("/hue"): #setup hue bridge
             if "linkbutton" in self.path: #Hub button emulated
                 if self.headers['Authorization'] == None:
