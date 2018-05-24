@@ -689,9 +689,9 @@ def sendLightRequest(light, data):
 
 def updateGroupStats(light): #set group stats based on lights status in that group
     for group in bridge_config["groups"]:
-        if "lights" in group and light in bridge_config["groups"][group]["lights"]:
+        if "lights" in bridge_config["groups"][group] and light in bridge_config["groups"][group]["lights"]:
             for key, value in bridge_config["lights"][light]["state"].items():
-                if key not in ["on", "reachable"]:
+                if key in ["bri", "xy", "ct", "hue", "sat"]:
                     bridge_config["groups"][group]["action"][key] = value
             any_on = False
             all_on = True
@@ -1632,15 +1632,9 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "scenes":
                     if "storelightstate" in put_dictionary:
                         for light in bridge_config["scenes"][url_pices[4]]["lightstates"]:
+                            bridge_config["scenes"][url_pices[4]]["lightstates"][light] = {}
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["on"] = bridge_config["lights"][light]["state"]["on"]
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
-                            if "xy" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
-                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["xy"]
-                            elif "ct" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
-                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["ct"]
-                            elif "hue" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
-                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"]
-                                del bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"]
                             if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
                                 bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
                             elif bridge_config["lights"][light]["state"]["colormode"] == "hs" and "hue" in bridge_config["scenes"][url_pices[4]]["lightstates"][light]:
@@ -1675,7 +1669,7 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             if light not in processedLights:
                                 sendLightRequest(light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
-                        updateGroupStats(light)
+                            updateGroupStats(light)
 
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
