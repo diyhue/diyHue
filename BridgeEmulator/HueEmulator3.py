@@ -403,49 +403,17 @@ def sendRequest(url, method, data, timeout=3, delay=0):
     elif method == "TCP":
         if "//" in url: # cutting out the http://
             http, url = url.split("//",1)
-        decode = json.loads(data)   #initialising vars
-        api_method=""
-        param = ""
         # yeelight uses different functions for each action, so it has to check for each function
         # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
         # check if hue wants to change brightness
-        if ("set_bright" in data):
-            api_method = "set_bright"
-            param = str(decode["brightness"])
-            sendToYeelight(url, api_method, param)
-        # check if hue wants to change color temp
-        if ("set_ct_abx" in data):
-            api_method = "set_ct_abx"
-            temp = decode["color_temp"]
-            param = str(temp) + ", \"smooth\", 500"
-            sendToYeelight(url, api_method, param)
-
-        # check if hue wants to change hue /sat (hsv)
-        if ("set_hsv" in data):
-            api_method = "set_hsv"
-            param = decode["hue"] + ", " + decode["sat"]
-            sendToYeelight(url, api_method, param)
-        # check if hue wants to change rgb
-        if ("set_rgb" in data):
-            api_method = "set_rgb"
-            param = str(decode["rgb"])
-            sendToYeelight(url, api_method, param)
-        # check if hue wants to change power
-        if ("set_power" in data):
-            if decode['powerstate'] == True:
-                api_method = "set_power"
-                param = "\"on\""
-            elif decode['powerstate'] == False:
-                api_method = "set_power"
-                param = "\"off\""
-            sendToYeelight(url, api_method, param)
-        #trying to send
+        for key, value in json.loads(data).items():
+            sendToYeelight(url, key, value)
 
 def sendToYeelight(url, api_method, param):
     try:
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_socket.connect((url, int(55443)))
-        msg="{\"id\":" + str(1) + ",\"method\":\"" +  api_method +  "\",\"params\":[" + param + "]}\r\n"
+        msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
         tcp_socket.send(msg.encode())
         tcp_socket.close()
     except Exception as e:
@@ -590,30 +558,26 @@ def sendLightRequest(light, data):
         elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #YeeLight bulb
             url = "http://" + str(bridge_config["lights_address"][light]["ip"])
             method = 'TCP'
+            transitiontime = 400
+            if "transitiontime" in data:
+                transitiontime = data["transitiontime"] * 100
             for key, value in data.items():
                 if key == "on":
-                    payload["set_power"] = "set_power"
-                    payload["powerstate"] = value
+                    if value:
+                        payload["set_power"] = ["on", "smooth", transitiontime]
+                    else:
+                        payload["set_power"] = ["off", "smooth", transitiontime]
                 elif key == "bri":
-                    payload["set_bright"] = "set_bright"
-                    payload["brightness"] = int(value / 2.55)
+                    payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
                 elif key == "ct":
-                    payload["set_ct_abx"] = "set_ct_abx"
-                    payload["color_temp"] = int(1000000 / value)
+                    payload["set_ct_abx"] = [int(1000000 / value), "smooth", transitiontime]
                 elif key == "hue":
-                    payload["set_hsv"] = "set_hsv"
-                    payload["hue"] = value / 180
-                    payload["sat"] = bridge_config["lights"][light]["state"]["sat"]
+                    payload["set_hsv"] = [int(value / 182), int(bridge_config["lights"][light]["state"]["sat"] / 2.54), "smooth", transitiontime]
                 elif key == "sat":
-                    payload["set_hsv"] = "set_hsv"
-                    payload["saturation"] = value * 100 / 255
-                    payload["hue"] = bridge_config["lights"][light]["state"]["hue"]
+                    payload["set_hsv"] = [int(value / 2.54), int(bridge_config["lights"][light]["state"]["hue"] / 2.54), "smooth", transitiontime]
                 elif key == "xy":
                     color = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
-                    payload["request"] = "set_rgb"
-                    code = (color[0] * 65536) + (color[1] * 256) + color[2] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
-                    payload["rgb"] = code
-            print(json.dumps(payload))
+                    payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
             url = "coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"])
             for key, value in data.items():
@@ -665,9 +629,7 @@ def sendLightRequest(light, data):
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
                 if "5712" not in payload:
                     payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
-                pprint("PAYLOAD:" + json.dumps(payload))
-                pprint("COAP: ./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"")
-                check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
+                    check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 if "xy" in payload:
                     sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
@@ -703,6 +665,24 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on,}
             bridge_config["groups"][group]["action"]["on"] = any_on
 
+def scanYeelight():
+    yeelight_ips = check_output("nmap  " + getIpAddress() + "/24 -p55443 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').split("\n")
+    pprint(yeelight_ips)
+    for ip in yeelight_ips:
+        if ip != "":
+            newLight = True
+            for light in bridge_config["lights_address"].keys():
+                if bridge_config["lights_address"][light]["ip"] == ip:
+                    newLight = False
+                    break
+            if newLight:
+                print("found new yeelight bulb")
+                new_light_id = nextFreeId("lights")
+                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "New Yeelight bulb", "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": "LCT015", "swversion": "1.29.0_r21169"}
+                new_lights.update({new_light_id: {"name": "New Yeelight bulb"}})
+                bridge_config["lights_address"][new_light_id] = {"device_id": "Yeelight Color", "ip": ip, "protocol": "yeelight"}
+
+
 def scanForLights(): #scan for ESP8266 lights and strips
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').split("\n")
@@ -737,6 +717,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
             print("ip " + ip + " is unknow device")
     scanDeconz()
     scanTradfri()
+    scanYeelight()
     saveConfig()
 
 
@@ -806,7 +787,7 @@ def syncWithLights(): #update Hue Bridge lights states
                     else:
                         bridge_config["lights"][light]["state"]["on"] = False
 
-                    bridge_config["lights"][light]["state"]["bri"] = int(light_data[1]) * 2.55 #brightness
+                    bridge_config["lights"][light]["state"]["bri"] = int(light_data[1]) * 2.54 #brightness
                     bridge_config["lights"][light]["state"]["ct"] = light_data[2] #color temp
                     bridge_config["lights"][light]["state"]["hue"] = light_data[3] #hue
                     bridge_config["lights"][light]["state"]["sat"] = light_data[4] #sat
@@ -1154,32 +1135,6 @@ def webform_milight():
 </body>
 </html>"""
 
-def webform_yeelight():
-    return """<!doctype html>
-<html>
-<head>
-<meta charset=\"utf-8\">
-<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-<title>Yeelight Setup</title>
-<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">
-</head>
-<body>
-<form class=\"pure-form pure-form-aligned\" action=\"\" method=\"get\">
-<fieldset>
-<legend>Yeelight Setup</legend>
-<div class=\"pure-control-group\"><label for=\"yeelightip\">Hub ip</label><input id=\"yeelightip\" name=\"yeelightip\" type=\"text\" placeholder=\"192.168.xxx.xxx\"></div>
-<div class=\"pure-control-group\">
-<label for=\"mode\">Mode</label>
-<select id=\"mode\" name=\"mode\">
-<option value=\"color\">Color</option>
-</select>
-</div>
-<div class=\"pure-controls\"><button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button></div>
-</fieldset>
-</form>
-</body>
-</html>"""
-
 def webform_hue():
     return """<!doctype html>
 <html>
@@ -1325,19 +1280,6 @@ class S(BaseHTTPRequestHandler):
                 self.wfile.write(bytes(webform_milight() + "<br> Light added", "utf8"))
             else:
                 self.wfile.write(bytes(webform_milight(), "utf8"))
-        elif self.path.startswith("/yeelight"): #setup yeelight bulb
-            mimetype = 1
-            self._set_headers()
-            get_parameters = parse_qs(urlparse(self.path).query)
-            if "yeelightip" in get_parameters:
-                #register new yeelight
-                new_light_id = nextFreeId("lights")
-                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "Yeelight " + get_parameters["mode"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
-                new_lights.update({new_light_id: {"name": "YeeLight " + get_parameters["mode"][0]}})
-                bridge_config["lights_address"][new_light_id] = {"device_id": "Yeelight Color", "mode": get_parameters["mode"][0], "ip": get_parameters["yeelightip"][0], "protocol": "yeelight"}
-                self.wfile.write(bytes(webform_yeelight() + "<br> Light added", "utf8"))
-            else:
-                self.wfile.write(bytes(webform_yeelight(), "utf8"))
         elif self.path.startswith("/hue"): #setup hue bridge
             if "linkbutton" in self.path: #Hub button emulated
                 if self.headers['Authorization'] == None:
