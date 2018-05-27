@@ -9,7 +9,6 @@ import json, socket, hashlib, struct, random, sys
 import requests
 import urllib.request, urllib.parse
 import base64
-import socket
 from threading import Thread
 from collections import defaultdict
 from uuid import getnode as get_mac
@@ -27,6 +26,7 @@ sensors_state = {}
 
 mimetypes = ["application/json", "text/html", "application/xml", "text/javascript", "text/css"]
 mimetype = 0
+light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
 
 def sendEmail(triggered_sensor):
     import smtplib
@@ -412,6 +412,7 @@ def sendRequest(url, method, data, timeout=3, delay=0):
 def sendToYeelight(url, api_method, param):
     try:
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_socket.settimeout(5)
         tcp_socket.connect((url, int(55443)))
         msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
         tcp_socket.send(msg.encode())
@@ -578,6 +579,10 @@ def sendLightRequest(light, data):
                 elif key == "xy":
                     color = convert_xy(value[0], value[1], bridge_config["lights"][light]["state"]["bri"])
                     payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
+                elif key == "alert" and value != "none":
+                    payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
+
+
         elif bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
             url = "coaps://" + bridge_config["lights_address"][light]["ip"] + ":5684/15001/" + str(bridge_config["lights_address"][light]["device_id"])
             for key, value in data.items():
@@ -610,12 +615,8 @@ def sendLightRequest(light, data):
                     bri = data["bri"]
                 else:
                     bri = bridge_config["lights"][light]["state"]["bri"]
-
-                #rgbValue = hsv_to_rgb(bridge_config["lights"][light]["state"]["hue"], bridge_config["lights"][light]["state"]["sat"], bridge_config["lights"][light]["state"]["bri"])
                 rgbValue = hsv_to_rgb(hue, sat, bri)
-                pprint(rgbValue) #validate the hsv_to_rgb works corectly
                 xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
-                pprint(xyValue) #validate the xy values, here you can look the bulb
                 payload["5709"] = int(xyValue[0] * 65535)
                 payload["5710"] = int(xyValue[1] * 65535)
             if "5850" in payload and payload["5850"] == 0:
@@ -623,7 +624,6 @@ def sendLightRequest(light, data):
                 payload["5850"] = 0
             elif "5850" in payload and "5851" in payload: #when setting brightness don't send also power on command
                 del payload["5850"]
-                pprint(payload)
 
         try:
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
@@ -665,25 +665,63 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on,}
             bridge_config["groups"][group]["action"]["on"] = any_on
 
-def scanYeelight():
-    yeelight_ips = check_output("nmap  " + getIpAddress() + "/24 -p55443 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').split("\n")
-    pprint(yeelight_ips)
-    for ip in yeelight_ips:
-        if ip != "":
-            newLight = True
+
+def discoverYeelight():
+    group = ("239.255.255.250", 1982)
+    message = "\r\n".join([
+        'M-SEARCH * HTTP/1.1',
+        'HOST: 239.255.255.250:1982',
+        'MAN: "ssdp:discover"',
+        'ST: wifi_bulb'])
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.settimeout(3)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    sock.sendto(message.encode(), group)
+    while True:
+        try:
+            response = sock.recv(1024).decode('utf-8').split("\r\n")
+            properties = {"rgb": False, "ct": False}
+            for line in response:
+                if line[:2] == "id":
+                    properties["id"] = line[4:]
+                elif line[:3] == "rgb":
+                    properties["rgb"] = True
+                elif line[:2] == "ct":
+                    properties["ct"] = True
+                elif line[:8] == "Location":
+                    properties["ip"] = line.split(":")[2][2:]
+                elif line[:4] == "name":
+                    properties["name"] = line[6:]
+            device_exist = False
             for light in bridge_config["lights_address"].keys():
-                if bridge_config["lights_address"][light]["ip"] == ip:
-                    newLight = False
+                if bridge_config["lights_address"][light]["protocol"] == "yeelight" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
+                    device_exist = True
+                    bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                    print("light id " + properties["id"] + " already exist, updating ip...")
                     break
-            if newLight:
-                print("found new yeelight bulb")
+            if (not device_exist):
+                light_name = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
+                print("Add YeeLight: " + properties["id"])
+                modelid = "LWB010"
+                if properties["rgb"]:
+                    modelid = "LCT015"
+                elif properties["ct"]:
+                    modelid = "LTW001"
                 new_light_id = nextFreeId("lights")
-                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "New Yeelight bulb", "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": "LCT015", "swversion": "1.29.0_r21169"}
-                new_lights.update({new_light_id: {"name": "New Yeelight bulb"}})
-                bridge_config["lights_address"][new_light_id] = {"device_id": "Yeelight Color", "ip": ip, "protocol": "yeelight"}
+                bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "swversion": light_types[modelid]["swversion"]}
+                new_lights.update({new_light_id: {"name": light_name}})
+                bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
+
+
+        except socket.timeout:
+            print('Yeelight search end')
+            sock.close()
+            break
 
 
 def scanForLights(): #scan for ESP8266 lights and strips
+    Thread(target=discoverYeelight).start()
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').split("\n")
     pprint(device_ips)
@@ -704,7 +742,6 @@ def scanForLights(): #scan for ESP8266 lights and strips
                                 bridge_config["lights_address"][light]["ip"] = ip
                         if not device_exist:
                             light_name = "Hue " + device_data["hue"] + " " + device_data["modelid"]
-                            light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
                             if "name" in device_data:
                                 light_name = device_data["name"]
                             print("Add new light: " + light_name)
@@ -717,7 +754,6 @@ def scanForLights(): #scan for ESP8266 lights and strips
             print("ip " + ip + " is unknow device")
     scanDeconz()
     scanTradfri()
-    scanYeelight()
     saveConfig()
 
 
@@ -761,6 +797,7 @@ def syncWithLights(): #update Hue Bridge lights states
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
                 elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #getting states from the yeelight
                     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp_socket.settimeout(5)
                     tcp_socket.connect((bridge_config["lights_address"][light]["ip"], int(55443)))
                     msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
                     tcp_socket.send(msg.encode())
