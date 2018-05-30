@@ -1529,7 +1529,7 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         print ("in post method")
         print(self.path)
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        self.data_string = b"{}" if self.headers['Content-Length'] is None else self.rfile.read(int(self.headers['Content-Length']))
         if self.path == "/updater":
             print("check for updates")
             update_data = json.loads(sendRequest("http://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
