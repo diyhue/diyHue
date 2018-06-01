@@ -11,9 +11,9 @@
 #define lightsCount 3
 #define pixelCount 60
 
-#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
 #define button1_pin 4 // on and bri up
 #define button2_pin 5 // off and bri down
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
