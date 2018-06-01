@@ -4,7 +4,7 @@ cd /tmp
 git clone https://github.com/mariusmotea/diyHue.git
 cd diyHue/BridgeEmulator/
 mkdir /opt/hue-emulator
-cp -r web-ui HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
+cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
 cp hue-emulator.service /lib/systemd/system/
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
