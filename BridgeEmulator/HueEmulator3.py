@@ -188,7 +188,6 @@ def schedulerProcessor():
         sleep(1)
 
 def switchScene(group, direction):
-    print("group " + group)
     group_scenes = []
     current_position = -1
     possible_current_position = -1 # used in case the brigtness was changes and will be no perfect match (scene lightstates vs light states)
@@ -196,7 +195,7 @@ def switchScene(group, direction):
     for scene in bridge_config["scenes"]:
         if bridge_config["groups"][group]["lights"][0] in bridge_config["scenes"][scene]["lights"]:
             group_scenes.append(scene)
-            if break_next: # don't lose time as this is the chene we need
+            if break_next: # don't lose time as this is the scene we need
                 break
             is_current_scene = True
             is_possible_current_scene = True
@@ -212,9 +211,9 @@ def switchScene(group, direction):
                                 is_possible_current_scene = False
             if is_current_scene:
                 current_position = len(group_scenes) -1
-                if direction == -1:
+                if direction == -1 and len(group_scenes) != 1:
                     break
-                else:
+                elif len(group_scenes) != 1:
                     break_next = True
             elif  is_possible_current_scene:
                 possible_current_position = len(group_scenes) -1
@@ -229,12 +228,14 @@ def switchScene(group, direction):
             return
     elif current_position != -1:
         if len(group_scenes) -1 < current_position + direction:
-            return
-        matched_scene = group_scenes[current_position + direction]
+            matched_scene = group_scenes[0]
+        else:
+            matched_scene = group_scenes[current_position + direction]
     elif possible_current_position != -1:
         if len(group_scenes) -1 < possible_current_position + direction:
-            return
-        matched_scene = group_scenes[possible_current_position + direction]
+            matched_scene = group_scenes[0]
+        else:
+            matched_scene = group_scenes[possible_current_position + direction]
     print("matched scene " + bridge_config["scenes"][matched_scene]["name"])
 
     for light in bridge_config["scenes"][matched_scene]["lights"]:
@@ -248,10 +249,7 @@ def switchScene(group, direction):
         sendLightRequest(light, bridge_config["scenes"][matched_scene]["lightstates"][light])
         updateGroupStats(light)
 
-
-
-
-
+        
 def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
     ddx = 0
     sensor_found = False
