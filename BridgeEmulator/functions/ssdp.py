@@ -25,7 +25,7 @@ def ssdpSearch(ip, mac):
         data = data.decode('utf-8')
         if data[0:19]== 'M-SEARCH * HTTP/1.1':
             if data.find("ssdp:discover") != -1:
-                sleep(random.randrange(0, 3))
+                sleep(random.randrange(1, 10)/10)
                 print("Sending M-Search response to " + address[0])
                 for x in range(3):
                    sock.sendto(bytes(Response_message + "ST: " + custom_response_message[x]["st"] + "\r\nUSN: " + custom_response_message[x]["usn"] + "\r\n\r\n", "utf8"), address)
