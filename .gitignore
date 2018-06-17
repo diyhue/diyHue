@@ -1,4 +1,5 @@
 .DS_Store
-BridgeEmulator/web-ui/build
+__pycache__
+BridgeEmulator/web-ui/public/config.js
 BridgeEmulator/web-ui/public/config.js
 node_modules
