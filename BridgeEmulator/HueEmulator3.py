@@ -183,6 +183,7 @@ def schedulerProcessor():
                             del bridge_config["schedules"][schedule]
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             saveConfig()
+            Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
                 saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
         sleep(1)
@@ -249,7 +250,7 @@ def switchScene(group, direction):
         sendLightRequest(light, bridge_config["scenes"][matched_scene]["lightstates"][light])
         updateGroupStats(light)
 
-        
+
 def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
     ddx = 0
     sensor_found = False
@@ -571,7 +572,7 @@ def discoverYeelight():
                 elif properties["ct"]:
                     modelid = "LTW001"
                 new_light_id = nextFreeId("lights")
-                bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+                bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "swversion": light_types[modelid]["swversion"]}
                 new_lights.update({new_light_id: {"name": light_name}})
                 bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
 
@@ -609,7 +610,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             print("Add new light: " + light_name)
                             for x in range(1, int(device_data["lights"]) + 1):
                                 new_light_id = nextFreeId("lights")
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
         except:
@@ -923,6 +924,37 @@ def updateAllLights():
         sleep(0.5)
         print("update status for light " + light)
 
+def daylightSensor():
+    if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
+        return
+
+    import pytz, astral
+    from astral import Astral, Location
+    a = Astral()
+    a.solar_depression = 'civil'
+    loc = Location(('Current', bridge_config["config"]["timezone"].split("/")[1], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]), bridge_config["config"]["timezone"], 0))
+    sun = loc.sun(date=datetime.now(), local=True)
+    deltaSunset = sun['sunset'].replace(tzinfo=None) - datetime.now()
+    deltaSunrise = sun['sunrise'].replace(tzinfo=None) - datetime.now()
+    deltaSunsetOffset = deltaSunset.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunsetoffset"] * 60
+    deltaSunriseOffset = deltaSunrise.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunriseoffset"] * 60
+    print("deltaSunsetOffset: " + str(deltaSunsetOffset))
+    print("deltaSunriseOffset: " + str(deltaSunriseOffset))
+    if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600:
+        print("will start the sleep for sunset")
+        sleep(deltaSunsetOffset)
+        current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time}
+        sensors_state["1"]["state"]["daylight"] = current_time
+        rulesProcessor("1", current_time)
+    if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
+        print("will start the sleep for sunrise")
+        sleep(deltaSunsetOffset)
+        current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time}
+        sensors_state["1"]["state"]["daylight"] = current_time
+        rulesProcessor("1", current_time)
+
 class S(BaseHTTPRequestHandler):
 
     def _set_headers(self):
@@ -947,6 +979,10 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             f = open('./web-ui/index.html')
             self.wfile.write(bytes(f.read(), "utf8"))
+        elif self.path == "/debug/clip.html":
+            self._set_headers()
+            f = open('./clip.html', 'rb')
+            self.wfile.write(f.read())
         elif self.path == '/config.js':
             self._set_headers()
             #create a new user key in case none is available
@@ -1166,8 +1202,6 @@ class S(BaseHTTPRequestHandler):
                         self.wfile.write(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]), "utf8"))
                     else:
                         self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]]), "utf8"))
-                elif len(url_pices) == 6 or (len(url_pices) == 7 and url_pices[6] == ""):
-                    self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]), "utf8"))
             elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
                 self.wfile.write(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 59, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "modelid": bridge_config["config"]["modelid"]}), "utf8"))
             else: #user is not in whitelist
