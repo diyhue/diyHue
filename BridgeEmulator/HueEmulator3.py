@@ -1304,16 +1304,16 @@ class S(BaseHTTPRequestHandler):
                     r = int((put_dictionary["data"][light][0] *  256 + put_dictionary["data"][light][1]) / 256)
                     g = int((put_dictionary["data"][light][2] *  256 + put_dictionary["data"][light][3]) / 256)
                     b = int((put_dictionary["data"][light][4] *  256 + put_dictionary["data"][light][5]) / 256)
-                    sendLightRequest(str(light), {"r": r,"g": g, "b": b})
+                    sendLightRequest(light, {"r": r,"g": g, "b": b})
                     bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(r, g, b)
-                    updateGroupStats(str(light))
+                    updateGroupStats(light)
             elif put_dictionary["colorspace"] == "xy":
                 print("xy data")
                 for light in put_dictionary["data"].keys():
                     bridge_config["lights"][light]["state"]["xy"] = [(put_dictionary["data"][light][0] * 256 + put_dictionary["data"][light][1]) / 65535, (put_dictionary["data"][light][2] * 256 +  put_dictionary["data"][light][3]) / 65535]
                     bridge_config["lights"][light]["state"]["bri"] = int((put_dictionary["data"][light][4] * 256 + put_dictionary["data"][light][5]) / 255)
-                    sendLightRequest(str(light), {"xy": bridge_config["lights"][light]["state"]["xy"], "bri": bridge_config["lights"][light]["state"]["bri"]})
-                    updateGroupStats(str(light))
+                    sendLightRequest(light, {"xy": bridge_config["lights"][light]["state"]["xy"], "bri": bridge_config["lights"][light]["state"]["bri"]})
+                    updateGroupStats(light)
             self.wfile.write(bytes("OK", "utf8"))
             return
         url_pices = self.path.split('/')
