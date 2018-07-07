@@ -396,15 +396,19 @@ void setup() {
       }
       else if (server.argName(i) == "r") {
         rgb[light][0] = server.arg(i).toInt();
-        color_mode[light] = 0;
+        color_mode[light] = 0; rgb[light][3] = 0;
       }
       else if (server.argName(i) == "g") {
         rgb[light][1] = server.arg(i).toInt();
-        color_mode[light] = 0;
+        color_mode[light] = 0; rgb[light][3] = 0;
       }
       else if (server.argName(i) == "b") {
         rgb[light][2] = server.arg(i).toInt();
-        color_mode[light] = 0;
+        color_mode[light] = 0; rgb[light][3] = 0;
+      }
+      else if (server.argName(i) == "w") {
+        rgb[light][3] = server.arg(i).toInt();
+        color_mode[light] = 0; rgb[0] = 0; rgb[1] = 0; rgb[2] = 0;
       }
       else if (server.argName(i) == "x") {
         x[light] = server.arg(i).toFloat();
