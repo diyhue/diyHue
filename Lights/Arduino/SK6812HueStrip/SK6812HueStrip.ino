@@ -445,19 +445,19 @@ void setup() {
         EEPROM.commit();
       }
       else if (server.argName(i) == "r") {
-        rgbw[light][0] = server.arg(i).toInt();
+        rgbw[light][0] = server.arg(i).toInt(); rgbw[light][3] = 0;
         color_mode[light] = 0;
       }
       else if (server.argName(i) == "g") {
-        rgbw[light][1] = server.arg(i).toInt();
+        rgbw[light][1] = server.arg(i).toInt(); rgbw[light][3] = 0;
         color_mode[light] = 0;
       }
       else if (server.argName(i) == "b") {
-        rgbw[light][2] = server.arg(i).toInt();
-        color_mode[light] = 0;
+        rgbw[light][2] = server.arg(i).toInt(); rgbw[light][3] = 0;
+        color_mode[light] = 0; 
       }
       else if (server.argName(i) == "w") {
-        rgbw[light][3] = server.arg(i).toInt();
+        rgbw[light][3] = server.arg(i).toInt(); rgbw[light][0] = 0; rgbw[light][1] = 0; rgbw[light][2] = 0;
         color_mode[light] = 0;
       }
       else if (server.argName(i) == "x") {
