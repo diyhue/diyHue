@@ -378,23 +378,23 @@ void setup() {
       }
       else if (server.argName(i) == "r") {
         rgb_cct[0] = server.arg(i).toInt();
-        color_mode = 0;
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
       else if (server.argName(i) == "g") {
         rgb_cct[1] = server.arg(i).toInt();
-        color_mode = 0;
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
       else if (server.argName(i) == "b") {
         rgb_cct[2] = server.arg(i).toInt();
-        color_mode = 0;
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
       else if (server.argName(i) == "ww") {
         rgb_cct[3] = server.arg(i).toInt();
-        color_mode = 0;
+        color_mode = 0; rgb_cct[0] = 0; rgb_cct[1] = 0; rgb_cct[2] = 0;
       }
       else if (server.argName(i) == "cw") {
         rgb_cct[4] = server.arg(i).toInt();
-        color_mode = 0;
+        color_mode = 0; rgb_cct[0] = 0; rgb_cct[1] = 0; rgb_cct[2] = 0;
       }
       else if (server.argName(i) == "x") {
         x = server.arg(i).toFloat();
