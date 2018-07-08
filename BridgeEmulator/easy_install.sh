@@ -7,7 +7,7 @@ make no_test
 cd ../BridgeEmulator/
 gcc -I../mbedtls/include ssl_server2_diyhue.c -o ssl_server2_diyhue -L../mbedtls/library -lmbedtls -lmbedx509 -lmbedcrypto
 mkdir /opt/hue-emulator
-cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
+cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json ssl_server2_diyhue /opt/hue-emulator/
 cp hue-emulator.service /lib/systemd/system/
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
