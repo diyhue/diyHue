@@ -15,6 +15,11 @@ from uuid import getnode as get_mac
 from urllib.parse import urlparse, parse_qs
 from functions import *
 
+import os
+import signal
+import subprocess
+import atexit
+
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 mac = '%012x' % get_mac()
@@ -24,6 +29,28 @@ run_service = True
 bridge_config = defaultdict(lambda:defaultdict(str))
 new_lights = {}
 sensors_state = {}
+
+psk_list = ""
+dtls_server = subprocess.Popen(["/opt/hue-emulator/./ssl_server2_diyhue server_port=2100 dtls=1"], stdout=subprocess.PIPE,shell=True, preexec_fn=os.setsid) 
+
+def gen_psk_list():
+    global psk_list
+    for username in bridge_config["config"]["whitelist"]:
+        psk_list += username + ","
+        psk_list += "321c0c2ebfa7361e55491095b2f5f9db,"
+    psk_list = psk_list[:-1]
+
+def restartDtlsServer():
+    global psk_list
+    global dtls_server
+    os.killpg(os.getpgid(dtls_server.pid), signal.SIGTERM)
+    dtls_server = subprocess.Popen(["/opt/hue-emulator/./ssl_server2_diyhue server_port=2100 dtls=1 psk_list=" + psk_list], stdout=subprocess.PIPE,shell=True, preexec_fn=os.setsid) 
+
+def cleanup():
+    global dtls_server
+    os.killpg(os.getpgid(dtls_server.pid), signal.SIGTERM)
+
+atexit.register(cleanup)
 
 def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -107,6 +134,8 @@ try:
     with open('/opt/hue-emulator/config.json', 'r') as fp:
         bridge_config = json.load(fp)
         print("Config loaded")
+        gen_psk_list()
+        restartDtlsServer()
 except Exception:
     print("CRITICAL! Config file was not loaded")
     sys.exit(1)
@@ -1242,7 +1271,7 @@ class S(BaseHTTPRequestHandler):
                     sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                     self.wfile.write(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}]), "utf8"))
                 elif url_pices[3] == "":
-                    self.wfile.write(bytes(json.dumps([{"success": {"clientkey": "E3B550C65F78022EFD9E52E28378583"}}]), "utf8"))
+                    self.wfile.write(bytes(json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}]), "utf8"))
                 else: #create object
                     # find the first unused id for new object
                     new_object_id = nextFreeId(url_pices[3])
@@ -1282,9 +1311,11 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
                 response = [{"success": {"username": username}}]
                 if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
-                    response[0]["success"]["clientkey"] = "E3B550C65F78022EFD9E52E28378583"
+                    response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
                 self.wfile.write(bytes(json.dumps(response), "utf8"))
                 print(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+                gen_psk_list()
+                restartDtlsServer()
             else:
                 self.wfile.write(bytes(json.dumps([{"error": {"type": 101, "address": self.path, "description": "link button not pressed" }}],sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
         saveConfig()
