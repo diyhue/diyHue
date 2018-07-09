@@ -56,8 +56,31 @@ def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.bind(('127.0.0.1', 2101))
     while True:
-        message, address = serverSocket.recvfrom(1024)
-        print(message)
+        data = serverSocket.recvfrom(200)[0]
+        print(len(data))
+        if data[:9].decode('utf-8') == "HueStream":
+            if data[14] == 0: #rgb colorspace
+                i = 16
+                while i < len(data):
+                    if data[i] == 0: #Type of device 0x00 = Light
+                        lightId = data[i+1] * 256 + data[i+2]
+                        if lightId != 0:
+                            print("light: " + str(lightId))
+                            r = int((data[i+3] * 256 + data[i+4]) / 256)
+                            g = int((data[i+5] * 256 + data[i+6]) / 256)
+                            b = int((data[i+7] * 256 + data[i+7]) / 256)
+                            print("send to light following data: " + str(r) + "," + str(g) + "," + str(b))
+                            s = str(r) + str(g) + str(b)
+                            #sendLightRequest(lightId, {"r": r,"g": g, "b": b})
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                            sock.sendto(bytes([r]) + bytes([g]) + bytes([b]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
+                            if r == 0 and  r == 0 and  r == 0:
+                                bridge_config["lights"][str(lightId)]["state"]["on"] = False
+                            else:
+                                bridge_config["lights"][str(lightId)]["state"]["on"] = True
+                                bridge_config["lights"][str(lightId)]["state"]["xy"] = convert_rgb_xy(r, g, b)
+                            updateGroupStats(lightId)
+                        i = i + 9
 
 light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
 
