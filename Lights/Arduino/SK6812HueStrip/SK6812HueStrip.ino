@@ -25,8 +25,10 @@ bool light_state[lightsCount], in_transition;
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
 float step_level[lightsCount][4], current_rgbw[lightsCount][4], x[lightsCount], y[lightsCount];
 byte mac[6];
+byte packetBuffer[4];
 
 ESP8266WebServer server(80);
+WiFiUDP Udp;
 
 RgbwColor red = RgbwColor(255, 0, 0, 0);
 RgbwColor green = RgbwColor(0, 255, 0, 0);
@@ -363,6 +365,7 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
+  Udp.begin(2100);
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
@@ -688,8 +691,22 @@ void setup() {
   server.begin();
 }
 
+void entertainment() {
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    Udp.read(packetBuffer, packetSize);
+    for (int j = 0; j < pixelCount / lightsCount ; j++)
+    {
+      strip.SetPixelColor(j + packetBuffer[3] * pixelCount / lightsCount, RgbColor(packetBuffer[0], packetBuffer[1], packetBuffer[2]));
+      strip.SetPixelColor(j + packetBuffer[3] * pixelCount / lightsCount, RgbwColor(packetBuffer[0], packetBuffer[1], packetBuffer[2], 0));
+    }
+    strip.Show();
+  }
+}
+
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
+  entertainment();
 }
