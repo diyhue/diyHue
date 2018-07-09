@@ -46,9 +46,10 @@ bool light_state, in_transition;
 int  ct, hue;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
-byte packetBuffer[3];
+byte packetBuffer[4];
 
 ESP8266WebServer server(80);
+WiFiUDP Udp;
 
 void convert_hue()
 {
@@ -348,6 +349,7 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
+  Udp.begin(2100);
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
