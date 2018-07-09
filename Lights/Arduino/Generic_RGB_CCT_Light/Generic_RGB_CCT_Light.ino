@@ -46,6 +46,7 @@ bool light_state, in_transition;
 int  ct, hue;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
+byte packetBuffer[3];
 
 ESP8266WebServer server(80);
 
