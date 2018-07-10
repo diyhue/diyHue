@@ -1,7 +1,7 @@
 #!/bin/bash
 apt install -y git nmap python3 python3-requests python3-ws4py
 cd /tmp
-git clone --recursive https://github.com/avinashraja98/diyHue.git
+git clone --recursive https://github.com/mariusmotea/diyHue.git
 cd diyHue/mbedtls/
 make no_test
 cd ../BridgeEmulator/
