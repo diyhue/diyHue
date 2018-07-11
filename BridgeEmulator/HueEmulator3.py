@@ -28,6 +28,7 @@ sensors_state = {}
 def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.bind(('127.0.0.1', 2101))
+    fremeID = 0
     while True:
         data = serverSocket.recvfrom(200)[0]
         if data[:9].decode('utf-8') == "HueStream":
@@ -40,14 +41,21 @@ def entertainmentService():
                             r = int((data[i+3] * 256 + data[i+4]) / 256)
                             g = int((data[i+5] * 256 + data[i+6]) / 256)
                             b = int((data[i+7] * 256 + data[i+7]) / 256)
-                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                            sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
                             if r == 0 and  g == 0 and  b == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = True
                                 bridge_config["lights"][str(lightId)]["state"]["xy"] = convert_rgb_xy(r, g, b)
-                                bridge_config["lights"][str(lightId)]["colormode"] = "xy"
+                                bridge_config["lights"][str(lightId)]["state"]["colormode"] = "xy"
+                                bridge_config["lights"][str(lightId)]["state"]["bri"] = int((r + g + b) / 3)
+                            if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                                sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
+                            else:
+                                fremeID += 1
+                                if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
+                                    sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b)})
+                                    fremeID = 0
                             updateGroupStats(lightId)
                         i = i + 9
             elif data[14] == 1: #cie colorspace
@@ -59,17 +67,25 @@ def entertainmentService():
                             x = (data[i+3] * 256 + data[i+4]) / 65535
                             y = (data[i+5] * 256 + data[i+6]) / 65535
                             bri = int((data[i+7] * 256 + data[i+7]) / 256)
-                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                            sock.sendto(bytes(convert_xy(x, y, bri)) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
                             if bri == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
+                                bridge_config["lights"][str(lightId)]["state"]["on"] = True
                                 bridge_config["lights"][str(lightId)]["state"]["xy"] = [x, y]
-                                bridge_config["lights"][str(lightId)]["colormode"] = "xy"
+                                bridge_config["lights"][str(lightId)]["state"]["bri"] = bri
+                                bridge_config["lights"][str(lightId)]["state"]["colormode"] = "xy"
+                            if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                                sock.sendto(bytes(convert_xy(x, y, bri)) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
+                            else:
+                                fremeID += 1
+                                if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
+                                    sendLightRequest(str(lightId), {"xy": [x,y]})
+                                    fremeID = 0
                             updateGroupStats(lightId)
 
 
-light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST001": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "66010400"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
+light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST002": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "5.105.0.21169": "5.23.1.13452"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
 
 def addTradfriDimmer(sensor_id, group_id):
     rules = [{ "actions":[{"address": "/groups/" + group_id + "/action", "body":{ "on":True, "bri":1 }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "false" }], "name": "Remote " + sensor_id + " turn on" },{"actions":[{"address":"/groups/" + group_id + "/action", "body":{ "on": False}, "method":"PUT"}], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name":"Dimmer Switch " + sensor_id + " off"}, { "actions":[{ "address": "/groups/" + group_id + "/action", "body":{ "on":False }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name": "Remote " + sensor_id + " turn off" }, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 32, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate right"}, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 56, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "1002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate fast right"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -32, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -56, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}]
@@ -538,15 +554,23 @@ def sendLightRequest(light, data):
                     payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
                     check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
+                color = {}
                 if "xy" in payload:
-                    sendRequest(url, method, json.dumps({"on": True, "xy": payload["xy"]}))
+                    color["xy"] = payload["xy"]
                     del(payload["xy"])
-                    sleep(0.6)
                 elif "ct" in payload:
-                    sendRequest(url, method, json.dumps({"on": True, "ct": payload["ct"]}))
+                    color["ct"] = payload["ct"]
                     del(payload["ct"])
-                    sleep(0.6)
+                elif "hue" in payload:
+                    color["hue"] = payload["hue"]
+                    del(payload["hue"])
+                elif "sat" in payload:
+                    color["sat"] = payload["sat"]
+                    del(payload["sat"])
                 sendRequest(url, method, json.dumps(payload))
+                if len(color) != 0:
+                    sleep(1)
+                    sendRequest(url, method, json.dumps(color))
             else:
                 sendRequest(url, method, json.dumps(payload))
         except:
