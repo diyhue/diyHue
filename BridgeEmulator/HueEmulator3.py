@@ -1418,6 +1418,8 @@ class S(BaseHTTPRequestHandler):
                             Popen(["killall", "ssl_server2_diyhue"])
                             bridge_config["groups"][url_pices[4]]["stream"]["active"] = False
                             bridge_config["groups"][url_pices[4]]["stream"]["owner"] = None
+                    else:
+                        bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
@@ -1494,7 +1496,7 @@ class S(BaseHTTPRequestHandler):
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
-                        bridge_config["groups"][url_pices[4]]["action"].update(put_dictionary)
+                        bridge_config["groups"][url_pices[4]][url_pices[5]].update(put_dictionary)
                         #send all unique ip's in thread mode for speed
                         lightsIps = []
                         processedLights = []
@@ -1538,10 +1540,10 @@ class S(BaseHTTPRequestHandler):
             response_dictionary = []
             for key, value in put_dictionary.items():
                 response_dictionary.append({"success":{response_location + key: value}})
-            self.wfile.write(bytes(json.dumps(response_dictionary,sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
+            self.wfile.write(bytes(json.dumps(response_dictionary), "utf8"))
             print(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
-            self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
+            self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}]), "utf8"))
 
     def do_DELETE(self):
         self._set_headers()
