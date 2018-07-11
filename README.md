@@ -17,7 +17,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
  - ~~On/Off control for other home devices using virtual lights~~
  - Alarm (~~email notification~~ + eps8266 horn)
- - Hue Entertainment support
+ - ~~Hue Entertainment support~~
 
 ## Working HUE futures:
   - Control lights (all functions)
@@ -65,6 +65,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - On/Off plugs/lights (up to 6 lights for every esp8266)
   - On/Off 433Mhz devices (multiple devices for every esp8266). Credits Mevel
   
+## Stability:
+All the lights in my house are controlled by this solution so the stability is very important to me as there is no turn back to classic illumination (all switches were replaces with Ikea Tradfri Remotes and holes covered), however i don't use all the functions to perform full tests on every change. What i use currently is Deconz with all Tradfri devices (lights + sensors), Xiaomi Motion Sensor, native ESP8266 bulbs, ESP8266 + WS2812B strips and Xiaomi YeeLight color bulb.
+  
 Please submit [here](https://github.com/mariusmotea/diyHue/issues/27) any other device/application that is working with this emulator.
   
 Check [Wiki page](https://github.com/mariusmotea/diyHue/wiki) for more details  
@@ -83,6 +86,8 @@ You may want to see also my new project [qtHue](https://github.com/mariusmotea/q
 
 
 Credits:
+  - 
+  - [@avinashraja98](https://github.com/avinashraja98) - Hue Entertainment server
   - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) Internal WebGUI
   - [@J3n50m4t](https://github.com/J3n50m4t) - Yeelight integration
   - Martin Černý ([@mcer12](https://github.com/mcer12)) - Yeelight color bulb
