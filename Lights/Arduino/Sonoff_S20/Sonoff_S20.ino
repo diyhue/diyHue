@@ -17,7 +17,7 @@ uint8_t lastButtonState = buttonState;
 unsigned long lastButtonPush = 0;
 uint8_t buttonThreshold = 50;
 
-// if you want to setup static ip uncomment these 3 lines and line 72
+// if you want to setup static ip uncomment these 3 lines and line 54
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
