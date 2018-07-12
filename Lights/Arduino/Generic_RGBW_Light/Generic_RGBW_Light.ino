@@ -27,7 +27,7 @@ uint32 io_info[PWM_CHANNELS][3] = {
 // initial duty: all off
 uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0};
 
-// if you want to setup static ip uncomment these 3 lines and line 72
+// if you want to setup static ip uncomment these 3 lines and line 305
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);

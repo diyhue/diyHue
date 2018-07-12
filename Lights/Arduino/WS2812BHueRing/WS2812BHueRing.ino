@@ -16,7 +16,7 @@ uint16_t pixelStart[lightsCount + 1] = {0, 1, 21, pixelCount};
 #define button1_pin 4 // on and bri up
 #define button2_pin 5 // off and bri down
 
-// if you want to setup static ip uncomment these 3 lines and line 72
+// if you want to setup static ip uncomment these 3 lines and line 325
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
