@@ -18,7 +18,7 @@ uint8_t PWM_PINS[PWM_CHANNELS] = {4, 3, 5, 6}; //RGBW order
 
 my92xx * _my92xx;
 
-// if you want to setup static ip uncomment these 3 lines and line 72
+// if you want to setup static ip uncomment these 3 lines and line 256
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
