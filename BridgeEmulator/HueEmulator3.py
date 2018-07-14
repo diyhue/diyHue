@@ -30,7 +30,7 @@ def entertainmentService():
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 0
     while True:
-        data = serverSocket.recvfrom(200)[0]
+        data = serverSocket.recvfrom(106)[0]
         if data[:9].decode('utf-8') == "HueStream":
             if data[14] == 0: #rgb colorspace
                 i = 16
@@ -44,10 +44,7 @@ def entertainmentService():
                             if r == 0 and  g == 0 and  b == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
-                                bridge_config["lights"][str(lightId)]["state"]["on"] = True
-                                bridge_config["lights"][str(lightId)]["state"]["xy"] = convert_rgb_xy(r, g, b)
-                                bridge_config["lights"][str(lightId)]["state"]["colormode"] = "xy"
-                                bridge_config["lights"][str(lightId)]["state"]["bri"] = int((r + g + b) / 3)
+                                bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
                             if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
                                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                                 sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
@@ -70,10 +67,7 @@ def entertainmentService():
                             if bri == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
-                                bridge_config["lights"][str(lightId)]["state"]["on"] = True
-                                bridge_config["lights"][str(lightId)]["state"]["xy"] = [x, y]
-                                bridge_config["lights"][str(lightId)]["state"]["bri"] = bri
-                                bridge_config["lights"][str(lightId)]["state"]["colormode"] = "xy"
+                                bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
                             if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
                                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                                 sock.sendto(bytes(convert_xy(x, y, bri)) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
@@ -567,9 +561,10 @@ def sendLightRequest(light, data):
                 elif "sat" in payload:
                     color["sat"] = payload["sat"]
                     del(payload["sat"])
-                sendRequest(url, method, json.dumps(payload))
-                if len(color) != 0:
+                if len(payload) != 0:
+                    sendRequest(url, method, json.dumps(payload))
                     sleep(1)
+                if len(color) != 0:
                     sendRequest(url, method, json.dumps(color))
             else:
                 sendRequest(url, method, json.dumps(payload))
@@ -681,8 +676,8 @@ def scanForLights(): #scan for ESP8266 lights and strips
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
-        except:
-            print("ip " + ip + " is unknow device")
+        except Exception as e:
+            print("ip " + ip + " is unknow device, " + str(e))
     scanDeconz()
     scanTradfri()
     saveConfig()
@@ -1273,7 +1268,7 @@ class S(BaseHTTPRequestHandler):
                     else:
                         self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]]), "utf8"))
             elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
-                self.wfile.write(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 59, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "modelid": bridge_config["config"]["modelid"]}), "utf8"))
+                self.wfile.write(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""}), "utf8"))
             else: #user is not in whitelist
                 self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}]), "utf8"))
 
@@ -1355,25 +1350,6 @@ class S(BaseHTTPRequestHandler):
         print ("in PUT method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         put_dictionary = json.loads(self.data_string.decode('utf8'))
-        if self.path == "/entertainment":
-            if put_dictionary["colorspace"] == "rgb":
-                print("rgb data")
-                for light in put_dictionary["data"].keys():
-                    r = int((put_dictionary["data"][light][0] *  256 + put_dictionary["data"][light][1]) / 256)
-                    g = int((put_dictionary["data"][light][2] *  256 + put_dictionary["data"][light][3]) / 256)
-                    b = int((put_dictionary["data"][light][4] *  256 + put_dictionary["data"][light][5]) / 256)
-                    sendLightRequest(light, {"r": r,"g": g, "b": b})
-                    bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(r, g, b)
-                    updateGroupStats(light)
-            elif put_dictionary["colorspace"] == "xy":
-                print("xy data")
-                for light in put_dictionary["data"].keys():
-                    bridge_config["lights"][light]["state"]["xy"] = [(put_dictionary["data"][light][0] * 256 + put_dictionary["data"][light][1]) / 65535, (put_dictionary["data"][light][2] * 256 +  put_dictionary["data"][light][3]) / 65535]
-                    bridge_config["lights"][light]["state"]["bri"] = int((put_dictionary["data"][light][4] * 256 + put_dictionary["data"][light][5]) / 255)
-                    sendLightRequest(light, {"xy": bridge_config["lights"][light]["state"]["xy"], "bri": bridge_config["lights"][light]["state"]["bri"]})
-                    updateGroupStats(light)
-            self.wfile.write(bytes("OK", "utf8"))
-            return
         url_pices = self.path.split('/')
         print(self.path)
         print(self.data_string)
@@ -1404,20 +1380,18 @@ class S(BaseHTTPRequestHandler):
                         else:
                             bridge_config[url_pices[3]][url_pices[4]][key] = value
                     rulesProcessor(url_pices[4])
+                    if url_pices[4] == "1" and bridge_config[url_pices[3]][url_pices[4]]["modelid"] == "PHDL00":
+                        bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                 elif url_pices[3] == "groups" and "stream" in put_dictionary:
                     if "active" in put_dictionary["stream"]:
                         if put_dictionary["stream"]["active"]:
                             print("start hue entertainment")
                             Popen(["/opt/hue-emulator/ssl_server2_diyhue", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
-                            bridge_config["groups"][url_pices[4]]["stream"]["active"] = True
-                            bridge_config["groups"][url_pices[4]]["stream"]["owner"] = url_pices[2]
-                            bridge_config["groups"][url_pices[4]]["stream"]["proxymode"] = "auto"
-                            bridge_config["groups"][url_pices[4]]["stream"]["proxynode"] = "/bridge"
+                            bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
                             Popen(["killall", "ssl_server2_diyhue"])
-                            bridge_config["groups"][url_pices[4]]["stream"]["active"] = False
-                            bridge_config["groups"][url_pices[4]]["stream"]["owner"] = None
+                            bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     else:
                         bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 else:
@@ -1431,14 +1405,10 @@ class S(BaseHTTPRequestHandler):
                                 print("start hue entertainment")
                                 Popen(["/opt/hue-emulator/ssl_server2_diyhue", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                                 sleep(0.2)
-                                bridge_config["groups"][url_pices[4]]["stream"]["active"] = True
-                                bridge_config["groups"][url_pices[4]]["stream"]["owner"] = url_pices[2]
-                                bridge_config["groups"][url_pices[4]]["stream"]["proxymode"] = "auto"
-                                bridge_config["groups"][url_pices[4]]["stream"]["proxynode"] = "/bridge"
+                                bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                             else:
                                 Popen(["killall", "ssl_server2_diyhue"])
-                                bridge_config["groups"][url_pices[4]]["stream"]["active"] = False
-                                bridge_config["groups"][url_pices[4]]["stream"]["owner"] = None
+                                bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
                         #send all unique ip's in thread mode for speed
                         lightsIps = []
@@ -1449,7 +1419,6 @@ class S(BaseHTTPRequestHandler):
                                 lightsIps.append(bridge_config["lights_address"][light]["ip"])
                                 processedLights.append(light)
                                 Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
-                        sleep(0.2) #give some time for the device to process the threaded request
                         #now send the rest of the requests in non threaded mode
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             if light not in processedLights:
@@ -1506,7 +1475,6 @@ class S(BaseHTTPRequestHandler):
                                 lightsIps.append(bridge_config["lights_address"][light]["ip"])
                                 processedLights.append(light)
                                 Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
-                        sleep(0.2) #give some time for the device to process the threaded request
                         #now send the rest of the requests in non threaded mode
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             if light not in processedLights:
