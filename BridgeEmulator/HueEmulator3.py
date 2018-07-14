@@ -1246,13 +1246,13 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 if len(url_pices) == 3 or (len(url_pices) == 4 and url_pices[3] == ""): #print entire config
-                    self.wfile.write(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]}), "utf8"))
+                    self.wfile.write(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':')), "utf8"))
                 elif len(url_pices) == 4 or (len(url_pices) == 5 and url_pices[4] == ""): #print specified object config
-                    self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]]), "utf8"))
+                    self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':')), "utf8"))
                 elif len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == ""):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                        self.wfile.write(bytes(json.dumps(new_lights), "utf8"))
+                        self.wfile.write(bytes(json.dumps(new_lights ,separators=(',', ':')), "utf8"))
                         new_lights.clear()
                     elif url_pices[3] == "groups" and url_pices[4] == "0":
                         any_on = False
@@ -1262,15 +1262,15 @@ class S(BaseHTTPRequestHandler):
                                 any_on = True
                             else:
                                 all_on = False
-                        self.wfile.write(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":True,"bri":254,"hue":47258,"sat":253,"effect":"none","xy":[0.1424,0.0824],"ct":153,"alert":"none","colormode":"xy"}}), "utf8"))
+                        self.wfile.write(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":True,"bri":254,"hue":47258,"sat":253,"effect":"none","xy":[0.1424,0.0824],"ct":153,"alert":"none","colormode":"xy"}},separators=(',', ':')), "utf8"))
                     elif url_pices[3] == "info":
-                        self.wfile.write(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]), "utf8"))
+                        self.wfile.write(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]],separators=(',', ':')), "utf8"))
                     else:
-                        self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]]), "utf8"))
+                        self.wfile.write(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':')), "utf8"))
             elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
-                self.wfile.write(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""}), "utf8"))
+                self.wfile.write(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""},separators=(',', ':')), "utf8"))
             else: #user is not in whitelist
-                self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}]), "utf8"))
+                self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':')), "utf8"))
 
 
     def do_POST(self):
@@ -1285,7 +1285,7 @@ class S(BaseHTTPRequestHandler):
                 for key in update_data[category].keys():
                     print("patch " + category + " -> " + key )
                     bridge_config[category][key] = update_data[category][key]
-            self.wfile.write(bytes(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}]), "utf8"))
+            self.wfile.write(bytes(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}],separators=(',', ':')), "utf8"))
         else:
             post_dictionary = json.loads(self.data_string.decode('utf8'))
             print(self.data_string)
@@ -1296,9 +1296,9 @@ class S(BaseHTTPRequestHandler):
                     #if was a request to scan for lights of sensors
                     Thread(target=scanForLights).start()
                     sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
-                    self.wfile.write(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}]), "utf8"))
+                    self.wfile.write(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],separators=(',', ':')), "utf8"))
                 elif url_pices[3] == "":
-                    self.wfile.write(bytes(json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}]), "utf8"))
+                    self.wfile.write(bytes(json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],separators=(',', ':')), "utf8"))
                 else: #create object
                     # find the first unused id for new object
                     new_object_id = nextFreeId(url_pices[3])
@@ -1328,9 +1328,9 @@ class S(BaseHTTPRequestHandler):
                     generateSensorsState()
                     bridge_config[url_pices[3]][new_object_id] = post_dictionary
                     print(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4, separators=(',', ': ')))
-                    self.wfile.write(bytes(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
+                    self.wfile.write(bytes(json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':')), "utf8"))
             else:
-                self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
+                self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}], separators=(',', ':')), "utf8"))
                 print(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path.startswith("/api") and "devicetype" in post_dictionary: #new registration by linkbutton
             if int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])+30 >= int(datetime.now().strftime("%s")) or bridge_config["config"]["linkbutton"]:
@@ -1339,10 +1339,10 @@ class S(BaseHTTPRequestHandler):
                 response = [{"success": {"username": username}}]
                 if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
                     response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
-                self.wfile.write(bytes(json.dumps(response), "utf8"))
+                self.wfile.write(bytes(json.dumps(response,separators=(',', ':')), "utf8"))
                 print(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
             else:
-                self.wfile.write(bytes(json.dumps([{"error": {"type": 101, "address": self.path, "description": "link button not pressed" }}],sort_keys=True, indent=4, separators=(',', ': ')), "utf8"))
+                self.wfile.write(bytes(json.dumps([{"error": {"type": 101, "address": self.path, "description": "link button not pressed" }}], separators=(',', ':')), "utf8"))
         saveConfig()
 
     def do_PUT(self):
@@ -1508,10 +1508,10 @@ class S(BaseHTTPRequestHandler):
             response_dictionary = []
             for key, value in put_dictionary.items():
                 response_dictionary.append({"success":{response_location + key: value}})
-            self.wfile.write(bytes(json.dumps(response_dictionary), "utf8"))
+            self.wfile.write(bytes(json.dumps(response_dictionary,separators=(',', ':')), "utf8"))
             print(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
-            self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}]), "utf8"))
+            self.wfile.write(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':')), "utf8"))
 
     def do_DELETE(self):
         self._set_headers()
@@ -1530,7 +1530,7 @@ class S(BaseHTTPRequestHandler):
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
-            self.wfile.write(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}]), "utf8"))
+            self.wfile.write(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':')), "utf8"))
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
     pass
