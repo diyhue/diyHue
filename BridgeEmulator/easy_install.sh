@@ -2,12 +2,9 @@
 apt install -y git nmap python3 python3-requests python3-ws4py
 cd /tmp
 git clone --recursive https://github.com/mariusmotea/diyHue.git
-cd diyHue/mbedtls/
-make no_test
-cd ../BridgeEmulator/
-gcc -I../mbedtls/include ssl_server2_diyhue.c -o ssl_server2_diyhue -L../mbedtls/library -lmbedtls -lmbedx509 -lmbedcrypto
 mkdir /opt/hue-emulator
-cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json ssl_server2_diyhue /opt/hue-emulator/
+cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
+cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 cp hue-emulator.service /lib/systemd/system/
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
