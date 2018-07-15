@@ -1014,7 +1014,7 @@ def daylightSensor():
         rulesProcessor("1", current_time)
     if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
         print("will start the sleep for sunrise")
-        sleep(deltaSunsetOffset)
+        sleep(deltaSunriseOffset)
         current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time}
         sensors_state["1"]["state"]["daylight"] = current_time
@@ -1386,11 +1386,11 @@ class S(BaseHTTPRequestHandler):
                     if "active" in put_dictionary["stream"]:
                         if put_dictionary["stream"]["active"]:
                             print("start hue entertainment")
-                            Popen(["/opt/hue-emulator/ssl_server2_diyhue", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                            Popen(["/opt/hue-emulator/entertainment-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
-                            Popen(["killall", "ssl_server2_diyhue"])
+                            Popen(["killall", "entertainment-srv"])
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     else:
                         bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
@@ -1403,11 +1403,11 @@ class S(BaseHTTPRequestHandler):
                         if "active" in put_dictionary:
                             if put_dictionary["active"]:
                                 print("start hue entertainment")
-                                Popen(["/opt/hue-emulator/ssl_server2_diyhue", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                                Popen(["/opt/hue-emulator/entertainment-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                                 sleep(0.2)
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                             else:
-                                Popen(["killall", "ssl_server2_diyhue"])
+                                Popen(["killall", "entertainment-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
                         #send all unique ip's in thread mode for speed
