@@ -3,7 +3,7 @@ apt install -y git nmap python3 python3-requests python3-ws4py
 cd /tmp
 git clone --recursive https://github.com/mariusmotea/diyHue.git
 mkdir /opt/hue-emulator
-cd BridgeEmulator
+cd diyHue/BridgeEmulator
 cp -r web-ui functions cert.pem HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
 cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 cp hue-emulator.service /lib/systemd/system/
