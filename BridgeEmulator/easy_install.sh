@@ -11,6 +11,8 @@ openssl req -new  -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_par
 cp -r web-ui functions HueEmulator3.py coap-client-linux config.json private.key public.crt /opt/hue-emulator/
 cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 cp hue-emulator.service /lib/systemd/system/
+cp nginx/nginx.conf nginx/apiv1.conf /etc/nginx/
+systemctl restart nginx
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
 systemctl enable hue-emulator.service 
