@@ -1,7 +1,7 @@
 #!/bin/bash
 mac=`cat /sys/class/net/$(ip addr show | awk '/inet.*brd/{print $NF}')/address`
 serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
-apt install -y git nmap python3 python3-requests python3-ws4py nginx
+apt install -y git nmap python3 python3-requests python3-ws4py nginx openssl
 cd /tmp
 git clone https://github.com/mariusmotea/diyHue.git
 mkdir /opt/hue-emulator
