@@ -1542,7 +1542,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         httpd.socket = ssl.wrap_socket(httpd.socket, certfile='cert.pem', server_side=True, ssl_version=ssl.PROTOCOL_TLSv1_2)
         print ('Starting ssl httpd...')
     else:
-        server_address = ('', 80)
+        server_address = ('', 9001)
         httpd = server_class(server_address, handler_class)
         print ('Starting httpd...')
     httpd.serve_forever()
@@ -1560,7 +1560,7 @@ if __name__ == "__main__":
         Thread(target=syncWithLights).start()
         Thread(target=entertainmentService).start()
         Thread(target=run, args=[False]).start()
-        Thread(target=run, args=[True]).start()
+        #Thread(target=run, args=[True]).start()
         while True:
             sleep(10)
     except Exception as e:
