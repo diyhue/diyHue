@@ -35,11 +35,17 @@ unzip -q diyHue.zip
 cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
+        if [ -f "/opt/hue-emulator/public.crt" ]; then
+                cp /opt/hue-emulator/public.crt /opt/hue-emulator/private.key /tmp
+        else
+                curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /tmp/public.crt
+                curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /tmp/private.key
+        fi
         echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
         cp /opt/hue-emulator/config.json /opt/hue-emulator/public.crt /opt/hue-emulator/private.key /tmp
         rm -rf /opt/hue-emulator
         mkdir /opt/hue-emulator
-        mv /tmp/config.json /tmp/private.key /tmp/public.crt /opt/hue-emulator
+        mv /tmp/config.json /opt/hue-emulator
         cp -r web-ui functions HueEmulator3.py coap-client-linux /opt/hue-emulator/
         cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 
@@ -50,6 +56,7 @@ else
         curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/public.crt
         curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /opt/hue-emulator/private.key
 fi
+mv /tmp/private.key /tmp/public.crt /opt/hue-emulator
 cp hue-emulator.service /lib/systemd/system/
 cp nginx/nginx.conf nginx/apiv1.conf /etc/nginx/
 cd ../../
