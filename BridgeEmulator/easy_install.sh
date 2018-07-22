@@ -42,7 +42,7 @@ if [ -d "/opt/hue-emulator" ]; then
                 curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /tmp/private.key
         fi
         echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
-        cp /opt/hue-emulator/config.json /opt/hue-emulator/public.crt /opt/hue-emulator/private.key /tmp
+        cp /opt/hue-emulator/config.json /tmp
         rm -rf /opt/hue-emulator
         mkdir /opt/hue-emulator
         mv /tmp/config.json /opt/hue-emulator
