@@ -4,11 +4,6 @@ arch=`uname -m`
 
 ### test is server for certificate generation is reachable
 
-if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
-        echo -e "\033[31m ERROR!! Certificate generation service is down. Please retry in one hour.\033[0m"
-        exit 1
-fi
-
 if [ $(uname -m) != "armv7l" -a $(uname -m) != "armv6l" ]; then
         echo -e "\033[33m WARNING! Only arm plafrorm support Tradfri Gateway proxy.\033[0m"
 fi
@@ -19,8 +14,8 @@ cd /tmp
 echo -e "\033[36m Installing dependencies.\033[0m"
 apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools nginx
 
-echo -e "\033[36m Installing Python Astral.\033[0m"
 ### installing astral library for sunrise/sunset routines
+echo -e "\033[36m Installing Python Astral.\033[0m"
 wget https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
 unzip -q astral.zip
 cd astral-master/
@@ -28,8 +23,8 @@ python3 setup.py install
 cd ../
 rm -rf astral.zip astral-master/
 
-echo -e "\033[36m Installing Hue Emulator.\033[0m"
 ### installing hue emulator
+echo -e "\033[36m Installing Hue Emulator.\033[0m"
 wget https://github.com/mariusmotea/diyHue/archive/master.zip -O diyHue.zip
 unzip -q diyHue.zip
 cd diyHue-master/BridgeEmulator/
@@ -38,6 +33,10 @@ if [ -d "/opt/hue-emulator" ]; then
         if [ -f "/opt/hue-emulator/public.crt" ]; then
                 cp /opt/hue-emulator/public.crt /opt/hue-emulator/private.key /tmp
         else
+                if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
+                        echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
+                        exit 1
+                fi
                 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /tmp/public.crt
                 curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /tmp/private.key
         fi
