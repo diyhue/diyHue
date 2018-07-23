@@ -56,7 +56,7 @@ else
         curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/public.crt
         curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /opt/hue-emulator/private.key
 fi
-cp -r web-ui functions HueEmulator3.py coap-client-linux /opt/hue-emulator/
+cp -r web-ui functions HueEmulator3.py /opt/hue-emulator/
 if [ $(uname -m) = "x86_64" ]; then
 	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
 	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
