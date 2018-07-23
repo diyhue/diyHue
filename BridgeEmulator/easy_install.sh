@@ -6,6 +6,7 @@ arch=`uname -m`
 
 if [ $(uname -m) != "armv7l" -a $(uname -m) != "armv6l" ]; then
         echo -e "\033[33m WARNING! Only arm plafrorm support Tradfri Gateway proxy.\033[0m"
+        sleep 2
 fi
 
 cd /tmp
@@ -16,8 +17,8 @@ apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setupto
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
-wget https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
-unzip -q astral.zip
+wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
+unzip -q -o astral.zip
 cd astral-master/
 python3 setup.py install
 cd ../
@@ -25,8 +26,8 @@ rm -rf astral.zip astral-master/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-wget https://github.com/mariusmotea/diyHue/archive/master.zip -O diyHue.zip
-unzip -q diyHue.zip
+wget -q https://github.com/mariusmotea/diyHue/archive/master.zip -O diyHue.zip
+unzip -q -o  diyHue.zip
 cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
@@ -45,17 +46,25 @@ if [ -d "/opt/hue-emulator" ]; then
         rm -rf /opt/hue-emulator
         mkdir /opt/hue-emulator
         mv /tmp/config.json /opt/hue-emulator
+        mv /tmp/private.key /tmp/public.crt /opt/hue-emulator
         cp -r web-ui functions HueEmulator3.py coap-client-linux /opt/hue-emulator/
         cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 
 else
+        if nc -z 127.0.0.1 80 2>/dev/null; then
+                echo -e "\033[31m ERROR!! Port 80 already in use. Close the application that use this port and try again.\033[0m"
+                exit 1
+        fi
+        if nc -z 127.0.0.1 443 2>/dev/null; then
+                echo -e "\033[31m ERROR!! Port 443 already in use. Close the application that use this port and try again.\033[0m"
+                exit 1
+        fi
         mkdir /opt/hue-emulator
         cp -r web-ui functions HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
         cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
         curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/public.crt
         curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /opt/hue-emulator/private.key
 fi
-mv /tmp/private.key /tmp/public.crt /opt/hue-emulator
 cp hue-emulator.service /lib/systemd/system/
 cp nginx/nginx.conf nginx/apiv1.conf /etc/nginx/
 cd ../../
