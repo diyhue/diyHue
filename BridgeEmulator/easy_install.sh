@@ -2,13 +2,6 @@
 mac=`cat /sys/class/net/$(ip addr show | awk '/inet.*brd/{print $NF}')/address`
 arch=`uname -m`
 
-### test is server for certificate generation is reachable
-
-if [ $(uname -m) != "armv7l" -a $(uname -m) != "armv6l" ]; then
-        echo -e "\033[33m WARNING! Only arm plafrorm support Tradfri Gateway proxy.\033[0m"
-        sleep 2
-fi
-
 cd /tmp
 
 ### installing dependencies
@@ -34,6 +27,7 @@ if [ -d "/opt/hue-emulator" ]; then
         if [ -f "/opt/hue-emulator/public.crt" ]; then
                 cp /opt/hue-emulator/public.crt /opt/hue-emulator/private.key /tmp
         else
+		### test is server for certificate generation is reachable
                 if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
                         echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
                         exit 1
@@ -47,8 +41,6 @@ if [ -d "/opt/hue-emulator" ]; then
         mkdir /opt/hue-emulator
         mv /tmp/config.json /opt/hue-emulator
         mv /tmp/private.key /tmp/public.crt /opt/hue-emulator
-        cp -r web-ui functions HueEmulator3.py coap-client-linux /opt/hue-emulator/
-        cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
 
 else
         if nc -z 127.0.0.1 80 2>/dev/null; then
@@ -60,10 +52,17 @@ else
                 exit 1
         fi
         mkdir /opt/hue-emulator
-        cp -r web-ui functions HueEmulator3.py coap-client-linux config.json /opt/hue-emulator/
-        cp entertainment-`uname -m` /opt/hue-emulator/entertainment-srv
+        cp config.json /opt/hue-emulator/
         curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/public.crt
         curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /opt/hue-emulator/private.key
+fi
+cp -r web-ui functions HueEmulator3.py coap-client-linux /opt/hue-emulator/
+if [ $(uname -m) = "x86_64" ]; then
+	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
+	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
+else
+	cp entertainment-arm /opt/hue-emulator/entertainment-srv
+        cp coap-client-arm /opt/hue-emulator/coap-client-linux
 fi
 cp hue-emulator.service /lib/systemd/system/
 cp nginx/nginx.conf nginx/apiv1.conf /etc/nginx/
