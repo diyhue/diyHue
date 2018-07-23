@@ -35,6 +35,7 @@ if [ -d "/opt/hue-emulator" ]; then
                 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /tmp/public.crt
                 curl "http://mariusmotea.go.ro:9002/gencert?priv=true" > /tmp/private.key
         fi
+	systemctl stop hue-emulator.service
         echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
         cp /opt/hue-emulator/config.json /tmp
         rm -rf /opt/hue-emulator
