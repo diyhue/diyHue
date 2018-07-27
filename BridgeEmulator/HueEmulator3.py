@@ -563,6 +563,12 @@ def sendLightRequest(light, data):
                 msg.append(checksum)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                 sock.sendto(msg, (bridge_config["lights_address"][light]["ip"], 48899))
+            elif ("bri" in data and bridge_config["lights"][light]["state"]["colormode"] == "ct") or "ct" in data:
+                msg = bytearray([0x41, 0x00, 0x00, 0x00, bri, 0x0f, 0x0f])
+                checksum = sum(msg) & 0xFF
+                msg.append(checksum)
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                sock.sendto(msg, (bridge_config["lights_address"][light]["ip"], 48899))
 
         try:
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
