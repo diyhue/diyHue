@@ -1096,6 +1096,7 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], mac), "utf8"))
         elif self.path == '/save':
+            self._set_headers()
             saveConfig()
             self._set_end_headers(bytes("config saved", "utf8"))
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
