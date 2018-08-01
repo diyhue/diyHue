@@ -54,7 +54,7 @@ def entertainmentService():
                                     if r == 0 and  g == 0 and  b == 0:
                                         sendLightRequest(str(lightId), {"bri": 1, "transitiontime": 1})
                                     else:
-                                        sendLightRequest(str(lightId), {"xy": convrt_rgb_xy(r, g, b), "transitiontime": 1})
+                                        sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 1})
                                 elif fremeID == 48:
                                     average_bri = int((r + b + g) / 3)
                                     esendLightRequest(str(lightId), {"bri": average_bri, "transitiontime": 1})
