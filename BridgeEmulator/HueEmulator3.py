@@ -50,8 +50,14 @@ def entertainmentService():
                                 sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
                             else:
                                 fremeID += 1
-                                if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
-                                    sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b)})
+                                if fremeID == 24: #24 = every seconds, increase in case the destination device is overloaded
+                                    if r == 0 and  g == 0 and  b == 0:
+                                        sendLightRequest(str(lightId), {"bri": 1, "transitiontime": 1})
+                                    else:
+                                        esendLightRequest(str(lightId), {"xy": convrt_rgb_xy(r, g, b), "transitiontime": 1})
+                                if fremeID == 48:
+                                    average_bri = int((r + b + g) / 3)
+                                    esendLightRequest(str(lightId), {"bri": average_bri, "transitiontime": 1})
                                     fremeID = 0
                             updateGroupStats(lightId)
                         i = i + 9
