@@ -25,14 +25,13 @@ cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
         if [ -f "/opt/hue-emulator/public.crt" ]; then
-		while true; do
-			read -p "Nginx is not necessary anymore, remove it? [Y/n]" yn
-    			case $yn in
-        			[Yy]* ) systemctl stop nginx; systemctl disable nginx; apt purge -y nginx; break;;
-        			[Nn]* ) break;;
-        			* ) echo "Please answer yes or no.";;
-    			esac
-		done
+		echo -n "Nginx is not necessary anymore, remove it? (y/n)? "
+		read answer
+    		if [ "$answer" != "${answer#[Yy]}" ] ;then
+        		systemctl stop nginx
+			systemctl disable nginx
+			apt purge -y nginx; break;
+		fi
 		cp /opt/hue-emulator/private.key /tmp/cert.pem
                 cat /opt/hue-emulator/public.crt >> /tmp/cert.pem
 	elif [ -f "/opt/hue-emulator/cert.pem" ]; then
