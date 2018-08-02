@@ -51,11 +51,11 @@ def entertainmentService():
                             elif bridge_config["lights_address"][str(lightId)]["protocol"] == "yeelight":
                                 if fremeID == 24 or fremeID == 48:
                                     print("entertainment debug: r: " + str(r) + ", g: " + str(g) + ", b: " + str(b))
-                                    print("entertainment debug: computed rgb int: " + str((r * 65536) + (g * 256) + r))
+                                    print("entertainment debug: computed rgb int: " + str((r * 65536) + (g * 256) + b))
                                     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                     tcp_socket.settimeout(1)
                                     tcp_socket.connect((bridge_config["lights_address"][str(lightId)]["ip"], 55443))
-                                    msg = json.dumps({"id": 1, "method": "set_rgb", "params": [(r * 65536) + (g * 256) + r, "smooth", 100]}) + "\r\n"
+                                    msg = json.dumps({"id": 1, "method": "set_rgb", "params": [(r * 65536) + (g * 256) + b, "smooth", 100]}) + "\r\n"
                                     tcp_socket.send(msg.encode())
                                     tcp_socket.close()
                             else:
