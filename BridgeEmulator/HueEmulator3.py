@@ -50,12 +50,10 @@ def entertainmentService():
                                 sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
                             elif bridge_config["lights_address"][str(lightId)]["protocol"] == "yeelight":
                                 if fremeID == 24 or fremeID == 48:
-                                    print("entertainment debug: r: " + str(r) + ", g: " + str(g) + ", b: " + str(b))
-                                    print("entertainment debug: computed rgb int: " + str((r * 65536) + (g * 256) + b))
                                     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                     tcp_socket.settimeout(1)
                                     tcp_socket.connect((bridge_config["lights_address"][str(lightId)]["ip"], 55443))
-                                    msg = json.dumps({"id": 1, "method": "set_rgb", "params": [(r * 65536) + (g * 256) + b, "smooth", 100]}) + "\r\n"
+                                    msg = json.dumps({"id": 1, "method": "set_rgb", "params": [r * 65536 + g * 256 + r, "smooth", 100]}) + "\r\n"
                                     tcp_socket.send(msg.encode())
                                     tcp_socket.close()
                             else:
@@ -580,6 +578,7 @@ def sendLightRequest(light, data):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                 sock.sendto(msg, (bridge_config["lights_address"][light]["ip"], 48899))
             elif ("bri" in data and bridge_config["lights"][light]["state"]["colormode"] == "ct") or "ct" in data:
+                bri = data["bri"] if "bri" in data else bridge_config["lights"][light]["state"]["bri"]
                 msg = bytearray([0x41, 0x00, 0x00, 0x00, bri, 0x0f, 0x0f])
                 checksum = sum(msg) & 0xFF
                 msg.append(checksum)
@@ -852,6 +851,20 @@ def longPressButton(sensor, buttonevent):
     return
 
 
+def motionDetected(sensor):
+    print("monitoring esp8266 motion sensor")
+    while bridge_config["sensors"][sensor]["state"]["presence"] == True:
+        print(datetime.utcnow() - datetime.strptime(bridge_config["sensors"][sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S"))
+        if datetime.utcnow() - datetime.strptime(bridge_config["sensors"][sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S") > timedelta(seconds=30):
+            bridge_config["sensors"][sensor]["state"]["presence"] = False
+            bridge_config["sensors"][sensor]["state"]["lastupdated"] =  datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+            current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            sensors_state[sensor]["state"]["presence"] = current_time
+            rulesProcessor(sensor, current_time)
+        sleep(1)
+    return
+
+
 def scanTradfri():
     if "tradfri" in bridge_config:
         tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"" + bridge_config["tradfri"]["identity"] + "\" -k \"" + bridge_config["tradfri"]["psk"] + "\" \"coaps://" + bridge_config["tradfri"]["ip"] + ":5684/15001\"", shell=True).decode('utf-8').split("\n")[3])
@@ -918,6 +931,20 @@ def websocketClient():
                             bridge_config["sensors"][light_sensor]["state"]["dark"] = message["state"]["dark"]
                             bridge_config["sensors"][light_sensor]["state"]["daylight"] = not message["state"]["dark"]
                             bridge_config["sensors"][light_sensor]["state"]["lastupdated"] = message["state"]["lastupdated"]
+
+                        #Xiaomi motion w/o light level sensor
+                        if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "lumi.sensor_motion":
+                            for sensor in bridge_config["sensors"].keys():
+                                if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_sensor_id]["uniqueid"][:-1] + "0":
+                                    light_sensor = sensor
+                                    break
+
+                            if bridge_config["sensors"]["1"]["modelid"] == "PHDL00" and bridge_config["sensors"]["1"]["state"]["daylight"]:
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
+                                bridge_config["sensors"][light_sensor]["state"]["dark"] = False
+                            else:
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
+                                bridge_config["sensors"][light_sensor]["state"]["dark"] = True
 
                         #convert xiaomi motion sensor to hue sensor
                         if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "lumi.sensor_motion.aq2" and message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["type"] == "ZHALightLevel":
@@ -1009,6 +1036,10 @@ def scanDeconz():
                         print("register new Xiaomi motion sensor")
                         bridge_config["sensors"][new_sensor_id] = {"name": "Entrance Lights sensor", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:], "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
                         bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
+                elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion":
+                    print("register Xiaomi Motion sensor w/o light sensor")
+                    newMotionSensorId = addHueMotionSensor("")
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"]}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
@@ -1250,7 +1281,7 @@ class S(BaseHTTPRequestHandler):
             if "devicetype" in get_parameters: #register device request
                 sensor_is_new = True
                 for sensor in bridge_config["sensors"]:
-                    if bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]): # if sensor is already present
+                    if "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]): # if sensor is already present
                         sensor_is_new = False
                 if sensor_is_new:
                     print("registering new sensor " + get_parameters["devicetype"][0])
@@ -1264,27 +1295,36 @@ class S(BaseHTTPRequestHandler):
                     generateSensorsState()
             else: #switch action request
                 for sensor in bridge_config["sensors"]:
-                    if bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]) and bridge_config["sensors"][sensor]["config"]["on"]: #match senser id based on mac address
+                    if "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]) and bridge_config["sensors"][sensor]["config"]["on"]: #match senser id based on mac address
                         print("match sensor " + str(sensor))
+                        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                         if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
                             bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                            current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                             sensors_state[sensor]["state"]["lastupdated"] = current_time
-                            rulesProcessor(sensor, current_time)
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence" and "presence" in get_parameters:
-                            if str(bridge_config["sensors"][sensor]["state"]["presence"]).lower() != get_parameters["presence"][0]:
-                                sensors_state[sensor]["state"]["presence"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                            bridge_config["sensors"][sensor]["state"].update({"presence": True if get_parameters["presence"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                            rulesProcessor(sensor)
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence":
+                            if bridge_config["sensors"][sensor]["state"]["presence"] != True:
+                                print("trigger presence")
+                                bridge_config["sensors"][sensor]["state"]["presence"] = True
+                                sensors_state[sensor]["state"]["presence"] = current_time
+                                Thread(target=motionDetected, args=[sensor]).start()
+                            bridge_config["sensors"][sensor]["state"]["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+
+                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel":
+                            if bridge_config["sensors"]["1"]["modelid"] == "PHDL00" and bridge_config["sensors"]["1"]["state"]["daylight"]:
+                                bridge_config["sensors"][sensor]["state"]["lightlevel"] = 25000
+                                bridge_config["sensors"][sensor]["state"]["dark"] = False
+                                print("is light")
+                            else:
+                                bridge_config["sensors"][sensor]["state"]["lightlevel"] = 6000
+                                bridge_config["sensors"][sensor]["state"]["dark"] = True
+                                print("is dark")
+
                             #if alarm is activ trigger the alarm
                             if "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensor]["state"]["presence"] == True:
                                 sendEmail(bridge_config["sensors"][sensor]["name"])
                                 #triger_horn() need development
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and "lightlevel" in get_parameters:
-                            if str(bridge_config["sensors"][sensor]["state"]["dark"]).lower() != get_parameters["dark"][0]:
-                                sensors_state[sensor]["state"]["dark"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                            bridge_config["sensors"][sensor]["state"].update({"lightlevel":int(get_parameters["lightlevel"][0]), "dark":True if get_parameters["dark"][0] == "true" else False, "daylight":True if get_parameters["daylight"][0] == "true" else False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                            rulesProcessor(sensor) #process the rules to perform the action configured by application
+                        rulesProcessor(sensor, current_time) #process the rules to perform the action configured by application
+            self._set_end_headers(bytes("done", "utf8"))
         else:
             url_pices = self.path.split('/')
             if len(url_pices) < 3:
