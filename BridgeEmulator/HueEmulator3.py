@@ -1619,13 +1619,18 @@ class S(BaseHTTPRequestHandler):
             if len(url_pices) == 6:
                 del bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]
             else:
+                if url_pices[3] == "resourcelinks":
+                    for link in bridge_config["resourcelinks"][url_pices[4]]["links"]:
+                        if link.startswith("/rules"):
+                            link_pices = link.split('/')
+                            del bridge_config["rules"][link_pices[2]]
                 del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
                 for light in list(bridge_config["deconz"]["lights"]):
                     if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["lights"][light]
-            if url_pices[3] == "sensors":
+            elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
