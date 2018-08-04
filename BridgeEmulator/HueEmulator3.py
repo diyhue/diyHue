@@ -29,6 +29,7 @@ def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 0
+    lightStatus = {}
     while True:
         data = serverSocket.recvfrom(106)[0]
         if data[:9].decode('utf-8') == "HueStream":
@@ -41,6 +42,8 @@ def entertainmentService():
                             r = int((data[i+3] * 256 + data[i+4]) / 256)
                             g = int((data[i+5] * 256 + data[i+6]) / 256)
                             b = int((data[i+7] * 256 + data[i+7]) / 256)
+                            if lightId not in lightStatus:
+                                lightStatus[lightId] = {"on": False}
                             if r == 0 and  g == 0 and  b == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
@@ -49,22 +52,36 @@ def entertainmentService():
                                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                                 sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
                             elif bridge_config["lights_address"][str(lightId)]["protocol"] == "yeelight":
-                                if fremeID == 24 or fremeID == 48:
+                                if fremeID == 24 or fremeID == 48: # => every seconds, increase in case the destination device is overloaded
+                                    msg = ""
+                                    if r == 0 and  g == 0 and  b == 0:
+                                        msg = json.dumps({"id": 1, "method": "set_power", "params": ["off", "smooth", 100]}) + "\r\n"
+                                        lightStatus[lightId]["on"] = False
+                                    elif lightStatus[lightId]["on"] == False:
+                                        msg = json.dumps({"id": 1, "method": "set_power", "params": ["on", "smooth", 100]}) + "\r\n"
+                                        lightStatus[lightId]["on"] = True
+                                    elif fremeID == 24:
+                                        msg = json.dumps({"id": 1, "method": "set_bright", "params": [int((r + g + b) / 3), "smooth", 100]}) + "\r\n"
+                                    else:
+                                        msg = json.dumps({"id": 1, "method": "set_rgb", "params": [r * 65536 + g * 256 + r, "smooth", 100]}) + "\r\n"
+
                                     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                     tcp_socket.settimeout(1)
                                     tcp_socket.connect((bridge_config["lights_address"][str(lightId)]["ip"], 55443))
-                                    msg = json.dumps({"id": 1, "method": "set_rgb", "params": [r * 65536 + g * 256 + r, "smooth", 100]}) + "\r\n"
                                     tcp_socket.send(msg.encode())
                                     tcp_socket.close()
                             else:
-                                if fremeID == 24: #24 = every seconds, increase in case the destination device is overloaded
+                                if fremeID == 24 or fremeID == 48: # => every seconds, increase in case the destination device is overloaded
                                     if r == 0 and  g == 0 and  b == 0:
-                                        sendLightRequest(str(lightId), {"bri": 1, "transitiontime": 1})
-                                    else:
+                                        if lightStatus[lightId]["on"]:
+                                            sendLightRequest(str(lightId), {"on": False, "transitiontime": 1})
+                                            lightStatus[lightId]["on"] = False
+                                    elif lightStatus[lightId]["on"] == False:
+                                        sendLightRequest(str(lightId), {"on": True, "transitiontime": 1})
+                                    elif fremeID == 24:
+                                        sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 1})
+                                    elif fremeID == 48:
                                         sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 1})
-                                elif fremeID == 48:
-                                    average_bri = int((r + b + g) / 3)
-                                    esendLightRequest(str(lightId), {"bri": average_bri, "transitiontime": 1})
                             fremeID += 1
                             if fremeID == 48:
                                 fremeID = 0
@@ -1084,16 +1101,20 @@ def daylightSensor():
         print("will start the sleep for sunset")
         sleep(deltaSunsetOffset)
         current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        print("sleep finish at " + current_time)
         bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time}
         sensors_state["1"]["state"]["daylight"] = current_time
         rulesProcessor("1", current_time)
+        print("task done")
     if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
         print("will start the sleep for sunrise")
         sleep(deltaSunriseOffset)
+        print("sleep finish at " + current_time)
         current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time}
         sensors_state["1"]["state"]["daylight"] = current_time
         rulesProcessor("1", current_time)
+        print("task done")
 
 class S(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
