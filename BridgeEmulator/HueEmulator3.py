@@ -43,7 +43,7 @@ def entertainmentService():
                             g = int((data[i+5] * 256 + data[i+6]) / 256)
                             b = int((data[i+7] * 256 + data[i+7]) / 256)
                             if lightId not in lightStatus:
-                                lightStatus[lightId] = {"on": False}
+                                lightStatus[lightId] = {"on": False, "bri": 1}
                             if r == 0 and  g == 0 and  b == 0:
                                 bridge_config["lights"][str(lightId)]["state"]["on"] = False
                             else:
@@ -51,39 +51,22 @@ def entertainmentService():
                             if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
                                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                                 sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
-                            elif bridge_config["lights_address"][str(lightId)]["protocol"] == "yeelight":
-                                if fremeID == 24 or fremeID == 48: # => every seconds, increase in case the destination device is overloaded
-                                    msg = ""
-                                    if r == 0 and  g == 0 and  b == 0:
-                                        msg = json.dumps({"id": 1, "method": "set_power", "params": ["off", "smooth", 100]}) + "\r\n"
-                                        lightStatus[lightId]["on"] = False
-                                    elif lightStatus[lightId]["on"] == False:
-                                        msg = json.dumps({"id": 1, "method": "set_power", "params": ["on", "smooth", 100]}) + "\r\n"
-                                        lightStatus[lightId]["on"] = True
-                                    elif fremeID == 24:
-                                        msg = json.dumps({"id": 1, "method": "set_bright", "params": [int((r + g + b) / 3), "smooth", 100]}) + "\r\n"
-                                    else:
-                                        msg = json.dumps({"id": 1, "method": "set_rgb", "params": [r * 65536 + g * 256 + r, "smooth", 100]}) + "\r\n"
-
-                                    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                                    tcp_socket.settimeout(1)
-                                    tcp_socket.connect((bridge_config["lights_address"][str(lightId)]["ip"], 55443))
-                                    tcp_socket.send(msg.encode())
-                                    tcp_socket.close()
                             else:
-                                if fremeID == 24 or fremeID == 48: # => every seconds, increase in case the destination device is overloaded
+                                if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
                                     if r == 0 and  g == 0 and  b == 0:
                                         if lightStatus[lightId]["on"]:
-                                            sendLightRequest(str(lightId), {"on": False, "transitiontime": 1})
+                                            sendLightRequest(str(lightId), {"on": False, "transitiontime": 3})
                                             lightStatus[lightId]["on"] = False
                                     elif lightStatus[lightId]["on"] == False:
-                                        sendLightRequest(str(lightId), {"on": True, "transitiontime": 1})
-                                    elif fremeID == 24:
-                                        sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 1})
-                                    elif fremeID == 48:
-                                        sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 1})
+                                        sendLightRequest(str(lightId), {"on": True, "transitiontime": 3})
+                                        lightStatus[lightId]["on"] = True
+                                    elif abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"]) > 50: # to optimize, send brightness  only of difference is bigger than this value
+                                        sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3})
+                                        lightStatus[lightId]["bri"] = int((r + b + g) / 3)
+                                    else:
+                                        sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3})
                             fremeID += 1
-                            if fremeID == 48:
+                            if fremeID == 25:
                                 fremeID = 0
                             updateGroupStats(lightId)
                         i = i + 9
@@ -221,7 +204,7 @@ def generateSensorsState():
             sensors_state[sensor] = {"state": {}}
             for key in bridge_config["sensors"][sensor]["state"].keys():
                 if key in ["lastupdated", "presence", "flag", "dark", "daylight", "status"]:
-                    sensors_state[sensor]["state"].update({key: "2017-01-01T00:00:00"})
+                    sensors_state[sensor]["state"].update({key: datetime.now()})
 
 generateSensorsState()
 
@@ -395,17 +378,17 @@ def ddxRecheck(rule, sensor, current_time, ddx_delay, ddx_sensor):
             print("ddx rule " + rule + " canceled after " + str(x) + " seconds")
             return # rule not valid anymore because sensor state changed while waiting for ddx delay
         sleep(1)
-    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    current_time = datetime.now()
     rule_state = checkRuleConditions(rule, sensor, current_time, True)
     if rule_state[0]: #if all conditions are meet again
         print("delayed rule " + rule + " is triggered")
-        bridge_config["rules"][rule]["lasttriggered"] = current_time
+        bridge_config["rules"][rule]["lasttriggered"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
         bridge_config["rules"][rule]["timestriggered"] += 1
         for action in bridge_config["rules"][rule]["actions"]:
             sendRequest("/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]))
 
-def rulesProcessor(sensor, current_time=datetime.now().strftime("%Y-%m-%dT%H:%M:%S")):
-    bridge_config["config"]["localtime"] = current_time #required for operator dx to address /config/localtime
+def rulesProcessor(sensor, current_time):
+    bridge_config["config"]["localtime"] = current_time.strftime("%Y-%m-%dT%H:%M:%S") #required for operator dx to address /config/localtime
     actionsToExecute = []
     for rule in bridge_config["rules"].keys():
         if bridge_config["rules"][rule]["status"] == "enabled":
@@ -413,7 +396,7 @@ def rulesProcessor(sensor, current_time=datetime.now().strftime("%Y-%m-%dT%H:%M:
             if rule_result[0]:
                 if rule_result[1] == 0: #is not ddx rule
                     print("rule " + rule + " is triggered")
-                    bridge_config["rules"][rule]["lasttriggered"] = current_time
+                    bridge_config["rules"][rule]["lasttriggered"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
                     bridge_config["rules"][rule]["timestriggered"] += 1
                     for action in bridge_config["rules"][rule]["actions"]:
                         actionsToExecute.append(action)
@@ -861,7 +844,7 @@ def longPressButton(sensor, buttonevent):
     sleep(1)
     while bridge_config["sensors"][sensor]["state"]["buttonevent"] == buttonevent:
         print("still pressed")
-        current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        current_time =  datetime.now()
         sensors_state[sensor]["state"]["lastupdated"] = current_time
         rulesProcessor(sensor, current_time)
         sleep(0.9)
@@ -875,7 +858,7 @@ def motionDetected(sensor):
         if datetime.utcnow() - datetime.strptime(bridge_config["sensors"][sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S") > timedelta(seconds=30):
             bridge_config["sensors"][sensor]["state"]["presence"] = False
             bridge_config["sensors"][sensor]["state"]["lastupdated"] =  datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-            current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            current_time =  datetime.now()
             sensors_state[sensor]["state"]["presence"] = current_time
             rulesProcessor(sensor, current_time)
         sleep(1)
@@ -970,7 +953,7 @@ def websocketClient():
                         ##############
 
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
-                        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                        current_time = datetime.now()
                         for key in message["state"].keys():
                             sensors_state[bridge_sensor_id]["state"][key] = current_time
                         rulesProcessor(bridge_sensor_id, current_time)
@@ -1097,24 +1080,30 @@ def daylightSensor():
     deltaSunriseOffset = deltaSunrise.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunriseoffset"] * 60
     print("deltaSunsetOffset: " + str(deltaSunsetOffset))
     print("deltaSunriseOffset: " + str(deltaSunriseOffset))
+    current_time =  datetime.now()
     if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600:
         print("will start the sleep for sunset")
         sleep(deltaSunsetOffset)
-        current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        print("sleep finish at " + current_time)
-        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time}
+        print("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
+        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
         sensors_state["1"]["state"]["daylight"] = current_time
         rulesProcessor("1", current_time)
         print("task done")
     if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
         print("will start the sleep for sunrise")
         sleep(deltaSunriseOffset)
-        print("sleep finish at " + current_time)
-        current_time =  datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time}
+        print("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
+        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
         sensors_state["1"]["state"]["daylight"] = current_time
         rulesProcessor("1", current_time)
         print("task done")
+    if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
+        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
+        print("set daylight sensor to true")
+    else:
+        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
+        print("set daylight sensor to false")
+
 
 class S(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
@@ -1318,7 +1307,7 @@ class S(BaseHTTPRequestHandler):
                 for sensor in bridge_config["sensors"]:
                     if "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]) and bridge_config["sensors"][sensor]["config"]["on"]: #match senser id based on mac address
                         print("match sensor " + str(sensor))
-                        current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                        current_time = datetime.now()
                         if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
                             bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                             sensors_state[sensor]["state"]["lastupdated"] = current_time
@@ -1487,13 +1476,18 @@ class S(BaseHTTPRequestHandler):
                                     bridge_config["scenes"][url_pices[4]]["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
                                     bridge_config["scenes"][url_pices[4]]["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
                 if url_pices[3] == "sensors":
-                    pprint(put_dictionary)
+                    current_time = datetime.now()
                     for key, value in put_dictionary.items():
+                        if key not in sensors_state[url_pices[4]]:
+                            sensors_state[url_pices[4]][key] = {}
                         if type(value) is dict:
-                            bridge_config[url_pices[3]][url_pices[4]][key].update(value)
+                            bridge_config["sensors"][url_pices[4]][key].update(value)
+                            for element in value.keys():
+                                sensors_state[url_pices[4]][key][element] = current_time
                         else:
-                            bridge_config[url_pices[3]][url_pices[4]][key] = value
-                    rulesProcessor(url_pices[4])
+                            bridge_config["sensors"][url_pices[4]][key] = value
+                            sensors_state[bridge_sensor_id][url_pices[4]][key] = current_time
+                    rulesProcessor(url_pices[4], current_time)
                     if url_pices[4] == "1" and bridge_config[url_pices[3]][url_pices[4]]["modelid"] == "PHDL00":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                 elif url_pices[3] == "groups" and "stream" in put_dictionary:
@@ -1613,7 +1607,7 @@ class S(BaseHTTPRequestHandler):
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
                 if url_pices[3] == "sensors" and url_pices[5] == "state":
-                    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                    current_time = datetime.now()
                     for key in put_dictionary.keys():
                         sensors_state[url_pices[4]]["state"].update({key: current_time})
                     rulesProcessor(url_pices[4], current_time)
@@ -1642,9 +1636,13 @@ class S(BaseHTTPRequestHandler):
             else:
                 if url_pices[3] == "resourcelinks":
                     for link in bridge_config["resourcelinks"][url_pices[4]]["links"]:
-                        if link.startswith("/rules"):
-                            link_pices = link.split('/')
-                            del bridge_config["rules"][link_pices[2]]
+                        link_pices = link.split('/')
+                        if link.startswith("/rules") or link.startswith("/schedules"):
+                            del bridge_config[link_pices[1]][link_pices[2]]
+                        elif link.startswith("/sensors"):
+                            if bridge_config[link_pices[1]][link_pices[2]]["type"] == "CLIPGenericStatus":
+                                del bridge_config["sensors"][link_pices[2]]
+
                 del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
@@ -1694,6 +1692,7 @@ if __name__ == "__main__":
         Thread(target=entertainmentService).start()
         Thread(target=run, args=[False]).start()
         Thread(target=run, args=[True]).start()
+        Thread(target=daylightSensor).start()
         while True:
             sleep(10)
     except Exception as e:
