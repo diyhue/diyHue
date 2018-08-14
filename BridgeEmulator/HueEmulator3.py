@@ -1402,7 +1402,10 @@ class S(BaseHTTPRequestHandler):
                     bridge_config[category][key] = update_data[category][key]
             self._set_end_headers(bytes(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}],separators=(',', ':')), "utf8"))
         else:
-            post_dictionary = json.loads(self.data_string.decode('utf8'))
+            raw_json = self.data_string.decode('utf8')
+            raw_json = raw_json.replace("\t","")
+            raw_json = raw_json.replace("\n","")
+            post_dictionary = json.loads(raw_json)
             print(self.data_string)
         url_pices = self.path.split('/')
         if len(url_pices) == 4: #data was posted to a location
