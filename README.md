@@ -1,5 +1,10 @@
 ## diyHue
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=J5NHHR47MVTMW)  
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=J5NHHR47MVTMW) [![license](https://img.shields.io/badge/license-GPLv3%2FApache%202.0%2FCC%20BY--SA%204.0-blue.svg)](https://github.com/mariusmotea/diyHue/blob/master/LICENSE.md)
+
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/mariusmotea/diyHue.svg)](http://isitmaintained.com/project/mariusmotea/diyHue "Average time to resolve an issue") [![Percentage of issues still open](http://isitmaintained.com/badge/open/mariusmotea/diyHue.svg)](http://isitmaintained.com/project/mariusmotea/diyHue "Percentage of issues still open")
+
+[![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://diyhueslackinvite.herokuapp.com/) [![SlackStatus](https://diyhueslackinvite.herokuapp.com/badge.svg?colorB=8ebc06)](https://diyhueslackinvite.herokuapp.com/)
+
 This project emulates a Philips Hue Bridge that is able to control ZigBee lights (using Raspbee module or original Hue Bridge or IKEA Tradfri Gateway), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/mariusmotea/diyHue/develop/Images/hue-map.png)
