@@ -15,7 +15,7 @@ from uuid import getnode as get_mac
 from urllib.parse import urlparse, parse_qs
 from functions import *
 
-Docker = False # Set only to true if using script in Docker container
+docker = False # Set only to true if using script in Docker container
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
@@ -213,7 +213,8 @@ loadConfig()
 def saveConfig(filename='/opt/hue-emulator/config.json'):
     with open(filename, 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
-    Popen(["cp", "config.json", "export/"])
+    if docker:
+        Popen(["cp", "config.json", "export/"])
 
 def generateSensorsState():
     for sensor in bridge_config["sensors"]:
