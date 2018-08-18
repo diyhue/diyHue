@@ -15,6 +15,8 @@ from uuid import getnode as get_mac
 from urllib.parse import urlparse, parse_qs
 from functions import *
 
+Docker = False # Set only to true if using script in Docker container
+
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 mac = '%012x' % get_mac()
@@ -211,6 +213,7 @@ loadConfig()
 def saveConfig(filename='/opt/hue-emulator/config.json'):
     with open(filename, 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
+    Popen(["cp", "config.json", "export/"])
 
 def generateSensorsState():
     for sensor in bridge_config["sensors"]:
@@ -268,7 +271,7 @@ def schedulerProcessor():
             saveConfig()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
         sleep(1)
 
 def switchScene(group, direction):
