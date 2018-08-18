@@ -15,7 +15,7 @@ injectGlobal`
 export function httpPutRequest(url, data) {
   return fetch(url, {
     method: "PUT",
-    mode: "CORS",
+    mode: "cors",
     body: JSON.stringify(data),
     headers: {
       "Content-Type": "application/json"
