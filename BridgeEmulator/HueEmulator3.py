@@ -1576,7 +1576,7 @@ class S(BaseHTTPRequestHandler):
                     elif "scene_inc" in put_dictionary:
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
                     elif url_pices[4] == "0": #if group is 0 the scene applied to all lights
-                        proxyDevices = {"deconz": False, "huebridge": False}
+                        proxyDevices = {"deconz": False, "hue": False}
                         for light in bridge_config["lights"].keys():
                             if bridge_config["lights_address"][light]["protocol"] in ["deconz", "hue"] and proxyDevices[bridge_config["lights_address"][light]["protocol"]] == False:
                                 proxyDevices[bridge_config["lights_address"][light]["protocol"]] = True
