@@ -1538,9 +1538,6 @@ class S(BaseHTTPRequestHandler):
                                 Popen(["killall", "entertainment-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
-                        #send all unique ip's in thread mode for speed
-                        lightsIps = []
-                        processedLights = []
                         for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
                             bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
                             if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
@@ -1549,16 +1546,9 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["lights"][light]["state"]["colormode"] = "ct"
                             elif "hue" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
                                 bridge_config["lights"][light]["state"]["colormode"] = "hs"
-                            if bridge_config["lights_address"][light]["ip"] not in lightsIps:
-                                lightsIps.append(bridge_config["lights_address"][light]["ip"])
-                                processedLights.append(light)
-                                Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
-                        #now send the rest of the requests in non threaded mode
-                        for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
-                            if light not in processedLights:
-                                sendLightRequest(light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
+                            Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
                             updateGroupStats(light)
-
+                            sleep(0.1)
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["bri"] > 254:
@@ -1601,19 +1591,10 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
                         bridge_config["groups"][url_pices[4]][url_pices[5]].update(put_dictionary)
-                        #send all unique ip's in thread mode for speed
-                        lightsIps = []
-                        processedLights = []
                         for light in bridge_config["groups"][url_pices[4]]["lights"]:
                             bridge_config["lights"][light]["state"].update(put_dictionary)
-                            if bridge_config["lights_address"][light]["ip"] not in lightsIps:
-                                lightsIps.append(bridge_config["lights_address"][light]["ip"])
-                                processedLights.append(light)
-                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
-                        #now send the rest of the requests in non threaded mode
-                        for light in bridge_config["groups"][url_pices[4]]["lights"]:
-                            if light not in processedLights:
-                                sendLightRequest(light, put_dictionary)
+                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                            sleep(0.1)
                 elif url_pices[3] == "lights": #state is applied to a light
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
