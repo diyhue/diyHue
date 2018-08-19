@@ -1589,7 +1589,8 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["lights"].keys():
                             if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
                                 bridge_config["lights"][light]["state"].update(put_dictionary)
-                                sendLightRequest(light, put_dictionary)
+                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
+                                sleep(0.1)
                         for group in bridge_config["groups"].keys():
                             bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
                             if "on" in put_dictionary:
