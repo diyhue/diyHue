@@ -1578,11 +1578,11 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[4] == "0": #if group is 0 the scene applied to all lights
                         proxyDevices = {"deconz": False, "hue": False}
                         for light in bridge_config["lights"].keys():
-                            if bridge_config["lights_address"][light]["protocol"] in ["deconz", "hue"]:
+                            if bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
                                 if proxyDevices[bridge_config["lights_address"][light]["protocol"]] == False:
                                     proxyDevices[bridge_config["lights_address"][light]["protocol"]] = True
                                     url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/groups/0/" + url_pices[5]
-                                    sendRequest(url, 'PUT', put_dictionary)
+                                    sendRequest(url, 'PUT', json.dumps(put_dictionary))
                             elif "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
                                 bridge_config["lights"][light]["state"].update(put_dictionary)
                                 Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
