@@ -85,6 +85,21 @@ Contributions are welcomed
 
 Hue living color light project for 3D printing: https://www.thingiverse.com/thing:2773413
 
+## Docker:
+There are currently two docker images available. One for x86 systems and one for ARM systems (Raspberry Pi). Currently the ARM image has only been tested with a Raspberry Pi 3b+ If you have other ARM based devices and can test the image, please let us know on our Slack chat or in an issue. The imageas can be run with the following commands.
+
+x86:
+
+`docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' cheesemarathon/diyhue:latest`
+
+ARM:
+
+`docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' cheesemarathon/diyhue:arm-latest`
+
+These commands will run the latest image available, however if you have automated updates enabled with a service such as [watchtower](https://github.com/v2tec/watchtower) then using latest is not recomended. The images are automatically rebuilt upon a new commit to this repo. As such, larges changes could occur and updates will be frequent. Each image is also taged with the comit hash. For example cheesemarathon/diyhue:arm-aa592a7 or cheesemarathon/diyhue:aa592a7. It is then suggested you use one of these images instead and manually update every so often.
+
+The mount directory `/mnt/hue-emulator/export/` can be changed to any directory you wish. Backups of the config.json and cert.pem are saved here when changes are made to these files. They are then restored upon container reboot. If you need to make manual changes to these files, do so with the files mounted on the host (rather than the files in the container) and then restart the container to import your changes. To perform a manual export at any time, visit `http://{emualtor ip}/save` If there are no files in the mounted directory then they will be regenerated at container start.
+
 ## qtHue
 You may want to see also my new project [qtHue](https://github.com/mariusmotea/qtHue) that provide a simple user interface for controlling the lights.
 ![qtHue](https://github.com/mariusmotea/qtHue/blob/master/Screenshot.png?raw=true)
