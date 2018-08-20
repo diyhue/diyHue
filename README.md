@@ -5,9 +5,7 @@
 
 [![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://diyhueslackinvite.herokuapp.com/) [![SlackStatus](https://diyhueslackinvite.herokuapp.com/badge.svg?colorB=8ebc06)](https://diyhueslackinvite.herokuapp.com/)
 
-x86: [![x86](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker)
-
-ARM: [![ARM](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm)
+ARM: [![ARM](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm) x86: [![x86](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker)
 
 This project emulates a Philips Hue Bridge that is able to control ZigBee lights (using Raspbee module or original Hue Bridge or IKEA Tradfri Gateway), Mi-Light bulbs (using MiLight Hub), Neopixel strips (WS2812B and SK6812) and any cheep ESP8266 based bulb from market by replacing firmware with custom one. Is written in python and will run on all small boxes like RaspberryPi. There are provided sketches for Hue Dimmer Switch, Hue Tap Switch and Hue Motion Sensor. Lights are two-way synchronized so any change made from original Philips/Tradfri sensors and switches will be applied also to bridge emulator.
 
