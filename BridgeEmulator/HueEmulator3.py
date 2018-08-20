@@ -652,7 +652,7 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             any_on = False
             all_on = True
             for group_light in bridge_config["groups"][group]["lights"]:
-                if bridge_config["lights"][light]["state"]["on"] == True:
+                if bridge_config["lights"][group_light]["state"]["on"]:
                     any_on = True
                 else:
                     all_on = False
