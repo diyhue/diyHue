@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Docker Bug report
+about: Create a report to help us improve our docker images
 
 ---
 
@@ -18,7 +18,12 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Logs**
-If applicable, provide output logs. These can be obtained via manually running HueEmulator3.py with `python3 HueEmulator3.py`.
+If applicable, provide output logs. These can be obtained via running `docker logs diyHue`
+
+**Docker Info (please complete the following information):**
+ - Architecture: [e.g. x86, ARM]
+ - Docker image version: [e.g. latest, arm-05f043b]
+ - Hardware: [e.g. PC, Raspberry Pi 1/2/3/Zero]
 
 **Additional context**
 Add any other context about the problem here.
