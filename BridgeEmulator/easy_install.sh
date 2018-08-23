@@ -33,6 +33,7 @@ if [ -d "/opt/hue-emulator" ]; then
 	elif [ -f "/opt/hue-emulator/cert.pem" ]; then
 		cp /opt/hue-emulator/cert.pem /tmp/cert.pem
         else
+		curl https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 		serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
 		dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
 		openssl req -new  -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial
@@ -71,7 +72,8 @@ else
         fi
         mkdir /opt/hue-emulator
         cp config.json /opt/hue-emulator/
-
+	
+	curl https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 	serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
 	dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
 	openssl req -new  -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial
