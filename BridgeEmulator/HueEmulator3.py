@@ -59,6 +59,7 @@ def entertainmentService():
     lightStatus = {}
     while True:
         data = serverSocket.recvfrom(106)[0]
+        nativeLights = {}
         if data[:9].decode('utf-8') == "HueStream":
             if data[14] == 0: #rgb colorspace
                 i = 16
@@ -76,8 +77,9 @@ def entertainmentService():
                             else:
                                 bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
                             if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
-                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                                sock.sendto(bytes([r]) + bytes([g]) + bytes([b]) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
+                                if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
+                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
+                                nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = [r, g, b]
                             else:
                                 if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
                                     if r == 0 and  g == 0 and  b == 0:
@@ -111,14 +113,22 @@ def entertainmentService():
                             else:
                                 bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
                             if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
-                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                                sock.sendto(bytes(convert_xy(x, y, bri)) + bytes([bridge_config["lights_address"][str(lightId)]["light_nr"] - 1]), (bridge_config["lights_address"][str(lightId)]["ip"], 2100))
+                                if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
+                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
+                                nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
                             else:
                                 fremeID += 1
                                 if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
                                     sendLightRequest(str(lightId), {"xy": [x,y]})
                                     fremeID = 0
                             updateGroupStats(lightId)
+        if len(nativeLights) is not 0:
+            for ip in nativeLights.keys():
+                udpmsg = bytearray()
+                for light in nativeLights[ip].keys():
+                    udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                sock.sendto(udpmsg, (ip, 2100))
 
 
 light_types = {"LCT015": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "swversion": "1.29.0_r21169"}, "LST002": {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Color light", "swversion": "5.90.019950"}, "LWB010": {"state": {"on": False, "bri": 254,"alert": "none", "reachable": True}, "type": "Dimmable light", "swversion": "1.15.0_r18729"}, "LTW001": {"state": {"on": False, "colormode": "ct", "alert": "none", "reachable": True, "bri": 254, "ct": 230}, "type": "Color temperature light", "swversion": "5.50.1.19085"}, "Plug 01": {"state": {"on": False, "alert": "none", "reachable": True}, "type": "On/Off plug-in unit", "swversion": "V1.04.12"}}
