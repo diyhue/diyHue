@@ -6,7 +6,7 @@ cd /tmp
 
 ### installing dependencies
 echo -e "\033[36m Installing dependencies.\033[0m"
-apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools openssl
+apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
