@@ -20,6 +20,7 @@
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
+int lightLedsCount = pixelCount / lightsCount;
 uint8_t rgb[lightsCount][3], bri[lightsCount], sat[lightsCount], color_mode[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
 int ct[lightsCount], hue[lightsCount];
@@ -249,10 +250,7 @@ void lightEngine() {
           if (rgb[i][k] != current_rgb[i][k]) current_rgb[i][k] += step_level[i][k];
           if ((step_level[i][k] > 0.0 && current_rgb[i][k] > rgb[i][k]) || (step_level[i][k] < 0.0 && current_rgb[i][k] < rgb[i][k])) current_rgb[i][k] = rgb[i][k];
         }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
+        strip.ClearTo(RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]), i * lightLedsCount, i * lightLedsCount + lightLedsCount - 1);
         strip.Show();
       }
     } else {
@@ -262,10 +260,7 @@ void lightEngine() {
           if (current_rgb[i][k] != 0) current_rgb[i][k] -= step_level[i][k];
           if (current_rgb[i][k] < 0) current_rgb[i][k] = 0;
         }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]));
-        }
+        strip.ClearTo(RgbColor((int)current_rgb[i][0], (int)current_rgb[i][1], (int)current_rgb[i][2]), i * lightLedsCount, i * lightLedsCount + lightLedsCount - 1);
         strip.Show();
       }
     }
@@ -638,13 +633,9 @@ void setup() {
 }
 
 void entertainment() {
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    Udp.read(packetBuffer, packetSize);
-    for (int j = 0; j < pixelCount / lightsCount ; j++)
-    {
-      strip.SetPixelColor(j + packetBuffer[3] * pixelCount / lightsCount, RgbColor(packetBuffer[0], packetBuffer[1], packetBuffer[2]));
-    }
+  if (Udp.parsePacket()) {
+    Udp.read(packetBuffer, 4);
+    strip.ClearTo(RgbColor(packetBuffer[0], packetBuffer[1], packetBuffer[2]), packetBuffer[3] * lightLedsCount, packetBuffer[3] * lightLedsCount + lightLedsCount - 1);
     strip.Show();
   }
 }
