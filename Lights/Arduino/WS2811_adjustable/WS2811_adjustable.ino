@@ -22,6 +22,7 @@
 //IPAddress subnet_mask(255, 255, 255,   0);
 
 float rgb_multiplier[] = {100, 65, 30}; // light multiplier in percentage
+int lightLedsCount = pixelCount / lightsCount;
 uint8_t rgb[lightsCount][3], color_mode[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
