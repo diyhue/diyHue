@@ -626,7 +626,7 @@ void entertainment(){
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t color = 0; color < 3; color++) {
+    for (uint8_t color = 1; color < 4; color++) {
       pwm_set_duty((int)(packetBuffer[color] * 4), color);
     }
     pwm_start();
