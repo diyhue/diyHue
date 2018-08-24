@@ -26,7 +26,7 @@ bool light_state[lightsCount], in_transition;
 int ct[lightsCount], hue[lightsCount];
 float step_level[lightsCount][3], current_rgb[lightsCount][3], x[lightsCount], y[lightsCount];
 byte mac[6];
-byte packetBuffer[4];
+byte packetBuffer[64];
 
 ESP8266WebServer server(80);
 WiFiUDP Udp;
@@ -633,9 +633,12 @@ void setup() {
 }
 
 void entertainment() {
-  if (Udp.parsePacket()) {
-    Udp.read(packetBuffer, 4);
-    strip.ClearTo(RgbColor(packetBuffer[0], packetBuffer[1], packetBuffer[2]), packetBuffer[3] * lightLedsCount, packetBuffer[3] * lightLedsCount + lightLedsCount - 1);
+  uint8_t packetSize = Udp.parsePacket();
+  if (packetSize) {
+    Udp.read(packetBuffer, packetSize);
+    for (uint8_t i=0; i < packetSize / 4; i++){
+      strip.ClearTo(RgbColor(packetBuffer[i * 4 + 1], packetBuffer[i * 4 + 2], packetBuffer[i * 4 + 3]), packetBuffer[i * 4] * lightLedsCount, packetBuffer[i * 4] * lightLedsCount + lightLedsCount - 1);
+    }
     strip.Show();
   }
 }
