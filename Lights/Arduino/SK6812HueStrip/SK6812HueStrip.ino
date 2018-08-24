@@ -20,12 +20,13 @@
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
+int lightLedsCount = pixelCount / lightsCount;
 uint8_t rgbw[lightsCount][4], color_mode[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
 int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
 float step_level[lightsCount][4], current_rgbw[lightsCount][4], x[lightsCount], y[lightsCount];
 byte mac[6];
-byte packetBuffer[4];
+byte packetBuffer[64];
 
 ESP8266WebServer server(80);
 WiFiUDP Udp;
@@ -694,13 +695,11 @@ void setup() {
 }
 
 void entertainment() {
-  int packetSize = Udp.parsePacket();
+  uint8_t packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
-    for (int j = 0; j < pixelCount / lightsCount ; j++)
-    {
-      strip.SetPixelColor(j + packetBuffer[3] * pixelCount / lightsCount, RgbColor(packetBuffer[0], packetBuffer[1], packetBuffer[2]));
-      strip.SetPixelColor(j + packetBuffer[3] * pixelCount / lightsCount, RgbwColor(packetBuffer[0], packetBuffer[1], packetBuffer[2], 0));
+    for (uint8_t i=0; i < packetSize / 4; i++){
+      strip.ClearTo(RgbwColor(packetBuffer[i * 4 + 1], packetBuffer[i * 4 + 2], packetBuffer[i * 4 + 3], 0), packetBuffer[i * 4] * lightLedsCount, packetBuffer[i * 4] * lightLedsCount + lightLedsCount - 1);
     }
     strip.Show();
   }
