@@ -20,16 +20,16 @@ docker = False # Set only to true if using script in Docker container
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 def getIpAddress():
-
+    if len(sys.argv) == 3:
+       return sys.argv[2]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     s.connect(("8.8.8.8", 80))
-
     return s.getsockname()[0]
 
-
-
-mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
+if len(sys.argv) == 3:
+    mac = str(sys.argv[1]).replace(":","")
+else:
+    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 
 print(mac)
 
