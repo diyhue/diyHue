@@ -72,7 +72,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Pwm CCT
   - Pwm Dimming (up to 6 lights for every esp8266)
   - On/Off plugs/lights (up to 6 lights for every esp8266)
-  - On/Off 433Mhz devices (multiple devices for every esp8266). Credits Mevel
+  - On/Off 433Mhz devices (multiple devices for every esp8266)
   
 ## Stability:
 All the lights in my house are controlled by this solution so the stability is very important to me as there is no turning back to classic illumination (all switches were replaces with Ikea Tradfri Remotes and holes covered). However I don't use all the functions, so i'm unable to perform full tests on every change. What I do currently use is Deconz with all Tradfri devices (lights + sensors), Xiaomi Motion Sensor, native ESP8266 bulbs, ESP8266 + WS2812B strips and Xiaomi YeeLight color bulb.
@@ -104,3 +104,4 @@ Credits:
   - StefanBruens https://github.com/StefanBruens/ESP8266_new_pwm
   - Cédric @ticed35 for linkbutton implementation
   - [@cheesemarathon](https://github.com/cheesemarathon) - Help with Docker images
+  - [@Mevel](https://github.com/Mevel) - 433Mhz devices
