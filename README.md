@@ -3,7 +3,7 @@
 
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/mariusmotea/diyHue.svg)](http://isitmaintained.com/project/mariusmotea/diyHue "Average time to resolve an issue") [![Percentage of issues still open](http://isitmaintained.com/badge/open/mariusmotea/diyHue.svg)](http://isitmaintained.com/project/mariusmotea/diyHue "Percentage of issues still open")
 
-[![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://diyhueslackinvite.herokuapp.com/) [![SlackStatus](https://diyhueslackinvite.herokuapp.com/badge.svg?colorB=8ebc06)](https://diyhueslackinvite.herokuapp.com/)
+[![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://slackinvite.squishedmooo.com/) [![SlackStatus](https://slackinvite.squishedmooo.com/badge.svg?colorB=8ebc06)](https://slackinvite.squishedmooo.com/)
 
 ARM: [![ARM](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker-arm) x86: [![x86](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker/badges/master/build.svg)](https://gitlab.squishedmooo.com/cheesemarathon/diyhue-docker)
 
