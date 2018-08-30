@@ -35,6 +35,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Go to sleep
   - Switches (custom esp8266 switches)
   - Autodiscover lights
+  - Hue entertainment
   
 ## Working devices and applications:
   - Amazon Alexa (control only the lights)
@@ -47,6 +48,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Philips Ambilight TV's 
   - Kodi Hue Ambilight
   - Jeedom
+  - Hue Sync for PC
  
  ## Working smartphone applications:
   - Hue (official application)
