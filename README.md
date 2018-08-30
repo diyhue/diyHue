@@ -83,7 +83,7 @@ Check the [Wiki page](https://github.com/mariusmotea/diyHue/wiki) for more detai
   
 [![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
 
-I push updates fast so if you want to notified, just watch this repo
+I push updates fast so if you want to be notified, just watch this repo
 
 Contributions are welcome 
 
