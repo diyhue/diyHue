@@ -496,8 +496,6 @@ void setup() {
         color_mode[light] = 1;
       }
       else if (server.argName(i) == "bri") {
-        light_state[light] = true;
-        if (server.arg(i).toInt() != 0)
           bri[light] = server.arg(i).toInt();
       }
       else if (server.argName(i) == "bri_inc") {
