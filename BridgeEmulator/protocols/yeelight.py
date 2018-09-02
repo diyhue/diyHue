@@ -104,9 +104,9 @@ def set_light(light, data):
     # yeelight uses different functions for each action, so it has to check for each function
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
     # check if hue wants to change brightness
-    for key, value in json.loads(data).items():
+    for key, value in payload.items():
         command(url, key, value)
-
+    return get_light(light)
 
 def get_light(light):
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
