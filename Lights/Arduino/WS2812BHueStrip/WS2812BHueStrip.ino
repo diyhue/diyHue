@@ -317,6 +317,7 @@ void setup() {
   strip.Begin();
   strip.Show();
   EEPROM.begin(512);
+  WiFi.hostname(light_name);
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -547,12 +548,16 @@ void setup() {
     http_content += "<head>";
     http_content += "<meta charset=\"utf-8\">";
     http_content += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-    http_content += "<title>Light Setup</title>";
+    http_content += "<title>Light Setup - ";
+    http_content += light_name;
+    http_content += "</title>";
     http_content += "<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">";
     http_content += "</head>";
     http_content += "<body>";
     http_content += "<fieldset>";
-    http_content += "<h3>Light Setup</h3>";
+    http_content += "<h3>Light Setup - ";
+    http_content += light_name;
+    http_content += "</h3>";
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
