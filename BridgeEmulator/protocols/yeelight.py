@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 import socket
 
 from functions import light_types, nextFreeId
@@ -116,9 +117,9 @@ def get_light(light):
     data = tcp_socket.recv(16 * 1024)
     light_data = json.loads(data[:-2].decode("utf8"))["result"]
     if light_data[0] == "on": #powerstate
-        light["state"]["on"] = True
+        light["state"] = {"on" : True}
     else:
-        light["state"]["on"] = False
+        light["state"] = {"on" : False}
     light["state"]["bri"] = int(int(light_data[1]) * 2.54)
     msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
     tcp_socket.send(msg_mode.encode())

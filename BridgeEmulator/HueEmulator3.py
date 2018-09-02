@@ -3,6 +3,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import random
 import socket
 import ssl
@@ -30,6 +31,7 @@ from protocols import yeelight
 
 protocols = [yeelight]
 
+cwd = os.path.split(os.path.abspath(__file__))[0]
 docker = False # Set only to true if using script in Docker container
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
@@ -47,7 +49,7 @@ def pretty_json(data):
 if len(sys.argv) == 3:
     mac = str(sys.argv[1]).replace(":","")
 else:
-    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
+    mac = str(get_mac())
 logging.debug(mac)
 
 run_service = True
@@ -218,10 +220,9 @@ def sendEmail(triggered_sensor):
     except:
         logging.exception("failed to send mail")
         return False
-
 #load config files
 try:
-    with open('/opt/hue-emulator/config.json', 'r') as fp:
+    with open(cwd +'/config.json', 'r') as fp:
         bridge_config = json.load(fp)
         logging.debug("Config loaded")
 except Exception:
@@ -245,7 +246,7 @@ def loadConfig():  #load and configure alarm virtual light
 loadConfig()
 
 def saveConfig(filename='/opt/hue-emulator/config.json'):
-    with open(filename, 'w') as fp:
+    with open(cwd +'/config.json', 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
     if docker:
         Popen(["cp", "config.json", "export/"])
@@ -476,7 +477,7 @@ def sendLightRequest(light, data):
     if light in bridge_config["lights_address"]:
         protocol_name = bridge_config["lights_address"][light]["protocol"]
         for protocol in protocols:
-            if protocol_name == protocol.__name__:
+            if "protocols." + protocol_name == protocol.__name__:
                 light = bridge_config["lights_address"][light]
                 try:
                     protocol.set_light(light, data)
@@ -694,7 +695,7 @@ def syncWithLights(): #update Hue Bridge lights states
             try:
                 protocol_name = bridge_config["lights_address"][light]["protocol"]
                 for protocol in protocols:
-                    if protocol_name == protocol.__name__:
+                    if "protocols." + protocol_name == protocol.__name__:
                         result = protocol.get_light(bridge_config["lights_address"][light])
                         bridge_config["lights"][light] = result
                 if bridge_config["lights_address"][light]["protocol"] == "native":
@@ -743,7 +744,7 @@ def syncWithLights(): #update Hue Bridge lights states
             except:
                 bridge_config["lights"][light]["state"]["reachable"] = False
                 bridge_config["lights"][light]["state"]["on"] = False
-                logging.debug("light " + light + " is unreachable")
+                logging.exception("light " + light + " is unreachable")
         sleep(10) #wait at last 10 seconds before next sync
         i = 0
         while i < 300: #sync with lights every 300 seconds or instant if one user is connected
@@ -1050,11 +1051,11 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/' or self.path == '/index.html':
             self._set_headers()
-            f = open('./web-ui/index.html')
+            f = open(cwd + '/web-ui/index.html')
             self._set_end_headers(bytes(f.read(), "utf8"))
         elif self.path == "/debug/clip.html":
             self._set_headers()
-            f = open('./clip.html', 'rb')
+            f = open(cwd + '/clip.html', 'rb')
             self._set_end_headers(f.read())
         elif self.path == '/config.js':
             self._set_headers()
@@ -1064,7 +1065,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
         elif self.path.endswith((".css",".map",".png",".js")):
             self._set_headers()
-            f = open('./web-ui' + self.path, 'rb')
+            f = open(cwd + '/web-ui' + self.path, 'rb')
             self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
@@ -1596,8 +1597,8 @@ if __name__ == "__main__":
         Thread(target=daylightSensor).start()
         while True:
             sleep(10)
-    except Exception as e:
-        logging.debug("server stopped " + str(e))
+    except Exception:
+        logging.exception("server stopped ")
     finally:
         run_service = False
         saveConfig()
