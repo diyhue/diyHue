@@ -1,10 +1,13 @@
-import socket, struct, random
+import logging
+import random
+import socket
+import struct
 from time import sleep
+
 
 def ssdpSearch(ip, mac):
     SSDP_ADDR = '239.255.255.250'
     SSDP_PORT = 1900
-    MSEARCH_Interval = 2
     multicast_group_c = SSDP_ADDR
     multicast_group_s = (SSDP_ADDR, SSDP_PORT)
     server_address = ('', SSDP_PORT)
@@ -18,7 +21,7 @@ def ssdpSearch(ip, mac):
     mreq = struct.pack('4sL', group, socket.INADDR_ANY)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-    print("starting ssdp...")
+    logging.debug("starting ssdp...")
 
     while True:
         data, address = sock.recvfrom(1024)
@@ -26,13 +29,13 @@ def ssdpSearch(ip, mac):
         if data[0:19]== 'M-SEARCH * HTTP/1.1':
             if data.find("ssdp:discover") != -1:
                 sleep(random.randrange(1, 10)/10)
-                print("Sending M-Search response to " + address[0])
+                logging.debug("Sending M-Search response to " + address[0])
                 for x in range(3):
                    sock.sendto(bytes(Response_message + "ST: " + custom_response_message[x]["st"] + "\r\nUSN: " + custom_response_message[x]["usn"] + "\r\n\r\n", "utf8"), address)
         sleep(1)
 
 def ssdpBroadcast(ip, mac):
-    print("start ssdp broadcast")
+    logging.debug("start ssdp broadcast")
     SSDP_ADDR = '239.255.255.250'
     SSDP_PORT = 1900
     MSEARCH_Interval = 2
@@ -45,6 +48,6 @@ def ssdpBroadcast(ip, mac):
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
     while True:
         for x in range(3):
-            sent = sock.sendto(bytes(message + "NT: " + custom_message[x]["nt"] + "\r\nUSN: " + custom_message[x]["usn"] + "\r\n\r\n", "utf8"),multicast_group_s)
-            sent = sock.sendto(bytes(message + "NT: " + custom_message[x]["nt"] + "\r\nUSN: " + custom_message[x]["usn"] + "\r\n\r\n", "utf8"),multicast_group_s)
+            sock.sendto(bytes(message + "NT: " + custom_message[x]["nt"] + "\r\nUSN: " + custom_message[x]["usn"] + "\r\n\r\n", "utf8"),multicast_group_s)
+            sock.sendto(bytes(message + "NT: " + custom_message[x]["nt"] + "\r\nUSN: " + custom_message[x]["usn"] + "\r\n\r\n", "utf8"),multicast_group_s)
         sleep(60)
