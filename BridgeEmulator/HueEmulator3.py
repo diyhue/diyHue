@@ -44,7 +44,7 @@ if len(sys.argv) == 3:
     mac = str(sys.argv[1]).replace(":","")
 else:
     mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
-    logging.debug(mac)
+logging.debug(mac)
 
 run_service = True
 
