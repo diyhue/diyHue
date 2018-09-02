@@ -7,23 +7,24 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
+#define light_name "Strip SK6812 Pat" //default light name
 #define lightsCount 3
 #define pixelCount 60
+#define transitionLeds 6
 
-#define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
-//For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
-#define button1_pin 4 // on and brightness up
-#define button2_pin 5 // off and brightness down
+#define button1_pin 4 // on and bri up
+#define button2_pin 5 // off and bri down
+#define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
 
-// if you want to setup static ip uncomment these 3 lines and line 324
+// if you want to setup static ip uncomment these 3 lines and line 326
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
 int lightLedsCount = pixelCount / lightsCount;
-uint8_t rgbw[lightsCount][4], color_mode[lightsCount], scene;
-bool light_state[lightsCount], in_transition;
-int transitiontime[lightsCount], ct[lightsCount], hue[lightsCount], bri[lightsCount], sat[lightsCount];
+uint8_t rgbw[lightsCount][4], bri[lightsCount], sat[lightsCount], color_mode[lightsCount], scene;
+bool light_state[lightsCount], in_transition, entertainment_run;
+int ct[lightsCount], hue[lightsCount];
 float step_level[lightsCount][4], current_rgbw[lightsCount][4], x[lightsCount], y[lightsCount];
 byte mac[6];
 byte packetBuffer[64];
@@ -101,6 +102,10 @@ void convert_hue(uint8_t light)
 
 void convert_xy(uint8_t light)
 {
+  int optimal_bri = bri[light];
+  if (optimal_bri < 5) {
+    optimal_bri = 5;
+  }
   float Y = y[light];
   float X = x[light];
   float Z = 1.0f - x[light] - y[light];
@@ -110,10 +115,11 @@ void convert_xy(uint8_t light)
   float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
   float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
+
   // Apply gamma correction
-  r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
-  g = g <= 0.0031308f ? 12.92f * g : (1.0f + 0.055f) * pow(g, (1.0f / 2.4f)) - 0.055f;
-  b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
+  r = r <= 0.04045f ? r / 12.92f : pow((r + 0.055f) / (1.0f + 0.055f), 2.4f);
+  g = g <= 0.04045f ? g / 12.92f : pow((g + 0.055f) / (1.0f + 0.055f), 2.4f);
+  b = b <= 0.04045f ? b / 12.92f : pow((b + 0.055f) / (1.0f + 0.055f), 2.4f);
 
   if (r > b && r > g) {
     // red is biggest
@@ -144,7 +150,7 @@ void convert_xy(uint8_t light)
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgbw[light][0] = (int) (r * bri[light]); rgbw[light][1] = (int) (g * bri[light]); rgbw[light][2] = (int) (b * bri[light]); rgbw[light][3] = 0;
+  rgbw[light][0] = (int) (r * optimal_bri); rgbw[light][1] = (int) (g * optimal_bri); rgbw[light][2] = (int) (b * optimal_bri); rgbw[light][3] = 0;
 }
 
 void convert_ct(uint8_t light) {
@@ -228,7 +234,7 @@ void process_lightdata(uint8_t light,float transitiontime) {
   } else if (color_mode[light] == 3 && light_state[light] == true) {
     convert_hue(light);
   }
-  for (uint8_t i = 0; i <= 3; i++) {
+  for (uint8_t i = 0; i < 4; i++) {
     if (light_state[light]) {
       step_level[light][i] = ((float)rgbw[light][i] - current_rgbw[light][i]) / transitiontime;
     } else {
@@ -237,31 +243,102 @@ void process_lightdata(uint8_t light,float transitiontime) {
   }
 }
 
+RgbwColor blending(float left[4], float right[4], uint8_t pixel) {
+  uint8_t result[4];
+  for (uint8_t i = 0; i < 4; i++) {
+    float percent = (float) pixel / (float) (transitionLeds + 1);
+    result[i] = (left[i] * (1.0f - percent) + right[i] * percent) / 2;
+  }
+  return RgbwColor(result[0], result[1], result[2], result[2]);
+}
+
+RgbwColor convInt(uint8_t color[4]) {
+  return RgbwColor(color[0], color[1], color[2], color[3]);
+}
+
+RgbwColor convFloat(float color[4]) {
+  return RgbwColor((int)color[0], (int)color[1], (int)color[2], (int)color[3]);
+}
+
 void lightEngine() {
-  for (int i = 0; i < lightsCount; i++) {
-    if (light_state[i]) {
-      if (rgbw[i][0] != current_rgbw[i][0] || rgbw[i][1] != current_rgbw[i][1] || rgbw[i][2] != current_rgbw[i][2] || rgbw[i][3] != current_rgbw[i][3]) {
+  for (int light = 0; light < lightsCount; light++) {
+    if (light_state[light]) {
+      if (rgbw[light][0] != current_rgbw[light][0] || rgbw[light][1] != current_rgbw[light][1] || rgbw[light][2] != current_rgbw[light][2] || rgbw[light][3] != current_rgbw[light][3]) {
         in_transition = true;
-        for (uint8_t k = 0; k <= 3; k++) {
-          if (rgbw[i][k] != current_rgbw[i][k]) current_rgbw[i][k] += step_level[i][k];
-          if ((step_level[i][k] > 0.0 && current_rgbw[i][k] > rgbw[i][k]) || (step_level[i][k] < 0.0 && current_rgbw[i][k] < rgbw[i][k])) current_rgbw[i][k] = rgbw[i][k];
+        for (uint8_t k = 0; k < 4; k++) {
+          if (rgbw[light][k] != current_rgbw[light][k]) current_rgbw[light][k] += step_level[light][k];
+          if ((step_level[light][k] > 0.0 && current_rgbw[light][k] > rgbw[light][k]) || (step_level[light][k] < 0.0 && current_rgbw[light][k] < rgbw[light][k])) current_rgbw[light][k] = rgbw[light][k];
         }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbwColor((int)current_rgbw[i][0], (int)current_rgbw[i][1], (int)current_rgbw[i][2], (int)current_rgbw[i][3]));
+        if (lightsCount > 1) {
+          if (light == 0) {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
+              if (pixel < lightLedsCount - transitionLeds / 2) {
+                strip.SetPixelColor(pixel, convFloat(current_rgbw[light]));
+              } else {
+                strip.SetPixelColor(pixel, blending(current_rgbw[0], current_rgbw[1], pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
+              }
+            }
+          } else if (light == lightsCount - 1) {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2 ; pixel++) {
+              if (pixel < transitionLeds) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, blending( current_rgbw[light - 1], current_rgbw[light], pixel + 1));
+              } else {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(current_rgbw[light]));
+              }
+            }
+          } else {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds; pixel++) {
+              if (pixel < transitionLeds) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( current_rgbw[light - 1], current_rgbw[light], pixel + 1));
+              } else if (pixel > lightLedsCount - 1) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( current_rgbw[light], current_rgbw[light + 1], pixel + 1 - lightLedsCount));
+              } else  {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(current_rgbw[light]));
+              }
+            }
+          }
+        } else {
+          strip.ClearTo(convFloat(current_rgbw[light]), 0, pixelCount - 1);
         }
         strip.Show();
       }
     } else {
-      if (current_rgbw[i][0] != 0 || current_rgbw[i][1] != 0 || current_rgbw[i][2] != 0 || current_rgbw[i][3] != 0) {
+      if (current_rgbw[light][0] != 0 || current_rgbw[light][1] != 0 || current_rgbw[light][2] != 0 || current_rgbw[light][3] != 0) {
         in_transition = true;
-        for (uint8_t k = 0; k <= 3; k++) {
-          if (current_rgbw[i][k] != 0) current_rgbw[i][k] -= step_level[i][k];
-          if (current_rgbw[i][k] < 0) current_rgbw[i][k] = 0;
+        for (uint8_t k = 0; k < 4; k++) {
+          if (current_rgbw[light][k] != 0) current_rgbw[light][k] -= step_level[light][k];
+          if (current_rgbw[light][k] < 0) current_rgbw[light][k] = 0;
         }
-        for (int j = 0; j < pixelCount / lightsCount ; j++)
-        {
-          strip.SetPixelColor(j + i * pixelCount / lightsCount, RgbwColor((int)current_rgbw[i][0], (int)current_rgbw[i][1], (int)current_rgbw[i][2], (int)current_rgbw[i][3]));
+        if (lightsCount > 1) {
+          if (light == 0) {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
+              if (pixel < lightLedsCount - transitionLeds / 2) {
+                strip.SetPixelColor(pixel, convFloat(current_rgbw[light]));
+              } else {
+                strip.SetPixelColor(pixel,  blending( current_rgbw[light], current_rgbw[light + 1], pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
+              }
+            }
+          } else if (light == lightsCount - 1) {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2 ; pixel++) {
+              if (pixel < transitionLeds) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( current_rgbw[light - 1], current_rgbw[light], pixel + 1));
+              } else {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(current_rgbw[light]));
+              }
+            }
+          } else {
+            for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds; pixel++) {
+              if (pixel < transitionLeds) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( current_rgbw[light - 1], current_rgbw[light], pixel + 1));
+              } else if (pixel > lightLedsCount - 1) {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light,  blending( current_rgbw[light], current_rgbw[light + 1], pixel + 1 - lightLedsCount));
+              } else  {
+                strip.SetPixelColor(pixel - transitionLeds / 2 + lightLedsCount * light, convFloat(current_rgbw[light]));
+              }
+            }
+          }
+        } else {
+          strip.ClearTo(convFloat(current_rgbw[light]), 0, pixelCount - 1);
         }
         strip.Show();
       }
@@ -321,6 +398,7 @@ void setup() {
   strip.Begin();
   strip.Show();
   EEPROM.begin(512);
+  WiFi.hostname(light_name);
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -336,12 +414,14 @@ void setup() {
     for (int i = 0; i < lightsCount; i++) {
       light_state[i] = true;
     }
-    for (int j = 0; j < 200; j++) {
+    for (uint8_t j = 0; j < 200; j++) {
       lightEngine();
     }
   }
+  
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
 
   if (! light_state[0]) {
     infoLight(white);
@@ -373,62 +453,10 @@ void setup() {
   pinMode(button1_pin, INPUT);
   pinMode(button2_pin, INPUT);
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    float transitiontime = (16 - (pixelCount / 40)) * 4;
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    for (int i = 0; i < lightsCount; i++) {
-      if (button == 1000) {
-        if (light_state[i] == false) {
-          light_state[i] = true;
-          scene = 0;
-        } else {
-          apply_scene(scene, i);
-          scene++;
-          if (scene == 11) {
-            scene = 0;
-          }
-        }
-      } else if (button == 2000) {
-        if (light_state[i] == false) {
-          bri[i] = 30;
-          light_state[i] = true;
-        } else {
-          bri[i] += 30;
-        }
-        if (bri[i] > 255) bri[i] = 255;
-        if (color_mode[i] == 1) convert_xy(i);
-        else if (color_mode[i] == 2) convert_ct(i);
-        else if (color_mode[i] == 3) convert_hue(i);
-      } else if (button == 3000 && light_state[i] == true) {
-        bri[i] -= 30;
-        if (bri[i] < 1) bri[i] = 1;
-        else {
-          if (color_mode[i] == 1) convert_xy(i);
-          else if (color_mode[i] == 2) convert_ct(i);
-          else if (color_mode[i] == 3) convert_hue(i);
-        }
-      } else if (button == 4000) {
-        light_state[i] = false;
-      }
-      for (uint8_t j = 0; j <= 3; j++) {
-        if (light_state[i]) {
-          step_level[i][j] = ((float)rgbw[i][j] - current_rgbw[i][j]) / transitiontime;
-        } else {
-          step_level[i][j] = current_rgbw[i][j] / transitiontime;
-        }
-      }
-    }
-  });
-
   server.on("/set", []() {
+    entertainment_run = false;
     uint8_t light;
-    int transitiontime = 4;
+    float transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "light") {
         light = server.arg(i).toInt() - 1;
@@ -473,8 +501,6 @@ void setup() {
         color_mode[light] = 1;
       }
       else if (server.argName(i) == "bri") {
-        light_state[light] = true;
-        if (server.arg(i).toInt() != 0)
           bri[light] = server.arg(i).toInt();
       }
       else if (server.argName(i) == "bri_inc") {
@@ -505,8 +531,8 @@ void setup() {
         transitiontime = server.arg(i).toInt();
       }
     }
-    process_lightdata(light, transitiontime);
     server.send(200, "text/plain", "OK, x: " + (String)x[light] + ", y:" + (String)y[light] + ", bri:" + (String)bri[light] + ", ct:" + ct[light] + ", colormode:" + color_mode[light] + ", state:" + light_state[light]);
+    process_lightdata(light, transitiontime);
   });
 
   server.on("/get", []() {
@@ -591,7 +617,7 @@ void setup() {
           current_rgbw[light][3] = 255;
         }
       }
-      for (uint8_t j = 0; j <= 3; j++) {
+      for (uint8_t j = 0; j < 4; j++) {
         if (light_state[light]) {
           step_level[light][j] = ((float)rgbw[light][j] - current_rgbw[light][j]) / transitiontime;
         } else {
@@ -609,12 +635,12 @@ void setup() {
     http_content += "<head>";
     http_content += "<meta charset=\"utf-8\">";
     http_content += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-    http_content += "<title>Light Setup</title>";
+    http_content += "<title>"; http_content += light_name; http_content += " Setup</title>";
     http_content += "<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">";
     http_content += "</head>";
     http_content += "<body>";
     http_content += "<fieldset>";
-    http_content += "<h3>Light Setup</h3>";
+    http_content += "<h3>"; http_content += light_name; http_content += " Setup</h3>";
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
@@ -684,7 +710,6 @@ void setup() {
     http_content += "</body>";
     http_content += "</html>";
 
-
     server.send(200, "text/html", http_content);
 
   });
@@ -694,12 +719,53 @@ void setup() {
   server.begin();
 }
 
+
+RgbwColor blendingEntert(uint8_t left[4], uint8_t right[4], uint8_t pixel) {
+  uint8_t result[4];
+  for (uint8_t i = 0; i < 3; i++) {
+    float percent = (float) pixel / (float) (transitionLeds + 1);
+    result[i] = (left[i] * (1.0f - percent) + right[i] * percent) / 2;
+  }
+  return RgbwColor(result[0], result[1], result[2], 0);
+}
+
 void entertainment() {
   uint8_t packetSize = Udp.parsePacket();
   if (packetSize) {
+    if (! entertainment_run) {
+      entertainment_run = true;
+    }
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t i=0; i < packetSize / 4; i++){
-      strip.ClearTo(RgbwColor(packetBuffer[i * 4 + 1], packetBuffer[i * 4 + 2], packetBuffer[i * 4 + 3], 0), packetBuffer[i * 4] * lightLedsCount, packetBuffer[i * 4] * lightLedsCount + lightLedsCount - 1);
+    for (uint8_t i = 0; i < packetSize / 4; i++) {
+      rgbw[packetBuffer[i * 4]][0] = packetBuffer[i * 4 + 1];
+      rgbw[packetBuffer[i * 4]][1] = packetBuffer[i * 4 + 2];
+      rgbw[packetBuffer[i * 4]][2] = packetBuffer[i * 4 + 3];
+    }
+    for (uint8_t light = 0; light < lightsCount; light++) {
+      if (lightsCount > 1) {
+        if (light == 0) {
+          for (uint8_t pixel = 0; pixel < lightLedsCount + transitionLeds / 2; pixel++) {
+            if (pixel < lightLedsCount - transitionLeds / 2) {
+              strip.SetPixelColor(pixel, convInt(rgbw[light]));
+            } else {
+              //strip.SetPixelColor(pixel, RgbColor(rgbw[light][0], rgbw[light][1], rgbw[light][2]));
+              strip.SetPixelColor(pixel, blendingEntert(rgbw[0], rgbw[1], pixel + 1 - (lightLedsCount - transitionLeds / 2 )));
+            }
+          }
+        } else if (light == lightsCount - 1) {
+          for (uint8_t pixel = 0; pixel < lightLedsCount - transitionLeds / 2 ; pixel++) {
+            strip.SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, convInt(rgbw[light]));
+          }
+        } else {
+          for (uint8_t pixel = 0; pixel < lightLedsCount; pixel++) {
+            if (pixel < lightLedsCount - transitionLeds) {
+              strip.SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, convInt(rgbw[light]));
+            } else {
+              strip.SetPixelColor(pixel + transitionLeds / 2 + lightLedsCount * light, blendingEntert(rgbw[light], rgbw[light + 1], pixel - (lightLedsCount - transitionLeds ) + 1));
+            }
+          }
+        }
+      }
     }
     strip.Show();
   }
@@ -708,6 +774,8 @@ void entertainment() {
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
-  lightEngine();
+  if (! entertainment_run) {
+    lightEngine();
+  }
   entertainment();
 }
