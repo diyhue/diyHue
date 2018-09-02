@@ -3,7 +3,7 @@ import logging
 import socket
 
 from functions import light_types, nextFreeId
-from functions.colors import convert_xy
+from functions.colors import convert_rgb_xy, convert_xy
 
 
 def discover(bridge_config, new_lights):
@@ -105,3 +105,54 @@ def set_light(light, data):
     # check if hue wants to change brightness
     for key, value in json.loads(data).items():
         command(url, key, value)
+
+
+def get_light(light):
+    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_socket.settimeout(5)
+    tcp_socket.connect((light["ip"], int(55443)))
+    msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
+    tcp_socket.send(msg.encode())
+    data = tcp_socket.recv(16 * 1024)
+    light_data = json.loads(data[:-2].decode("utf8"))["result"]
+    if light_data[0] == "on": #powerstate
+        light["state"]["on"] = True
+    else:
+        light["state"]["on"] = False
+    light["state"]["bri"] = int(int(light_data[1]) * 2.54)
+    msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
+    tcp_socket.send(msg_mode.encode())
+    data = tcp_socket.recv(16 * 1024)
+    if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
+        msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
+        tcp_socket.send(msg_rgb.encode())
+        data = tcp_socket.recv(16 * 1024)
+        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+        hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+        r = hex_rgb[:2]
+        if r == "  ":
+            r = "00"
+        g = hex_rgb[3:4]
+        if g == "  ":
+            g = "00"
+        b = hex_rgb[-2:]
+        if b == "  ":
+            b = "00"
+        light["state"]["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+        light["state"]["colormode"] = "xy"
+    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
+        msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+        tcp_socket.send(msg_ct.encode())
+        data = tcp_socket.recv(16 * 1024)
+        light["state"]["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        light["state"]["colormode"] = "ct"
+
+    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
+        msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
+        tcp_socket.send(msg_hsv.encode())
+        data = tcp_socket.recv(16 * 1024)
+        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+        light["state"]["hue"] = int(hue_data[0] * 182)
+        light["sat"] = int(int(hue_data[1]) * 2.54)
+        light["state"]["colormode"] = "hs"
+    return light

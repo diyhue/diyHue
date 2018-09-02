@@ -692,6 +692,11 @@ def syncWithLights(): #update Hue Bridge lights states
         logging.debug("sync with lights")
         for light in bridge_config["lights_address"]:
             try:
+                protocol_name = bridge_config["lights_address"][light]["protocol"]
+                for protocol in protocols:
+                    if protocol_name == protocol.__name__:
+                        result = protocol.get_light(bridge_config["lights_address"][light])
+                        bridge_config["lights"][light] = result
                 if bridge_config["lights_address"][light]["protocol"] == "native":
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}"))
                     bridge_config["lights"][light]["state"].update(light_data)
@@ -725,56 +730,6 @@ def syncWithLights(): #update Hue Bridge lights states
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "xy"
                         bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(light_data["color"]["r"], light_data["color"]["g"], light_data["color"]["b"])
-                elif bridge_config["lights_address"][light]["protocol"] == "yeelight": #getting states from the yeelight
-                    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    tcp_socket.settimeout(5)
-                    tcp_socket.connect((bridge_config["lights_address"][light]["ip"], int(55443)))
-                    msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
-                    tcp_socket.send(msg.encode())
-                    data = tcp_socket.recv(16 * 1024)
-                    light_data = json.loads(data[:-2].decode("utf8"))["result"]
-                    if light_data[0] == "on": #powerstate
-                        bridge_config["lights"][light]["state"]["on"] = True
-                    else:
-                        bridge_config["lights"][light]["state"]["on"] = False
-                    bridge_config["lights"][light]["state"]["bri"] = int(int(light_data[1]) * 2.54)
-                    msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
-                    tcp_socket.send(msg_mode.encode())
-                    data = tcp_socket.recv(16 * 1024)
-                    if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
-                        msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
-                        tcp_socket.send(msg_rgb.encode())
-                        data = tcp_socket.recv(16 * 1024)
-                        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-                        hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-                        r = hex_rgb[:2]
-                        if r == "  ":
-                            r = "00"
-                        g = hex_rgb[3:4]
-                        if g == "  ":
-                            g = "00"
-                        b = hex_rgb[-2:]
-                        if b == "  ":
-                            b = "00"
-                        bridge_config["lights"][light]["state"]["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
-                        bridge_config["lights"][light]["state"]["colormode"] = "xy"
-                    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
-                        msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
-                        tcp_socket.send(msg_ct.encode())
-                        data = tcp_socket.recv(16 * 1024)
-                        bridge_config["lights"][light]["state"]["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
-                        bridge_config["lights"][light]["state"]["colormode"] = "ct"
-
-                    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
-                        msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
-                        tcp_socket.send(msg_hsv.encode())
-                        data = tcp_socket.recv(16 * 1024)
-                        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-                        bridge_config["lights"][light]["state"]["hue"] = int(hue_data[0] * 182)
-                        bridge_config["lights"][light]["state"]["sat"] = int(int(hue_data[1]) * 2.54)
-                        bridge_config["lights"][light]["state"]["colormode"] = "hs"
-                    tcp_socket.close()
-
                 elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #domoticz protocol
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=devices&rid=" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
                     if light_data["result"][0]["Status"] == "Off":
