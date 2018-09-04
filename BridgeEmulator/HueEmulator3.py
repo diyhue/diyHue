@@ -478,8 +478,8 @@ def sendLightRequest(light, data):
         for protocol in protocols:
             if "protocols." + protocol_name == protocol.__name__:
                 try:
-                    result = protocol.set_light(bridge_config["lights_address"][light], data)
-                    bridge_config["lights"][light] = result
+                    light_state = protocol.set_light(bridge_config["lights_address"][light], data)
+                    bridge_config["lights"][light]["state"].update(light_state) 
                 except:
                     bridge_config["lights"][light]["state"]["reachable"] = False
                     logging.exception("request error")
@@ -694,8 +694,8 @@ def syncWithLights(): #update Hue Bridge lights states
                 protocol_name = bridge_config["lights_address"][light]["protocol"]
                 for protocol in protocols:
                     if "protocols." + protocol_name == protocol.__name__:
-                        result = protocol.get_light(bridge_config["lights_address"][light])
-                        bridge_config["lights"][light] = result
+                        light_state = protocol.get_light_state(bridge_config["lights_address"][light])
+                        bridge_config["lights"][light]["state"].update(light_state)
                 if bridge_config["lights_address"][light]["protocol"] == "native":
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}"))
                     bridge_config["lights"][light]["state"].update(light_data)

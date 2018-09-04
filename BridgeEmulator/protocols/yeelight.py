@@ -106,9 +106,10 @@ def set_light(light, data):
     # check if hue wants to change brightness
     for key, value in payload.items():
         command(url, key, value)
-    return get_light(light)
+    return get_light_state(light)
 
-def get_light(light):
+def get_light_state(light):
+    state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
     tcp_socket.connect((light["ip"], int(55443)))
@@ -117,10 +118,10 @@ def get_light(light):
     data = tcp_socket.recv(16 * 1024)
     light_data = json.loads(data[:-2].decode("utf8"))["result"]
     if light_data[0] == "on": #powerstate
-        light["state"] = {"on" : True}
+        state['on'] = True
     else:
-        light["state"] = {"on" : False}
-    light["state"]["bri"] = int(int(light_data[1]) * 2.54)
+        state['on'] = False
+    state["bri"] = int(int(light_data[1]) * 2.54)
     msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
     tcp_socket.send(msg_mode.encode())
     data = tcp_socket.recv(16 * 1024)
@@ -139,21 +140,22 @@ def get_light(light):
         b = hex_rgb[-2:]
         if b == "  ":
             b = "00"
-        light["state"]["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
-        light["state"]["colormode"] = "xy"
+        state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+        state["colormode"] = "xy"
     elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
-        light["state"]["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
-        light["state"]["colormode"] = "ct"
+        state["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        state["colormode"] = "ct"
 
     elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
         msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
         tcp_socket.send(msg_hsv.encode())
         data = tcp_socket.recv(16 * 1024)
         hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-        light["state"]["hue"] = int(hue_data[0] * 182)
-        light["sat"] = int(int(hue_data[1]) * 2.54)
-        light["state"]["colormode"] = "hs"
-    return light
+        state["hue"] = int(hue_data[0] * 182)
+        state["sat"] = int(int(hue_data[1]) * 2.54)
+        state["colormode"] = "hs"
+    tcp_socket.close()
+    return state
