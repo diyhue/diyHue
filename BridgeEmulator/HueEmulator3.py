@@ -18,7 +18,6 @@ from subprocess import Popen, check_output
 from threading import Thread
 from time import sleep, strftime
 from urllib.parse import parse_qs, urlparse
-from uuid import getnode as get_mac
 
 import requests
 
@@ -49,7 +48,7 @@ def pretty_json(data):
 if len(sys.argv) == 3:
     mac = str(sys.argv[1]).replace(":","")
 else:
-    mac = str(get_mac())
+    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.debug(mac)
 
 run_service = True
