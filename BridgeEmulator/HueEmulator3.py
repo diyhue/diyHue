@@ -1293,7 +1293,7 @@ class S(BaseHTTPRequestHandler):
         self._set_headers()
         logging.debug("in post method")
         logging.debug(self.path)
-        self.data_string = b"{}" if self.headers['Content-Length'] is None else self.rfile.read(int(self.headers['Content-Length']))
+        self.data_string = b"{}" if self.headers['Content-Length'] is None or self.headers['Content-Length'] == 0 else self.rfile.read(int(self.headers['Content-Length']))
         if self.path == "/updater":
             logging.debug("check for updates")
             update_data = json.loads(sendRequest("http://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
