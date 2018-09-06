@@ -1500,7 +1500,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
                     updateGroupStats(url_pices[4])
                     Thread(target=sendLightRequest,args=[url_pices[4], put_dictionary]).start()
-					sleep(0.1)
+                    sleep(0.1)
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
