@@ -65,6 +65,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - WS2812B and SK6812 smart led strips
   - MiLight
   - Yeelight
+  - LYT8266
+  - Phillips Hue
+  - Ikea Tradfri
   - Pwm RGB-CCT
   - Pwm RGBW
   - Pwm RGB
