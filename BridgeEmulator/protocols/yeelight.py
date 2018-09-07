@@ -60,11 +60,11 @@ def discover(bridge_config, new_lights):
             sock.close()
             break
 
-def command(url, api_method, param):
+def command(ip, api_method, param):
     try:
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_socket.settimeout(5)
-        tcp_socket.connect((url, int(55443)))
+        tcp_socket.connect((ip, int(55443)))
         msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
         tcp_socket.send(msg.encode())
         tcp_socket.close()
@@ -72,8 +72,7 @@ def command(url, api_method, param):
         logging.exception("Unexpected error")
 
 
-def set_light(light, data):
-    url = "http://" + str(light["ip"])
+def set_light(ip, light, data):
     method = 'TCP'
     payload = {}
     transitiontime = 400
@@ -99,20 +98,17 @@ def set_light(light, data):
         elif key == "alert" and value != "none":
             payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
 
-    if "//" in url: # cutting out the http://
-        http, url = url.split("//",1)
     # yeelight uses different functions for each action, so it has to check for each function
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
     # check if hue wants to change brightness
     for key, value in payload.items():
-        command(url, key, value)
-    return get_light_state(light)
+        command(ip, key, value)
 
-def get_light_state(light):
+def get_light_state(ip, light):
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
-    tcp_socket.connect((light["ip"], int(55443)))
+    tcp_socket.connect((ip, int(55443)))
     msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
