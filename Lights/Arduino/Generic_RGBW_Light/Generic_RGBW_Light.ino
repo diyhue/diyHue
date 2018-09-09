@@ -1,3 +1,6 @@
+/*
+  This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight RGB_CCT bulb.
+*/
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -6,43 +9,48 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define light_name "Hue RGBW Light" //default light name
+#define light_name "Bec Dormitor Mic" //default light name
+
+#define PWM_CHANNELS 5
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
 #define button1_pin 1 // on and brightness up
 #define button2_pin 3 // off and brightness down
-uint8_t pins[4] = {12, 13, 14, 15};
-//define pins
 
-// if you want to setup static ip uncomment these 3 lines and line 305
+//define pins
+uint8_t pins[PWM_CHANNELS] = {13, 14, 12, 4, 5};
+
+// if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
 
-uint8_t rgbw[4], color_mode, scene;
+uint8_t rgb_cct[5], bri, sat, color_mode, scene;
 bool light_state, in_transition;
-int transitiontime, ct, hue, bri, sat;
-float step_level[4], current_rgbw[4], x, y;
+int  ct, hue;
+float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
-byte packetBuffer[4];
+
+byte packetBuffer[3];
+
+WiFiUDP Udp;
 
 ESP8266WebServer server(80);
-WiFiUDP Udp;
 
 void convert_hue()
 {
   double      hh, p, q, t, ff, s, v;
   long        i;
 
-  rgbw[3] = 0;
+  rgb_cct[3] = 0;
   s = sat / 255.0;
   v = bri / 255.0;
 
   if (s <= 0.0) {      // < is bogus, just shuts up warnings
-    rgbw[0] = v;
-    rgbw[1] = v;
-    rgbw[2] = v;
+    rgb_cct[0] = v;
+    rgb_cct[1] = v;
+    rgb_cct[2] = v;
     return;
   }
   hh = hue;
@@ -56,36 +64,36 @@ void convert_hue()
 
   switch (i) {
     case 0:
-      rgbw[0] = v * 255.0;
-      rgbw[1] = t * 255.0;
-      rgbw[2] = p * 255.0;
+      rgb_cct[0] = v * 255.0;
+      rgb_cct[1] = t * 255.0;
+      rgb_cct[2] = p * 255.0;
       break;
     case 1:
-      rgbw[0] = q * 255.0;
-      rgbw[1] = v * 255.0;
-      rgbw[2] = p * 255.0;
+      rgb_cct[0] = q * 255.0;
+      rgb_cct[1] = v * 255.0;
+      rgb_cct[2] = p * 255.0;
       break;
     case 2:
-      rgbw[0] = p * 255.0;
-      rgbw[1] = v * 255.0;
-      rgbw[2] = t * 255.0;
+      rgb_cct[0] = p * 255.0;
+      rgb_cct[1] = v * 255.0;
+      rgb_cct[2] = t * 255.0;
       break;
 
     case 3:
-      rgbw[0] = p * 255.0;
-      rgbw[1] = q * 255.0;
-      rgbw[2] = v * 255.0;
+      rgb_cct[0] = p * 255.0;
+      rgb_cct[1] = q * 255.0;
+      rgb_cct[2] = v * 255.0;
       break;
     case 4:
-      rgbw[0] = t * 255.0;
-      rgbw[1] = p * 255.0;
-      rgbw[2] = v * 255.0;
+      rgb_cct[0] = t * 255.0;
+      rgb_cct[1] = p * 255.0;
+      rgb_cct[2] = v * 255.0;
       break;
     case 5:
     default:
-      rgbw[0] = v * 255.0;
-      rgbw[1] = p * 255.0;
-      rgbw[2] = q * 255.0;
+      rgb_cct[0] = v * 255.0;
+      rgb_cct[1] = p * 255.0;
+      rgb_cct[2] = q * 255.0;
       break;
   }
 
@@ -93,12 +101,17 @@ void convert_hue()
 
 void convert_xy()
 {
-  float z = 1.0f - x - y;
+
+  int optimal_bri = int( 10 + bri / 1.04);
+
+  float Y = y;
+  float X = x;
+  float Z = 1.0f - x - y;
 
   // sRGB D65 conversion
-  float r =  x * 3.2406f - y * 1.5372f - z * 0.4986f;
-  float g = -x * 0.9689f + y * 1.8758f + z * 0.0415f;
-  float b =  x * 0.0557f - y * 0.2040f + z * 1.0570f;
+  float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
+  float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
+  float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
   // Apply gamma correction
   r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
@@ -134,25 +147,23 @@ void convert_xy()
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgbw[0] = (int) (r * bri); rgbw[1] = (int) (g * bri); rgbw[2] = (int) (b * bri); rgbw[3] = 0;
+  rgb_cct[0] = (int) (r * optimal_bri); rgb_cct[1] = (int) (g * optimal_bri); rgb_cct[2] = (int) (b * optimal_bri); rgb_cct[3] = 0; rgb_cct[4] = 0;
+
 }
 
 void convert_ct() {
-  int hectemp = 10000 / ct;
-  int r, g, b;
-  if (hectemp <= 66) {
-    r = 255;
-    g = 99.4708025861 * log(hectemp) - 161.1195681661;
-    b = hectemp <= 19 ? 0 : (138.5177312231 * log(hectemp - 10) - 305.0447927307);
-  } else {
-    r = 329.698727446 * pow(hectemp - 60, -0.1332047592);
-    g = 288.1221695283 * pow(hectemp - 60, -0.0755148492);
-    b = 255;
-  }
-  r = r > 255 ? 255 : r;
-  g = g > 255 ? 255 : g;
-  b = b > 255 ? 255 : b;
-  rgbw[0] = r * (bri / 255.0f); rgbw[1] = g * (bri / 255.0f); rgbw[2] = b * (bri / 255.0f); rgbw[3] = bri;
+
+  int optimal_bri = int( 10 + bri / 1.04);
+
+  rgb_cct[0] = 0;
+  rgb_cct[1] = 0;
+  rgb_cct[2] = 0;
+
+  uint8 percent_warm = ((ct - 150) * 100) / 350;
+
+  rgb_cct[3] = (optimal_bri * percent_warm) / 100;
+  rgb_cct[4] =  (optimal_bri * (100 - percent_warm)) / 100;
+
 }
 
 void handleNotFound() {
@@ -205,30 +216,30 @@ void process_lightdata(float transitiontime) {
     convert_hue();
   }
   transitiontime *= 16;
-  for (uint8_t color = 0; color < 4; color++) {
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
+      step_level[color] = (rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
     } else {
-      step_level[color] = current_rgbw[color] / transitiontime;
+      step_level[color] = current_rgb_cct[color] / transitiontime;
     }
   }
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < 4; color++) {
+  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      if (rgbw[color] != current_rgbw[color] ) {
+      if (rgb_cct[color] != current_rgb_cct[color] ) {
         in_transition = true;
-        current_rgbw[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        analogWrite(pins[color], (int)(current_rgbw[color]));
+        current_rgb_cct[color] += step_level[color];
+        if ((step_level[color] > 0.0f && current_rgb_cct[color] > rgb_cct[color]) || (step_level[color] < 0.0f && current_rgb_cct[color] < rgb_cct[color])) current_rgb_cct[color] = rgb_cct[color];
+        analogWrite(pins[color], (int)(current_rgb_cct[color]));
       }
     } else {
-      if (current_rgbw[color] != 0) {
+      if (current_rgb_cct[color] != 0) {
         in_transition = true;
-        current_rgbw[color] -= step_level[color];
-        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        analogWrite(pins[color], (int)(current_rgbw[color]));
+        current_rgb_cct[color] -= step_level[color];
+        if (current_rgb_cct[color] < 0.0f) current_rgb_cct[color] = 0;
+        analogWrite(pins[color], (int)(current_rgb_cct[color]));
       }
     }
   }
@@ -281,16 +292,17 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  for (uint8_t pin = 0; pin < 4; pin++) {
+  for (uint8_t pin = 0; pin < PWM_CHANNELS; pin++) {
     pinMode(pins[pin], OUTPUT);
   }
+
   analogWriteFreq(1000);
   analogWriteRange(255);
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgbw[0] / 150.0; step_level[1] = rgbw[1] / 150.0; step_level[2] = rgbw[2] / 150.0; step_level[3] = rgbw[3] / 150.0;
+  step_level[0] = rgb_cct[0] / 150.0; step_level[1] = rgb_cct[1] / 150.0; step_level[2] = rgb_cct[2] / 150.0; step_level[3] = rgb_cct[3] / 150.0; step_level[4] = rgb_cct[4] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -306,7 +318,7 @@ void setup() {
     // Show that we are connected
     analogWrite(pins[1], 100);
     delay(500);
-    analogWrite(pins[1], 0);
+    analogWrite(pins[0], 0);
   }
   WiFi.macAddress(mac);
 
@@ -320,6 +332,7 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
+
   Udp.begin(2100);
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
@@ -330,60 +343,9 @@ void setup() {
   }
 
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    if (button == 1000) {
-      if (light_state == false) {
-        light_state = true;
-        scene = 0;
-      } else {
-        apply_scene(scene);
-        scene++;
-        if (scene == 11) {
-          scene = 0;
-        }
-      }
-    } else if (button == 2000) {
-      if (light_state == false) {
-        bri = 30;
-        light_state = true;
-      } else {
-        bri += 30;
-      }
-      if (bri > 255) bri = 255;
-      if (color_mode == 1) convert_xy();
-      else if (color_mode == 2) convert_ct();
-      else if (color_mode == 3) convert_hue();
-    } else if (button == 3000 && light_state == true) {
-      bri -= 30;
-      if (bri < 1) bri = 1;
-      else {
-        if (color_mode == 1) convert_xy();
-        else if (color_mode == 2) convert_ct();
-        else if (color_mode == 3) convert_hue();
-      }
-    } else if (button == 4000) {
-      light_state = false;
-    }
-    for (uint8_t color = 0; color < 4; color++) {
-      if (light_state) {
-        step_level[color] = (rgbw[color] - current_rgbw[color]) / 54;
-      } else {
-        step_level[color] = current_rgbw[color] / 54;
-      }
-    }
-  });
-
-
   server.on("/set", []() {
     light_state = true;
-    float transitiontime = 4;
+    int transitiontime = 4;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "on") {
         if (server.arg(i) == "True" || server.arg(i) == "true") {
@@ -402,20 +364,24 @@ void setup() {
         }
       }
       else if (server.argName(i) == "r") {
-        rgbw[0] = server.arg(i).toInt();
-        color_mode = 0;
+        rgb_cct[0] = server.arg(i).toInt();
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
       else if (server.argName(i) == "g") {
-        rgbw[1] = server.arg(i).toInt();
-        color_mode = 0;
+        rgb_cct[1] = server.arg(i).toInt();
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
       else if (server.argName(i) == "b") {
-        rgbw[2] = server.arg(i).toInt();
-        color_mode = 0;
+        rgb_cct[2] = server.arg(i).toInt();
+        color_mode = 0; rgb_cct[3] = 0; rgb_cct[4] = 0;
       }
-      else if (server.argName(i) == "w") {
-        rgbw[3] = server.arg(i).toInt();
-        color_mode = 0;
+      else if (server.argName(i) == "ww") {
+        rgb_cct[3] = server.arg(i).toInt();
+        color_mode = 0; rgb_cct[0] = 0; rgb_cct[1] = 0; rgb_cct[2] = 0;
+      }
+      else if (server.argName(i) == "cw") {
+        rgb_cct[4] = server.arg(i).toInt();
+        color_mode = 0; rgb_cct[0] = 0; rgb_cct[1] = 0; rgb_cct[2] = 0;
       }
       else if (server.argName(i) == "x") {
         x = server.arg(i).toFloat();
@@ -448,16 +414,16 @@ void setup() {
       }
       else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state) {
-          current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
+          current_rgb_cct[0] = 0; current_rgb_cct[1] = 0; current_rgb_cct[2] = 0; current_rgb_cct[3] = 0;
         } else {
-          current_rgbw[0] = 255; current_rgbw[1] = 255; current_rgbw[2] = 255; current_rgbw[3] = 255;
+          current_rgb_cct[0] = 255; current_rgb_cct[1] = 255; current_rgb_cct[2] = 255; current_rgb_cct[3] = 255;
         }
       }
       else if (server.argName(i) == "transitiontime") {
         transitiontime = server.arg(i).toInt();
       }
     }
-    server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state);
+    server.send(200, "text/plain", "OK, x: " + (String)x + ", y:" + (String)y + ", bri:" + (String)bri + ", ct:" + ct + ", colormode:" + color_mode + ", state:" + light_state + ", r:" + (String)rgb_cct[0] + ", g:" + (String)rgb_cct[1] + ", b:" + (String)rgb_cct[2]);
     process_lightdata(transitiontime);
   });
 
@@ -477,7 +443,7 @@ void setup() {
   server.on("/detect", []() {
     char macString[50] = {0};
     sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"name\": \"" light_name "\",\"modelid\": \"LCT015\",\"mac\": \"" + String(macString) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"name\": \"" light_name "\",\"mac\": \"" + String(macString) + "\"}");
   });
 
   server.on("/", []() {
@@ -534,16 +500,16 @@ void setup() {
       EEPROM.commit();
     } else if (server.hasArg("alert")) {
       if (light_state) {
-        current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
+        current_rgb_cct[0] = 0; current_rgb_cct[1] = 0; current_rgb_cct[2] = 0; current_rgb_cct[3] = 0;
       } else {
-        current_rgbw[3] = 255;
+        current_rgb_cct[3] = 255;
       }
     }
-    for (uint8_t color = 0; color < 4; color++) {
+    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
-        step_level[color] = ((float)rgbw[color] - current_rgbw[color]) / transitiontime;
+        step_level[color] = ((float)rgb_cct[color] - current_rgb_cct[color]) / transitiontime;
       } else {
-        step_level[color] = current_rgbw[color] / transitiontime;
+        step_level[color] = current_rgb_cct[color] / transitiontime;
       }
     }
     if (server.hasArg("reset")) {
@@ -642,11 +608,11 @@ void setup() {
   server.begin();
 }
 
-void entertainment() {
+void udpserver() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t color = 1; color < 4; color++) {
+    for (uint8_t color = 0; color < 3; color++) {
       analogWrite(pins[color - 1], (int)(packetBuffer[color]));
     }
   }
@@ -656,5 +622,5 @@ void loop() {
   ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
-  entertainment();
+  udpserver();
 }
