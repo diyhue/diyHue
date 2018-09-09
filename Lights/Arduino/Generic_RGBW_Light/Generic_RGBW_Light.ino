@@ -5,29 +5,17 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
 
-#define PWM_CHANNELS 4
-const uint32_t period = 1024;
+#define light_name "Hue RGBW Light" //default light name
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
 #define button1_pin 1 // on and brightness up
 #define button2_pin 3 // off and brightness down
-
+uint8_t pins[4] = {12, 13, 14, 15};
 //define pins
-uint32 io_info[PWM_CHANNELS][3] = {
-  // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
-  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
-  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
-  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
-};
 
-// initial duty: all off
-uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0};
-
-// if you want to setup static ip uncomment these 3 lines and line 72
+// if you want to setup static ip uncomment these 3 lines and line 305
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
@@ -37,8 +25,10 @@ bool light_state, in_transition;
 int transitiontime, ct, hue, bri, sat;
 float step_level[4], current_rgbw[4], x, y;
 byte mac[6];
+byte packetBuffer[4];
 
 ESP8266WebServer server(80);
+WiFiUDP Udp;
 
 void convert_hue()
 {
@@ -215,7 +205,7 @@ void process_lightdata(float transitiontime) {
     convert_hue();
   }
   transitiontime *= 16;
-  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+  for (uint8_t color = 0; color < 4; color++) {
     if (light_state) {
       step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
     } else {
@@ -225,22 +215,20 @@ void process_lightdata(float transitiontime) {
 }
 
 void lightEngine() {
-  for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+  for (uint8_t color = 0; color < 4; color++) {
     if (light_state) {
       if (rgbw[color] != current_rgbw[color] ) {
         in_transition = true;
         current_rgbw[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        pwm_set_duty((int)(current_rgbw[color] * 4), color);
-        pwm_start();
+        analogWrite(pins[color], (int)(current_rgbw[color]));
       }
     } else {
       if (current_rgbw[color] != 0) {
         in_transition = true;
         current_rgbw[color] -= step_level[color];
         if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        pwm_set_duty((int)(current_rgbw[color] * 4), color);
-        pwm_start();
+        analogWrite(pins[color], (int)(current_rgbw[color]));
       }
     }
   }
@@ -293,12 +281,11 @@ void lightEngine() {
 void setup() {
   EEPROM.begin(512);
 
-  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
-    pinMode(io_info[ch][2], OUTPUT);
+  for (uint8_t pin = 0; pin < 4; pin++) {
+    pinMode(pins[pin], OUTPUT);
   }
-
-  pwm_init(period, pwm_duty_init, PWM_CHANNELS, io_info);
-  pwm_start();
+  analogWriteFreq(1000);
+  analogWriteRange(255);
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -312,14 +299,14 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+
   if (! light_state)  {
     // Show that we are connected
-    pwm_set_duty(100, 1);
-    pwm_start();
+    analogWrite(pins[1], 100);
     delay(500);
-    pwm_set_duty(0, 1);
-    pwm_start();
+    analogWrite(pins[1], 0);
   }
   WiFi.macAddress(mac);
 
@@ -333,6 +320,7 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
+  Udp.begin(2100);
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
   digitalWrite(LED_BUILTIN, HIGH);  // Turn the LED off by making the voltage HIGH
@@ -383,7 +371,7 @@ void setup() {
     } else if (button == 4000) {
       light_state = false;
     }
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+    for (uint8_t color = 0; color < 4; color++) {
       if (light_state) {
         step_level[color] = (rgbw[color] - current_rgbw[color]) / 54;
       } else {
@@ -487,7 +475,9 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    char macString[50] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"name\": \"" light_name "\",\"modelid\": \"LCT015\",\"mac\": \"" + String(macString) + "\"}");
   });
 
   server.on("/", []() {
@@ -549,7 +539,7 @@ void setup() {
         current_rgbw[3] = 255;
       }
     }
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
+    for (uint8_t color = 0; color < 4; color++) {
       if (light_state) {
         step_level[color] = ((float)rgbw[color] - current_rgbw[color]) / transitiontime;
       } else {
@@ -652,8 +642,19 @@ void setup() {
   server.begin();
 }
 
+void entertainment() {
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+    Udp.read(packetBuffer, packetSize);
+    for (uint8_t color = 1; color < 4; color++) {
+      analogWrite(pins[color - 1], (int)(packetBuffer[color]));
+    }
+  }
+}
+
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
+  entertainment();
 }
