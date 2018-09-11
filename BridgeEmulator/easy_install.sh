@@ -92,7 +92,7 @@ else
 		rm private.key public.crt
 	fi
 fi
-cp -r web-ui functions HueEmulator3.py /opt/hue-emulator/
+cp -r web-ui functions protocols HueEmulator3.py /opt/hue-emulator/
 if [ $(uname -m) = "x86_64" ]; then
 	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
 	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux

@@ -7,6 +7,8 @@
 #include <EEPROM.h>
 #include "pwm.c"
 
+#define light_name "Hue RGBW Light" //default light name
+
 #define PWM_CHANNELS 4
 const uint32_t period = 1024;
 
@@ -314,7 +316,9 @@ void setup() {
     }
   }
   WiFiManager wifiManager;
-  wifiManager.autoConnect("New Hue Light");
+  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.autoConnect(light_name);
+
   if (! light_state)  {
     // Show that we are connected
     pwm_set_duty(100, 1);
@@ -490,7 +494,9 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    char macString[50] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"name\": \"" light_name "\",\"modelid\": \"LCT015\",\"mac\": \"" + String(macString) + "\"}");
   });
 
   server.on("/", []() {
@@ -655,12 +661,12 @@ void setup() {
   server.begin();
 }
 
-void entertainment(){
+void entertainment() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 1; color < 4; color++) {
-      pwm_set_duty((int)(packetBuffer[color] * 4), color);
+      pwm_set_duty((int)(packetBuffer[color] * 4), color - 1);
     }
     pwm_start();
   }
