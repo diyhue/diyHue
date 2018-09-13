@@ -1,0 +1,31 @@
+sudo: required
+services:
+- docker
+language: bash
+env:
+  - VERSION=x86_64
+  - VERSION=arm
+script:
+
+- >
+  if [ "$VERSION" == "arm" ]; then
+    # prepare qemu
+    # https://blog.hypriot.com/post/setup-simple-ci-pipeline-for-arm-images/
+    docker run --rm --privileged multiarch/qemu-user-static:register --reset  
+  fi
+  docker build -t diyhue/core:$VERSION -f ./.build/$VERSION.Dockerfile  .
+
+# test image
+- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyHue/core:$VERSION
+- sleep 10
+- docker logs diyHue
+- docker kill diyHue
+- docker rm diyHue
+
+
+# push image
+- >
+  if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+    ./push.sh $VERSION
+  fi
