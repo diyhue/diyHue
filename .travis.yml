@@ -6,6 +6,8 @@ env:
   - VERSION=x86
   - VERSION=arm
 script:
+- echo "$VERSION"
+- echo $VERSION
 
 - >
   if [ "$VERSION" == "arm" ]; then
@@ -15,11 +17,11 @@ script:
   fi
 - docker build -t diyhue/$VERSION -f ./.build/$VERSION.Dockerfile  .
 # test image
-- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyHue/$VERSION
+- docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyHue/$VERSION
 - sleep 10
-- docker logs diyHue
-- docker kill diyHue
-- docker rm diyHue
+- docker logs diyhue
+- docker kill diyhue
+- docker rm diyhue
 
 
 # push image
