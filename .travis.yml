@@ -3,7 +3,7 @@ services:
 - docker
 language: bash
 env:
-  - VERSION=x86_64
+  - VERSION=x86
   - VERSION=arm
 script:
 
