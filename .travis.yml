@@ -6,11 +6,9 @@ env:
   - VERSION=x86
   - VERSION=arm
 script:
-- echo "$VERSION"
-- echo $VERSION
 
 - >
-  if [ "$VERSION" == "arm" ]; then
+  if [ $VERSION == arm ]; then
     # prepare qemu
     # https://blog.hypriot.com/post/setup-simple-ci-pipeline-for-arm-images/
     docker run --rm --privileged multiarch/qemu-user-static:register --reset  
