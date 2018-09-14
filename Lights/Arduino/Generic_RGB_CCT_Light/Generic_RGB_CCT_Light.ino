@@ -32,7 +32,7 @@ int  ct, hue;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
 
-byte packetBuffer[3];
+byte packetBuffer[8];
 
 WiFiUDP Udp;
 
