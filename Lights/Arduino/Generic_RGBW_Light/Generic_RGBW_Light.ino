@@ -9,7 +9,7 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define light_name "Hue colors Light" // Light name, change this if you se multiple lights for easy identification
+#define light_name "Hue RGBW Light" // Light name, change this if you se multiple lights for easy identification
 
 #define PWM_CHANNELS 4
 
@@ -19,7 +19,7 @@
 #define button2_pin 3 // off and brightness down
 
 //define pins
-uint8_t pins[PWM_CHANNELS] = {12, 13, 14, 5}; //red, green, blue, could white, warm white
+uint8_t pins[PWM_CHANNELS] = {12, 13, 14, 5}; //red, green, blue, white
 
 // if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
@@ -149,18 +149,22 @@ void convert_xy()
 }
 
 void convert_ct() {
-
   int optimal_bri = int( 10 + bri / 1.04);
-
-  colors[0] = 0;
-  colors[1] = 0;
-  colors[2] = 0;
-
-  uint8 percent_warm = ((ct - 150) * 100) / 350;
-
-  colors[3] = (optimal_bri * percent_warm) / 100;
-  colors[4] =  (optimal_bri * (100 - percent_warm)) / 100;
-
+  int hectemp = 10000 / ct;
+  int r, g, b;
+  if (hectemp <= 66) {
+    r = 255;
+    g = 99.4708025861 * log(hectemp) - 161.1195681661;
+    b = hectemp <= 19 ? 0 : (138.5177312231 * log(hectemp - 10) - 305.0447927307);
+  } else {
+    r = 329.698727446 * pow(hectemp - 60, -0.1332047592);
+    g = 288.1221695283 * pow(hectemp - 60, -0.0755148492);
+    b = 255;
+  }
+  r = r > 255 ? 255 : r;
+  g = g > 255 ? 255 : g;
+  b = b > 255 ? 255 : b;
+  colors[0] = r * (optimal_bri / 255.0f); colors[1] = g * (optimal_bri / 255.0f); colors[2] = b * (optimal_bri / 255.0f);
 }
 
 void handleNotFound() {
