@@ -1,8 +1,6 @@
 /*
   This can control bulbs with 5 pwm channels (red, gree, blue, warm white and could wihite). Is tested with MiLight RGB_CCT bulb.
 */
-
-
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -10,12 +8,10 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
 
-#define light_name "Hue RGB-CCT Light" //default light name
+#define light_name "Hue RGB-CCT light" // Light name, change this if you se multiple lights for easy identification
 
 #define PWM_CHANNELS 5
-const uint32_t period = 1024;
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
@@ -23,20 +19,9 @@ const uint32_t period = 1024;
 #define button2_pin 3 // off and brightness down
 
 //define pins
-uint32 io_info[PWM_CHANNELS][3] = {
-  // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
-  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
-  {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
-  {PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
-  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
-};
+uint8_t pins[PWM_CHANNELS] = {13, 14, 12, 4, 5}; //red, green, blue, could white, warm white
 
-// initial duty: all off
-uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0, 0};
-
-
-// if you want to setup static ip uncomment these 3 lines and line 317
+// if you want to setup static ip uncomment these 3 lines and line 72
 //IPAddress strip_ip ( 192,  168,   10,  95);
 //IPAddress gateway_ip ( 192,  168,   10,   1);
 //IPAddress subnet_mask(255, 255, 255,   0);
@@ -46,10 +31,12 @@ bool light_state, in_transition;
 int  ct, hue;
 float step_level[5], current_rgb_cct[5], x, y;
 byte mac[6];
-byte packetBuffer[4];
+
+byte packetBuffer[3];
+
+WiFiUDP Udp;
 
 ESP8266WebServer server(80);
-WiFiUDP Udp;
 
 void convert_hue()
 {
@@ -245,16 +232,14 @@ void lightEngine() {
         in_transition = true;
         current_rgb_cct[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgb_cct[color] > rgb_cct[color]) || (step_level[color] < 0.0f && current_rgb_cct[color] < rgb_cct[color])) current_rgb_cct[color] = rgb_cct[color];
-        pwm_set_duty((int)(current_rgb_cct[color] * 4), color);
-        pwm_start();
+        analogWrite(pins[color], (int)(current_rgb_cct[color]));
       }
     } else {
       if (current_rgb_cct[color] != 0) {
         in_transition = true;
         current_rgb_cct[color] -= step_level[color];
         if (current_rgb_cct[color] < 0.0f) current_rgb_cct[color] = 0;
-        pwm_set_duty((int)(current_rgb_cct[color] * 4), color);
-        pwm_start();
+        analogWrite(pins[color], (int)(current_rgb_cct[color]));
       }
     }
   }
@@ -306,13 +291,13 @@ void lightEngine() {
 
 void setup() {
   EEPROM.begin(512);
+  analogWriteFreq(1000);
+  analogWriteRange(255);
 
-  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
-    pinMode(io_info[ch][2], OUTPUT);
+  for (uint8_t pin = 0; pin < PWM_CHANNELS; pin++) {
+    pinMode(pins[pin], OUTPUT);
+    analogWrite(pins[pin], 0);
   }
-
-  pwm_init(period, pwm_duty_init, PWM_CHANNELS, io_info);
-  pwm_start();
 
   //WiFi.config(strip_ip, gateway_ip, subnet_mask);
 
@@ -331,11 +316,9 @@ void setup() {
 
   if (! light_state)  {
     // Show that we are connected
-    pwm_set_duty(100, 1);
-    pwm_start();
+    analogWrite(pins[1], 100);
     delay(500);
-    pwm_set_duty(0, 1);
-    pwm_start();
+    analogWrite(pins[1], 0);
   }
   WiFi.macAddress(mac);
 
@@ -349,6 +332,7 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.begin();
+
   Udp.begin(2100);
 
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the LED_BUILTIN pin as an output
@@ -457,7 +441,9 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"name\": \"" light_name "\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    char macString[50] = {0};
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"name\": \"" light_name "\",\"mac\": \"" + String(macString) + "\"}");
   });
 
   server.on("/", []() {
@@ -536,12 +522,12 @@ void setup() {
     http_content += "<head>";
     http_content += "<meta charset=\"utf-8\">";
     http_content += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-    http_content += "<title>Light Setup</title>";
+    http_content += "<title>"; http_content += light_name; http_content += " - Light Setup</title>";
     http_content += "<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">";
     http_content += "</head>";
     http_content += "<body>";
     http_content += "<fieldset>";
-    http_content += "<h3>Light Setup</h3>";
+    http_content += "<h3>"; http_content += light_name; http_content += " - Light Setup</h3>";
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
@@ -622,14 +608,13 @@ void setup() {
   server.begin();
 }
 
-void entertainment(){
+void udpserver() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t color = 1; color < 4; color++) {
-      pwm_set_duty((int)(packetBuffer[color] * 4), color - 1);
+    for (uint8_t color = 0; color < 3; color++) {
+      analogWrite(pins[color - 1], (int)(packetBuffer[color]));
     }
-    pwm_start();
   }
 }
 
@@ -637,5 +622,5 @@ void loop() {
   ArduinoOTA.handle();
   server.handleClient();
   lightEngine();
-  entertainment();
+  udpserver();
 }
