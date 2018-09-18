@@ -337,19 +337,19 @@ void lightEngine() {
         in_transition = true;
         current_rgbw[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) {
-			current_rgbw[color] = rgbw[color];
-		}
+          current_rgbw[color] = rgbw[color];
+        }
         leds[0]=CRGB((int)current_rgbw[0], (int)current_rgbw[1], (int)current_rgbw[2]);
         FastLED.show();
-		analogWrite(pins[0], (int)(current_rgbw[3]));
+        analogWrite(pins[0], (int)(current_rgbw[3]));
       }
     } else {
       if (current_rgbw[color] != 0) {
         in_transition = true;
         current_rgbw[color] -= step_level[color];
         if (current_rgbw[color] < 0.0f) {
-			current_rgbw[color] = 0;
-		}
+          current_rgbw[color] = 0;
+        }
         leds[0]=CRGB((int)current_rgbw[0], (int)current_rgbw[1], (int)current_rgbw[2]);
         FastLED.show();
         analogWrite(pins[0], (int)(current_rgbw[3]));

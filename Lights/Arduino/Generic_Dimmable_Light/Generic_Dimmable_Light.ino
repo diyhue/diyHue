@@ -74,18 +74,18 @@ void lightEngine() {
         in_transition = true;
         current_bri[i] += step_level[i];
         if ((step_level[i] > 0.0 && current_bri[i] > bri[i]) || (step_level[i] < 0.0 && current_bri[i] < bri[i])) {
-			current_bri[i] = bri[i];
-		}
-		analogWrite(i, (int)(current_bri[i]));
+          current_bri[i] = bri[i];
+        }
+        analogWrite(i, (int)(current_bri[i]));
       }
     } else {
       if (current_bri[i] != 0 ) {
         in_transition = true;
         current_bri[i] -= step_level[i];
         if (current_bri[i] < 0) {
-			current_bri[i] = 0;
-		}
-		analogWrite(i, (int)(current_bri[i]));
+          current_bri[i] = 0;
+        }
+        analogWrite(i, (int)(current_bri[i]));
       }
     }
   }

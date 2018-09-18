@@ -234,8 +234,8 @@ void lightEngine() {
         in_transition = true;
         current_rgb[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_rgb[color] > rgb[color]) || (step_level[color] < 0.0f && current_rgb[color] < rgb[color])) {
-			current_rgb[color] = rgb[color];
-		}
+          current_rgb[color] = rgb[color];
+        }
         analogWrite(pins[color], (int)(current_rgb[color]));
       }
     } else {
@@ -243,8 +243,8 @@ void lightEngine() {
         in_transition = true;
         current_rgb[color] -= step_level[color];
         if (current_rgb[color] < 0.0f) {
-			current_rgb[color] = 0;
-		}
+          current_rgb[color] = 0;
+        }
         analogWrite(pins[color], (int)(current_rgb[color]));
       }
     }

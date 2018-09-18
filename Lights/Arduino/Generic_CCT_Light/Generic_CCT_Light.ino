@@ -97,18 +97,18 @@ void lightEngine() {
         in_transition = true;
         current_cct[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_cct[color] > cct[color]) || (step_level[color] < 0.0f && current_cct[color] < cct[color])){
-			current_cct[color] = cct[color];
-		}
-		analogWrite(pins[color], (int)(current_cct[color]));
+          current_cct[color] = cct[color];
+        }
+        analogWrite(pins[color], (int)(current_cct[color]));
       }
     } else {
       if (current_cct[color] != 0) {
         in_transition = true;
         current_cct[color] -= step_level[color];
         if (current_cct[color] < 0.0f) {
-			current_cct[color] = 0;
-		}
-		analogWrite(pins[color], (int)(current_cct[color]));
+          current_cct[color] = 0;
+        }
+        analogWrite(pins[color], (int)(current_cct[color]));
       }
     }
   }
