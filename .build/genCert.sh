@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 if [ -z ${1+x} ]; then 
     echo "MAC not passed"
     mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`

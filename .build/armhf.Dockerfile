@@ -1,15 +1,12 @@
-FROM arm32v7/debian:stretch-slim
+FROM mielune/alpine-python3-arm
 WORKDIR /tmp
 
 ADD https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf .
 
 #Install requirments
-RUN apt update && apt install -y openssl unzip curl python3 python3-setuptools nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
+RUN apk update && apk add openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
 ## Install Python requirements.txt
-RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-RUN python3 get-pip.py --user
-ENV PATH "$PATH:/root/.local/bin"
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
@@ -19,7 +16,7 @@ COPY ./BridgeEmulator/functions/* /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/* /opt/hue-emulator/protocols/
 COPY ./BridgeEmulator/web-ui/* /opt/hue-emulator/web-ui/
 
-#x86 specific
+#armhf specific
 COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
 COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 
@@ -34,3 +31,4 @@ RUN sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 RUN rm -rf /tmp/*
 RUN ls -la /opt/hue-emulator
 ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
+
