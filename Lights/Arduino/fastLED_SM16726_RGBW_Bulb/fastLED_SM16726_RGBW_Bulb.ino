@@ -8,28 +8,6 @@
 #include <EEPROM.h>
 #include "Arduino.h"
 
-// Needed for pwm library
-extern "C"{
-  #include "pwm.h"
-  #include "user_interface.h"
-}
-
-// Macro for getting max value
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-
-// Macro for getting min value
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
-// Attempt at type checking, didn't work
-//#define ENSURE_int(i)       _Generic((i), int:    (i))
-//#define ENSURE_float(f)     _Generic((f), float:  (f))
-//
-//#define MAX(type, x, y)\
-//  (type)GENERIC_MAX(ENSURE_##type(x), ENSURE_##type(y))
-//
-//#define MIN(type, x, y)\
-//  (type)GENERIC_MIN(ENSURE_##type(x), ENSURE_##type(y))
-
 #define NUM_LEDS 1 // 1 led with 3 colors thanks to CRGB
 
 // Use Correction from fastLED library or not
@@ -39,8 +17,6 @@ extern "C"{
 // fastLED only controls rgb, not w
 #define LED_COLORS 4 
 
-// How many colors are controlled by basic PWM, not fastLED
-#define PWM_CHANNELS 1
 
 // FastLED settings, data and clock pin for spi communication
 // Note that the protocol for SM16716 is the same for the SM16726
@@ -61,6 +37,9 @@ extern "C"{
 // False - Don't
 #define W_ON_XY true
 
+// How many colors are controlled by basic PWM, not fastLED
+#define PWM_CHANNELS 1
+uint8_t pins[PWM_CHANNELS] = {5};
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
 #ifdef USE_STATIC_IP
@@ -69,14 +48,7 @@ IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 #endif
 
-const uint32_t period = 1024;
 
-uint32 io_info[PWM_CHANNELS][3] = {
-  // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5, 5},
-};
-
-uint32 pwm_duty_init[PWM_CHANNELS];
 
 uint8_t rgbw[4], color_mode, scene;
 bool light_state, in_transition;
@@ -234,7 +206,7 @@ void convert_xy()
   // Getting luminance from value to add white leds
   // https://stackoverflow.com/questions/40312216/converting-rgb-to-rgbw
   if (W_ON_XY == true) {
-    float tM = MAX(ri, (MAX(gi, bi)));
+    float tM = max(ri, (max(gi, bi)));
   
     if(tM == 0) {
       rgbw[0] = 0; rgbw[1] = 0; rgbw[2] = 0; rgbw[3] = 0;
@@ -247,8 +219,8 @@ void convert_xy()
     float hB = bi * multiplier;
   
     // Calculate whiteness of color
-    float M = MAX(hR, MAX(hG,hB));
-    float m = MIN(hR, MIN(hG,hB));
+    float M = max(hR, max(hG,hB));
+    float m = min(hR, min(hG,hB));
     float Luminance = ((M+m) / 2.0f - 127.5f) * (255.0f/127.5f) / multiplier;
     w = Luminance < 0.0f ? 0.0f : Luminance;
     w = Luminance > 255.0f ? 255.0f : Luminance;
@@ -364,21 +336,23 @@ void lightEngine() {
       if (rgbw[color] != current_rgbw[color] ) {
         in_transition = true;
         current_rgbw[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
+        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) {
+			current_rgbw[color] = rgbw[color];
+		}
         leds[0]=CRGB((int)current_rgbw[0], (int)current_rgbw[1], (int)current_rgbw[2]);
         FastLED.show();
-        pwm_set_duty((int)(current_rgbw[3] * 4), 0);
-        pwm_start();
+		analogWrite(pins[0], (int)(current_rgbw[3]));
       }
     } else {
       if (current_rgbw[color] != 0) {
         in_transition = true;
         current_rgbw[color] -= step_level[color];
-        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
+        if (current_rgbw[color] < 0.0f) {
+			current_rgbw[color] = 0;
+		}
         leds[0]=CRGB((int)current_rgbw[0], (int)current_rgbw[1], (int)current_rgbw[2]);
         FastLED.show();
-        pwm_set_duty((int)(current_rgbw[3] * 4), 0);
-        pwm_start();
+        analogWrite(pins[0], (int)(current_rgbw[3]));
       }
     }
   }
@@ -396,17 +370,8 @@ void setup() {
   }
   EEPROM.begin(512);
 
-  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
-    pinMode(io_info[ch][2], OUTPUT);
-    
-  }
-
-  for (uint8_t channel = 0; channel < PWM_CHANNELS; channel++) {
-    pwm_duty_init[channel] = 0;
-  }
-  
-  pwm_init(period, pwm_duty_init, PWM_CHANNELS, io_info);
-  pwm_start();
+  analogWriteFreq(1000);
+  analogWriteRange(255);
   
 #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);

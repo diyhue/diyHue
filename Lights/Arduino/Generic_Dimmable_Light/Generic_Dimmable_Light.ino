@@ -5,31 +5,16 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
 
-#define lightsCount 4
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
 #define button1_pin 4 // on and brightness up
 #define button2_pin 5 // off and brightness down
 
-const uint32_t period = 1024;
-
 //define pins
-uint32 io_info[lightsCount][3] = {
-  // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12, 12},
-  {PERIPHS_IO_MUX_MTDO_U, FUNC_GPIO15, 15},
-  {PERIPHS_IO_MUX_MTCK_U, FUNC_GPIO13, 13},
-  {PERIPHS_IO_MUX_MTMS_U, FUNC_GPIO14, 14},
-  //{PERIPHS_IO_MUX_GPIO4_U, FUNC_GPIO4 ,  4},
-  //{PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
-};
-
-// initial duty: all off
-uint32 pwm_duty_init[lightsCount];
-//uint32 pwm_duty_init[lightsCount] = {512, 255}; this will set startup brightness to 50% on first light and 25% on second one
+#define LIGHTS_COUNT 4
+uint8_t pins[LIGHTS_COUNT] = {12, 15, 13, 14};
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
 #ifdef USE_STATIC_IP
@@ -39,9 +24,9 @@ IPAddress subnet_mask(255, 255, 255,   0);
 #endif
 
 uint8_t scene;
-bool light_state[lightsCount], in_transition;
-int transitiontime[lightsCount], bri[lightsCount];
-float step_level[lightsCount], current_bri[lightsCount];
+bool light_state[LIGHTS_COUNT], in_transition;
+int transitiontime[LIGHTS_COUNT], bri[LIGHTS_COUNT];
+float step_level[LIGHTS_COUNT], current_bri[LIGHTS_COUNT];
 byte mac[6];
 
 ESP8266WebServer server(80);
@@ -83,22 +68,24 @@ void process_lightdata(uint8_t light, float transitiontime) {
 
 
 void lightEngine() {
-  for (int i = 0; i < lightsCount; i++) {
+  for (int i = 0; i < LIGHTS_COUNT; i++) {
     if (light_state[i]) {
       if (bri[i] != current_bri[i]) {
         in_transition = true;
         current_bri[i] += step_level[i];
-        if ((step_level[i] > 0.0 && current_bri[i] > bri[i]) || (step_level[i] < 0.0 && current_bri[i] < bri[i])) current_bri[i] = bri[i];
-        pwm_set_duty((int)(current_bri[i] * 4), i);
-        pwm_start();
+        if ((step_level[i] > 0.0 && current_bri[i] > bri[i]) || (step_level[i] < 0.0 && current_bri[i] < bri[i])) {
+			current_bri[i] = bri[i];
+		}
+		analogWrite(i, (int)(current_bri[i]));
       }
     } else {
       if (current_bri[i] != 0 ) {
         in_transition = true;
         current_bri[i] -= step_level[i];
-        if (current_bri[i] < 0) current_bri[i] = 0;
-        pwm_set_duty((int)(current_bri[i] * 4), i);
-        pwm_start();
+        if (current_bri[i] < 0) {
+			current_bri[i] = 0;
+		}
+		analogWrite(i, (int)(current_bri[i]));
       }
     }
   }
@@ -112,7 +99,7 @@ void lightEngine() {
         delay(20);
         i++;
       }
-      for (int light = 0; light < lightsCount; light++) {
+      for (int light = 0; light < LIGHTS_COUNT; light++) {
         if (i < 30) {
           // there was a short press
           light_state[light] = true;
@@ -133,7 +120,7 @@ void lightEngine() {
         delay(20);
         i++;
       }
-      for (int light = 0; light < lightsCount; light++) {
+      for (int light = 0; light < LIGHTS_COUNT; light++) {
         if (i < 30) {
           // there was a short press
           light_state[light] = false;
@@ -159,20 +146,16 @@ void setup() {
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
 
-  for (uint8_t ch = 0; ch < lightsCount; ch++) {
-    pinMode(io_info[ch][2], OUTPUT);
-  }
+  analogWriteFreq(1000);
+  analogWriteRange(255);
 
-  pwm_init(period, pwm_duty_init, lightsCount, io_info);
-  pwm_start();
-
-  for (uint8_t light = 0; light < lightsCount; light++) {
+  for (uint8_t light = 0; light < LIGHTS_COUNT; light++) {
     apply_scene(EEPROM.read(2), light);
     step_level[light] = bri[light] / 150.0;
   }
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
-    for (int i = 0; i < lightsCount; i++) {
+    for (int i = 0; i < LIGHTS_COUNT; i++) {
       light_state[i] = true;
     }
     for (int j = 0; j < 200; j++) {
@@ -183,11 +166,9 @@ void setup() {
   wifiManager.autoConnect("New Hue Light");
   if (! light_state[0])  {
     // Show that we are connected
-    pwm_set_duty(100, 1);
-    pwm_start();
+    analogWrite(pins[1], 100);
     delay(500);
-    pwm_set_duty(0, 1);
-    pwm_start();
+    analogWrite(pins[1], 0);
   }
 
   WiFi.macAddress(mac);
@@ -220,7 +201,7 @@ void setup() {
         button = server.arg(i).toInt();
       }
     }
-    for (int i = 0; i < lightsCount; i++) {
+    for (int i = 0; i < LIGHTS_COUNT; i++) {
       if (button == 1000) {
         if (light_state[i] == false) {
           light_state[i] = true;
@@ -311,7 +292,7 @@ void setup() {
   });
 
   server.on("/detect", []() {
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + (String)lightsCount + ",\"modelid\": \"LWB010\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": " + (String)LIGHTS_COUNT + ",\"modelid\": \"LWB010\",\"mac\": \"" + String(mac[5], HEX) + ":"  + String(mac[4], HEX) + ":" + String(mac[3], HEX) + ":" + String(mac[2], HEX) + ":" + String(mac[1], HEX) + ":" + String(mac[0], HEX) + "\"}");
   });
 
   server.on("/", []() {
@@ -323,7 +304,7 @@ void setup() {
       }
     }
 
-    for (int light = 0; light < lightsCount; light++) {
+    for (int light = 0; light < LIGHTS_COUNT; light++) {
       if (server.hasArg("scene")) {
         if (server.arg("bri") == "" && server.arg("hue") == "" && server.arg("ct") == "" && server.arg("sat") == "") {
           if (  EEPROM.read(2) != server.arg("scene").toInt()) {
