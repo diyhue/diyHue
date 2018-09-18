@@ -16,7 +16,7 @@ COPY ./BridgeEmulator/functions/* /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/* /opt/hue-emulator/protocols/
 COPY ./BridgeEmulator/web-ui/* /opt/hue-emulator/web-ui/
 
-#x86 specific
+#armhf specific
 COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
 COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 

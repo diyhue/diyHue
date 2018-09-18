@@ -3,11 +3,11 @@ services:
 - docker
 language: bash
 env:
-  - ARCH=x86
-  - ARCH=arm
+  - ARCH=amd64
+  - ARCH=armhf
 script:
 - docker run --rm --privileged multiarch/qemu-user-static:register
-- docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile  .
+- docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile .
 # test image
 - docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
 
@@ -16,10 +16,12 @@ script:
 - docker kill diyHue
 - docker rm diyHue
 
-
-# push image
+after_success:
+# Tag and push built images
 - >
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+    docker tag diyhue/core:$ARCH diyhue/core:$ARCH-$TRAVIS_COMMIT
     docker push diyhue/core:$ARCH
+    docker push diyhue/core:$ARCH-$TRAVIS_COMMIT
   fi
