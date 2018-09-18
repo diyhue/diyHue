@@ -1,3 +1,6 @@
+/*
+  This can control bulbs with 4 pwm channels (red, gree, blue and  white.
+*/
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -5,12 +8,10 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <EEPROM.h>
-#include "pwm.c"
 
-#define light_name "Hue RGBW Light" //default light name
+#define light_name "Hue RGBW Light" // Light name, change this if you se multiple lights for easy identification
 
 #define PWM_CHANNELS 4
-const uint32_t period = 1024;
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
 //For GPIO based on/off and brightness control, it is mandatory to connect the following GPIO pins to ground using 10k resistor
@@ -18,28 +19,21 @@ const uint32_t period = 1024;
 #define button2_pin 3 // off and brightness down
 
 //define pins
-uint32 io_info[PWM_CHANNELS][3] = {
-  // MUX, FUNC, PIN
-  {PERIPHS_IO_MUX_MTDI_U,  FUNC_GPIO12, 12},
-  {PERIPHS_IO_MUX_MTCK_U,  FUNC_GPIO13, 13},
-  {PERIPHS_IO_MUX_MTMS_U,  FUNC_GPIO14, 14},
-  {PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5 ,  5},
-};
+uint8_t pins[PWM_CHANNELS] = {12, 13, 14, 5}; //red, green, blue, white
 
-// initial duty: all off
-uint32 pwm_duty_init[PWM_CHANNELS] = {0, 0, 0, 0};
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
-// if you want to setup static ip uncomment these 3 lines and line 305
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
-
-uint8_t rgbw[4], color_mode, scene;
+uint8_t colors[PWM_CHANNELS], bri, sat, color_mode, scene;
 bool light_state, in_transition;
-int transitiontime, ct, hue, bri, sat;
-float step_level[4], current_rgbw[4], x, y;
+int ct, hue;
+float step_level[PWM_CHANNELS], current_colors[PWM_CHANNELS], x, y;
 byte mac[6];
-byte packetBuffer[4];
+byte packetBuffer[8];
 
 ESP8266WebServer server(80);
 WiFiUDP Udp;
@@ -49,14 +43,14 @@ void convert_hue()
   double      hh, p, q, t, ff, s, v;
   long        i;
 
-  rgbw[3] = 0;
+  colors[3] = 0;
   s = sat / 255.0;
   v = bri / 255.0;
 
   if (s <= 0.0) {      // < is bogus, just shuts up warnings
-    rgbw[0] = v;
-    rgbw[1] = v;
-    rgbw[2] = v;
+    colors[0] = v;
+    colors[1] = v;
+    colors[2] = v;
     return;
   }
   hh = hue;
@@ -70,36 +64,36 @@ void convert_hue()
 
   switch (i) {
     case 0:
-      rgbw[0] = v * 255.0;
-      rgbw[1] = t * 255.0;
-      rgbw[2] = p * 255.0;
+      colors[0] = v * 255.0;
+      colors[1] = t * 255.0;
+      colors[2] = p * 255.0;
       break;
     case 1:
-      rgbw[0] = q * 255.0;
-      rgbw[1] = v * 255.0;
-      rgbw[2] = p * 255.0;
+      colors[0] = q * 255.0;
+      colors[1] = v * 255.0;
+      colors[2] = p * 255.0;
       break;
     case 2:
-      rgbw[0] = p * 255.0;
-      rgbw[1] = v * 255.0;
-      rgbw[2] = t * 255.0;
+      colors[0] = p * 255.0;
+      colors[1] = v * 255.0;
+      colors[2] = t * 255.0;
       break;
 
     case 3:
-      rgbw[0] = p * 255.0;
-      rgbw[1] = q * 255.0;
-      rgbw[2] = v * 255.0;
+      colors[0] = p * 255.0;
+      colors[1] = q * 255.0;
+      colors[2] = v * 255.0;
       break;
     case 4:
-      rgbw[0] = t * 255.0;
-      rgbw[1] = p * 255.0;
-      rgbw[2] = v * 255.0;
+      colors[0] = t * 255.0;
+      colors[1] = p * 255.0;
+      colors[2] = v * 255.0;
       break;
     case 5:
     default:
-      rgbw[0] = v * 255.0;
-      rgbw[1] = p * 255.0;
-      rgbw[2] = q * 255.0;
+      colors[0] = v * 255.0;
+      colors[1] = p * 255.0;
+      colors[2] = q * 255.0;
       break;
   }
 
@@ -107,12 +101,17 @@ void convert_hue()
 
 void convert_xy()
 {
-  float z = 1.0f - x - y;
+
+  int optimal_bri = int( 10 + bri / 1.04);
+
+  float Y = y;
+  float X = x;
+  float Z = 1.0f - x - y;
 
   // sRGB D65 conversion
-  float r =  x * 3.2406f - y * 1.5372f - z * 0.4986f;
-  float g = -x * 0.9689f + y * 1.8758f + z * 0.0415f;
-  float b =  x * 0.0557f - y * 0.2040f + z * 1.0570f;
+  float r =  X * 3.2406f - Y * 1.5372f - Z * 0.4986f;
+  float g = -X * 0.9689f + Y * 1.8758f + Z * 0.0415f;
+  float b =  X * 0.0557f - Y * 0.2040f + Z * 1.0570f;
 
   // Apply gamma correction
   r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
@@ -148,10 +147,11 @@ void convert_xy()
   g = g < 0 ? 0 : g;
   b = b < 0 ? 0 : b;
 
-  rgbw[0] = (int) (r * bri); rgbw[1] = (int) (g * bri); rgbw[2] = (int) (b * bri); rgbw[3] = 0;
+  colors[0] = (int) (r * optimal_bri); colors[1] = (int) (g * optimal_bri); colors[2] = (int) (b * optimal_bri); colors[3] = 0;
 }
 
 void convert_ct() {
+  int optimal_bri = int( 10 + bri / 1.04);
   int hectemp = 10000 / ct;
   int r, g, b;
   if (hectemp <= 66) {
@@ -166,7 +166,7 @@ void convert_ct() {
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
-  rgbw[0] = r * (bri / 255.0f); rgbw[1] = g * (bri / 255.0f); rgbw[2] = b * (bri / 255.0f); rgbw[3] = bri;
+  colors[0] = r * (optimal_bri / 255.0f); colors[1] = g * (optimal_bri / 255.0f); colors[2] = b * (optimal_bri / 255.0f);
 }
 
 void handleNotFound() {
@@ -221,9 +221,9 @@ void process_lightdata(float transitiontime) {
   transitiontime *= 16;
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      step_level[color] = (rgbw[color] - current_rgbw[color]) / transitiontime;
+      step_level[color] = (colors[color] - current_colors[color]) / transitiontime;
     } else {
-      step_level[color] = current_rgbw[color] / transitiontime;
+      step_level[color] = current_colors[color] / transitiontime;
     }
   }
 }
@@ -231,20 +231,18 @@ void process_lightdata(float transitiontime) {
 void lightEngine() {
   for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
     if (light_state) {
-      if (rgbw[color] != current_rgbw[color] ) {
+      if (colors[color] != current_colors[color] ) {
         in_transition = true;
-        current_rgbw[color] += step_level[color];
-        if ((step_level[color] > 0.0f && current_rgbw[color] > rgbw[color]) || (step_level[color] < 0.0f && current_rgbw[color] < rgbw[color])) current_rgbw[color] = rgbw[color];
-        pwm_set_duty((int)(current_rgbw[color] * 4), color);
-        pwm_start();
+        current_colors[color] += step_level[color];
+        if ((step_level[color] > 0.0f && current_colors[color] > colors[color]) || (step_level[color] < 0.0f && current_colors[color] < colors[color])) current_colors[color] = colors[color];
+        analogWrite(pins[color], (int)(current_colors[color]));
       }
     } else {
-      if (current_rgbw[color] != 0) {
+      if (current_colors[color] != 0) {
         in_transition = true;
-        current_rgbw[color] -= step_level[color];
-        if (current_rgbw[color] < 0.0f) current_rgbw[color] = 0;
-        pwm_set_duty((int)(current_rgbw[color] * 4), color);
-        pwm_start();
+        current_colors[color] -= step_level[color];
+        if (current_colors[color] < 0.0f) current_colors[color] = 0;
+        analogWrite(pins[color], (int)(current_colors[color]));
       }
     }
   }
@@ -296,18 +294,20 @@ void lightEngine() {
 
 void setup() {
   EEPROM.begin(512);
+  analogWriteFreq(1000);
+  analogWriteRange(255);
 
-  for (uint8_t ch = 0; ch < PWM_CHANNELS; ch++) {
-    pinMode(io_info[ch][2], OUTPUT);
+  for (uint8_t pin = 0; pin < PWM_CHANNELS; pin++) {
+    pinMode(pins[pin], OUTPUT);
+    analogWrite(pins[pin], 0);
   }
 
-  pwm_init(period, pwm_duty_init, PWM_CHANNELS, io_info);
-  pwm_start();
-
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   apply_scene(EEPROM.read(2));
-  step_level[0] = rgbw[0] / 150.0; step_level[1] = rgbw[1] / 150.0; step_level[2] = rgbw[2] / 150.0; step_level[3] = rgbw[3] / 150.0;
+  step_level[0] = colors[0] / 150.0; step_level[1] = colors[1] / 150.0; step_level[2] = colors[2] / 150.0; step_level[3] = colors[3] / 150.0;
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     light_state = true;
@@ -321,11 +321,9 @@ void setup() {
 
   if (! light_state)  {
     // Show that we are connected
-    pwm_set_duty(100, 1);
-    pwm_start();
+    analogWrite(pins[1], 100);
     delay(500);
-    pwm_set_duty(0, 1);
-    pwm_start();
+    analogWrite(pins[1], 0);
   }
   WiFi.macAddress(mac);
 
@@ -349,60 +347,9 @@ void setup() {
   }
 
 
-  server.on("/switch", []() {
-    server.send(200, "text/plain", "OK");
-    int button;
-    for (uint8_t i = 0; i < server.args(); i++) {
-      if (server.argName(i) == "button") {
-        button = server.arg(i).toInt();
-      }
-    }
-    if (button == 1000) {
-      if (light_state == false) {
-        light_state = true;
-        scene = 0;
-      } else {
-        apply_scene(scene);
-        scene++;
-        if (scene == 11) {
-          scene = 0;
-        }
-      }
-    } else if (button == 2000) {
-      if (light_state == false) {
-        bri = 30;
-        light_state = true;
-      } else {
-        bri += 30;
-      }
-      if (bri > 255) bri = 255;
-      if (color_mode == 1) convert_xy();
-      else if (color_mode == 2) convert_ct();
-      else if (color_mode == 3) convert_hue();
-    } else if (button == 3000 && light_state == true) {
-      bri -= 30;
-      if (bri < 1) bri = 1;
-      else {
-        if (color_mode == 1) convert_xy();
-        else if (color_mode == 2) convert_ct();
-        else if (color_mode == 3) convert_hue();
-      }
-    } else if (button == 4000) {
-      light_state = false;
-    }
-    for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
-      if (light_state) {
-        step_level[color] = (rgbw[color] - current_rgbw[color]) / 54;
-      } else {
-        step_level[color] = current_rgbw[color] / 54;
-      }
-    }
-  });
-
-
   server.on("/set", []() {
     light_state = true;
-    float transitiontime = 4;
+    float transitiontime = 4.0;
     for (uint8_t i = 0; i < server.args(); i++) {
       if (server.argName(i) == "on") {
         if (server.arg(i) == "True" || server.arg(i) == "true") {
@@ -421,20 +368,20 @@ void setup() {
         }
       }
       else if (server.argName(i) == "r") {
-        rgbw[0] = server.arg(i).toInt();
-        color_mode = 0;
+        colors[0] = server.arg(i).toInt();
+        color_mode = 0; colors[3] = 0;
       }
       else if (server.argName(i) == "g") {
-        rgbw[1] = server.arg(i).toInt();
-        color_mode = 0;
+        colors[1] = server.arg(i).toInt();
+        color_mode = 0; colors[3] = 0;
       }
       else if (server.argName(i) == "b") {
-        rgbw[2] = server.arg(i).toInt();
-        color_mode = 0;
+        colors[2] = server.arg(i).toInt();
+        color_mode = 0; colors[3] = 0;
       }
       else if (server.argName(i) == "w") {
-        rgbw[3] = server.arg(i).toInt();
-        color_mode = 0;
+        colors[3] = server.arg(i).toInt();
+        color_mode = 0; colors[0] = 0; colors[1] = 0; colors[2] = 0;
       }
       else if (server.argName(i) == "x") {
         x = server.arg(i).toFloat();
@@ -467,9 +414,9 @@ void setup() {
       }
       else if (server.argName(i) == "alert" && server.arg(i) == "select") {
         if (light_state) {
-          current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
+          current_colors[0] = 0; current_colors[1] = 0; current_colors[2] = 0; current_colors[3] = 0;
         } else {
-          current_rgbw[0] = 255; current_rgbw[1] = 255; current_rgbw[2] = 255; current_rgbw[3] = 255;
+          current_colors[0] = 255; current_colors[1] = 255; current_colors[2] = 255; current_colors[3] = 255;
         }
       }
       else if (server.argName(i) == "transitiontime") {
@@ -496,7 +443,7 @@ void setup() {
   server.on("/detect", []() {
     char macString[50] = {0};
     sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"name\": \"" light_name "\",\"modelid\": \"LCT015\",\"mac\": \"" + String(macString) + "\"}");
+    server.send(200, "text/plain", "{\"hue\": \"bulb\",\"lights\": 1,\"modelid\": \"LCT015\",\"name\": \"" light_name "\",\"mac\": \"" + String(macString) + "\"}");
   });
 
   server.on("/", []() {
@@ -553,16 +500,16 @@ void setup() {
       EEPROM.commit();
     } else if (server.hasArg("alert")) {
       if (light_state) {
-        current_rgbw[0] = 0; current_rgbw[1] = 0; current_rgbw[2] = 0; current_rgbw[3] = 0;
+        current_colors[0] = 0; current_colors[1] = 0; current_colors[2] = 0; current_colors[3] = 0;
       } else {
-        current_rgbw[3] = 255;
+        current_colors[3] = 255;
       }
     }
     for (uint8_t color = 0; color < PWM_CHANNELS; color++) {
       if (light_state) {
-        step_level[color] = ((float)rgbw[color] - current_rgbw[color]) / transitiontime;
+        step_level[color] = ((float)colors[color] - current_colors[color]) / transitiontime;
       } else {
-        step_level[color] = current_rgbw[color] / transitiontime;
+        step_level[color] = current_colors[color] / transitiontime;
       }
     }
     if (server.hasArg("reset")) {
@@ -575,12 +522,12 @@ void setup() {
     http_content += "<head>";
     http_content += "<meta charset=\"utf-8\">";
     http_content += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-    http_content += "<title>Light Setup</title>";
+    http_content += "<title>"; http_content += light_name; http_content += " - Light Setup</title>";
     http_content += "<link rel=\"stylesheet\" href=\"https://unpkg.com/purecss@0.6.2/build/pure-min.css\">";
     http_content += "</head>";
     http_content += "<body>";
     http_content += "<fieldset>";
-    http_content += "<h3>Light Setup</h3>";
+    http_content += "<h3>"; http_content += light_name; http_content += " - Light Setup</h3>";
     http_content += "<form class=\"pure-form pure-form-aligned\" action=\"/\" method=\"post\">";
     http_content += "<div class=\"pure-control-group\">";
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
@@ -665,10 +612,9 @@ void entertainment() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
-    for (uint8_t color = 1; color < 4; color++) {
-      pwm_set_duty((int)(packetBuffer[color] * 4), color - 1);
+    for (uint8_t color = 0; color < 3; color++) {
+      analogWrite(pins[color - 1], (int)(packetBuffer[color]));
     }
-    pwm_start();
   }
 }
 

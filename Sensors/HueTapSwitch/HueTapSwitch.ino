@@ -19,8 +19,9 @@ const char* switchType = "ZGPSwitch";
 
 const char* bridgeIp = "192.168.10.200";
 
-IPAddress strip_ip ( 192,  168,   10,  96);
-IPAddress gateway_ip ( 192,  168,   10,   1);
+//static ip configuration is necessary to minimize bootup time from deep sleep
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 
 int counter;

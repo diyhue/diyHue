@@ -1,7 +1,7 @@
 version: '2'
 services:
   diyHue:
-    image: diyhue/core:x86
+    image: diyhue/core:amd64
     restart: always
     volumes:
       - ./exports:/opt/hue-emulator/export

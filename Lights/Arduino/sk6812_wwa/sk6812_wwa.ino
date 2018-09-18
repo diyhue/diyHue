@@ -11,10 +11,12 @@
 #define pixelCount 144
 
 
-// if you want to setup static ip uncomment these 3 lines and line 154
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 uint8_t wwa[lightsCount][3], bri[lightsCount], scene;
 bool light_state[lightsCount], in_transition;
@@ -151,7 +153,9 @@ void setup() {
   strip.Show();
   EEPROM.begin(512);
 
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   for (uint8_t light = 0; light < lightsCount; light++) {
     float transitiontime = (17 - (pixelCount / 40)) * 4;

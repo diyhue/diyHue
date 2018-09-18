@@ -1,15 +1,12 @@
-FROM debian:stretch-slim
+FROM python:3.6.6-alpine3.8
 WORKDIR /tmp
 
 ADD https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf .
 
 #Install requirments
-RUN apt update && apt install -y openssl unzip curl python3 python3-setuptools nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
+RUN apk update && apk add openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
 ## Install Python requirements.txt
-RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-RUN python3 get-pip.py --user
-ENV PATH "$PATH:/root/.local/bin"
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
