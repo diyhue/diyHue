@@ -4,7 +4,7 @@ WORKDIR /tmp
 ADD https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf .
 
 #Install requirments
-RUN apk update && apk add openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
+RUN apk update && apk add bash openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
 ## Install Python requirements.txt
 COPY requirements.txt .
