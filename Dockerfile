@@ -26,4 +26,4 @@ RUN sed -i "s|docker = False|docker = True |g" HueEmulator3.py
 ## cleanup
 RUN rm -rf /tmp/*
 
-ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
+ENTRYPOINT /bin/bash /opt/hue-emulator/startup.sh $MAC $IP
