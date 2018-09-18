@@ -18,10 +18,12 @@ uint8_t PWM_PINS[PWM_CHANNELS] = {4, 3, 5, 6}; //RGBW order
 
 my92xx * _my92xx;
 
-// if you want to setup static ip uncomment these 3 lines and line 256
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 uint8_t rgbw[4], color_mode, scene;
 bool light_state, in_transition;
@@ -253,7 +255,9 @@ void setup() {
   _my92xx = new my92xx(MY92XX_MODEL, MY92XX_CHIPS, MY92XX_DI_PIN, MY92XX_DCKI_PIN, MY92XX_COMMAND_DEFAULT);
   _my92xx->setState(true);
 
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   apply_scene(EEPROM.read(2));
   step_level[0] = rgbw[0] / 150.0; step_level[1] = rgbw[1] / 150.0; step_level[2] = rgbw[2] / 150.0; step_level[3] = rgbw[3] / 150.0;

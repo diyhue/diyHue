@@ -19,8 +19,9 @@ const int sleepTimeS = 1200; // 1200 seconds => 20 minutes
 // depending on photoresistor you need to setup this value to trigger dark state when light level in room become low enough
 #define lightmultiplier 30
 
-IPAddress strip_ip ( 192,  168,   10,  97);
-IPAddress gateway_ip ( 192,  168,   10,   1);
+//static ip configuration is necessary to minimize bootup time from deep sleep
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 
 /// END SETUP SENSOR PARAMETERS ////

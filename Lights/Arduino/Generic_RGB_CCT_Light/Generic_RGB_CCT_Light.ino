@@ -21,10 +21,14 @@
 //define pins
 uint8_t pins[PWM_CHANNELS] = {13, 14, 12, 4, 5}; //red, green, blue, could white, warm white
 
-// if you want to setup static ip uncomment these 3 lines and line 72
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
+
 
 uint8_t colors[PWM_CHANNELS], bri, sat, color_mode, scene;
 bool light_state, in_transition;
@@ -297,7 +301,9 @@ void setup() {
     analogWrite(pins[pin], 0);
   }
 
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   apply_scene(EEPROM.read(2));
   step_level[0] = colors[0] / 150.0; step_level[1] = colors[1] / 150.0; step_level[2] = colors[2] / 150.0; step_level[3] = colors[3] / 150.0; step_level[4] = colors[4] / 150.0;

@@ -31,10 +31,12 @@ uint32 io_info[lightsCount][3] = {
 uint32 pwm_duty_init[lightsCount];
 //uint32 pwm_duty_init[lightsCount] = {512, 255}; this will set startup brightness to 50% on first light and 25% on second one
 
-// if you want to setup static ip uncomment these 3 lines and line 156
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 uint8_t scene;
 bool light_state[lightsCount], in_transition;
@@ -152,8 +154,10 @@ void lightEngine() {
 
 void setup() {
   EEPROM.begin(512);
-
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+  
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   for (uint8_t ch = 0; ch < lightsCount; ch++) {
     pinMode(io_info[ch][2], OUTPUT);
