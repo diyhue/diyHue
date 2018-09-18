@@ -3,8 +3,8 @@ services:
 - docker
 language: bash
 env:
-  - arch=x86
-  - arch=arm
+  - ARCH=x86
+  - ARCH=arm
 script:
 - docker run --rm --privileged multiarch/qemu-user-static:register
 - docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile  .
