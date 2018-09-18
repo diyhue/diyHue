@@ -17,10 +17,12 @@ uint8_t lastButtonState = buttonState;
 unsigned long lastButtonPush = 0;
 uint8_t buttonThreshold = 50;
 
-// if you want to setup static ip uncomment these 3 lines and line 54
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 bool device_state[devicesCount];
 byte mac[6];
@@ -51,8 +53,10 @@ void setup() {
 
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, HIGH);
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
-
+  
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   if (EEPROM.read(1) == 1 || (EEPROM.read(1) == 0 && EEPROM.read(0) == 1)) {
     for (uint8_t i = 0; i < devicesCount; i++) {

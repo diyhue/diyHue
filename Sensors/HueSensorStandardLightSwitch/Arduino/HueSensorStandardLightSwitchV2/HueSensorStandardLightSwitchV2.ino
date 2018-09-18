@@ -28,9 +28,12 @@ const char* bridgeIp = "192.168.178.45";
 //Static adresses are no longer needed, because we use a Powersupply!
 //DHCP FTW :)
 
-//IPAddress strip_ip ( 192,  168,   10,  96);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 int counter;
 byte mac[6];
@@ -135,7 +138,11 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+  
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
+
   WiFi.macAddress(mac);
 
   while (WiFi.status() != WL_CONNECTED) {

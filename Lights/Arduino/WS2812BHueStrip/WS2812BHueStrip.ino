@@ -16,10 +16,12 @@
 #define button2_pin 5 // off and bri down
 #define use_hardware_switch false // on/off state and brightness can be controlled with above gpio pins. Is mandatory to connect them to ground with 10K resistors
 
-// if you want to setup static ip uncomment these 3 lines and line 326
-//IPAddress strip_ip ( 192,  168,   10,  95);
-//IPAddress gateway_ip ( 192,  168,   10,   1);
-//IPAddress subnet_mask(255, 255, 255,   0);
+//#define USE_STATIC_IP //! uncomment to enable Static IP Adress
+#ifdef USE_STATIC_IP
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress subnet_mask(255, 255, 255,   0);
+#endif
 
 int lightLedsCount = pixelCount / lightsCount;
 uint8_t rgb[lightsCount][3], bri[lightsCount], sat[lightsCount], color_mode[lightsCount], scene;
@@ -398,7 +400,9 @@ void setup() {
   EEPROM.begin(512);
   WiFi.hostname(light_name);
 
-  //WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#ifdef USE_STATIC_IP
+  WiFi.config(strip_ip, gateway_ip, subnet_mask);
+#endif
 
   for (uint8_t light = 0; light < lightsCount; light++) {
     float transitiontime = (17 - (pixelCount / 40)) * 4;
