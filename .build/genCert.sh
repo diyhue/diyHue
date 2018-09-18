@@ -14,6 +14,12 @@ dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
 openssl req -new  -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial
 
 touch /opt/hue-emulator/cert.pem
-cat private.key > /opt/hue-emulator/cert.pem
-cat public.crt >> /opt/hue-emulator/cert.pem
-rm private.key public.crt 
+if [[ -s private.key ]]; then 
+    cat private.key > /opt/hue-emulator/cert.pem
+    cat public.crt >> /opt/hue-emulator/cert.pem
+    rm private.key public.crt 
+else 
+    echo -e "Certificate generation failed"
+    exit 1
+fi
+

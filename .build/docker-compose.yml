@@ -4,5 +4,5 @@ services:
     image: diyhue/core:amd64
     restart: always
     volumes:
-      - ./exports:/opt/hue-emulator/export
+      - ../exports:/opt/hue-emulator/export
     network_mode: "host"
