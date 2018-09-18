@@ -1,8 +1,6 @@
 FROM mielune/alpine-python3-arm
 WORKDIR /tmp
 
-ADD https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf .
-
 #Install requirments
 RUN apk update && apk add bash openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
@@ -18,9 +16,9 @@ COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
 COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 
 # Add Docker Build scripts
-ADD https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf /opt/hue-emulator
 COPY ./.build/startup.sh /opt/hue-emulator/
 COPY ./.build/genCert.sh /opt/hue-emulator/
+COPY ./.build/openssl.conf /opt/hue-emulator/
 RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.sh
 RUN sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 
