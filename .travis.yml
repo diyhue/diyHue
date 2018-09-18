@@ -3,19 +3,13 @@ services:
 - docker
 language: bash
 env:
-  - VERSION=x86
-  - VERSION=arm
+  - arch=x86
+  - arch=arm
 script:
-
-- >
-  if [ $VERSION == arm ]; then
-    # prepare qemu
-    # https://blog.hypriot.com/post/setup-simple-ci-pipeline-for-arm-images/
-    docker run --rm --privileged multiarch/qemu-user-static:register --reset  
-  fi
-- docker build -t diyhue/$VERSION -f ./.build/$VERSION.Dockerfile  .
+- docker run --rm --privileged multiarch/qemu-user-static:register
+- docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile  .
 # test image
-- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/$VERSION
+- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
 
 - sleep 10
 - docker logs diyHue
@@ -27,5 +21,5 @@ script:
 - >
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
-    docker push diyhue/core:$VERSION
+    docker push diyhue/core:$ARCH
   fi
