@@ -18,8 +18,8 @@ script:
 
 after_success:
 # Tag and push built images
-- echo $TRAVIS_BRANCH
-- echo $TRAVIS_PULL_REQUEST
+- echo $DOCKER_USER
+- echo $DOCKER_PASS
 - >
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
