@@ -9,7 +9,11 @@ COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
 ## Install diyHue
-COPY ./BridgeEmulator/ /opt/hue-emulator/
+COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/
+COPY ./BridgeEmulator/functions/ /opt/hue-emulator/
+COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/
+COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+COPY ./BridgeEmulator/config.json /opt/hue-emulator/
 
 #x86_64 specific
 COPY ./BridgeEmulator/entertainment-x86_64 /opt/hue-emulator/entertainment-srv
