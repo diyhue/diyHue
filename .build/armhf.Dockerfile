@@ -2,7 +2,7 @@ FROM resin/rpi-raspbian
 WORKDIR /tmp
 
 #Install requirments
-RUN apk update && apk add bash openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y python3 python3-setuptools python3-pip openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
 #Install Python3
 RUN apk add --no-cache python3 && \
@@ -18,7 +18,11 @@ COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 
 ## Install diyHue
-COPY ./BridgeEmulator/ /opt/hue-emulator/
+COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
+COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
+COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
+COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+COPY ./BridgeEmulator/config.json /opt/hue-emulator/
 
 #armhf specific
 COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
@@ -35,4 +39,3 @@ RUN sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 RUN rm -rf /tmp/*
 RUN ls -la /opt/hue-emulator
 ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
-
