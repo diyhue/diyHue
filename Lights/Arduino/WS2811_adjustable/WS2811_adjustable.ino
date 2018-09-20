@@ -793,11 +793,14 @@ void entertainment() {
             }
           }
         }
+      } else {
+        strip.ClearTo(RgbColor(rgb[0][0], rgb[0][1], rgb[0][2]), 0, lightLedsCount - 1);
       }
     }
     strip.Show();
   }
 }
+
 
 void loop() {
   ArduinoOTA.handle();
