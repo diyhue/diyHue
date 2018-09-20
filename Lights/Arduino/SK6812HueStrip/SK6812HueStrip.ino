@@ -769,6 +769,8 @@ void entertainment() {
             }
           }
         }
+      } else {
+        strip.ClearTo(RgbwColor(rgbw[0][0], rgbw[0][1], rgbw[0][2], 0), 0, lightLedsCount - 1);
       }
     }
     strip.Show();
