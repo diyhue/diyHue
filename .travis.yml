@@ -26,5 +26,5 @@ after_success:
     docker push diyhue/core:$ARCH-$TRAVIS_COMMIT
   fi
 
- notifications:
-    slack: diyhue:84x97ehqLW4B6pe9ntP16SOI
+notifications:
+  slack: diyhue:84x97ehqLW4B6pe9ntP16SOI
