@@ -25,3 +25,7 @@ after_success:
     docker push diyhue/core:$ARCH
     docker push diyhue/core:$ARCH-$TRAVIS_COMMIT
   fi
+
+notifications:
+  slack:
+    secure: Fzl59ydXwPtDhSedxAGiLj7pgpxWJYAW9MrkjpbaoIHvvdszDKqDl5ke5G8Oe1CTqrARYCuy9dzQnlRKBGnxOsstOD/vf7GSiss/NqckA2AG5aWgsA2F6Lb7lB80twHk9Ggijvoyt9FghdgInDzHnWK3++UOH4iV4NW7a2o3YlPRgjGw4YHUSFQl7++V9DmtC94uOD+eGRZ9mY5AHgFm/j/zujfhF1Gy19XrZfNCEjK1ikhrE4MCE3OXoEgO5vcORs1ICxl+g7Wcq6CoaKwWejt5y3AWaoYrAeVjDUrN2xoFNwF83slRjMdAF/9zls4Bl3iSjTykRHGLj5hwunV+I41Mm/mVm8TvRS8LXAz+cZN4nrutWjj9oaprVWS3EVfIsbHIIVKHYFZmxLeHwfc+i+j5PJKbqL6ri5LdJL9vAP50L80410ad89S1tRTqZuEDwZU/qc/QRn0jMO4+IN6HaDNRajF8CibN//0vQmpl89js6dtta8uocAuWd7Znsy/ti+x0QG90l5UzTfkWc9uWZ2R/uI0UFYZLYpwZNUV9kQxWoroCIYHVEAApjrIQ810FrNcuV6hbaT6v9qFI55gA0oQgwgsY9WL6w03uBO63J2u4FXjodMGwpzOiuIHU9bBvkT322mH2MSU/4zEzyQwYvj9+ktwNOq1GWKP3a7a7gjg=
