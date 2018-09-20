@@ -4,3 +4,4 @@ BridgeEmulator/web-ui/public/config.js
 BridgeEmulator/web-ui/public/config.js
 node_modules
 BridgeEmulator/config.json
+./exports
