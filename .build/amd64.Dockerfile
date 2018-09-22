@@ -17,19 +17,15 @@ RUN cd /tmp && curl https://codeload.github.com/requests/requests/zip/v2.19.1 -o
 COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
 COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
-COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
-COPY ./BridgeEmulator/config.json /opt/hue-emulator/
+COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/config.json /opt/hue-emulator/
 
 #x86_64 specific
 COPY ./BridgeEmulator/entertainment-x86_64 /opt/hue-emulator/entertainment-srv
 COPY ./BridgeEmulator/coap-client-x86_64 /opt/hue-emulator/coap-client-linux
 
 # Add Docker Build scripts
-COPY ./.build/startup.sh /opt/hue-emulator/
-COPY ./.build/genCert.sh /opt/hue-emulator/
-COPY ./.build/openssl.conf /opt/hue-emulator/
-RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.sh
-RUN sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
+COPY ./.build/startup.sh ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
+RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
