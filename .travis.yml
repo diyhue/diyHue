@@ -4,7 +4,7 @@ services:
 language: bash
 env:
   - ARCH=amd64
-  - ARCH=armhf
+  - ARCH=arm
 script:
 - docker run --rm --privileged multiarch/qemu-user-static:register
 - docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile .
