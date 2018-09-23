@@ -7,7 +7,7 @@
 #include <WiFiManager.h>
 #include <EEPROM.h>
 
-#define light_name WS2811 Ajustable Light" //default light name
+#define light_name "WS2811 Ajustable Light" //default light name
 #define lightsCount 3
 #define pixelCount 60
 #define transitionLeds 6 // must be even number
