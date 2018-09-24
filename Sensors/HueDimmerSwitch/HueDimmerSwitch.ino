@@ -12,17 +12,16 @@ extern "C" {
 #define button3_pin 5
 #define button4_pin 4
 
-const char* ssid = "MikroTik";
-const char* password = "nustiuceparola";
+const char* ssid = "your wifi ssid";
+const char* password = "your wifi password";
 const char* switchType = "ZLLSwitch";
-const char* bridge_user = "9f552609847c0dd1f372fee9b76330035b7a3bb1";
 
 //Set bridge ip or ip of every light controlled by this switch
-
 const char* bridgeIp[] = {"192.168.10.200"};
 
-IPAddress strip_ip ( 192,  168,   10,  96);
-IPAddress gateway_ip ( 192,  168,   10,   1);
+//static ip configuration is necessary to minimize bootup time from deep sleep
+IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 
 int counter;
@@ -77,8 +76,6 @@ void setup() {
     delay(50);
   }
 
-  ArduinoOTA.begin();
-
   rst_info *rinfo;
   rinfo = ESP.getResetInfoPtr();
 
@@ -102,52 +99,39 @@ void setup() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
-  delay(1);
-
   if (digitalRead(button1_pin) == HIGH) {
     sendHttpRequest(1000);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button1_pin) == HIGH && i < 30) {
-      delay(20);
-      i++;
-    }
+    goingToSleep();
   }
   if (digitalRead(button2_pin) == HIGH) {
-    counter = 0;
     int i = 0;
-    while (digitalRead(button2_pin) == HIGH && i < 30) {
+    while (digitalRead(button2_pin) == HIGH && i % 30) {
       delay(20);
       i++;
     }
     if (i < 30) {
       sendHttpRequest(2000);
+      goingToSleep();
     } else {
       sendHttpRequest(2001);
     }
   }
   if (digitalRead(button3_pin) == HIGH) {
-    counter = 0;
     int i = 0;
-    while (digitalRead(button3_pin) == HIGH && i < 30) {
+    while (digitalRead(button3_pin) == HIGH && i % 30) {
       delay(20);
       i++;
     }
     if (i < 30) {
       sendHttpRequest(3000);
+      goingToSleep();
     } else {
       sendHttpRequest(3001);
     }
   }
   if (digitalRead(button4_pin) == HIGH) {
     sendHttpRequest(4000);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button4_pin) == HIGH && i < 30) {
-      delay(20);
-      i++;
-    }
+    goingToSleep();
   }
   if (counter == 5000) {
     goingToSleep();
