@@ -1,4 +1,4 @@
-FROM resin/rpi-raspbian
+FROM resin/rpi-raspbian:stretch
 WORKDIR /tmp
 
 #Install requirments
