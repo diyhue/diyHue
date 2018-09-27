@@ -103,7 +103,6 @@ You may want to see also my new project [qtHue](https://github.com/mariusmotea/q
 ![qtHue](https://github.com/mariusmotea/qtHue/blob/master/Screenshot.png?raw=true)
 
 Credits:
-  - 
   - [@avinashraja98](https://github.com/avinashraja98) - Hue Entertainment server
   - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) Internal WebGUI
   - [@J3n50m4t](https://github.com/J3n50m4t) - Yeelight integration
@@ -114,3 +113,4 @@ Credits:
   - Cédric @ticed35 for linkbutton implementation
   - [@cheesemarathon](https://github.com/cheesemarathon) - Help with Docker images
   - [@Mevel](https://github.com/Mevel) - 433Mhz devices
+  - [@Nikfinn99](https://github.com/Nikfinn99) - PCB designs
