@@ -479,7 +479,6 @@ def sendLightRequest(light, data):
             if "protocols." + protocol_name == protocol.__name__:
                 try:
                     light_state = protocol.set_light(bridge_config["lights_address"][light]["ip"], bridge_config["lights"][light], data)
-                    bridge_config["lights"][light]["state"].update(light_state)
                 except:
                     bridge_config["lights"][light]["state"]["reachable"] = False
                     logging.exception("request error")
