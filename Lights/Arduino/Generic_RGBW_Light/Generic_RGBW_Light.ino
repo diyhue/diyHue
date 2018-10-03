@@ -23,7 +23,7 @@
 #define button2_pin 3 // off and brightness down
 
 //define pins
-uint8_t pins[PWM_CHANNELS] = {12, 5, 13, 15}; //red, green, blue, white
+uint8_t pins[PWM_CHANNELS] = {12, 13, 14, 5}; //red, green, blue, white
 
 //#define USE_STATIC_IP //! uncomment to enable Static IP Adress
 #ifdef USE_STATIC_IP
