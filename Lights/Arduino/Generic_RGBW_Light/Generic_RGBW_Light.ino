@@ -11,6 +11,10 @@
 
 #define light_name "Hue RGBW Light" // Light name, change this if you se multiple lights for easy identification
 
+// Define your white led color temp here (Range 2000-6536K).
+// For warm-white led try 2000K, for cold-white try 6000K
+#define WHITE_TEMP 2000 // kelvin
+
 #define PWM_CHANNELS 4
 
 #define use_hardware_switch false // To control on/off state and brightness using GPIO/Pushbutton, set this value to true.
@@ -150,6 +154,19 @@ void convert_xy()
   colors[0] = (int) (r * optimal_bri); colors[1] = (int) (g * optimal_bri); colors[2] = (int) (b * optimal_bri); colors[3] = 0;
 }
 
+/**
+ * Last change by: YannikW, 03.10.18
+ * 
+ * This converts a CT to a mix of a white led with a color temperature defines in WHITE_TEMP,
+ * plus RGB shades to achieve full white spectrum.
+ * CT value is in mired: https://en.wikipedia.org/wiki/Mired
+ * Range is between 153 (equals 6536K cold-white) and 500 (equals 2000K warm-white)
+ * 
+ * To shift the white led to warmer or colder white shades we mix a "RGB-white" to the white led.
+ * This RGB white is calculated as in old convert_ct methode, with formulars by: http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+ * If the desired CT equals the white channel CT, we add 0% RGB-white, the more we shift away we add more RGB-white. 
+ * At the lower or higher end we add 100% RGB-white and reduce the led-white down to 50%
+ */
 void convert_ct() {
   int optimal_bri = int( 10 + bri / 1.04);
   int hectemp = 10000 / ct;
@@ -166,7 +183,29 @@ void convert_ct() {
   r = r > 255 ? 255 : r;
   g = g > 255 ? 255 : g;
   b = b > 255 ? 255 : b;
-  colors[0] = r * (optimal_bri / 255.0f); colors[1] = g * (optimal_bri / 255.0f); colors[2] = b * (optimal_bri / 255.0f);
+
+
+  // calculate mix factor
+  double mixFactor;
+  int temp = hectemp*100;
+  if(temp >= WHITE_TEMP) {
+    // mix cold-rgb-white to led-white
+    mixFactor = (double)(temp-WHITE_TEMP) / (6536.0-WHITE_TEMP);  //0.0 - 1.0
+  }
+  else {
+    // mix warm-rgb-white to led-white
+    mixFactor = (double)(WHITE_TEMP-temp) / (WHITE_TEMP-2000.0);  //0.0 - 1.0
+  }
+  // constrain to 0-1
+  mixFactor = mixFactor > 1.0 ? 1.0 : mixFactor;
+  mixFactor = mixFactor < 0.0 ? 0.0 : mixFactor;
+  
+  colors[0] = r * (optimal_bri / 255.0f) * mixFactor; 
+  colors[1] = g * (optimal_bri / 255.0f) * mixFactor; 
+  colors[2] = b * (optimal_bri / 255.0f) * mixFactor;
+  
+  // reduce white brightness by 50% on maximum mixFactor 
+  colors[3] = optimal_bri * (1.0-(mixFactor*0.5));
 }
 
 void handleNotFound() {
