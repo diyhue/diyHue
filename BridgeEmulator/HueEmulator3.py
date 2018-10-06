@@ -509,6 +509,18 @@ def sendLightRequest(light, data):
                 elif key == "bri":
                     url += "&switchcmd=Set%20Level&level=" + str(round(float(value)/255*100)) # domoticz range from 0 to 100 (for zwave devices) instead of 0-255 of bridge
 
+        elif bridge_config["lights_address"][light]["protocol"] == "jeedom": #Jeedom protocol
+            url = "http://" + bridge_config["lights_address"][light]["ip"] + "/core/api/jeeApi.php?apikey=" + bridge_config["lights_address"][light]["light_api"] + "&type=cmd&id="
+            method = 'GET'
+            for key, value in data.items():
+                if key == "on":
+                    if value:
+                        url += bridge_config["lights_address"][light]["light_on"]
+                    else:
+                        url += bridge_config["lights_address"][light]["light_off"]
+                elif key == "bri":
+                    url += bridge_config["lights_address"][light]["light_slider"] + "&slider=" + str(round(float(value)/255*100)) # jeedom range from 0 to 100 (for zwave devices) instead of 0-255 of bridge
+
         elif bridge_config["lights_address"][light]["protocol"] == "milight": #MiLight bulb
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/gateways/" + bridge_config["lights_address"][light]["device_id"] + "/" + bridge_config["lights_address"][light]["mode"] + "/" + str(bridge_config["lights_address"][light]["group"])
             method = 'PUT'
@@ -735,6 +747,13 @@ def syncWithLights(): #update Hue Bridge lights states
                     else:
                          bridge_config["lights"][light]["state"]["on"] = True
                     bridge_config["lights"][light]["state"]["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))
+                elif bridge_config["lights_address"][light]["protocol"] == "jeedom": #jeedom protocol
+                    light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/core/api/jeeApi.php?apikey=" + bridge_config["lights_address"][light]["light_api"] + "&type=cmd&id=" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
+                    if light_data == 0:
+                         bridge_config["lights"][light]["state"]["on"] = False
+                    else:
+                         bridge_config["lights"][light]["state"]["on"] = True
+                    bridge_config["lights"][light]["state"]["bri"] = str(round(float(light_data)/100*255))
 
                 bridge_config["lights"][light]["state"]["reachable"] = True
                 updateGroupStats(light)
