@@ -301,7 +301,10 @@ def schedulerProcessor():
             saveConfig()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                if docker:
+                    saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                else:
+                    saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
         sleep(1)
 
 def switchScene(group, direction):
