@@ -214,7 +214,7 @@ def sendEmail(triggered_sensor):
         server_ssl.sendmail(bridge_config["alarm_config"]["mail_from"], bridge_config["alarm_config"]["mail_recipients"], message)
         server_ssl.close()
         logging.debug("successfully sent the mail")
-        
+
         return True
     except:
         logging.exception("failed to send mail")
@@ -1069,6 +1069,10 @@ class S(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
+        #Some older Philips Tv's sent non-standard HTTP GET requests with a Content-Lenght and a
+        # body. The HTTP body needs to be consumed and ignored in order to request be handle correctly.
+        self.read_http_request_body()
+
         if self.path == '/' or self.path == '/index.html':
             self._set_headers()
             f = open(cwd + '/web-ui/index.html')
@@ -1283,6 +1287,7 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                bridge_config["config"]["linkbutton"] = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().strftime("%s"))
                 if len(url_pices) == 3 or (len(url_pices) == 4 and url_pices[3] == ""): #print entire config
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':')), "utf8"))
                 elif len(url_pices) == 4 or (len(url_pices) == 5 and url_pices[4] == ""): #print specified object config
@@ -1310,12 +1315,15 @@ class S(BaseHTTPRequestHandler):
             else: #user is not in whitelist
                 self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':')), "utf8"))
 
+    def read_http_request_body(self):
+        return b"{}" if self.headers['Content-Length'] is None or self.headers[
+            'Content-Length'] == '0' else self.rfile.read(int(self.headers['Content-Length']))
 
     def do_POST(self):
         self._set_headers()
         logging.debug("in post method")
         logging.debug(self.path)
-        self.data_string = b"{}" if self.headers['Content-Length'] is None or self.headers['Content-Length'] == '0' else self.rfile.read(int(self.headers['Content-Length']))
+        self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.debug("check for updates")
             update_data = json.loads(sendRequest("http://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
