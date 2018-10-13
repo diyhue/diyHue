@@ -10,6 +10,7 @@ import ssl
 import sys
 import urllib.parse
 import urllib.request
+import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -18,15 +19,23 @@ from subprocess import Popen, check_output
 from threading import Thread
 from time import sleep, strftime
 from urllib.parse import parse_qs, urlparse
-
-import requests
-
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
 from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from protocols import yeelight
+
+debug = False # set this to True in order to see all script actions.
+
+if debug:
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
 
 protocols = [yeelight]
 
@@ -68,6 +77,21 @@ def updateConfig():
     for sensor in bridge_config["sensors"].keys():
         if bridge_config["sensors"][sensor]["type"] == "CLIPGenericStatus":
             bridge_config["sensors"][sensor]["state"]["status"] = 0
+    for light in bridge_config["lights_address"].keys():
+        if bridge_config["lights_address"][light]["protocol"] =="native" and "mac" not in bridge_config["lights_address"][light]:
+            bridge_config["lights_address"][light]["mac"] = bridge_config["lights"][light]["uniqueid"][:17]
+            bridge_config["lights"][light]["uniqueid"] = "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b"
+        if bridge_config["lights_address"][light]["protocol"] =="deconz":
+            for key in list(bridge_config["lights"][light]):
+                if key in ["hascolor", "ctmax", "ctmin", "etag"]:
+                    del bridge_config["lights"][light][key]
+            if bridge_config["lights"][light]["modelid"].startswith("TRADFRI"):
+                if bridge_config["lights"][light]["type"] == "Color temperature light":
+                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LTW001", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b","swversion": "5.50.1.19085"})
+                elif bridge_config["lights"][light]["type"] == "Color light":
+                    bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.29.0_r21169"})
+                elif bridge_config["lights"][light]["type"] == "Dimmable light":
+                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.15.0_r18729"})
 
 
 def entertainmentService():
@@ -679,8 +703,8 @@ def scanForLights(): #scan for ESP8266 lights and strips
                     if "hue" in device_data:
                         logging.debug(ip + " is a hue " + device_data['hue'])
                         device_exist = False
-                        for light in bridge_config["lights"].keys():
-                            if bridge_config["lights"][light]["uniqueid"].startswith( device_data["mac"] ):
+                        for light in bridge_config["lights_address"].keys():
+                            if bridge_config["lights_address"][light]["protocol"] == "native" and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
                                 device_exist = True
                                 bridge_config["lights_address"][light]["ip"] = ip
                         if not device_exist:
@@ -690,9 +714,9 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             logging.debug("Add new light: " + light_name)
                             for x in range(1, int(device_data["lights"]) + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": device_data["mac"] + "-" + str(x), "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
-                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native"}
+                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native", "mac": device_data["mac"]}
         except Exception as e:
             logging.debug("ip " + ip + " is unknow device, " + str(e))
     scanDeconz()
@@ -784,7 +808,7 @@ def longPressButton(sensor, buttonevent):
         current_time =  datetime.now()
         sensors_state[sensor]["state"]["lastupdated"] = current_time
         rulesProcessor(sensor, current_time)
-        sleep(0.9)
+        sleep(0.7)
     return
 
 
@@ -942,10 +966,7 @@ def scanDeconz():
                 logging.debug("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
                 bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
-                bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id}
-            else: #temporary patch for config compatibility with new release
-                bridge_config["deconz"]["lights"][light]["modelid"] = deconz_lights[light]["modelid"]
-                bridge_config["deconz"]["lights"][light]["type"] = deconz_lights[light]["type"]
+                bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id, "modelid": deconz_lights[light]["modelid"], "type": deconz_lights[light]["type"]}
 
 
 
@@ -1002,6 +1023,58 @@ def updateAllLights():
         sendLightRequest(light, payload)
         sleep(0.5)
         logging.debug("update status for light " + light)
+
+def manageDeviceLights(lights_state):
+    protocol = bridge_config["lights_address"][list(lights_state.keys())[0]]["protocol"]
+    for light in lights_state.keys():
+        if protocol in ["native","milight"]:
+            sendLightRequest(light, lights_state[light])
+        else:
+            Thread(target=sendLightRequest, args=[light, lights_state[light]]).start()
+            sleep(0.1)
+
+
+
+def splitLightsToDevices(group, state, scene={}):
+    lightsData = {}
+    if len(scene) == 0:
+        for light in bridge_config["groups"][group]["lights"]:
+            lightsData[light] = state
+    else:
+        lightsData = scene
+    deviceIp = {}
+    for light in lightsData.keys():
+        if bridge_config["lights_address"][light]["ip"] not in deviceIp:
+            deviceIp[bridge_config["lights_address"][light]["ip"]] = {}
+        deviceIp[bridge_config["lights_address"][light]["ip"]][light] = lightsData[light]
+    for ip in deviceIp:
+        Thread(target=manageDeviceLights, args=[deviceIp[ip]]).start()
+    ### update light details
+    for light in lightsData.keys():
+        if "xy" in lightsData[light]:
+            bridge_config["lights"][light]["state"]["colormode"] = "xy"
+        elif "ct" in lightsData[light]:
+            bridge_config["lights"][light]["state"]["colormode"] = "ct"
+        elif "hue" in lightsData[light]:
+            bridge_config["lights"][light]["state"]["colormode"] = "hs"
+        if "transitiontime" in lightsData[light]:
+            del lightsData[light]["transitiontime"]
+        bridge_config["lights"][light]["state"].update(lightsData[light])
+    updateGroupStats(list(lightsData.keys())[0])
+
+
+def groupZero(state):
+    lightsData = {}
+    for light in bridge_config["lights"].keys():
+        if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
+            lightsData[light] = state
+    Thread(target=splitLightsToDevices, args=["0", {}, lightsData]).start()
+    for group in bridge_config["groups"].keys():
+        bridge_config["groups"][group]["action"].update(state)
+        if "on" in state:
+            bridge_config["groups"][group]["state"]["any_on"] = state["on"]
+            bridge_config["groups"][group]["state"]["all_on"] = state["on"]
+
 
 def daylightSensor():
     if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
@@ -1465,17 +1538,8 @@ class S(BaseHTTPRequestHandler):
                                 Popen(["killall", "entertainment-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
-                        for light in bridge_config["scenes"][put_dictionary["scene"]]["lights"]:
-                            bridge_config["lights"][light]["state"].update(bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light])
-                            if "xy" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
-                                bridge_config["lights"][light]["state"]["colormode"] = "xy"
-                            elif "ct" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
-                                bridge_config["lights"][light]["state"]["colormode"] = "ct"
-                            elif "hue" in bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]:
-                                bridge_config["lights"][light]["state"]["colormode"] = "hs"
-                            Thread(target=sendLightRequest, args=[light, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"][light]]).start()
-                            updateGroupStats(light)
-                            sleep(0.1)
+                        splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+
                     elif "bri_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["bri"] > 254:
@@ -1485,9 +1549,8 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["groups"][url_pices[4]]["state"]["bri"] = bridge_config["groups"][url_pices[4]]["action"]["bri"]
                         del put_dictionary["bri_inc"]
                         put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
-                        for light in bridge_config["groups"][url_pices[4]]["lights"]:
-                            bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                        splitLightsToDevices(url_pices[4], put_dictionary)
+
                     elif "ct_inc" in put_dictionary:
                         bridge_config["groups"][url_pices[4]]["action"]["ct"] += int(put_dictionary["ct_inc"])
                         if bridge_config["groups"][url_pices[4]]["action"]["ct"] > 500:
@@ -1497,31 +1560,17 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["groups"][url_pices[4]]["state"]["ct"] = bridge_config["groups"][url_pices[4]]["action"]["ct"]
                         del put_dictionary["ct_inc"]
                         put_dictionary.update({"ct": bridge_config["groups"][url_pices[4]]["action"]["ct"]})
-                        for light in bridge_config["groups"][url_pices[4]]["lights"]:
-                            bridge_config["lights"][light]["state"].update(put_dictionary)
-                            sendLightRequest(light, put_dictionary)
+                        splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
                     elif url_pices[4] == "0": #if group is 0 the scene applied to all lights
-                        for light in bridge_config["lights"].keys():
-                            if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
-                                bridge_config["lights"][light]["state"].update(put_dictionary)
-                                Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
-                                sleep(0.1)
-                        for group in bridge_config["groups"].keys():
-                            bridge_config["groups"][group][url_pices[5]].update(put_dictionary)
-                            if "on" in put_dictionary:
-                                bridge_config["groups"][group]["state"]["any_on"] = put_dictionary["on"]
-                                bridge_config["groups"][group]["state"]["all_on"] = put_dictionary["on"]
+                        groupZero(put_dictionary)
                     else: # the state is applied to particular group (url_pices[4])
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
                         bridge_config["groups"][url_pices[4]][url_pices[5]].update(put_dictionary)
-                        for light in bridge_config["groups"][url_pices[4]]["lights"]:
-                            bridge_config["lights"][light]["state"].update(put_dictionary)
-                            Thread(target=sendLightRequest, args=[light, put_dictionary]).start()
-                            sleep(0.1)
+                        splitLightsToDevices(url_pices[4], put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]: #colormode must be set by bridge
@@ -1529,8 +1578,7 @@ class S(BaseHTTPRequestHandler):
                         elif key in ["hue", "sat"]:
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
                     updateGroupStats(url_pices[4])
-                    Thread(target=sendLightRequest,args=[url_pices[4], put_dictionary]).start()
-                    sleep(0.1)
+                    sendLightRequest(url_pices[4], put_dictionary)
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
