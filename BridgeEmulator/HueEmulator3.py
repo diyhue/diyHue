@@ -1029,6 +1029,8 @@ def manageDeviceLights(lights_state):
     for light in lights_state.keys():
         if protocol in ["native","milight"]:
             sendLightRequest(light, lights_state[light])
+            if protocol == "milight": #hotfix to avoid milight hub overload
+                sleep(0.05)
         else:
             Thread(target=sendLightRequest, args=[light, lights_state[light]]).start()
             sleep(0.1)
