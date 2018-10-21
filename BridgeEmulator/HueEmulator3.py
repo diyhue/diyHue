@@ -1002,7 +1002,8 @@ def scanDeconz():
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"]}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
+
             else: #temporary patch for config compatibility with new release
                 bridge_config["deconz"]["sensors"][sensor]["modelid"] = deconz_sensors[sensor]["modelid"]
                 bridge_config["deconz"]["sensors"][sensor]["type"] = deconz_sensors[sensor]["type"]
