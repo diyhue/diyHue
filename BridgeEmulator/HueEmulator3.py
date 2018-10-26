@@ -1096,6 +1096,12 @@ def daylightSensor():
     logging.debug("deltaSunsetOffset: " + str(deltaSunsetOffset))
     logging.debug("deltaSunriseOffset: " + str(deltaSunriseOffset))
     current_time =  datetime.now()
+    if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
+        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
+        logging.debug("set daylight sensor to true")
+    else:
+        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
+        logging.debug("set daylight sensor to false")
     if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600:
         logging.debug("will start the sleep for sunset")
         sleep(deltaSunsetOffset)
@@ -1110,12 +1116,6 @@ def daylightSensor():
         bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
         sensors_state["1"]["state"]["daylight"] = current_time
         rulesProcessor("1", current_time)
-    if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
-        bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
-        logging.debug("set daylight sensor to true")
-    else:
-        bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
-        logging.debug("set daylight sensor to false")
 
 
 class S(BaseHTTPRequestHandler):
