@@ -1352,7 +1352,7 @@ class S(BaseHTTPRequestHandler):
                         rulesProcessor(sensor, current_time) #process the rules to perform the action configured by application
             self._set_end_headers(bytes("done", "utf8"))
         else:
-            url_pices = self.path.split('/')
+            url_pices = self.path.rstrip('/').split('/')
             if len(url_pices) < 3:
                 #self._set_headers_error()
                 self.send_error(404, 'not found')
@@ -1364,11 +1364,11 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["linkbutton"] = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().strftime("%s"))
-                if len(url_pices) == 3 or (len(url_pices) == 4 and url_pices[3] == ""): #print entire config
+                if len(url_pices) == 3: #print entire config
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':')), "utf8"))
-                elif len(url_pices) == 4 or (len(url_pices) == 5 and url_pices[4] == ""): #print specified object config
+                elif len(url_pices) == 4: #print specified object config
                     self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':')), "utf8"))
-                elif len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == ""):
+                elif len(url_pices) == 5:
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':')), "utf8"))
@@ -1414,7 +1414,7 @@ class S(BaseHTTPRequestHandler):
             raw_json = raw_json.replace("\n","")
             post_dictionary = json.loads(raw_json)
             logging.debug(self.data_string)
-        url_pices = self.path.split('/')
+        url_pices = self.path.rstrip('/').split('/')
         if len(url_pices) == 4: #data was posted to a location
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
@@ -1434,7 +1434,10 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "groups":
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
-                        post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": post_dictionary["localtime"]})
+                        try:
+                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": post_dictionary["localtime"]})
+                        except KeyError:
+                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "localtime": post_dictionary["time"]})
                         if post_dictionary["localtime"].startswith("PT"):
                             post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                         if not "status" in post_dictionary:
@@ -1475,7 +1478,7 @@ class S(BaseHTTPRequestHandler):
         logging.debug("in PUT method")
         self.data_string = self.rfile.read(int(self.headers['Content-Length']))
         put_dictionary = json.loads(self.data_string.decode('utf8'))
-        url_pices = self.path.split('/')
+        url_pices = self.path.rstrip('/').split('/')
         logging.debug(self.path)
         logging.debug(self.data_string)
         if url_pices[2] in bridge_config["config"]["whitelist"]:
@@ -1610,7 +1613,7 @@ class S(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         self._set_headers()
-        url_pices = self.path.split('/')
+        url_pices = self.path.rstrip('/').split('/')
         if url_pices[2] in bridge_config["config"]["whitelist"]:
             if len(url_pices) == 6:
                 del bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]
