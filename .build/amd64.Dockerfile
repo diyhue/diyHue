@@ -27,6 +27,12 @@ COPY ./BridgeEmulator/coap-client-x86_64 /opt/hue-emulator/coap-client-linux
 COPY ./.build/startup.sh ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
 RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 
+# Expose ports
+EXPOSE 80
+EXPOSE 443
+EXPOSE 1900/udp
+EXPOSE 2100/udp
+
 ## cleanup
 RUN ls -la /opt/hue-emulator
 ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
