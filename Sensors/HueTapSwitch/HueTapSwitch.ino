@@ -3,35 +3,62 @@
 #include <ArduinoOTA.h>
 
 extern "C" {
-#include "gpio.h"
 #include "user_interface.h"
 }
 
-const char* ssid = "MikroTik";
-const char* password = "nustiuceparola";
+ADC_MODE(ADC_VCC);
 
-#define button1_pin 1
+#define button1_pin 4
 #define button2_pin 3
-#define button3_pin 5
-#define button4_pin 4
+#define button3_pin 13
+#define button4_pin 14
 
-const char* switchType = "ZGPSwitch";
+#define shutdown_voltage 2.9 //depending on device, increase or decrease the value if the device don't enter in powersave mode when battery voltage is ~3.2v
 
-const char* bridgeIp = "192.168.10.200";
+const char* ssid = "WiFi name"; // replace with your wifi name
+const char* password = "WiFi password"; // replace with your wifi password
+const char* bridgeIp = "192.168.xxx.xxx"; //replace with the hue emulator device ip
 
 //static ip configuration is necessary to minimize bootup time from deep sleep
 IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
 IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 
-int counter;
-byte mac[6];
+// Existing firmware can be updated Over the Air (OTA) by enabling Arduino ota with ON and OFF buttons placed in same time (led will flash 5 times)
 
-void goingToSleep() {
+/// END USER CONFIG
+const char* switchType = "ZGPSwitch";
+bool otaEnabled = false;
+uint32_t rtcData;
+
+
+
+byte mac[6];
+uint8_t button;
+
+void goingToSleep(bool rfMode = true) {
   yield();
   delay(100);
-  ESP.deepSleep(0);
+  if (rfMode) {
+    ESP.deepSleep(100, WAKE_RF_DEFAULT);
+  } else {
+    ESP.deepSleep(100, WAKE_RF_DISABLED);
+  }
   yield();
+  delay(100);
+}
+
+void batteryMonitor() {
+  if (ESP.getVcc() / 1024 <= shutdown_voltage) {
+    rtcData = 1;
+    blinkLed(3);
+    ESP.rtcUserMemoryWrite(0, &rtcData, sizeof(rtcData));
+    goingToSleep(false);
+  } else {
+    rtcData = 0;
+    ESP.rtcUserMemoryWrite(0, &rtcData, sizeof(rtcData));
+    goingToSleep();
+  }
 }
 
 String macToStr(const uint8_t* mac) {
@@ -53,13 +80,44 @@ void sendHttpRequest(int button) {
                "Connection: close\r\n\r\n");
 }
 
+
+void readButtons() {
+  if (digitalRead(button1_pin) == HIGH) {
+    button = 1;
+  } else if (digitalRead(button2_pin) == HIGH) {
+    button = 2;
+  } else if (digitalRead(button3_pin) == HIGH) {
+    button = 3;
+  } else if (digitalRead(button4_pin) == HIGH) {
+    button = 4;
+  }
+}
+
+
+void blinkLed(uint8_t count) {
+  for (uint8_t i = 0; i <= count; i++) {
+    digitalWrite(2, LOW);
+    delay(100);
+    digitalWrite(2, HIGH);
+    delay(100);
+  }
+}
+
 void setup() {
-  pinMode(16, OUTPUT);
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
+  ESP.rtcUserMemoryRead(0, &rtcData, sizeof(rtcData));
+  if (rtcData == 1) {
+    batteryMonitor();
+  }
   pinMode(button1_pin, INPUT);
   pinMode(button2_pin, INPUT);
   pinMode(button3_pin, INPUT);
   pinMode(button4_pin, INPUT);
-  digitalWrite(16, LOW);
+
+
+  readButtons();
+
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -69,8 +127,6 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(50);
   }
-
-  ArduinoOTA.begin();
 
   rst_info *rinfo;
   rinfo = ESP.getResetInfoPtr();
@@ -95,48 +151,29 @@ void setup() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
-  delay(1);
 
-  if (digitalRead(button1_pin) == HIGH) {
-    sendHttpRequest(34);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button1_pin) == HIGH && i < 20) {
-      delay(20);
-      i++;
+  if (button == 1) {
+    if (digitalRead(button4_pin) == HIGH) {
+      ArduinoOTA.begin();
+      blinkLed(5);
+      otaEnabled = true;
+      button = 5;
+    } else {
+      sendHttpRequest(34);
     }
   }
-  if (digitalRead(button2_pin) == HIGH) {
+  else if (button == 2) {
     sendHttpRequest(16);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button2_pin) == HIGH && i < 20) {
-      delay(20);
-      i++;
-    }
   }
-  if (digitalRead(button3_pin) == HIGH) {
+  else if (button == 3) {
     sendHttpRequest(17);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button3_pin) == HIGH && i < 20) {
-      delay(20);
-      i++;
-    }
   }
-  if (digitalRead(button4_pin) == HIGH) {
+  else if (button == 4) {
     sendHttpRequest(18);
-    counter = 0;
-    int i = 0;
-    while (digitalRead(button4_pin) == HIGH && i < 20) {
-      delay(20);
-      i++;
-    }
   }
-  if (counter == 5000) {
-    goingToSleep();
-  } else {
-    counter++;
+  if (!otaEnabled || button != 5) {
+    batteryMonitor();
   }
+  readButtons();
+  ArduinoOTA.handle();
 }
