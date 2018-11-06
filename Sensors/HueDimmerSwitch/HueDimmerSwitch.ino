@@ -20,8 +20,8 @@ const char* password = "WiFi password"; // replace with your wifi password
 const char* bridgeIp = "192.168.xxx.xxx"; //replace with the hue emulator device ip
 
 //static ip configuration is necessary to minimize bootup time from deep sleep
-IPAddress strip_ip ( 192,  168,   0,  95); // choose an unique IP Adress
-IPAddress gateway_ip ( 192,  168,   0,   1); // Router IP
+IPAddress strip_ip ( 192,  168,   10,  95); // choose an unique IP Adress
+IPAddress gateway_ip ( 192,  168,   10,   1); // Router IP
 IPAddress subnet_mask(255, 255, 255,   0);
 
 // Existing firmware can be updated Over the Air (OTA) by enabling Arduino ota with ON and OFF buttons placed in same time (led will flash 5 times)
@@ -40,9 +40,9 @@ void goingToSleep(bool rfMode = true) {
   yield();
   delay(100);
   if (rfMode) {
-    ESP.deepSleep(100, WAKE_RF_DEFAULT);
+    ESP.deepSleep(0, WAKE_RF_DEFAULT);
   } else {
-    ESP.deepSleep(100, WAKE_RF_DISABLED);
+    ESP.deepSleep(0, WAKE_RF_DISABLED);
   }
   yield();
   delay(100);
