@@ -40,9 +40,9 @@ void goingToSleep(bool rfMode = true) {
   yield();
   delay(100);
   if (rfMode) {
-    ESP.deepSleep(100, WAKE_RF_DEFAULT);
+    ESP.deepSleep(0, WAKE_RF_DEFAULT);
   } else {
-    ESP.deepSleep(100, WAKE_RF_DISABLED);
+    ESP.deepSleep(0, WAKE_RF_DISABLED);
   }
   yield();
   delay(100);
