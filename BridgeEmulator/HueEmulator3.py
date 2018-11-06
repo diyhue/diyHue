@@ -662,7 +662,6 @@ def sendLightRequest(light, data):
                     del(payload["sat"])
                 if len(payload) != 0:
                     sendRequest(url, method, json.dumps(payload))
-                    sleep(1)
                 if len(color) != 0:
                     sendRequest(url, method, json.dumps(color))
             else:
