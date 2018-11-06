@@ -3,14 +3,17 @@
 #include <ArduinoOTA.h>
 
 extern "C" {
-#include "gpio.h"
 #include "user_interface.h"
 }
+
+ADC_MODE(ADC_VCC);
 
 #define button1_pin 4
 #define button2_pin 3
 #define button3_pin 13
 #define button4_pin 14
+
+#define shutdown_voltage 2.9 //depending on device, increase or decrease the value if the device don't enter in powersave mode when battery voltage is ~3.2v
 
 const char* ssid = "WiFi name"; // replace with your wifi name
 const char* password = "WiFi password"; // replace with your wifi password
@@ -26,17 +29,36 @@ IPAddress subnet_mask(255, 255, 255,   0);
 /// END USER CONFIG
 const char* switchType = "ZLLSwitch";
 bool otaEnabled = false;
+uint32_t rtcData;
 
 
 
 byte mac[6];
 uint8_t button;
 
-void goingToSleep() {
+void goingToSleep(bool rfMode = true) {
   yield();
   delay(100);
-  ESP.deepSleep(100);
+  if (rfMode) {
+    ESP.deepSleep(100, WAKE_RF_DEFAULT);
+  } else {
+    ESP.deepSleep(100, WAKE_RF_DISABLED);
+  }
   yield();
+  delay(100);
+}
+
+void batteryMonitor() {
+  if (ESP.getVcc() / 1024 <= shutdown_voltage) {
+    rtcData = 1;
+    blinkLed(3);
+    ESP.rtcUserMemoryWrite(0, &rtcData, sizeof(rtcData));
+    goingToSleep(false);
+  } else {
+    rtcData = 0;
+    ESP.rtcUserMemoryWrite(0, &rtcData, sizeof(rtcData));
+    goingToSleep();
+  }
 }
 
 String macToStr(const uint8_t* mac) {
@@ -82,12 +104,17 @@ void blinkLed(uint8_t count) {
 }
 
 void setup() {
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
+  ESP.rtcUserMemoryRead(0, &rtcData, sizeof(rtcData));
+  if (rtcData == 1) {
+    batteryMonitor();
+  }
   pinMode(button1_pin, INPUT);
   pinMode(button2_pin, INPUT);
   pinMode(button3_pin, INPUT);
   pinMode(button4_pin, INPUT);
-  pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH);
+
 
   readButtons();
 
@@ -155,7 +182,7 @@ void loop() {
     sendHttpRequest(4000);
   }
   if (!otaEnabled || button != 5) {
-    goingToSleep();
+    batteryMonitor();
   }
   readButtons();
   ArduinoOTA.handle();
