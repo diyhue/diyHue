@@ -41,7 +41,9 @@ else
 fi
 
 if [ $3 == "true" ]; then
+    echo "Debug set to '$3' Enabling Debug"
     sed -i "s|debug = .* #|debug = True # |g" /opt/hue-emulator/HueEmulator3.py
 else
+    echo "Debug set to '$3' Disabling Debug"
     sed -i "s|debug = .* #|debug = False # |g" /opt/hue-emulator/HueEmulator3.py
 fi
