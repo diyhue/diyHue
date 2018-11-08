@@ -662,6 +662,8 @@ def sendLightRequest(light, data):
                     del(payload["sat"])
                 if len(payload) != 0:
                     sendRequest(url, method, json.dumps(payload))
+                    if bridge_config["lights_address"][light]["protocol"] == "deconz":
+                        sleep(0.7)
                 if len(color) != 0:
                     sendRequest(url, method, json.dumps(color))
             else:
