@@ -31,6 +31,14 @@ fi
 
 cd /opt/hue-emulator
 
+if [ $3 == "true" ]; then
+    echo "Debug set to '$3' Enabling Debug"
+    sed -i "s|debug = .* #|debug = True # |g" /opt/hue-emulator/HueEmulator3.py
+else
+    echo "Debug set to '$3' Disabling Debug"
+    sed -i "s|debug = .* #|debug = False # |g" /opt/hue-emulator/HueEmulator3.py
+fi
+
 echo -e "\033[32m--Startup complete. Open Hue app and search for bridges--\033[0m"
 if [ -z $1 -a -z $2 ]; then
     echo "Starting without provided MAC & IP"
@@ -38,12 +46,4 @@ if [ -z $1 -a -z $2 ]; then
 else
     echo "Starting with provided MAC & IP"
     exec python3 /opt/hue-emulator/HueEmulator3.py $1 $2
-fi
-
-if [ $3 == "true" ]; then
-    echo "Debug set to '$3' Enabling Debug"
-    sed -i "s|debug = .* #|debug = True # |g" /opt/hue-emulator/HueEmulator3.py
-else
-    echo "Debug set to '$3' Disabling Debug"
-    sed -i "s|debug = .* #|debug = False # |g" /opt/hue-emulator/HueEmulator3.py
 fi
