@@ -39,3 +39,13 @@ else
     echo "Starting with provided MAC & IP"
     exec python3 /opt/hue-emulator/HueEmulator3.py $1 $2
 fi
+
+if [ -z $3 ]; then
+    if [ $3 == "true" ]; then
+        sed -i "s|debug = .* #|debug = True # |g" /opt/hue-emulator/HueEmulator3.py
+    else
+        sed -i "s|debug = .* #|debug = False # |g" /opt/hue-emulator/HueEmulator3.py
+    fi
+else
+    sed -i "s|debug = .* #|debug = False # |g" /opt/hue-emulator/HueEmulator3.py
+fi
