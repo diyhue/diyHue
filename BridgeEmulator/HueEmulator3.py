@@ -8,8 +8,6 @@ import random
 import socket
 import ssl
 import sys
-import urllib.parse
-import urllib.request
 import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -256,6 +254,19 @@ except Exception:
     logging.exception("CRITICAL! Config file was not loaded")
     sys.exit(1)
 
+def resourceRecycle():
+    sleep(5) #give time to application to delete all resources, then start the cleanup
+    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": []}
+    for resourcelink in bridge_config["resourcelinks"].keys():
+        for link in bridge_config["resourcelinks"][resourcelink]["links"]:
+            link_parts = link.split("/")
+            resourcelinks[link_parts[1]].append(link_parts[2])
+
+    for resource in resourcelinks.keys():
+        for key in list(bridge_config[resource]):
+            if "recycle" in bridge_config[resource][key] and bridge_config[resource][key]["recycle"] and key not in resourcelinks[resource]:
+                logging.debug("delete " + resource + " / " + key)
+                del bridge_config[resource][key]
 
 
 def loadConfig():  #load and configure alarm virtual light
@@ -272,11 +283,11 @@ def loadConfig():  #load and configure alarm virtual light
                 logging.debug("Mail test failed")
 loadConfig()
 
-def saveConfig(filename='/opt/hue-emulator/config.json'):
-    with open(cwd +'/config.json', 'w') as fp:
+def saveConfig(filename='config.json'):
+    with open(cwd + '/' + filename, 'w') as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
     if docker:
-        Popen(["cp", "config.json", "export/"])
+        Popen(["cp", cwd + '/' + filename, cwd + '/' + 'export/'])
 
 def generateSensorsState():
     for sensor in bridge_config["sensors"]:
@@ -298,33 +309,37 @@ bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
 def schedulerProcessor():
     while run_service:
         for schedule in bridge_config["schedules"].keys():
-            delay = 0
-            if bridge_config["schedules"][schedule]["status"] == "enabled":
-                if bridge_config["schedules"][schedule]["localtime"][-9:-8] == "A":
-                    delay = random.randrange(0, int(bridge_config["schedules"][schedule]["localtime"][-8:-6]) * 3600 + int(bridge_config["schedules"][schedule]["localtime"][-5:-3]) * 60 + int(bridge_config["schedules"][schedule]["localtime"][-2:]))
-                    schedule_time = bridge_config["schedules"][schedule]["localtime"][:-9]
-                else:
-                    schedule_time = bridge_config["schedules"][schedule]["localtime"]
-                if schedule_time.startswith("W"):
-                    pices = schedule_time.split('/T')
-                    if int(pices[0][1:]) & (1 << 6 - datetime.today().weekday()):
-                        if pices[1] == datetime.now().strftime("%H:%M:%S"):
+            try:
+                delay = 0
+                if bridge_config["schedules"][schedule]["status"] == "enabled":
+                    if bridge_config["schedules"][schedule]["localtime"][-9:-8] == "A":
+                        delay = random.randrange(0, int(bridge_config["schedules"][schedule]["localtime"][-8:-6]) * 3600 + int(bridge_config["schedules"][schedule]["localtime"][-5:-3]) * 60 + int(bridge_config["schedules"][schedule]["localtime"][-2:]))
+                        schedule_time = bridge_config["schedules"][schedule]["localtime"][:-9]
+                    else:
+                        schedule_time = bridge_config["schedules"][schedule]["localtime"]
+                    if schedule_time.startswith("W"):
+                        pices = schedule_time.split('/T')
+                        if int(pices[0][1:]) & (1 << 6 - datetime.today().weekday()):
+                            if pices[1] == datetime.now().strftime("%H:%M:%S"):
+                                logging.debug("execute schedule: " + schedule + " withe delay " + str(delay))
+                                sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
+                    elif schedule_time.startswith("PT"):
+                        timmer = schedule_time[2:]
+                        (h, m, s) = timmer.split(':')
+                        d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).strftime("%Y-%m-%dT%H:%M:%S"):
+                            logging.debug("execute timmer: " + schedule + " withe delay " + str(delay))
+                            sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
+                            bridge_config["schedules"][schedule]["status"] = "disabled"
+                    else:
+                        if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                             logging.debug("execute schedule: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
-                elif schedule_time.startswith("PT"):
-                    timmer = schedule_time[2:]
-                    (h, m, s) = timmer.split(':')
-                    d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                    if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).strftime("%Y-%m-%dT%H:%M:%S"):
-                        logging.debug("execute timmer: " + schedule + " withe delay " + str(delay))
-                        sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
-                        bridge_config["schedules"][schedule]["status"] = "disabled"
-                else:
-                    if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
-                        logging.debug("execute schedule: " + schedule + " withe delay " + str(delay))
-                        sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
-                        if bridge_config["schedules"][schedule]["autodelete"]:
-                            del bridge_config["schedules"][schedule]
+                            if bridge_config["schedules"][schedule]["autodelete"]:
+                                del bridge_config["schedules"][schedule]
+            except Exception as e:
+                logging.debug("Exception while processing the schedule " + schedule + " | " + str(e))
+
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             saveConfig()
             Thread(target=daylightSensor).start()
@@ -403,46 +418,49 @@ def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
     sensor_found = False
     ddx_sensor = []
     for condition in bridge_config["rules"][rule]["conditions"]:
-        url_pices = condition["address"].split('/')
-        if url_pices[1] == "sensors" and sensor == url_pices[2]:
-            sensor_found = True
-        if condition["operator"] == "eq":
-            if condition["value"] == "true":
-                if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
-                    return [False, 0]
-            elif condition["value"] == "false":
-                if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
-                    return [False, 0]
-            else:
-                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
-                    return [False, 0]
-        elif condition["operator"] == "gt":
-            if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
-                return [False, 0]
-        elif condition["operator"] == "lt":
-            if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
-                return [False, 0]
-        elif condition["operator"] == "dx":
-            if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
-                return [False, 0]
-        elif condition["operator"] == "in":
-            periods = condition["value"].split('/')
-            if condition["value"][0] == "T":
-                timeStart = datetime.strptime(periods[0], "T%H:%M:%S").time()
-                timeEnd = datetime.strptime(periods[1], "T%H:%M:%S").time()
-                now_time = datetime.now().time()
-                if timeStart < timeEnd:
-                    if not timeStart <= now_time <= timeEnd:
+        try:
+            url_pices = condition["address"].split('/')
+            if url_pices[1] == "sensors" and sensor == url_pices[2]:
+                sensor_found = True
+            if condition["operator"] == "eq":
+                if condition["value"] == "true":
+                    if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                        return [False, 0]
+                elif condition["value"] == "false":
+                    if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
                         return [False, 0]
                 else:
-                    if not (timeStart <= now_time or now_time <= timeEnd):
+                    if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
                         return [False, 0]
-        elif condition["operator"] == "ddx" and ignore_ddx is False:
-            if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+            elif condition["operator"] == "gt":
+                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
                     return [False, 0]
-            else:
-                ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
-                ddx_sensor = url_pices
+            elif condition["operator"] == "lt":
+                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
+                    return [False, 0]
+            elif condition["operator"] == "dx":
+                if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+                    return [False, 0]
+            elif condition["operator"] == "in":
+                periods = condition["value"].split('/')
+                if condition["value"][0] == "T":
+                    timeStart = datetime.strptime(periods[0], "T%H:%M:%S").time()
+                    timeEnd = datetime.strptime(periods[1], "T%H:%M:%S").time()
+                    now_time = datetime.now().time()
+                    if timeStart < timeEnd:
+                        if not timeStart <= now_time <= timeEnd:
+                            return [False, 0]
+                    else:
+                        if not (timeStart <= now_time or now_time <= timeEnd):
+                            return [False, 0]
+            elif condition["operator"] == "ddx" and ignore_ddx is False:
+                if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+                        return [False, 0]
+                else:
+                    ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
+                    ddx_sensor = url_pices
+        except Exception as e:
+            logging.debug("rule " + rule + " failed, reason:" + str(e))
 
 
     if sensor_found:
@@ -813,7 +831,7 @@ def longPressButton(sensor, buttonevent):
         current_time =  datetime.now()
         sensors_state[sensor]["state"]["lastupdated"] = current_time
         rulesProcessor(sensor, current_time)
-        sleep(0.7)
+        sleep(0.5)
     return
 
 
@@ -966,7 +984,7 @@ def scanDeconz():
         #lights
         deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
-            if light not in bridge_config["deconz"]["lights"]:
+            if light not in bridge_config["deconz"]["lights"] and "modelid" in deconz_lights[light]:
                 new_light_id = nextFreeId(bridge_config, "lights")
                 logging.debug("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
@@ -978,36 +996,36 @@ def scanDeconz():
         #sensors
         deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
-            if sensor not in bridge_config["deconz"]["sensors"]:
+            if sensor not in bridge_config["deconz"]["sensors"] and "modelid" in deconz_sensors[sensor]:
                 new_sensor_id = nextFreeId(bridge_config, "sensors")
                 if deconz_sensors[sensor]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
                     logging.debug("register new " + deconz_sensors[sensor]["modelid"])
                     bridge_config["sensors"][new_sensor_id] = {"config": deconz_sensors[sensor]["config"], "manufacturername": deconz_sensors[sensor]["manufacturername"], "modelid": deconz_sensors[sensor]["modelid"], "name": deconz_sensors[sensor]["name"], "state": deconz_sensors[sensor]["state"], "type": deconz_sensors[sensor]["type"], "uniqueid": deconz_sensors[sensor]["uniqueid"]}
                     if "swversion" in  deconz_sensors[sensor]:
                         bridge_config["sensors"][new_sensor_id]["swversion"] = deconz_sensors[sensor]["swversion"]
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
                 elif deconz_sensors[sensor]["modelid"] == "TRADFRI motion sensor":
                     logging.debug("register TRADFRI motion sensor as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "lightsensor": "internal"}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "internal"}
 
                 elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion.aq2":
                     if deconz_sensors[sensor]["type"] == "ZHALightLevel":
                         logging.debug("register new Xiaomi light sensor")
                         bridge_config["sensors"][new_sensor_id] = {"name": "Hue ambient light sensor 1", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:], "type": "ZLLLightLevel", "swversion": "6.1.0.18912", "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False,"battery": 100, "reachable": True, "alert": "none", "tholddark": 21597, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
                         bridge_config["sensors"][nextFreeId(bridge_config, "sensors")] = {"name": "Hue temperature sensor 1", "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:-1] + "2", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
-                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
+                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
                     elif deconz_sensors[sensor]["type"] == "ZHAPresence":
                         logging.debug("register new Xiaomi motion sensor")
                         bridge_config["sensors"][new_sensor_id] = {"name": deconz_sensors[sensor]["name"], "uniqueid": "00:17:88:01:02:" + deconz_sensors[sensor]["uniqueid"][12:], "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
-                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
+                        bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
                 elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion":
                     logging.debug("register Xiaomi Motion sensor w/o light sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"]}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"]}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
 
             else: #temporary patch for config compatibility with new release
                 bridge_config["deconz"]["sensors"][sensor]["modelid"] = deconz_sensors[sensor]["modelid"]
@@ -1044,10 +1062,36 @@ def manageDeviceLights(lights_state):
 
 
 def splitLightsToDevices(group, state, scene={}):
+    groups = []
+    if group == "0":
+        for grp in bridge_config["groups"].keys():
+            groups.append(grp)
+    else:
+        groups.append(group)
+
     lightsData = {}
     if len(scene) == 0:
-        for light in bridge_config["groups"][group]["lights"]:
-            lightsData[light] = state
+        for grp in groups:
+            if "bri_inc" in state:
+                bridge_config["groups"][grp]["action"]["bri"] += int(state["bri_inc"])
+                if bridge_config["groups"][grp]["action"]["bri"] > 254:
+                    bridge_config["groups"][grp]["action"]["bri"] = 254
+                elif bridge_config["groups"][grp]["action"]["bri"] < 1:
+                    bridge_config["groups"][grp]["action"]["bri"] = 1
+                bridge_config["groups"][grp]["state"]["bri"] = bridge_config["groups"][grp]["action"]["bri"]
+                del state["bri_inc"]
+                state.update({"bri": bridge_config["groups"][grp]["action"]["bri"]})
+            elif "ct_inc" in state:
+                bridge_config["groups"][grp]["action"]["ct"] += int(state["ct_inc"])
+                if bridge_config["groups"][grp]["action"]["ct"] > 500:
+                    bridge_config["groups"][grp]["action"]["ct"] = 500
+                elif bridge_config["groups"][grp]["action"]["ct"] < 153:
+                    bridge_config["groups"][grp]["action"]["ct"] = 153
+                bridge_config["groups"][grp]["state"]["ct"] = bridge_config["groups"][grp]["action"]["ct"]
+                del state["ct_inc"]
+                state.update({"ct": bridge_config["groups"][grp]["action"]["ct"]})
+            for light in bridge_config["groups"][grp]["lights"]:
+                lightsData[light] = state
     else:
         lightsData = scene
     deviceIp = {}
@@ -1386,7 +1430,7 @@ class S(BaseHTTPRequestHandler):
                                 any_on = True
                             else:
                                 all_on = False
-                        self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":True,"bri":254,"hue":47258,"sat":253,"effect":"none","xy":[0.1424,0.0824],"ct":153,"alert":"none","colormode":"xy"}},separators=(',', ':')), "utf8"))
+                        self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":false,"action":{"on":false,"alert":"none"}},separators=(',', ':')), "utf8"))
                     elif url_pices[3] == "info":
                         self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]],separators=(',', ':')), "utf8"))
                     else:
@@ -1551,26 +1595,7 @@ class S(BaseHTTPRequestHandler):
                     elif "scene" in put_dictionary: #scene applied to group
                         splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
 
-                    elif "bri_inc" in put_dictionary:
-                        bridge_config["groups"][url_pices[4]]["action"]["bri"] += int(put_dictionary["bri_inc"])
-                        if bridge_config["groups"][url_pices[4]]["action"]["bri"] > 254:
-                            bridge_config["groups"][url_pices[4]]["action"]["bri"] = 254
-                        elif bridge_config["groups"][url_pices[4]]["action"]["bri"] < 1:
-                            bridge_config["groups"][url_pices[4]]["action"]["bri"] = 1
-                        bridge_config["groups"][url_pices[4]]["state"]["bri"] = bridge_config["groups"][url_pices[4]]["action"]["bri"]
-                        del put_dictionary["bri_inc"]
-                        put_dictionary.update({"bri": bridge_config["groups"][url_pices[4]]["action"]["bri"]})
-                        splitLightsToDevices(url_pices[4], put_dictionary)
-
-                    elif "ct_inc" in put_dictionary:
-                        bridge_config["groups"][url_pices[4]]["action"]["ct"] += int(put_dictionary["ct_inc"])
-                        if bridge_config["groups"][url_pices[4]]["action"]["ct"] > 500:
-                            bridge_config["groups"][url_pices[4]]["action"]["ct"] = 500
-                        elif bridge_config["groups"][url_pices[4]]["action"]["ct"] < 153:
-                            bridge_config["groups"][url_pices[4]]["action"]["ct"] = 153
-                        bridge_config["groups"][url_pices[4]]["state"]["ct"] = bridge_config["groups"][url_pices[4]]["action"]["ct"]
-                        del put_dictionary["ct_inc"]
-                        put_dictionary.update({"ct": bridge_config["groups"][url_pices[4]]["action"]["ct"]})
+                    elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary:
                         splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
@@ -1623,16 +1648,9 @@ class S(BaseHTTPRequestHandler):
             if len(url_pices) == 6:
                 del bridge_config[url_pices[3]][url_pices[4]][url_pices[5]]
             else:
-                if url_pices[3] == "resourcelinks":
-                    for link in bridge_config["resourcelinks"][url_pices[4]]["links"]:
-                        link_pices = link.split('/')
-                        if link.startswith("/rules") or link.startswith("/schedules"):
-                            del bridge_config[link_pices[1]][link_pices[2]]
-                        elif link.startswith("/sensors"):
-                            if bridge_config[link_pices[1]][link_pices[2]]["type"] == "CLIPGenericStatus":
-                                del bridge_config["sensors"][link_pices[2]]
-
                 del bridge_config[url_pices[3]][url_pices[4]]
+                if url_pices[3] == "resourcelinks":
+                    Thread(target=resourceRecycle).start()
             if url_pices[3] == "lights":
                 del bridge_config["lights_address"][url_pices[4]]
                 for light in list(bridge_config["deconz"]["lights"]):
@@ -1670,6 +1688,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 
 if __name__ == "__main__":
     updateConfig()
+    Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
     try:
