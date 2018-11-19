@@ -44,13 +44,6 @@ docker = False # Set only to true if using script in Docker container
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
-#def getIpAddress():
-#    if len(sys.argv) == 3:
-#       return sys.argv[2]
-#    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#    s.connect(("8.8.8.8", 80))
-#    return s.getsockname()[0]
-
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
 
@@ -93,10 +86,10 @@ def updateConfig():
                 elif bridge_config["lights"][light]["type"] == "Dimmable light":
                     bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.15.0_r18729"})
     #fix timezones bug
-    #if "values" not in bridge_config["capabilities"]["timezones"]:
-    #    timezones = bridge_config["capabilities"]["timezones"]
-    #    del bridge_config["capabilities"]["timezones"]
-    #    bridge_config["capabilities"]["timezones"] = {"values": timezones}
+    if "values" not in bridge_config["capabilities"]["timezones"]:
+        timezones = bridge_config["capabilities"]["timezones"]
+        del bridge_config["capabilities"]["timezones"]
+        bridge_config["capabilities"]["timezones"] = {"values": timezones}
 
 def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -713,7 +706,6 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
 
 
 def scanForLights(): #scan for ESP8266 lights and strips
-    logging.debug("tasmota: scanForLights invoked")
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
