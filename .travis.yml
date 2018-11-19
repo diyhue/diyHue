@@ -21,17 +21,17 @@ after_success:
 - >
   if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
     docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
-    docker tag diyhue/core:$ARCH diyhue/core:$ARCH-$TRAVIS_COMMIT
-    docker push diyhue/core:$ARCH
-    docker push diyhue/core:$ARCH-$TRAVIS_COMMIT
+    docker tag diyhue/core:$ARCH diyhue/core:$ARCH-dev
+    #docker push diyhue/core:$ARCH
+    docker push diyhue/core:$ARCH-dev
     
     # Download manifest-tool
-    wget https://github.com/estesp/manifest-tool/releases/download/v0.7.0/manifest-tool-linux-amd64
-    mv manifest-tool-linux-amd64 manifest-tool
-    chmod +x manifest-tool
+    #wget https://github.com/estesp/manifest-tool/releases/download/v0.7.0/manifest-tool-linux-amd64
+    #mv manifest-tool-linux-amd64 manifest-tool
+    #chmod +x manifest-tool
     # Push manifest-list
-    ./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:$TRAVIS_COMMIT"
-    ./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:latest"
+    #./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:$TRAVIS_COMMIT"
+    #./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:latest"
   fi
 notifications:
 slack: diyhue:84x97ehqLW4B6pe9ntP16SOI
