@@ -29,4 +29,4 @@ RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
-ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
+ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP $DEBUG
