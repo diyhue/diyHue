@@ -58,7 +58,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  
  ## Working smartphone applications:
   - Hue (official application)
-  - [Hue Essentials](https://play.google.com/store/apps/details?id=com.superthomaslab.hueessentials)
+  - [Hue Essentials](https://play.google.com/store/apps/details?id=com.superthomaslab.hueessentials) - recommended
   - hueManic
   - OnSwitch
   - HueSwitcher
