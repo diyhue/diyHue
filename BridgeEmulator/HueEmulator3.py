@@ -1663,7 +1663,7 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 def run(https, server_class=ThreadingSimpleServer, handler_class=S):
     if https:
-        server_address = (getIpAddress(), 443)
+        server_address = ('', 443)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ctx.load_cert_chain(certfile="./cert.pem")
@@ -1676,7 +1676,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         logging.debug('Starting ssl httpd...')
     else:
-        server_address = (getIpAddress(), 80)
+        server_address = ('', 80)
         httpd = server_class(server_address, handler_class)
         logging.debug('Starting httpd...')
     httpd.serve_forever()
