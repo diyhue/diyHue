@@ -97,9 +97,16 @@ if [ $(uname -m) = "x86_64" ]; then
 	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
 	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
 else
-	cp entertainment-arm /opt/hue-emulator/entertainment-srv
+	if [ $(uname -m) = "i686" ]; then
+		cp entertainment-x86 /opt/hue-emulator/entertainment-srv
+        cp coap-client-linux-x86 /opt/hue-emulator/coap-client-linux
+        else
+        cp entertainment-arm /opt/hue-emulator/entertainment-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
+	fi
 fi
+chmod +x /opt/hue-emulator/entertainment-srv
+chmod +x /opt/hue-emulator/coap-client-linux
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-master
