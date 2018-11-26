@@ -35,4 +35,4 @@ EXPOSE 2100/udp
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
-ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP
+ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP $DEBUG

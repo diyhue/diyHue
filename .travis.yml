@@ -33,6 +33,5 @@ after_success:
     ./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:$TRAVIS_COMMIT"
     ./manifest-tool push from-args --platforms linux/amd64,linux/arm --template "diyhue/core:ARCH-${TRAVIS_COMMIT}" --target "diyhue/core:latest"
   fi
-
 notifications:
-  slack: diyhue:84x97ehqLW4B6pe9ntP16SOI
+slack: diyhue:84x97ehqLW4B6pe9ntP16SOI
