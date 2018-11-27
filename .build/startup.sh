@@ -31,7 +31,7 @@ fi
 
 cd /opt/hue-emulator
 
-if [ $3 == "true" ]; then
+if [ $3=true ]; then
     echo -e "\033[33m--Debug set to $3, enabling debug--\033[0m"
     sed -i "s|debug = .* #|debug = True # |g" /opt/hue-emulator/HueEmulator3.py
 else
