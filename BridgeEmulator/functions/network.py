@@ -1,7 +1,7 @@
 import logging
 import socket
 import sys
-import argparse
+from .HueEmulator3 import args
 
 def getIpAddress():
    if args.ip:
@@ -9,4 +9,3 @@ def getIpAddress():
    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
    s.connect(("8.8.8.8", 80))
    return s.getsockname()[0]
-

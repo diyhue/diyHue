@@ -27,6 +27,8 @@ from functions.network import getIpAddress
 from protocols import yeelight
 from protocols import tasmota
 
+args = none
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-ip",
 	help="The IP address of the host system")
@@ -34,6 +36,7 @@ ap.add_argument("-mac",
 	help="The MAC address of the host system")
 ap.add_argument("-d", "--debug", action='store_true',
 	help="Enables debug output")
+global args
 args = ap.parse_args()
 
 if args.debug:
