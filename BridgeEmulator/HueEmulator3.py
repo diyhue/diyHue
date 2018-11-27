@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import argparse
 import base64
 import hashlib
 import json
@@ -26,9 +27,17 @@ from functions.network import getIpAddress
 from protocols import yeelight
 from protocols import tasmota
 
-debug = False # set this to True in order to see all script actions.
+ap = argparse.ArgumentParser()
+ap.add_argument("-ip",
+	help="The IP address of the host system")
+ap.add_argument("-mac",
+	help="The MAC address of the host system")
+ap.add_argument("-d", "--debug", action='store_true',
+	help="Enables debug output")
+args = ap.parse_args()
 
-if debug: 
+if args.debug:
+    print("Debug Enabled") 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     ch = logging.StreamHandler(sys.stdout)
@@ -47,8 +56,8 @@ update_lights_on_startup = False # if set to true all lights will be updated wit
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
 
-if len(sys.argv) == 3:
-    mac = str(sys.argv[1]).replace(":","")
+if args.mac:
+    mac = str(args.mac).replace(":","")
 else:
     mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.debug(mac)
