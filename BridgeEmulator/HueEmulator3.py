@@ -30,14 +30,14 @@ from protocols import tasmota
 
 ap = argparse.ArgumentParser()
 
-ap.add_argument("-ip", help="The IP address of the host system", nargs='?', const=None, type=str)
-ap.add_argument("-mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
-ap.add_argument("Debug", action='store_true', help="Enables debug output")
-ap.add_argument("-D", "--docker", action='store_true', help="Enables setup for use in docker container")
+ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
+ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
 
 args = ap.parse_args()
 
-if args.Debug:
+if args.debug and (args.debug = "true" or args.debug = "True"):
     print("Debug Enabled")
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
