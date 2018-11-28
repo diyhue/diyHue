@@ -13,8 +13,9 @@ import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from shutil import copyfile
 from socketserver import ThreadingMixIn
-from subprocess import Popen, check_output
+from subprocess import Popen, check_output, call
 from threading import Thread
 from time import sleep, strftime
 from urllib.parse import parse_qs, urlparse
@@ -29,19 +30,15 @@ from protocols import tasmota
 
 ap = argparse.ArgumentParser()
 
-ap.add_argument("-ip",
-	help="The IP address of the host system")
-ap.add_argument("-mac",
-	help="The MAC address of the host system")
-ap.add_argument("-d", "--debug", action='store_true',
-	help="Enables debug output")
-ap.add_argument("-D", "--docker", action='store_true',
-	help="Enables debug output")
+ap.add_argument("-ip", help="The IP address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("-mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("Debug", action='store_true', help="Enables debug output")
+ap.add_argument("-D", "--docker", action='store_true', help="Enables setup for use in docker container")
 
 args = ap.parse_args()
 
-if args.debug:
-    print("Debug Enabled") 
+if args.Debug:
+    print("Debug Enabled")
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     ch = logging.StreamHandler(sys.stdout)
@@ -50,15 +47,43 @@ if args.debug:
     ch.setFormatter(formatter)
     root.addHandler(ch)
 
+if args.docker:
+    print("Debug Setup Initiated") 
+    docker = True
+
+    if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
+        print("Restoring Certificate")
+        copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
+    else
+        print("Generating certificate")
+        call(["/opt/hue-emulator/genCert.sh", $mac])
+        copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
+        print("Certificate created")
+
+    if os.path.isfile("/opt/hue-emulator/export/config.json"):
+        print("Restoring config")
+        copyfile("/opt/hue-emulator/export/config.json", "/opt/hue-emulator/config.json")
+        print("Config restored")
+    else:
+        print("Downloading default config")
+        res = requests.get("https://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/config.json", allow_redirects=True)
+        open('/opt/hue-emulator/config.json', 'w+').write(res.text)
+        copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
+        print("Config downloaded")
+
+else:
+    docker = False
+
 if args.ip:
     HostIP = args.ip
+    print("Host IP given as " + HostIP) 
 else:
     HostIP= getIpAddress()
 
 protocols = [yeelight, tasmota]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
-docker = False # Set only to true if using script in Docker container
+
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
@@ -67,6 +92,7 @@ def pretty_json(data):
 
 if args.mac:
     mac = str(args.mac).replace(":","")
+    print("Host MAC given as " + mac) 
 else:
     mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.debug(mac)
