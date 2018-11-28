@@ -11,7 +11,7 @@ script:
 # test image
 - docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
 
-- sleep 10
+- sleep 30
 - docker logs diyHue
 - docker kill diyHue
 - docker rm diyHue
