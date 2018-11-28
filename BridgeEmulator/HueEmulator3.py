@@ -37,7 +37,7 @@ ap.add_argument("--docker", action='store_true', help="Enables setup for use in 
 
 args = ap.parse_args()
 
-if args.debug and (args.debug = "true" or args.debug = "True"):
+if args.debug and (args.debug == "true" or args.debug == "True"):
     print("Debug Enabled")
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
