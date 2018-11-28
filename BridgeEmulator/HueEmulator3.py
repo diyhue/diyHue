@@ -56,7 +56,7 @@ if args.docker:
         copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
     else:
         print("Generating certificate")
-        call(["/opt/hue-emulator/genCert.sh", $mac])
+        call(["/opt/hue-emulator/genCert.sh", args.mac])
         copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
         print("Certificate created")
 
