@@ -27,16 +27,17 @@ from functions.network import getIpAddress
 from protocols import yeelight
 from protocols import tasmota
 
-args = none
-
 ap = argparse.ArgumentParser()
+
 ap.add_argument("-ip",
 	help="The IP address of the host system")
 ap.add_argument("-mac",
 	help="The MAC address of the host system")
 ap.add_argument("-d", "--debug", action='store_true',
 	help="Enables debug output")
-global args
+ap.add_argument("-D", "--docker", action='store_true',
+	help="Enables debug output")
+
 args = ap.parse_args()
 
 if args.debug:
@@ -48,6 +49,11 @@ if args.debug:
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     root.addHandler(ch)
+
+if args.ip:
+    HostIP = args.ip
+else:
+    HostIP= getIpAddress()
 
 protocols = [yeelight, tasmota]
 
@@ -62,7 +68,7 @@ def pretty_json(data):
 if args.mac:
     mac = str(args.mac).replace(":","")
 else:
-    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
+    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.debug(mac)
 
 run_service = True
@@ -310,8 +316,8 @@ def generateSensorsState():
 
 generateSensorsState()
 
-ip_pices = getIpAddress().split(".")
-bridge_config["config"]["ipaddress"] = getIpAddress()
+ip_pices = HostIP.split(".")
+bridge_config["config"]["ipaddress"] = HostIP
 bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
 bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
 bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
@@ -725,12 +731,12 @@ def scanForLights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
+    device_ips = check_output("nmap  " + HostIP + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
     logging.debug(pretty_json(device_ips))
     del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
-            if ip != getIpAddress():
+            if ip != HostIP:
                 response = requests.get("http://" + ip + "/detect", timeout=3)
                 if response.status_code == 200:
                     device_data = json.loads(response.text)
@@ -1706,8 +1712,8 @@ if __name__ == "__main__":
     try:
         if update_lights_on_startup:
             updateAllLights()
-        Thread(target=ssdpSearch, args=[getIpAddress(), mac]).start()
-        Thread(target=ssdpBroadcast, args=[getIpAddress(), mac]).start()
+        Thread(target=ssdpSearch, args=[HostIP, mac]).start()
+        Thread(target=ssdpBroadcast, args=[HostIP, mac]).start()
         Thread(target=schedulerProcessor).start()
         Thread(target=syncWithLights).start()
         Thread(target=entertainmentService).start()
