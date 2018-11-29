@@ -48,7 +48,7 @@ if args.debug and (args.debug == "true" or args.debug == "True"):
     root.addHandler(ch)
 
 if args.docker:
-    print("Debug Setup Initiated") 
+    print("Docker Setup Initiated") 
     docker = True
 
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
@@ -72,6 +72,8 @@ if args.docker:
         open('/opt/hue-emulator/config.json', 'w+').write(res.text)
         copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
         print("Config downloaded")
+    
+    print("Docker Setup Complete") 
 
 else:
     docker = False
