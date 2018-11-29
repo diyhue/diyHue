@@ -17,7 +17,7 @@ script:
 # Pull dev image to run tests
 - docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:dev
 # Wait for logs to populate, then list them
-- sleep 60
+- sleep 120
 - docker logs diyHue
 # Kill and remove test container
 - docker kill diyHue
