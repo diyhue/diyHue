@@ -1,5 +1,5 @@
 FROM debian:stretch-slim
-WORKDIR /tmp
+WORKDIR /opt/hue-emulator
 
 #Install requirments
 RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
