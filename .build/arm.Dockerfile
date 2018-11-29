@@ -29,4 +29,4 @@ RUN chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = T
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
-ENTRYPOINT ["python3", "-u", "/opt/hue-emulator/HueEmulator3.py" ,"--mac $MAC", "--ip $IP", "--debug $DEBUG", "--docker"]
+ENTRYPOINT ["python3", "-u", "/opt/hue-emulator/HueEmulator3.py" ,"--mac", "$MAC", "--ip", "$IP", "--debug", "$DEBUG", "--docker"]
