@@ -54,11 +54,13 @@ if args.docker:
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
         print("Restoring Certificate")
         copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
+        print(os.listdir("."))
     else:
         print("Generating certificate")
         call(["/opt/hue-emulator/genCert.sh", args.mac])
         copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
         print("Certificate created")
+        print(os.listdir("."))
 
     if os.path.isfile("/opt/hue-emulator/export/config.json"):
         print("Restoring config")
