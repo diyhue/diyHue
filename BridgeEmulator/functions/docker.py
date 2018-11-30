@@ -1,6 +1,6 @@
 def dockerSetup():
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
-            print("Restoring Certificate")
+        print("Restoring Certificate")
         copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
         print("Certificate Restored")
     else:
