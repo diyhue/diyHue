@@ -1,14 +1,14 @@
 import os
 from subprocess import call
 
-def dockerSetup():
+def dockerSetup(mac):
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
         print("Restoring Certificate")
         copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
         print("Certificate Restored")
     else:
         print("Generating certificate")
-        call(["/opt/hue-emulator/genCert.sh", args.mac])
+        call(["/opt/hue-emulator/genCert.sh", mac])
         copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
         print("Certificate created")
 

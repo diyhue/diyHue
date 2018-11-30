@@ -48,10 +48,19 @@ if args.debug and (args.debug == "true" or args.debug == "True"):
     ch.setFormatter(formatter)
     root.addHandler(ch)
 
+if args.mac:
+    dockerMAC = args.mac
+    mac = str(args.mac).replace(":","")
+    print("Host MAC given as " + mac) 
+else:
+    dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8')[:-1]
+    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
+logging.debug(mac)
+
 if args.docker:
     print("Docker Setup Initiated") 
     docker = True
-    dockerSetup()
+    dockerSetup(dockerMAC)
     print("Docker Setup Complete") 
 
 else:
@@ -72,13 +81,6 @@ update_lights_on_startup = False # if set to true all lights will be updated wit
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
-
-if args.mac:
-    mac = str(args.mac).replace(":","")
-    print("Host MAC given as " + mac) 
-else:
-    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
-logging.debug(mac)
 
 run_service = True
 
