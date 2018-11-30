@@ -1,4 +1,5 @@
 import os
+from subprocess import call
 
 def dockerSetup():
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
