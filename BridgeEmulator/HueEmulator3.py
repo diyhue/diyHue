@@ -25,6 +25,7 @@ from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
+from functions.docker import dockerSetup
 from protocols import yeelight
 from protocols import tasmota
 
@@ -50,28 +51,7 @@ if args.debug and (args.debug == "true" or args.debug == "True"):
 if args.docker:
     print("Docker Setup Initiated") 
     docker = True
-
-    if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
-        print("Restoring Certificate")
-        copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
-        print("Certificate Restored")
-    else:
-        print("Generating certificate")
-        call(["/opt/hue-emulator/genCert.sh", args.mac])
-        copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
-        print("Certificate created")
-
-    if os.path.isfile("/opt/hue-emulator/export/config.json"):
-        print("Restoring config")
-        copyfile("/opt/hue-emulator/export/config.json", "/opt/hue-emulator/config.json")
-        print("Config restored")
-    else:
-        print("Downloading default config")
-        res = requests.get("https://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/config.json", allow_redirects=True)
-        open('/opt/hue-emulator/config.json', 'w+').write(res.text)
-        copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
-        print("Config downloaded")
-    
+    dockerSetup()
     print("Docker Setup Complete") 
 
 else:
