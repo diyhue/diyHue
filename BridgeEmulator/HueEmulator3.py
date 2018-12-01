@@ -13,7 +13,6 @@ import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from shutil import copyfile
 from socketserver import ThreadingMixIn
 from subprocess import Popen, check_output, call
 from threading import Thread
