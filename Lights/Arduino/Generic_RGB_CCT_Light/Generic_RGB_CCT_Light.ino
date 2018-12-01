@@ -184,9 +184,7 @@ void handleNotFound() {
 }
 
 void apply_scene(uint8_t new_scene) {
-  if ( new_scene == 0) {
-    bri = 144; ct = 447; color_mode = 2; convert_ct();
-  } else if ( new_scene == 1) {
+  if ( new_scene == 1) {
     bri = 254; ct = 346; color_mode = 2; convert_ct();
   } else if ( new_scene == 2) {
     bri = 254; ct = 233; color_mode = 2; convert_ct();
@@ -206,6 +204,8 @@ void apply_scene(uint8_t new_scene) {
     bri = 142; x = 0.267102; y = 0.23755; color_mode = 1; convert_xy();
   }  else if ( new_scene == 10) {
     bri = 216; x = 0.393209; y = 0.29961; color_mode = 1; convert_xy();
+  }  else {
+    bri = 144; ct = 447; color_mode = 2; convert_ct();
   }
 }
 
@@ -234,14 +234,14 @@ void lightEngine() {
         in_transition = true;
         current_colors[color] += step_level[color];
         if ((step_level[color] > 0.0f && current_colors[color] > colors[color]) || (step_level[color] < 0.0f && current_colors[color] < colors[color])) current_colors[color] = colors[color];
-        analogWrite(pins[color], (int)(current_colors[color]));
+        analogWrite(pins[color], (int)(current_colors[color] * 4.0));
       }
     } else {
       if (current_colors[color] != 0) {
         in_transition = true;
         current_colors[color] -= step_level[color];
         if (current_colors[color] < 0.0f) current_colors[color] = 0;
-        analogWrite(pins[color], (int)(current_colors[color]));
+        analogWrite(pins[color], (int)(current_colors[color] * 4.0));
       }
     }
   }
@@ -293,8 +293,6 @@ void lightEngine() {
 
 void setup() {
   EEPROM.begin(512);
-  analogWriteFreq(1000);
-  analogWriteRange(255);
 
   for (uint8_t pin = 0; pin < PWM_CHANNELS; pin++) {
     pinMode(pins[pin], OUTPUT);
@@ -460,7 +458,7 @@ void setup() {
 
     if (server.hasArg("scene")) {
       if (server.arg("bri") == "" && server.arg("hue") == "" && server.arg("ct") == "" && server.arg("sat") == "") {
-        if (  EEPROM.read(2) != server.arg("scene").toInt() && EEPROM.read(1) < 2) {
+        if (  EEPROM.read(2) != server.arg("scene").toInt()) {
           EEPROM.write(2, server.arg("scene").toInt());
           EEPROM.commit();
         }
@@ -546,7 +544,7 @@ void setup() {
     http_content += "</select>";
     http_content += "</div>";
     http_content += "<div class=\"pure-control-group\">";
-    http_content += "<label for=\"scene\">Scene</label>";
+    http_content += "<label for=\"scene\">Default Scene</label>";
     http_content += "<select onchange = \"this.form.submit()\" id=\"scene\" name=\"scene\">";
     http_content += "<option "; if (EEPROM.read(2) == 0) http_content += "selected=\"selected\""; http_content += " value=\"0\">Relax</option>";
     http_content += "<option "; if (EEPROM.read(2) == 1) http_content += "selected=\"selected\""; http_content += " value=\"1\">Read</option>";
@@ -616,7 +614,7 @@ void entertainment() {
   if (packetSize) {
     Udp.read(packetBuffer, packetSize);
     for (uint8_t color = 0; color < 3; color++) {
-      analogWrite(pins[color - 1], (int)(packetBuffer[color]));
+      analogWrite(pins[color - 1], (int)(packetBuffer[color] * 4));
     }
   }
 }
