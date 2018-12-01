@@ -11,11 +11,11 @@ script:
 # Build image
 - docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile .
 # Login, tag and push dev image
-- docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
-- docker tag diyhue/core:$ARCH diyhue/core:$ARCH-dev
-- docker push diyhue/core:$ARCH-dev
+#- docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+#- docker tag diyhue/core:$ARCH diyhue/core:$ARCH-dev
+#- docker push diyhue/core:$ARCH-dev
 # Pull dev image to run tests
-- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH-dev
+- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
 # Wait for logs to populate, then list them
 - sleep 30
 - docker logs diyHue
