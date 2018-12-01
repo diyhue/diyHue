@@ -56,6 +56,12 @@ else:
     mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.debug(mac)
 
+if args.ip:
+    HostIP = args.ip
+    print("Host IP given as " + HostIP) 
+else:
+    HostIP= getIpAddress()
+
 if args.docker:
     print("Docker Setup Initiated") 
     docker = True
@@ -64,12 +70,6 @@ if args.docker:
 
 else:
     docker = False
-
-if args.ip:
-    HostIP = args.ip
-    print("Host IP given as " + HostIP) 
-else:
-    HostIP= getIpAddress()
 
 protocols = [yeelight, tasmota]
 
