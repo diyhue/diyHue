@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import argparse
 import base64
 import hashlib
 import json
@@ -13,7 +14,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from subprocess import Popen, check_output
+from subprocess import Popen, check_output, call
 from threading import Thread
 from time import sleep, strftime
 from urllib.parse import parse_qs, urlparse
@@ -23,12 +24,21 @@ from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
+from functions.docker import dockerSetup
 from protocols import yeelight
 from protocols import tasmota
 
-debug = False # set this to True in order to see all script actions.
+ap = argparse.ArgumentParser()
 
-if debug: 
+ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
+ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
+
+args = ap.parse_args()
+
+if args.debug and (args.debug == "true" or args.debug == "True"):
+    print("Debug Enabled")
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     ch = logging.StreamHandler(sys.stdout)
@@ -37,21 +47,39 @@ if debug:
     ch.setFormatter(formatter)
     root.addHandler(ch)
 
+if args.mac:
+    dockerMAC = args.mac
+    mac = str(args.mac).replace(":","")
+    print("Host MAC given as " + mac) 
+else:
+    dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8')[:-1]
+    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
+logging.debug(mac)
+
+if args.ip:
+    HostIP = args.ip
+    print("Host IP given as " + HostIP) 
+else:
+    HostIP= getIpAddress()
+
+if args.docker:
+    print("Docker Setup Initiated") 
+    docker = True
+    dockerSetup(dockerMAC)
+    print("Docker Setup Complete") 
+
+else:
+    docker = False
+
 protocols = [yeelight, tasmota]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
-docker = False # Set only to true if using script in Docker container
+
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
-
-if len(sys.argv) == 3:
-    mac = str(sys.argv[1]).replace(":","")
-else:
-    mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + getIpAddress() + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
-logging.debug(mac)
 
 run_service = True
 
@@ -298,8 +326,8 @@ def generateSensorsState():
 
 generateSensorsState()
 
-ip_pices = getIpAddress().split(".")
-bridge_config["config"]["ipaddress"] = getIpAddress()
+ip_pices = HostIP.split(".")
+bridge_config["config"]["ipaddress"] = HostIP
 bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
 bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
 bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
@@ -713,12 +741,12 @@ def scanForLights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
+    device_ips = check_output("nmap  " + HostIP + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
     logging.debug(pretty_json(device_ips))
     del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
-            if ip != getIpAddress():
+            if ip != HostIP:
                 response = requests.get("http://" + ip + "/detect", timeout=3)
                 if response.status_code == 200:
                     device_data = json.loads(response.text)
@@ -1694,8 +1722,8 @@ if __name__ == "__main__":
     try:
         if update_lights_on_startup:
             updateAllLights()
-        Thread(target=ssdpSearch, args=[getIpAddress(), mac]).start()
-        Thread(target=ssdpBroadcast, args=[getIpAddress(), mac]).start()
+        Thread(target=ssdpSearch, args=[HostIP, mac]).start()
+        Thread(target=ssdpBroadcast, args=[HostIP, mac]).start()
         Thread(target=schedulerProcessor).start()
         Thread(target=syncWithLights).start()
         Thread(target=entertainmentService).start()

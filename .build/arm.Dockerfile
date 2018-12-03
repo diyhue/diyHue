@@ -1,5 +1,5 @@
 FROM resin/rpi-raspbian:stretch
-WORKDIR /tmp
+WORKDIR /opt/hue-emulator
 
 #Install requirments
 RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
@@ -24,9 +24,9 @@ COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
 COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 
 # Add Docker Build scripts
-COPY ./.build/startup.sh ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
-RUN chmod +x /opt/hue-emulator/startup.sh && chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
+COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
+RUN chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
-ENTRYPOINT /opt/hue-emulator/startup.sh $MAC $IP $DEBUG
+ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --docker

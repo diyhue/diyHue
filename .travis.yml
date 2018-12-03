@@ -6,13 +6,20 @@ env:
   - ARCH=amd64
   - ARCH=arm
 script:
+# Setup QEMU for ARM image build
 - docker run --rm --privileged multiarch/qemu-user-static:register
+# Build image
 - docker build -t diyhue/core:$ARCH -f ./.build/$ARCH.Dockerfile .
-# test image
+# Login, tag and push dev image
+#- docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+#- docker tag diyhue/core:$ARCH diyhue/core:$ARCH-dev
+#- docker push diyhue/core:$ARCH-dev
+# Pull dev image to run tests
 - docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
-
-- sleep 10
+# Wait for logs to populate, then list them
+- sleep 30
 - docker logs diyHue
+# Kill and remove test container
 - docker kill diyHue
 - docker rm diyHue
 
