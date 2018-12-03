@@ -53,7 +53,7 @@ void setup() {
 
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, HIGH);
-  
+
 #ifdef USE_STATIC_IP
   WiFi.config(strip_ip, gateway_ip, subnet_mask);
 #endif
@@ -187,6 +187,20 @@ void setup() {
     http_content += "<label for=\"power\"><strong>Power</strong></label>";
     http_content += "<a class=\"pure-button"; if (device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=true\">ON</a>";
     http_content += "<a class=\"pure-button"; if (!device_state[0]) http_content += "  pure-button-primary"; http_content += "\" href=\"/?on=false\">OFF</a>";
+    http_content += "</div>";
+    http_content += "<div class=\"pure-control-group\">";
+    http_content += "<label for=\"startup\">Startup</label>";
+    http_content += "<select onchange=\"this.form.submit()\" id=\"startup\" name=\"startup\">";
+    http_content += "<option "; if (EEPROM.read(1) == 0) http_content += "selected=\"selected\""; http_content += " value=\"0\">Last state</option>";
+    http_content += "<option "; if (EEPROM.read(1) == 1) http_content += "selected=\"selected\""; http_content += " value=\"1\">On</option>";
+    http_content += "<option "; if (EEPROM.read(1) == 2) http_content += "selected=\"selected\""; http_content += " value=\"2\">Off</option>";
+    http_content += "</select>";
+    http_content += "</div>";
+    http_content += "<div class=\"pure-controls\">";
+    http_content += "<span class=\"pure-form-message\"><a href=\"/?alert=1\">alert</a> or <a href=\"/?reset=1\">reset</a></span>";
+    http_content += "<label for=\"cb\" class=\"pure-checkbox\">";
+    http_content += "</label>";
+    http_content += "<button type=\"submit\" class=\"pure-button pure-button-primary\">Save</button>";
     http_content += "</div>";
     http_content += "</fieldset>";
     http_content += "</form>";
