@@ -1478,7 +1478,7 @@ class S(BaseHTTPRequestHandler):
         self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
-            update_data = json.loads(sendRequest("http://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
+            update_data = json.loads(sendRequest("http://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
             for category in update_data.keys():
                 for key in update_data[category].keys():
                     logging.info("patch " + category + " -> " + key )
