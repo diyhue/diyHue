@@ -91,7 +91,7 @@ sensors_state = {}
 def updateConfig():
     for sensor in bridge_config["deconz"]["sensors"].keys():
         if "modelid" not in bridge_config["deconz"]["sensors"][sensor]:
-            bridge_config["deconz"]["sensors"]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
+            bridge_config["deconz"]["sensors"][sensor]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
         if bridge_config["deconz"]["sensors"][sensor]["modelid"] == "TRADFRI motion sensor":
             if "lightsensor" not in bridge_config["deconz"]["sensors"][sensor]:
                 bridge_config["deconz"]["sensors"][sensor]["lightsensor"] = "internal"
