@@ -1625,6 +1625,12 @@ class S(BaseHTTPRequestHandler):
                             sendRequest("http://" + bridge_config["lights_address"][url_pices[4]]["ip"] + "/", "POST", {"startup": 1})
                         elif put_dictionary["config"]["startup"]["mode"] == "powerfail":
                             sendRequest("http://" + bridge_config["lights_address"][url_pices[4]]["ip"] + "/", "POST", {"startup": 0})
+
+                        #add exception on json output as this dictionary has tree levels
+                        response_dictionary = {"success":{"/lights/" + url_pices[4] + "/config/startup": {"mode": put_dictionary["config"]["startup"]["mode"]}}}
+                        self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':')), "utf8"))
+                        logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
+                        return
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
 
