@@ -91,7 +91,7 @@ sensors_state = {}
 def updateConfig():
     for sensor in bridge_config["deconz"]["sensors"].keys():
         if "modelid" not in bridge_config["deconz"]["sensors"][sensor]:
-            bridge_config["deconz"]["sensors"][sensor]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
+            bridge_config["deconz"]["sensors"]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
         if bridge_config["deconz"]["sensors"][sensor]["modelid"] == "TRADFRI motion sensor":
             if "lightsensor" not in bridge_config["deconz"]["sensors"][sensor]:
                 bridge_config["deconz"]["sensors"][sensor]["lightsensor"] = "internal"
@@ -108,11 +108,13 @@ def updateConfig():
                     del bridge_config["lights"][light][key]
             if bridge_config["lights"][light]["modelid"].startswith("TRADFRI"):
                 if bridge_config["lights"][light]["type"] == "Color temperature light":
-                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LTW001", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b","swversion": "5.50.1.19085"})
+                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LTW001", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b","swversion": "1.46.13_r26312"})
                 elif bridge_config["lights"][light]["type"] == "Color light":
-                    bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.29.0_r21169"})
+                    bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
                 elif bridge_config["lights"][light]["type"] == "Dimmable light":
-                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.15.0_r18729"})
+                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
+        if bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
+            bridge_config["lights"][light].update({"swversion": "1.46.13_r26312"})
     #set entertainment streaming to inactive on start/restart
     for group in bridge_config["groups"].keys():
         if bridge_config["groups"][group]["type"] == "Entertainment":
@@ -533,7 +535,7 @@ def rulesProcessor(sensor, current_time):
 def sendRequest(url, method, data, timeout=3, delay=0):
     if delay != 0:
         sleep(delay)
-    if not url.startswith( 'http://' ):
+    if not url.startswith( 'http' ):
         url = "http://127.0.0.1" + url
     head = {"Content-type": "application/json"}
     if method == "POST":
@@ -1457,7 +1459,7 @@ class S(BaseHTTPRequestHandler):
                                 any_on = True
                             else:
                                 all_on = False
-                        self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":False,"alert":"none"}},separators=(',', ':')), "utf8"))
+                        self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":false,"action":{"on":false,"alert":"none"}},separators=(',', ':')), "utf8"))
                     elif url_pices[3] == "info":
                         self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]],separators=(',', ':')), "utf8"))
                     else:
@@ -1478,7 +1480,7 @@ class S(BaseHTTPRequestHandler):
         self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
-            update_data = json.loads(sendRequest("http://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
+            update_data = json.loads(sendRequest("https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
             for category in update_data.keys():
                 for key in update_data[category].keys():
                     logging.info("patch " + category + " -> " + key )
