@@ -114,7 +114,16 @@ def updateConfig():
                 elif bridge_config["lights"][light]["type"] == "Dimmable light":
                     bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
         if bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
-            bridge_config["lights"][light].update({"swversion": "1.46.13_r26312"})
+            bridge_config["lights"][light].update({"swversion": "1.46.13_r26312", })
+            if bridge_config["lights"][light]["modelid"] in ["LTW001", "LWB010"]:
+                bridge_config["lights"][light].update({"config": {"archetype": "classicbulb", "function": "mixed","direction": "omnidirectional"}})
+            elif bridge_config["lights"][light]["modelid"] == "LCT015":
+                bridge_config["lights"][light].update({"config": {"archetype": "sultanbulb", "function": "mixed","direction": "omnidirectional"}})
+            elif bridge_config["lights"][light]["modelid"] == "LST002":
+                bridge_config["lights"][light].update({"config": {"archetype": "huelightstrip", "function": "mixed","direction": "omnidirectional"}})
+            if bridge_config["lights"][light]["modelid"] in ["LST002", "LCT015", "LTW001", "LWB010"]:
+                if "startup" not in bridge_config["lights"][light]["config"]:
+                    bridge_config["lights"][light]["config"].update({"startup": {"mode": "safety","configured": False}})
     #set entertainment streaming to inactive on start/restart
     for group in bridge_config["groups"].keys():
         if bridge_config["groups"][group]["type"] == "Entertainment":
@@ -539,7 +548,10 @@ def sendRequest(url, method, data, timeout=3, delay=0):
         url = "http://127.0.0.1" + url
     head = {"Content-type": "application/json"}
     if method == "POST":
-        response = requests.post(url, data=bytes(data, "utf8"), timeout=timeout, headers=head)
+        if type(data) is dict:
+            response = requests.post(url, data=data)
+        else:
+            response = requests.post(url, data=bytes(data, "utf8"), timeout=timeout, headers=head)
         return response.text
     elif method == "PUT":
         response = requests.put(url, data=bytes(data, "utf8"), timeout=timeout, headers=head)
@@ -1606,8 +1618,16 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     else:
                         bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
+                elif url_pices[3] == "lights" and "config" in put_dictionary:
+                    bridge_config["lights"][url_pices[4]]["config"].update(put_dictionary["config"])
+                    if "startup" in put_dictionary["config"] and bridge_config["lights_address"][url_pices[4]]["protocol"] == "native":
+                        if put_dictionary["config"]["startup"]["mode"] == "safety":
+                            sendRequest("http://" + bridge_config["lights_address"][url_pices[4]]["ip"] + "/", "POST", {"startup": 1})
+                        elif put_dictionary["config"]["startup"]["mode"] == "powerfail":
+                            sendRequest("http://" + bridge_config["lights_address"][url_pices[4]]["ip"] + "/", "POST", {"startup": 0})
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
+
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
             if len(url_pices) == 6:
                 if url_pices[3] == "groups": #state is applied to a group
@@ -1642,6 +1662,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = key
                         elif key in ["hue", "sat"]:
                             bridge_config["lights"][url_pices[4]]["state"]["colormode"] = "hs"
+
                     updateGroupStats(url_pices[4])
                     sendLightRequest(url_pices[4], put_dictionary)
                 if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
