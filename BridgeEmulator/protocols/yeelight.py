@@ -91,7 +91,7 @@ def set_light(ip, light, data):
         elif key == "hue":
             payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
         elif key == "sat":
-            payload["set_hsv"] = [int(value / 2.54), int(light["state"]["hue"] / 2.54), "smooth", transitiontime]
+            payload["set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
             color = convert_xy(value[0], value[1], light["state"]["bri"])
             payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
@@ -150,7 +150,7 @@ def get_light_state(ip, light):
         tcp_socket.send(msg_hsv.encode())
         data = tcp_socket.recv(16 * 1024)
         hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-        state["hue"] = int(hue_data[0] * 182)
+        state["hue"] = int(int(hue_data[0]) * 182)
         state["sat"] = int(int(hue_data[1]) * 2.54)
         state["colormode"] = "hs"
     tcp_socket.close()
