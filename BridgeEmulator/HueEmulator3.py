@@ -113,7 +113,7 @@ def updateConfig():
                     bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
                 elif bridge_config["lights"][light]["type"] == "Dimmable light":
                     bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
-        if bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
+        if "manufacturername" in bridge_config["lights"][light] and bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
             bridge_config["lights"][light].update({"swversion": "1.46.13_r26312", })
             if bridge_config["lights"][light]["modelid"] in ["LTW001", "LWB010"]:
                 bridge_config["lights"][light].update({"config": {"archetype": "classicbulb", "function": "mixed","direction": "omnidirectional"}, "swversion": "1.46.13_r26312"})
@@ -705,7 +705,7 @@ def sendLightRequest(light, data):
             if bridge_config["lights_address"][light]["protocol"] == "ikea_tradfri":
                 if "5712" not in payload:
                     payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
-                    check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
+                check_output("./coap-client-linux -m put -u \"" + bridge_config["lights_address"][light]["identity"] + "\" -k \"" + bridge_config["lights_address"][light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
             elif bridge_config["lights_address"][light]["protocol"] in ["hue", "deconz"]:
                 color = {}
                 if "xy" in payload:
