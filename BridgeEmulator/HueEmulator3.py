@@ -116,11 +116,11 @@ def updateConfig():
         if bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
             bridge_config["lights"][light].update({"swversion": "1.46.13_r26312", })
             if bridge_config["lights"][light]["modelid"] in ["LTW001", "LWB010"]:
-                bridge_config["lights"][light].update({"config": {"archetype": "classicbulb", "function": "mixed","direction": "omnidirectional"}})
+                bridge_config["lights"][light].update({"config": {"archetype": "classicbulb", "function": "mixed","direction": "omnidirectional"}, "swversion": "1.46.13_r26312"})
             elif bridge_config["lights"][light]["modelid"] == "LCT015":
-                bridge_config["lights"][light].update({"config": {"archetype": "sultanbulb", "function": "mixed","direction": "omnidirectional"}})
+                bridge_config["lights"][light].update({"config": {"archetype": "sultanbulb", "function": "mixed","direction": "omnidirectional"}, "swversion": "1.46.13_r26312"})
             elif bridge_config["lights"][light]["modelid"] == "LST002":
-                bridge_config["lights"][light].update({"config": {"archetype": "huelightstrip", "function": "mixed","direction": "omnidirectional"}})
+                bridge_config["lights"][light].update({"config": {"archetype": "huelightstrip", "function": "mixed","direction": "omnidirectional"}, "swversion": "5.127.1.26581"})
             if bridge_config["lights"][light]["modelid"] in ["LST002", "LCT015", "LTW001", "LWB010"]:
                 if "startup" not in bridge_config["lights"][light]["config"]:
                     bridge_config["lights"][light]["config"].update({"startup": {"mode": "safety","configured": False}})
