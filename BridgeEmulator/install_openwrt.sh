@@ -11,7 +11,7 @@ mkdir /opt/hue-emulator
 pip3 install requests ws4py
 wait
 cd /opt/tmp
-git clone https://github.com/juanesf/diyHue.git
+git clone https://github.com/diyHue/diyHue.git
 wait
 
 cd /opt/tmp/diyHue/BridgeEmulator
