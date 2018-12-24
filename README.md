@@ -32,7 +32,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - Alarm (~~email notification~~ + eps8266 horn)
  - ~~Hue Entertainment support~~
 
-## Working HUE futures:
+## Working HUE features:
   - Control lights (all functions)
   - Control groups (all functions)
   - Scenes (all functions)
