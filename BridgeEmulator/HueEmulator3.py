@@ -758,7 +758,6 @@ def scanForLights(): #scan for ESP8266 lights and strips
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + HostIP + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
     logging.info(pretty_json(device_ips))
-    del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
             if ip != HostIP:
