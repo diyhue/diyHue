@@ -25,6 +25,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 
 ## To Do
+ - Improve web interface
+ - esp8266 alarm horn (+schematic)
+ - esp8266 IR controller 
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
