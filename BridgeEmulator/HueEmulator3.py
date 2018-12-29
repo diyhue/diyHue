@@ -1717,6 +1717,11 @@ class S(BaseHTTPRequestHandler):
                 for light in list(bridge_config["deconz"]["lights"]):
                     if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["lights"][light]
+                for scene in bridge_config["scenes"].keys():
+                    if "lights" in bridge_config["scenes"][scene] and url_pices[4] in bridge_config["scenes"][scene]["lights"]:
+                        print("delete light from scene " + scene)
+                        bridge_config["scenes"][scene]["lights"].remove(url_pices[4])
+                        del bridge_config["scenes"][scene]["lightstates"][url_pices[4]]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
