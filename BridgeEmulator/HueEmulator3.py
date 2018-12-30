@@ -1258,7 +1258,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
-            self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], mac), "utf8"))
+            self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], mac, bridge_config["config"]["name"]), "utf8"))
         elif self.path == '/save':
             self._set_headers()
             saveConfig()
