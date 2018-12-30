@@ -1,4 +1,4 @@
-def description(ip, mac):
+def description(ip, mac, name):
     return """<?xml version="1.0" encoding="UTF-8" ?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">
 <specVersion>
@@ -8,7 +8,7 @@ def description(ip, mac):
 <URLBase>http://""" + ip + """:80/</URLBase>
 <device>
 <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
-<friendlyName>Philips hue (""" + ip + """)</friendlyName>
+<friendlyName>""" + name + """ (""" + ip + """)</friendlyName>
 <manufacturer>Royal Philips Electronics</manufacturer>
 <manufacturerURL>http://www.philips.com</manufacturerURL>
 <modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
