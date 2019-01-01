@@ -34,6 +34,7 @@ ap.add_argument("--ip", help="The IP address of the host system", nargs='?', con
 ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
 ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
+ap.add_argument("--ip_range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
 
 args = ap.parse_args()
 
@@ -70,6 +71,22 @@ if args.docker:
 
 else:
     docker = False
+
+if args.ip_range:
+    ranges = args.ip_range.split(',')
+    if ranges[0] and int(ranges[0]) >= 0:
+        ip_range_start = int(ranges[0])
+    else:
+        ip_range_start = 0
+
+    if ranges[1] and int(ranges[1]) > 0:
+        ip_range_end = int(ranges[1])
+    else:
+        ip_range_end = 255
+else:
+    ip_range_start = 0
+    ip_range_end = 255
+print("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
 
 protocols = [yeelight, tasmota]
 
@@ -751,12 +768,31 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
             bridge_config["groups"][group]["state"] = {"any_on": any_on, "all_on": all_on,}
             bridge_config["groups"][group]["action"]["on"] = any_on
 
+def scanHost(host, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.01) # Very short timeout. If scanning fails this could be increased
+    result = sock.connect_ex((host, port))
+    sock.close()
+    return result
+
+def findHosts(port):
+    addr = ip_range_start
+    validHosts = []
+    host = HostIP.split('.')
+    while addr <= ip_range_end:
+        host[3] = str(addr)
+        testHost = host[0]+"."+host[1]+"."+host[2]+"."+host[3]
+        if scanHost(testHost, port) == 0:
+            validHosts.append(testHost)
+        addr = addr+1
+
+    return validHosts
 
 def scanForLights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
-    device_ips = check_output("nmap  " + HostIP + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
+    device_ips = findHosts(80)
     logging.info(pretty_json(device_ips))
     for ip in device_ips:
         try:
