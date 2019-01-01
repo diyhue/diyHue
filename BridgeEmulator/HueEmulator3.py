@@ -28,6 +28,8 @@ from functions.docker import dockerSetup
 from protocols import yeelight
 from protocols import tasmota
 
+update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
+
 ap = argparse.ArgumentParser()
 
 ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
@@ -86,14 +88,13 @@ if args.ip_range:
 else:
     ip_range_start = 0
     ip_range_end = 255
-print("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
+logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
 
 protocols = [yeelight, tasmota]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
 
-update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
@@ -826,6 +827,8 @@ def scanForLights(): #scan for ESP8266 lights and strips
 
 
 def syncWithLights(): #update Hue Bridge lights states
+    if update_lights_on_startup: #avoid override lights states on startup.
+        sleep(30)
     while True:
         logging.info("sync with lights")
         for light in bridge_config["lights_address"]:
@@ -988,6 +991,12 @@ def websocketClient():
                             elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "astral":
                                 message["state"]["dark"] = not bridge_config["sensors"]["1"]["state"]["daylight"]
 
+                            elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "combined":
+                                if not bridge_config["sensors"]["1"]["state"]["daylight"]:
+                                    message["state"]["dark"] = True
+                                elif (datetime.strptime(message["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S") - datetime.strptime(bridge_config["sensors"][light_sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S")).total_seconds() > 1200:
+                                    message["state"]["dark"] = False
+
                             if  message["state"]["dark"]:
                                 bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
                             else:
@@ -1015,6 +1024,34 @@ def websocketClient():
                             bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                             return
                         ##############
+
+                        ##convert xiaomi vibration sensor states to hue motion sensor
+                        if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "lumi.vibration.aq1":
+                            #find the light sensor id
+                            light_sensor = "0"
+                            for sensor in bridge_config["sensors"].keys():
+                                if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_sensor_id]["uniqueid"][:-1] + "0":
+                                    light_sensor = sensor
+                                    break
+                            logging.info("Vibration: emulated light sensor id is  " + light_sensor)
+                            if bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "none":
+                                message["state"].update({"dark": True})
+                                logging.info("Vibration: set light sensor to dark because 'lightsensor' = 'none' ")
+                            elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "astral":
+                                message["state"]["dark"] = not bridge_config["sensors"]["1"]["state"]["daylight"]
+                                logging.info("Vibration: set light sensor to " + str(not bridge_config["sensors"]["1"]["state"]["daylight"]) + " because 'lightsensor' = 'astral' ")
+
+                            if  message["state"]["dark"]:
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
+                            else:
+                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
+                            bridge_config["sensors"][light_sensor]["state"]["dark"] = message["state"]["dark"]
+                            bridge_config["sensors"][light_sensor]["state"]["daylight"] = not message["state"]["dark"]
+                            bridge_config["sensors"][light_sensor]["state"]["lastupdated"] = message["state"]["lastupdated"]
+                            message["state"] = {"motion": True, "lastupdated": message["state"]["lastupdated"]} #empty the message state for non Hue motion states (we need to know there was an event only)
+                            logging.info("Vibration: set motion = True")
+                            Thread(target=motionDetected, args=[bridge_sensor_id]).start()
+
 
                         bridge_config["sensors"][bridge_sensor_id]["state"].update(message["state"])
                         current_time = datetime.now()
@@ -1084,7 +1121,10 @@ def scanDeconz():
                     logging.info("register TRADFRI motion sensor as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "internal"}
-
+                elif deconz_sensors[sensor]["modelid"] == "lumi.vibration.aq1":
+                    logging.info("register Xiaomi Vibration sensor as Philips Motion Sensor")
+                    newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "astral"}
                 elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion.aq2":
                     if deconz_sensors[sensor]["type"] == "ZHALightLevel":
                         logging.info("register new Xiaomi light sensor")
@@ -1115,6 +1155,8 @@ def scanDeconz():
 
 def updateAllLights():
     ## apply last state on startup to all bulbs, usefull if there was a power outage
+    if bridge_config["deconz"]["enabled"]:
+        sleep(60) #give 1 minute for deconz to have ZigBee network ready
     for light in bridge_config["lights_address"]:
         payload = {}
         payload["on"] = bridge_config["lights"][light]["state"]["on"]
@@ -1794,7 +1836,7 @@ if __name__ == "__main__":
         scanDeconz()
     try:
         if update_lights_on_startup:
-            updateAllLights()
+            Thread(target=updateAllLights).start()
         Thread(target=ssdpSearch, args=[HostIP, mac]).start()
         Thread(target=ssdpBroadcast, args=[HostIP, mac]).start()
         Thread(target=schedulerProcessor).start()
