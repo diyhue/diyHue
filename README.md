@@ -25,6 +25,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 
 ## To Do
+ - Improve web interface
+ - esp8266 alarm horn (+schematic)
+ - esp8266 IR controller 
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
@@ -32,7 +35,7 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
  - Alarm (~~email notification~~ + eps8266 horn)
  - ~~Hue Entertainment support~~
 
-## Working HUE futures:
+## Working HUE features:
   - Control lights (all functions)
   - Control groups (all functions)
   - Scenes (all functions)
@@ -83,6 +86,9 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Pwm Dimming (up to 6 lights for every esp8266)
   - On/Off plugs/lights (up to 6 lights for every esp8266)
   - On/Off 433Mhz devices (multiple devices for every esp8266)
+  
+  ## FAQ
+  [Unable to Connect to diyHue](https://github.com/diyhue/diyHue/wiki/FAQ#unable-to-connect---diyhue-bridge-is-detected-but-i-cant-pair)
   
 ## Stability:
 All the lights in my house are controlled by this solution so the stability is very important to me as there is no turning back to classic illumination (all switches were replaces with Ikea Tradfri Remotes and holes covered). However I don't use all the functions, so I'm unable to perform full tests on every change. What I do currently use is Deconz with all Tradfri devices (lights + sensors), Xiaomi Motion Sensor, native ESP8266 bulbs, ESP8266 + WS2812B strips and Xiaomi YeeLight color bulb.

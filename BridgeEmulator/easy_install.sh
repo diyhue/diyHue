@@ -72,7 +72,7 @@ else
         fi
         mkdir /opt/hue-emulator
         cp config.json /opt/hue-emulator/
-	
+
 	curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 	serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
 	dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
@@ -92,7 +92,7 @@ else
 		rm private.key public.crt
 	fi
 fi
-cp -r web-ui functions protocols HueEmulator3.py /opt/hue-emulator/
+cp -r web-ui functions protocols HueEmulator3.py check_updates.sh /opt/hue-emulator/
 if [ $(uname -m) = "x86_64" ]; then
 	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
 	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
@@ -107,6 +107,7 @@ else
 fi
 chmod +x /opt/hue-emulator/entertainment-srv
 chmod +x /opt/hue-emulator/coap-client-linux
+chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-master
