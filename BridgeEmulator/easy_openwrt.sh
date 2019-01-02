@@ -18,6 +18,8 @@ cp HueEmulator3.py config.json updater /opt/hue-emulator/
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
 cp entertainment-mips /opt/hue-emulator/entertainment-srv
+rm -Rf /opt/hue-emulator/functions/network.py
+mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 cp hueemulatorWrt-service /etc/init.d/
 
@@ -33,6 +35,7 @@ chmod +x /opt/hue-emulator/web-ui
 chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/entertainment-srv
+chmod +x /opt/hue-emulator/functions/network.py
 /etc/init.d/hueemulatorWrt-service enable
 wait
 echo -e "\033[32m Installation completed. run: nano /etc/config/uhttpd and mod htpp port 80 for 82, run: nano /etc/lighttpd/lighttpd.conf and mod server.port = 80 for 82. For save changes ctrl +x, y, and enter..\033[0m"
