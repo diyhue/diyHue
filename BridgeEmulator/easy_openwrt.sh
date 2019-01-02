@@ -18,7 +18,8 @@ cp HueEmulator3.py config.json updater /opt/hue-emulator/
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
 cp entertainment-mips /opt/hue-emulator/entertainment-srv
-cp network_OpenWrt.py /opt/hue-emulator/functions/network.py
+rm -Rf /opt/hue-emulator/functions/network.py
+mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 cp hueemulatorWrt-service /etc/init.d/
 
