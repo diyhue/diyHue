@@ -867,7 +867,7 @@ def syncWithLights(): #update Hue Bridge lights states
                         bridge_config["lights"][light]["state"]["bri"] = light_data["brightness"]
                     if "color_temp" in light_data:
                         bridge_config["lights"][light]["state"]["colormode"] = "ct"
-                        bridge_config["lights"][light]["state"]["ct"] = light_data["color_temp"] * 1.6
+                        bridge_config["lights"][light]["state"]["ct"] = int(light_data["color_temp"] * 1.6)
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "hs"
                         bridge_config["lights"][light]["state"]["hue"] = light_data["hue"] * 180
