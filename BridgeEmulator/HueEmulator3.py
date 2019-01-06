@@ -154,83 +154,93 @@ def updateConfig():
 
 def entertainmentService():
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 0
     lightStatus = {}
+    syncing = False #Flag to check whether or not we had been syncing when a timeout occurs
     while True:
-        data = serverSocket.recvfrom(106)[0]
-        nativeLights = {}
-        if data[:9].decode('utf-8') == "HueStream":
-            if data[14] == 0: #rgb colorspace
-                i = 16
-                while i < len(data):
-                    if data[i] == 0: #Type of device 0x00 = Light
-                        lightId = data[i+1] * 256 + data[i+2]
-                        if lightId != 0:
-                            r = int((data[i+3] * 256 + data[i+4]) / 256)
-                            g = int((data[i+5] * 256 + data[i+6]) / 256)
-                            b = int((data[i+7] * 256 + data[i+7]) / 256)
-                            if lightId not in lightStatus:
-                                lightStatus[lightId] = {"on": False, "bri": 1}
-                            if r == 0 and  g == 0 and  b == 0:
-                                bridge_config["lights"][str(lightId)]["state"]["on"] = False
-                            else:
-                                bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
-                            if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
-                                if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
-                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
-                                nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = [r, g, b]
-                            else:
-                                if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
-                                    if r == 0 and  g == 0 and  b == 0:
-                                        if lightStatus[lightId]["on"]:
-                                            sendLightRequest(str(lightId), {"on": False, "transitiontime": 3})
-                                            lightStatus[lightId]["on"] = False
-                                    elif lightStatus[lightId]["on"] == False:
-                                        sendLightRequest(str(lightId), {"on": True, "transitiontime": 3})
-                                        lightStatus[lightId]["on"] = True
-                                    elif abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"]) > 50: # to optimize, send brightness  only of difference is bigger than this value
-                                        sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3})
-                                        lightStatus[lightId]["bri"] = int((r + b + g) / 3)
-                                    else:
-                                        sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3})
-                            fremeID += 1
-                            if fremeID == 25:
-                                fremeID = 0
-                            updateGroupStats(lightId)
-                        i = i + 9
-            elif data[14] == 1: #cie colorspace
-                i = 16
-                while i < len(data):
-                    if data[i] == 0: #Type of device 0x00 = Light
-                        lightId = data[i+1] * 256 + data[i+2]
-                        if lightId != 0:
-                            x = (data[i+3] * 256 + data[i+4]) / 65535
-                            y = (data[i+5] * 256 + data[i+6]) / 65535
-                            bri = int((data[i+7] * 256 + data[i+7]) / 256)
-                            if bri == 0:
-                                bridge_config["lights"][str(lightId)]["state"]["on"] = False
-                            else:
-                                bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
-                            if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
-                                if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
-                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
-                                nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
-                            else:
+        try:
+            data = serverSocket.recvfrom(106)[0]
+            nativeLights = {}
+            if data[:9].decode('utf-8') == "HueStream":
+                syncing = True #Set sync flag when receiving valid data
+                if data[14] == 0: #rgb colorspace
+                    i = 16
+                    while i < len(data):
+                        if data[i] == 0: #Type of device 0x00 = Light
+                            lightId = data[i+1] * 256 + data[i+2]
+                            if lightId != 0:
+                                r = int((data[i+3] * 256 + data[i+4]) / 256)
+                                g = int((data[i+5] * 256 + data[i+6]) / 256)
+                                b = int((data[i+7] * 256 + data[i+7]) / 256)
+                                if lightId not in lightStatus:
+                                    lightStatus[lightId] = {"on": False, "bri": 1}
+                                if r == 0 and  g == 0 and  b == 0:
+                                    bridge_config["lights"][str(lightId)]["state"]["on"] = False
+                                else:
+                                    bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
+                                if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                    if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
+                                        nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
+                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = [r, g, b]
+                                else:
+                                    if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
+                                        if r == 0 and  g == 0 and  b == 0:
+                                            if lightStatus[lightId]["on"]:
+                                                sendLightRequest(str(lightId), {"on": False, "transitiontime": 3})
+                                                lightStatus[lightId]["on"] = False
+                                        elif lightStatus[lightId]["on"] == False:
+                                            sendLightRequest(str(lightId), {"on": True, "transitiontime": 3})
+                                            lightStatus[lightId]["on"] = True
+                                        elif abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"]) > 50: # to optimize, send brightness  only of difference is bigger than this value
+                                            sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3})
+                                            lightStatus[lightId]["bri"] = int((r + b + g) / 3)
+                                        else:
+                                            sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3})
                                 fremeID += 1
-                                if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
-                                    sendLightRequest(str(lightId), {"xy": [x,y]})
+                                if fremeID == 25:
                                     fremeID = 0
-                            updateGroupStats(lightId)
-        if len(nativeLights) is not 0:
-            for ip in nativeLights.keys():
-                udpmsg = bytearray()
-                for light in nativeLights[ip].keys():
-                    udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
-                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                sock.sendto(udpmsg, (ip, 2100))
-
-
+                                updateGroupStats(lightId)
+                            i = i + 9
+                elif data[14] == 1: #cie colorspace
+                    i = 16
+                    while i < len(data):
+                        if data[i] == 0: #Type of device 0x00 = Light
+                            lightId = data[i+1] * 256 + data[i+2]
+                            if lightId != 0:
+                                x = (data[i+3] * 256 + data[i+4]) / 65535
+                                y = (data[i+5] * 256 + data[i+6]) / 65535
+                                bri = int((data[i+7] * 256 + data[i+7]) / 256)
+                                if bri == 0:
+                                    bridge_config["lights"][str(lightId)]["state"]["on"] = False
+                                else:
+                                    bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
+                                if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                    if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
+                                        nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
+                                    nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
+                                else:
+                                    fremeID += 1
+                                    if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
+                                        sendLightRequest(str(lightId), {"xy": [x,y]})
+                                        fremeID = 0
+                                updateGroupStats(lightId)
+            if len(nativeLights) is not 0:
+                for ip in nativeLights.keys():
+                    udpmsg = bytearray()
+                    for light in nativeLights[ip].keys():
+                        udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                    sock.sendto(udpmsg, (ip, 2100))
+        except: #Assuming the only exception is a network timeout, please don't scream at me
+            if syncing: #Reset sync status and kill relay service
+                logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state")
+                Popen(["killall", "entertainment-srv"])
+                for group in bridge_config["groups"].keys():
+                    if bridge_config["groups"][group]["type"] == "Entertainment":
+                        bridge_config["groups"][group]["stream"].update({"active": False, "owner": None})
+                syncing = False
 
 def addTradfriDimmer(sensor_id, group_id):
     rules = [{ "actions":[{"address": "/groups/" + group_id + "/action", "body":{ "on":True, "bri":1 }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "false" }], "name": "Remote " + sensor_id + " turn on" },{"actions":[{"address":"/groups/" + group_id + "/action", "body":{ "on": False}, "method":"PUT"}], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name":"Dimmer Switch " + sensor_id + " off"}, { "actions":[{ "address": "/groups/" + group_id + "/action", "body":{ "on":False }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name": "Remote " + sensor_id + " turn off" }, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 32, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate right"}, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 56, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "1002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate fast right"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -32, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -56, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}]
@@ -1694,6 +1704,7 @@ class S(BaseHTTPRequestHandler):
                             sleep(0.2)
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
+                            logging.info("stop hue entertainent")
                             Popen(["killall", "entertainment-srv"])
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     else:
