@@ -871,7 +871,10 @@ def syncWithLights(): #update Hue Bridge lights states
                     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
                         bridge_config["lights"][light]["state"]["colormode"] = "hs"
                         bridge_config["lights"][light]["state"]["hue"] = light_data["hue"] * 180
-                        bridge_config["lights"][light]["state"]["sat"] = int(light_data["saturation"] * 2.54)
+                        if (not "saturation" in light_data) and bridge_config["lights_address"][light]["mode"] == "rgbw":
+                            bridge_config["lights"][light]["state"]["sat"] = 255
+                        else:
+                            bridge_config["lights"][light]["state"]["sat"] = int(light_data["saturation"] * 2.54)
                 elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #domoticz protocol
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=devices&rid=" + bridge_config["lights_address"][light]["light_id"], "GET", "{}"))
                     if light_data["result"][0]["Status"] == "Off":
