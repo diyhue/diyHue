@@ -107,6 +107,8 @@ sensors_state = {}
 
 
 def updateConfig():
+    if "emulator" not in bridge_config:
+        bridge_config["emulator"] = {"lights": {}, "sensors": {}}
     for sensor in bridge_config["deconz"]["sensors"].keys():
         if "modelid" not in bridge_config["deconz"]["sensors"][sensor]:
             bridge_config["deconz"]["sensors"][sensor]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
@@ -289,7 +291,11 @@ def addHueMotionSensor(uniqueid, name="Hue motion sensor"):
 def addHueSwitch(uniqueid, sensorsType):
     new_sensor_id = nextFreeId(bridge_config, "sensors")
     if uniqueid == "":
-        uniqueid = "00:00:00:00:00:40:" + new_sensor_id + ":83-f2"
+        uniqueid = "00:17:88:01:02:"
+        if len(new_sensor_id) == 1:
+            uniqueid += "0" + new_sensor_id + ":4d:c6-02-fc00"
+        else:
+            uniqueid += new_sensor_id + ":4d:c6-02-fc00"
     bridge_config["sensors"][new_sensor_id] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if sensorsType == "ZLLSwitch" else "Tap Switch", "type": sensorsType, "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "", "uniqueid": uniqueid}
     return(new_sensor_id)
 
@@ -930,7 +936,7 @@ def longPressButton(sensor, buttonevent):
 
 
 def motionDetected(sensor):
-    logging.info("monitoring esp8266 motion sensor")
+    logging.info("monitoring motion sensor " + sensor)
     while bridge_config["sensors"][sensor]["state"]["presence"] == True:
         if datetime.utcnow() - datetime.strptime(bridge_config["sensors"][sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S") > timedelta(seconds=30):
             bridge_config["sensors"][sensor]["state"]["presence"] = False
@@ -939,6 +945,7 @@ def motionDetected(sensor):
             sensors_state[sensor]["state"]["presence"] = current_time
             rulesProcessor(sensor, current_time)
         sleep(1)
+    logging.info("set motion sensor " + sensor + " to motion = False")
     return
 
 
@@ -1487,49 +1494,50 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             logging.info(pretty_json(get_parameters))
-            if "devicetype" in get_parameters: #register device request
-                sensor_is_new = True
-                for sensor in bridge_config["sensors"]:
-                    if "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]): # if sensor is already present
-                        sensor_is_new = False
-                if sensor_is_new:
-                    logging.info("registering new sensor " + get_parameters["devicetype"][0])
-                    new_sensor_id = nextFreeId(bridge_config, "sensors")
-                    if get_parameters["devicetype"][0] in ["ZLLSwitch","ZGPSwitch"]:
-                        logging.info(get_parameters["devicetype"][0])
-                        addHueSwitch(get_parameters["mac"][0], get_parameters["devicetype"][0])
-                    elif get_parameters["devicetype"][0] == "ZLLPresence":
-                        logging.info("ZLLPresence")
-                        addHueMotionSensor(get_parameters["mac"][0])
+            if "devicetype" in get_parameters and get_parameters["mac"][0] not in bridge_config["emulator"]["sensors"]: #register device request
+                logging.info("registering new sensor " + get_parameters["devicetype"][0])
+                if get_parameters["devicetype"][0] in ["ZLLSwitch","ZGPSwitch"]:
+                    logging.info(get_parameters["devicetype"][0])
+                    bridge_config["emulator"]["sensors"][get_parameters["mac"][0]] = {"bridgeId": addHueSwitch("", get_parameters["devicetype"][0])}
+                elif get_parameters["devicetype"][0] == "ZLLPresence":
+                    logging.info("ZLLPresence")
+                    bridge_config["emulator"]["sensors"][get_parameters["mac"][0]] = {"bridgeId": addHueMotionSensor(""), "lightSensorId": "0"}
+                    ### detect light sensor id and save it to update directly the lightdata
+                    for sensor in bridge_config["sensors"].keys():
+                        if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["bridgeId"]]["uniqueid"][:-1] + "0":
+                            bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["lightSensorId"] = sensor
+                            break
                     generateSensorsState()
             else: #switch action request
-                for sensor in bridge_config["sensors"]:
-                    if "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(get_parameters["mac"][0]) and bridge_config["sensors"][sensor]["config"]["on"]: #match senser id based on mac address
-                        logging.info("match sensor " + str(sensor))
+                if get_parameters["mac"][0] in bridge_config["emulator"]["sensors"]:
+                    sensorId = bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["bridgeId"]
+                    logging.info("match sensor " + sensorId)
+                    if bridge_config["sensors"][sensorId]["config"]["on"]: #match senser id based on mac address
                         current_time = datetime.now()
-                        if bridge_config["sensors"][sensor]["type"] == "ZLLSwitch" or bridge_config["sensors"][sensor]["type"] == "ZGPSwitch":
-                            bridge_config["sensors"][sensor]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                            sensors_state[sensor]["state"]["lastupdated"] = current_time
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLPresence":
-                            if bridge_config["sensors"][sensor]["state"]["presence"] != True:
-                                bridge_config["sensors"][sensor]["state"]["presence"] = True
-                                sensors_state[sensor]["state"]["presence"] = current_time
-                                Thread(target=motionDetected, args=[sensor]).start()
-                            bridge_config["sensors"][sensor]["state"]["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                        if bridge_config["sensors"][sensorId]["type"] in ["ZLLSwitch","ZGPSwitch"]:
+                            bridge_config["sensors"][sensorId]["state"].update({"buttonevent": get_parameters["button"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                            sensors_state[sensorId]["state"]["lastupdated"] = current_time
+                        elif bridge_config["sensors"][sensorId]["type"] == "ZLLPresence":
+                            lightSensorId = bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["lightSensorId"]
+                            if bridge_config["sensors"][sensorId]["state"]["presence"] != True:
+                                bridge_config["sensors"][sensorId]["state"]["presence"] = True
+                                sensors_state[sensorId]["state"]["presence"] = current_time
+                            bridge_config["sensors"][sensorId]["state"]["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                            Thread(target=motionDetected, args=[sensorId]).start()
 
-                        elif bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel":
-                            if bridge_config["sensors"]["1"]["modelid"] == "PHDL00" and bridge_config["sensors"]["1"]["state"]["daylight"]:
-                                bridge_config["sensors"][sensor]["state"]["lightlevel"] = 25000
-                                bridge_config["sensors"][sensor]["state"]["dark"] = False
+                            if "lightlevel" in get_parameters:
+                                bridge_config["sensors"][lightSensorId]["state"].update({"lightlevel": get_parameters["lightlevel"][0], "dark": get_parameters["dark"][0], "daylight": get_parameters["daylight"][0], "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                             else:
-                                bridge_config["sensors"][sensor]["state"]["lightlevel"] = 6000
-                                bridge_config["sensors"][sensor]["state"]["dark"] = True
+                                if bridge_config["sensors"]["1"]["modelid"] == "PHDL00" and bridge_config["sensors"]["1"]["state"]["daylight"]:
+                                    bridge_config["sensors"][lightSensorId]["state"].update({"lightlevel": 25000, "dark": False, "daylight": True, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") })
+                                else:
+                                    bridge_config["sensors"][lightSensorId]["state"].update({"lightlevel": 6000, "dark": True, "daylight": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") })
 
                             #if alarm is activ trigger the alarm
-                            if "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensor]["state"]["presence"] == True:
-                                sendEmail(bridge_config["sensors"][sensor]["name"])
+                            if "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensorId]["state"]["presence"] == True:
+                                sendEmail(bridge_config["sensors"][sensorId]["name"])
                                 #triger_horn() need development
-                        rulesProcessor(sensor, current_time) #process the rules to perform the action configured by application
+                        rulesProcessor(sensorId, current_time) #process the rules to perform the action configured by application
             self._set_end_headers(bytes("done", "utf8"))
         else:
             url_pices = self.path.rstrip('/').split('/')
