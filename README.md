@@ -17,8 +17,8 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/diyhue/diyhue.github.io/master/assets/images/hue-map.png)
 
-## Documentation
-All documentation can be found over at [diyhue.readthedocs.io](https://diyhue.readthedocs.io/)
+## Getting Started
+All documentation  and instructions can be found over at [diyhue.readthedocs.io](https://diyhue.readthedocs.io/)
 
 ## Requirements:
  - python 3
