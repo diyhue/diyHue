@@ -17,11 +17,16 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/diyhue/diyhue.github.io/master/assets/images/hue-map.png)
 
+## Documentation
+All documentation can be found over at [diyhue.readthedocs.io](https://diyhue.readthedocs.io/)
 
-### Requirements:
+## Requirements:
  - python 3
  - nmap package for esp8266 lights autodiscover ```sudo apt install nmap```
  - python ws4py package only if zigbee module is used ```sudo pip install ws4py```
+ 
+ or
+ - Docker ;-)
 
 
 ## To Do
@@ -86,22 +91,19 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
   - Pwm Dimming (up to 6 lights for every esp8266)
   - On/Off plugs/lights (up to 6 lights for every esp8266)
   - On/Off 433Mhz devices (multiple devices for every esp8266)
-  
-  ## FAQ
-  [Unable to Connect to diyHue](https://github.com/diyhue/diyHue/wiki/FAQ#unable-to-connect---diyhue-bridge-is-detected-but-i-cant-pair)
-  
+ 
 ## Stability:
 All the lights in my house are controlled by this solution so the stability is very important to me as there is no turning back to classic illumination (all switches were replaces with Ikea Tradfri Remotes and holes covered). However I don't use all the functions, so I'm unable to perform full tests on every change. What I do currently use is Deconz with all Tradfri devices (lights + sensors), Xiaomi Motion Sensor, native ESP8266 bulbs, ESP8266 + WS2812B strips and Xiaomi YeeLight color bulb.
   
-Please submit [ in this issue](https://github.com/mariusmotea/diyHue/issues/27) or on our [slack team](https://slackinvite.squishedmooo.com/) any other device/application that is working with this emulator.
+Please post on our [slack team](https://slackinvite.squishedmooo.com/) any other device/application that you find to work with this emulator.
   
-Check the [Wiki page](https://github.com/diyHue/diyHue/wiki) for more details  
+Check the [docs](https://diyhue.readthedocs.io/) for more details  
   
 [![Youtube Demo](https://img.youtube.com/vi/c6MsG3oIehY/0.jpg)](https://www.youtube.com/watch?v=c6MsG3oIehY)
 
-I push updates fast so if you want to be notified, just watch this repo
+We push updates fast so if you want to be notified, just watch this repo
 
-Contributions are welcome 
+Contributions are more than welcome!
 
 Hue living color light project for 3D printing: https://www.thingiverse.com/thing:2773413
 
