@@ -6,7 +6,7 @@ daysUntilClose: 2
 exemptLabels:
   - pinned
   - security
-  - In Progress
+  - in progress
   - enhancement
 # Label to use when marking an issue as stale
 staleLabel: stale
