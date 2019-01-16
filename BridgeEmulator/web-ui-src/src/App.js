@@ -75,6 +75,13 @@ const navigation = (
       <ListItemText>Lights control</ListItemText>
     </ListItem>
 
+    <ListItem button href="/hue/linkbutton" component="a">
+      <ListItemIcon>
+        <LinkIcon />
+      </ListItemIcon>
+      <ListItemText>Link device</ListItemText>
+    </ListItem>
+
     <ListItem button href="/hue" component="a">
       <ListItemIcon>
         <ImportIcon />
@@ -82,11 +89,25 @@ const navigation = (
       <ListItemText>Import from bridge</ListItemText>
     </ListItem>
 
-    <ListItem button href="/hue/linkbutton" component="a">
+    <ListItem button href="/tradfri" component="a">
       <ListItemIcon>
-        <LinkIcon />
+        <ImportIcon />
       </ListItemIcon>
-      <ListItemText>Link device</ListItemText>
+      <ListItemText>Import from Tradfri</ListItemText>
+    </ListItem>
+
+    <ListItem button href="/deconz" component="a">
+      <ListItemIcon>
+        <ImportIcon />
+      </ListItemIcon>
+      <ListItemText>Deconz</ListItemText>
+    </ListItem>
+
+    <ListItem button href="/milight" component="a">
+      <ListItemIcon>
+        <ImportIcon />
+      </ListItemIcon>
+      <ListItemText>Add MiLight Bulb</ListItemText>
     </ListItem>
   </List>
 );
