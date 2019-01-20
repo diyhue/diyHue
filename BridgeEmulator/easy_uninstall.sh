@@ -30,7 +30,7 @@ echo -e "\033[36m These are unzip, nmap, python3, python3-requests, python3-ws4p
 echo -e "\033[36m Uninstalling these may break other services that may use them!\033[0m"
 UserInput=""
 while [[ "$UserInput" != "Yes" && "$UserInput" != "No" ]] ; do
-    read UserInput -p "Would you like to uninsall diyHue dependencies? [Yes/No]"
+    read -p $UserInput "Would you like to uninsall diyHue dependencies? [Yes/No]"
 done
 
 if [ "$UserInput" == "Yes"]
