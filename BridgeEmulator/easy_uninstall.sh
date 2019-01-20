@@ -31,7 +31,7 @@ echo -e "\033[36m Uninstalling these may break other services that may use them!
 echo -e "\033[36m Would you like to uninsall diyHue dependencies? [Yes/No]\033[0m"
 read UserInput
 
-if [ "$UserInput" == "Yes"]
+if [ "$UserInput" = "Yes" ] 
 then
     echo -e "\033[36m Uninstalling dependencies.\033[0m"
     apt remove -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools && apt autoremove -y
