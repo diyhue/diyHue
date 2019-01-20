@@ -34,6 +34,8 @@ def discover(bridge_config, new_lights):
                     properties["ip"] = line.split(":")[2][2:]
                 elif line[:4] == "name":
                     properties["name"] = line[6:]
+                elif line[:5] == "model":
+                    properties["model"] = line.split(": ",1)[1]
             device_exist = False
             for light in bridge_config["lights_address"].keys():
                 if bridge_config["lights_address"][light]["protocol"] == "yeelight" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
@@ -42,10 +44,13 @@ def discover(bridge_config, new_lights):
                     logging.debug("light id " + properties["id"] + " already exist, updating ip...")
                     break
             if (not device_exist):
-                light_name = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
+                #light_name = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
+                light_name = "Yeelight " + properties["model"] + " " + properties["ip"][-3:] if properties["name"] == "" else properties["name"] #just for me :)
                 logging.debug("Add YeeLight: " + properties["id"])
                 modelid = "LWB010"
-                if properties["rgb"]:
+                if properties["model"] == "desklamp":
+                    modelid = "LTW001"
+                elif properties["rgb"]:
                     modelid = "LCT015"
                 elif properties["ct"]:
                     modelid = "LTW001"
@@ -87,6 +92,8 @@ def set_light(ip, light, data):
         elif key == "bri":
             payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
         elif key == "ct":
+            if ip[:-3] == "201" or ip[:-3] == "202": #quick and dirty only for predefined IPs
+                if value > 369: value = 369 #define valid CT
             payload["set_ct_abx"] = [int(1000000 / value), "smooth", transitiontime]
         elif key == "hue":
             payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
@@ -118,40 +125,50 @@ def get_light_state(ip, light):
     else:
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
-    msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
-    tcp_socket.send(msg_mode.encode())
-    data = tcp_socket.recv(16 * 1024)
-    if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
-        msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
-        tcp_socket.send(msg_rgb.encode())
-        data = tcp_socket.recv(16 * 1024)
-        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-        hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-        r = hex_rgb[:2]
-        if r == "  ":
-            r = "00"
-        g = hex_rgb[3:4]
-        if g == "  ":
-            g = "00"
-        b = hex_rgb[-2:]
-        if b == "  ":
-            b = "00"
-        state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
-        state["colormode"] = "xy"
-    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
+    if ip[:-3] == "201" or ip[:-3] == "202": #don't use color_mode on desklamp (IP based exeption)
+        logging.info("sonderlocke")
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
-        state["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        tempval = int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        if tempval > 369: tempval = 369
+        state["ct"] = tempval 
         state["colormode"] = "ct"
-
-    elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
-        msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
-        tcp_socket.send(msg_hsv.encode())
+    else:
+        msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
+        tcp_socket.send(msg_mode.encode())
         data = tcp_socket.recv(16 * 1024)
-        hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-        state["hue"] = int(int(hue_data[0]) * 182)
-        state["sat"] = int(int(hue_data[1]) * 2.54)
-        state["colormode"] = "hs"
+        if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
+            msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
+            tcp_socket.send(msg_rgb.encode())
+            data = tcp_socket.recv(16 * 1024)
+            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+            hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+            r = hex_rgb[:2]
+            if r == "  ":
+                r = "00"
+            g = hex_rgb[3:4]
+            if g == "  ":
+            g = "00"
+            b = hex_rgb[-2:]
+            if b == "  ":
+                b = "00"
+            state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+           state["colormode"] = "xy"
+        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
+            msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+            tcp_socket.send(msg_ct.encode())
+            data = tcp_socket.recv(16 * 1024)
+            state["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+            state["colormode"] = "ct"
+
+        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
+            msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
+            tcp_socket.send(msg_hsv.encode())
+            data = tcp_socket.recv(16 * 1024)
+            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+            state["hue"] = int(int(hue_data[0]) * 182)
+            state["sat"] = int(int(hue_data[1]) * 2.54)
+            state["colormode"] = "hs"
     tcp_socket.close()
     return state
