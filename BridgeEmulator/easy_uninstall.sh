@@ -1,6 +1,9 @@
 #!/bin/bash
 cd /tmp
 
+echo -e "\033[36m Stopping diyHue.\033[0m"
+systemctl start hue-emulator.service
+
 ### Uninstalling astral library for sunrise/sunset routines
 echo -e "\033[36m Uninstalling Python Astral.\033[0m"
 wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
