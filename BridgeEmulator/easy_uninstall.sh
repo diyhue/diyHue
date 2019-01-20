@@ -25,7 +25,21 @@ rm /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
 
 ### Uninstalling dependencies
-#echo -e "\033[36m Uninstalling dependencies.\033[0m"
-#apt remove -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools && apt autoremove -y
+echo -e "\033[36m Upon setup, diyHue installs some packages.\033[0m"
+echo -e "\033[36m These are unzip, nmap, python3, python3-requests, python3-ws4py and python3-setuptools along with their dependencies.\033[0m"
+echo -e "\033[36m Uninstalling these may break other services that may use them!\033[0m"
+UserInput=""
+while [[ UserInput != "Yes" && UserInput != "No" ]] ; do
+    echo -e "\033[36m Would you like to uninsall diyHue dependencies? [Yes/No]\033[0m"
+    read UserInput
+done
+
+if [ UserInput == "Yes"]
+then
+    echo -e "\033[36m Uninstalling dependencies.\033[0m"
+    apt remove -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools && apt autoremove -y
+else
+    echo -e "\033[36m Not uninstalling dependencies.\033[0m"
+fi
 
 echo -e "\033[32m Uninstal complete!\033[0m"
