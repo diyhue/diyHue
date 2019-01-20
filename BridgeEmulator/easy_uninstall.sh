@@ -28,11 +28,8 @@ systemctl daemon-reload
 echo -e "\033[36m Upon setup, diyHue installs some packages.\033[0m"
 echo -e "\033[36m These are unzip, nmap, python3, python3-requests, python3-ws4py and python3-setuptools along with their dependencies.\033[0m"
 echo -e "\033[36m Uninstalling these may break other services that may use them!\033[0m"
-UserInput=""
-while [[ "$UserInput" != "Yes" && "$UserInput" != "No" ]] ; do
-    read -p Input "Would you like to uninsall diyHue dependencies? [Yes/No]"
-    $UserInput = $Input
-done
+echo -e "\033[36m Would you like to uninsall diyHue dependencies? [Yes/No]\033[0m"
+read -p UserInput
 
 if [ "$UserInput" == "Yes"]
 then
