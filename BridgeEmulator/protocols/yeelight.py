@@ -126,7 +126,6 @@ def get_light_state(ip, light):
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
     if ip[:-3] == "201" or ip[:-3] == "202": #don't use color_mode on desklamp (IP based exeption)
-        logging.info("sonderlocke")
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
