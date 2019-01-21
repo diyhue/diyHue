@@ -143,15 +143,19 @@ def get_light_state(ip, light):
             data = tcp_socket.recv(16 * 1024)
             hue_data = json.loads(data[:-2].decode("utf8"))["result"]
             hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+
             r = hex_rgb[:2]
             if r == "  ":
                 r = "00"
+
             g = hex_rgb[3:4]
             if g == "  ":
-            g = "00"
+                g = "00"
+
             b = hex_rgb[-2:]
             if b == "  ":
                 b = "00"
+
             state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
            state["colormode"] = "xy"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
