@@ -2,10 +2,10 @@ import json
 import logging
 import random
 import socket
+import sys
 
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy
-
 
 def discover(bridge_config, new_lights):
     group = ("239.255.255.250", 1982)
@@ -24,6 +24,7 @@ def discover(bridge_config, new_lights):
             response = sock.recv(1024).decode('utf-8').split("\r\n")
             properties = {"rgb": False, "ct": False}
             for line in response:
+                #logging.info("line check: " + line)
                 if line[:2] == "id":
                     properties["id"] = line[4:]
                 elif line[:3] == "rgb":
@@ -92,8 +93,9 @@ def set_light(ip, light, data):
         elif key == "bri":
             payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
         elif key == "ct":
-            if ip[:-3] == "201" or ip[:-3] == "202": #quick and dirty only for predefined IPs
-                if value > 369: value = 369 #define valid CT
+            #if ip[:-3] == "201" or ip[:-3] == "202":
+            if light["name"].find("desklamp") > 0:
+                if value > 369: value = 369
             payload["set_ct_abx"] = [int(1000000 / value), "smooth", transitiontime]
         elif key == "hue":
             payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
@@ -112,6 +114,8 @@ def set_light(ip, light, data):
         command(ip, key, value)
 
 def get_light_state(ip, light):
+    #logging.info("name is: " + light["name"])
+    #if light["name"].find("desklamp") > 0: logging.info("is desk lamp")
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
@@ -125,13 +129,14 @@ def get_light_state(ip, light):
     else:
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
-    if ip[:-3] == "201" or ip[:-3] == "202": #don't use color_mode on desklamp (IP based exeption)
+    #if ip[:-3] == "201" or ip[:-3] == "202":
+    if light["name"].find("desklamp") > 0:
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
         tempval = int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
         if tempval > 369: tempval = 369
-        state["ct"] = tempval 
+        state["ct"] = tempval # int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
         state["colormode"] = "ct"
     else:
         msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
@@ -143,19 +148,15 @@ def get_light_state(ip, light):
             data = tcp_socket.recv(16 * 1024)
             hue_data = json.loads(data[:-2].decode("utf8"))["result"]
             hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-
             r = hex_rgb[:2]
             if r == "  ":
                 r = "00"
-
             g = hex_rgb[3:4]
             if g == "  ":
                 g = "00"
-
             b = hex_rgb[-2:]
             if b == "  ":
                 b = "00"
-
             state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
             state["colormode"] = "xy"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
@@ -164,8 +165,7 @@ def get_light_state(ip, light):
             data = tcp_socket.recv(16 * 1024)
             state["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
             state["colormode"] = "ct"
-
-        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #ct mode
+        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #hs mode
             msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
             tcp_socket.send(msg_hsv.encode())
             data = tcp_socket.recv(16 * 1024)
