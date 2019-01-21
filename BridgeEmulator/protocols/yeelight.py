@@ -157,7 +157,7 @@ def get_light_state(ip, light):
                 b = "00"
 
             state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
-           state["colormode"] = "xy"
+            state["colormode"] = "xy"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
             msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
             tcp_socket.send(msg_ct.encode())
