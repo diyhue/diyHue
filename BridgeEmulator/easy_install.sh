@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 arch=`uname -m`
 
@@ -6,12 +6,24 @@ cd /tmp
 
 ### installing dependencies
 echo -e "\033[36m Installing dependencies.\033[0m"
-apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools
+if type apt &> /dev/null; then
+	# Debian-based distro
+	apt-get install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools
+elif type pacman &> /dev/null; then
+	# Arch linux
+	pacman -Syq --noconfirm || exit 1
+	pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
+else
+	# Or assume that packages are already installed (possibly with user confirmation)?
+	# Or check them?
+	echo -e "\033[31mUnable to detect package manager, aborting\033[0m"
+	exit 1
+fi
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
-wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
-unzip -q -o astral.zip
+curl -sL https://github.com/sffjunkie/astral/archive/master.zip -o astral.zip
+unzip -qo astral.zip
 cd astral-master/
 python3 setup.py install
 cd ../
@@ -19,8 +31,8 @@ rm -rf astral.zip astral-master/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
-unzip -q -o  diyHue.zip
+curl -sL https://github.com/diyhue/diyHue/archive/master.zip -o diyHue.zip
+unzip -qo diyHue.zip
 cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
