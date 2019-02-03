@@ -25,8 +25,7 @@ from functions.html import (description, webform_hue, webform_linkbutton,
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
 from functions.docker import dockerSetup
-from protocols import yeelight
-from protocols import tasmota
+from protocols import yeelight, tasmota, native_single, native_multi
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 
@@ -90,7 +89,7 @@ else:
     ip_range_end = 255
 logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
 
-protocols = [yeelight, tasmota]
+protocols = [yeelight, tasmota, native_single, native_multi]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
@@ -603,7 +602,7 @@ def sendLightRequest(light, data):
         for protocol in protocols:
             if "protocols." + protocol_name == protocol.__name__:
                 try:
-                    light_state = protocol.set_light(bridge_config["lights_address"][light]["ip"], bridge_config["lights"][light], data)
+                    light_state = protocol.set_light(bridge_config["lights_address"][light], bridge_config["lights"][light], data)
                 except:
                     bridge_config["lights"][light]["state"]["reachable"] = False
                     logging.exception("request error")
@@ -787,7 +786,7 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
 
 def scanHost(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(0.01) # Very short timeout. If scanning fails this could be increased
+    sock.settimeout(0.02) # Very short timeout. If scanning fails this could be increased
     result = sock.connect_ex((host, port))
     sock.close()
     return result
@@ -821,10 +820,15 @@ def scanForLights(): #scan for ESP8266 lights and strips
                     if "hue" in device_data:
                         logging.info(ip + " is a hue " + device_data['hue'])
                         device_exist = False
+                        if "protocol" in device_data:
+                            protocol = device_data["protocol"]
+                        else:
+                            protocol = "native"
                         for light in bridge_config["lights_address"].keys():
                             if bridge_config["lights_address"][light]["protocol"] == "native" and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
                                 device_exist = True
                                 bridge_config["lights_address"][light]["ip"] = ip
+                                bridge_config["lights_address"][light]["protocol"] = protocol
                         if not device_exist:
                             light_name = "Hue " + device_data["hue"] + " " + device_data["modelid"]
                             if "name" in device_data:
@@ -834,7 +838,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                                 new_light_id = nextFreeId(bridge_config, "lights")
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
-                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": "native", "mac": device_data["mac"]}
+                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": protocol, "mac": device_data["mac"]}
         except Exception as e:
             logging.info("ip " + ip + " is unknow device, " + str(e))
     scanDeconz()
@@ -852,7 +856,7 @@ def syncWithLights(): #update Hue Bridge lights states
                 protocol_name = bridge_config["lights_address"][light]["protocol"]
                 for protocol in protocols:
                     if "protocols." + protocol_name == protocol.__name__:
-                        light_state = protocol.get_light_state(bridge_config["lights_address"][light]["ip"], bridge_config["lights"][light])
+                        light_state = protocol.get_light_state(bridge_config["lights_address"][light], bridge_config["lights"][light])
                         bridge_config["lights"][light]["state"].update(light_state)
                 if bridge_config["lights_address"][light]["protocol"] == "native":
                     light_data = json.loads(sendRequest("http://" + bridge_config["lights_address"][light]["ip"] + "/get?light=" + str(bridge_config["lights_address"][light]["light_nr"]), "GET", "{}"))
@@ -1188,14 +1192,19 @@ def updateAllLights():
 
 def manageDeviceLights(lights_state):
     protocol = bridge_config["lights_address"][list(lights_state.keys())[0]]["protocol"]
+    payload = {}
     for light in lights_state.keys():
-        if protocol in ["native","milight"]:
+        if protocol == "native_multi":
+            payload[bridge_config["lights_address"][light]["light_nr"]] = lights_state[light]
+        elif protocol in ["native", "native_single", "milight"]:
             sendLightRequest(light, lights_state[light])
             if protocol == "milight": #hotfix to avoid milight hub overload
                 sleep(0.05)
         else:
             Thread(target=sendLightRequest, args=[light, lights_state[light]]).start()
             sleep(0.1)
+    if protocol == "native_multi":
+        requests.put("http://"+bridge_config["lights_address"][list(lights_state.keys())[0]]["ip"]+"/state", json=payload, timeout=3)
 
 
 
@@ -1819,10 +1828,12 @@ class S(BaseHTTPRequestHandler):
                 for light in list(bridge_config["deconz"]["lights"]):
                     if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["lights"][light]
-                for scene in bridge_config["scenes"].keys():
+                for scene in list(bridge_config["scenes"]):
                     if "lights" in bridge_config["scenes"][scene] and url_pices[4] in bridge_config["scenes"][scene]["lights"]:
                         bridge_config["scenes"][scene]["lights"].remove(url_pices[4])
                         del bridge_config["scenes"][scene]["lightstates"][url_pices[4]]
+                        if len(bridge_config["scenes"][scene]["lights"]) == 0:
+                            del bridge_config["scenes"][scene]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:

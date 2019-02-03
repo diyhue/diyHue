@@ -14,7 +14,7 @@ from functions.network import getIpAddress
 
 
 def sendRequest(url, timeout=3):
-    
+
     head = {"Content-type": "application/json"}
     response = requests.get(url, timeout=timeout, headers=head)
     return response.text
@@ -63,41 +63,41 @@ def discover(bridge_config, new_lights):
 
 
 
-    
 
-    
-    
-def set_light(ip, light, data):
-    logging.debug("tasmota: <set_light> invoked! IP=" + ip)
-    
+
+
+
+def set_light(address, light, data):
+    logging.debug("tasmota: <set_light> invoked! IP=" + address["ip"])
+
     for key, value in data.items():
         #logging.debug("tasmota: key " + key)
 
         if key == "on":
             if value:
-                sendRequest ("http://"+ip+"/cm?cmnd=Power%20on")
+                sendRequest ("http://"+address["ip"]+"/cm?cmnd=Power%20on")
             else:
-                sendRequest ("http://"+ip+"/cm?cmnd=Power%20off")
+                sendRequest ("http://"+address["ip"]+"/cm?cmnd=Power%20off")
         elif key == "bri":
-            brightness = int(100.0 * (value / 255.0)) 
-            sendRequest ("http://"+ip+"/cm?cmnd=Dimmer%20" + str(brightness))
+            brightness = int(100.0 * (value / 255.0))
+            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Dimmer%20" + str(brightness))
         elif key == "ct":
             color = {}
         elif key == "xy":
             color = convert_xy(value[0], value[1], light["state"]["bri"])
-            sendRequest ("http://"+ip+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
+            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
 
         elif key == "alert":
                 if value == "select":
-                    sendRequest ("http://" + ip + "/cm?cmnd=dimmer%20100")
-                
+                    sendRequest ("http://" + address["ip"] + "/cm?cmnd=dimmer%20100")
 
 
-def get_light_state(ip, light):
+
+def get_light_state(address, light):
     logging.debug("tasmota: <get_light_state> invoked!")
-    data = sendRequest ("http://" + ip + "/cm?cmnd=Status%2011")
+    data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
     light_data = json.loads(data)["StatusSTS"]
-    rgb = light_data["Color"].split(",") 
+    rgb = light_data["Color"].split(",")
     logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
     state = {}
     state['on'] = True if light_data["POWER"] == "ON" else False

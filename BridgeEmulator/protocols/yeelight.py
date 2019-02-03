@@ -78,7 +78,7 @@ def command(ip, api_method, param):
         logging.exception("Unexpected error")
 
 
-def set_light(ip, light, data):
+def set_light(address, light, data):
     method = 'TCP'
     payload = {}
     transitiontime = 400
@@ -111,15 +111,15 @@ def set_light(ip, light, data):
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
     # check if hue wants to change brightness
     for key, value in payload.items():
-        command(ip, key, value)
+        command(address["ip"], key, value)
 
-def get_light_state(ip, light):
+def get_light_state(address, light):
     #logging.info("name is: " + light["name"])
     #if light["name"].find("desklamp") > 0: logging.info("is desk lamp")
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
-    tcp_socket.connect((ip, int(55443)))
+    tcp_socket.connect((address["ip"], int(55443)))
     msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
