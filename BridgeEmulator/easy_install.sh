@@ -105,18 +105,31 @@ else
 	fi
 fi
 cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug/clip.html /opt/hue-emulator/
-if [ $(uname -m) = "x86_64" ]; then
-	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
-	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
-else
-	if [ $(uname -m) = "i686" ]; then
-		cp entertainment-x86 /opt/hue-emulator/entertainment-srv
-        cp coap-client-linux-x86 /opt/hue-emulator/coap-client-linux
-        else
+
+# Install correct binaries
+case $arch in
+    x86_64|i686|aarch64)
+	   cp entertainment-$arch /opt/hue-emulator/entertainment-srv
+       ;;
+	   cp coap-client-$arch /opt/hue-emulator/coap-client-linux
+    arm64)
+       cp entertainment-aarch64 /opt/hue-emulator/entertainment-srv
+       ;;
+       cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
+    armv*)
         cp entertainment-arm /opt/hue-emulator/entertainment-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
-	fi
-fi
+       ;;
+    *)
+        echo -e "\033[0;31m-------------------------------------------------------------------------------"
+        echo -e "ERROR: Unsupported architecture $arch!"
+        echo -e "You will need to manually compile the entertainment-srv binary, "
+        echo -e "and install your own coap-client\033[0m"
+        echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
+        echo -e "Once installed, open this script and manually run the last 10 lines."
+        exit 1
+esac
+
 chmod +x /opt/hue-emulator/entertainment-srv
 chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
