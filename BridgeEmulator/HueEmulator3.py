@@ -31,6 +31,7 @@ update_lights_on_startup = False # if set to true all lights will be updated wit
 
 ap = argparse.ArgumentParser()
 
+# Arguements can also be passed as Environment Variables.
 ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
 ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
 ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
@@ -39,7 +40,7 @@ ap.add_argument("--ip_range", help="Set IP range for light discovery. Format: <S
 
 args = ap.parse_args()
 
-if args.debug and (args.debug == "true" or args.debug == "True"):
+if (args.debug and (args.debug == "true" or args.debug == "True")) or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
     print("Debug Enabled")
     root = logging.getLogger()
     root.setLevel(logging.INFO)
@@ -53,23 +54,27 @@ if args.ip:
     HostIP = args.ip
     print("Host IP given as " + HostIP)
 else:
-    HostIP = getIpAddress()
+    HostIP = os.getenv('IP_ADDRESS', getIpAddress())
+    print("Using Host IP of " + HostIP)
 
 if args.mac:
     dockerMAC = args.mac
     mac = str(args.mac).replace(":","")
+    print("Host MAC given as " + mac)
+elif os.getenv('MAC_ADDRESS'):
+    dockerMAC = os.getenv('MAC_ADDRESS')
+    mac = str(dockerMAC).replace(":","")
     print("Host MAC given as " + mac)
 else:
     dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8')[:-1]
     mac = check_output("cat /sys/class/net/$(ip -o addr | grep " + HostIP + " | awk '{print $2}')/address", shell=True).decode('utf-8').replace(":","")[:-1]
 logging.info(mac)
 
-if args.docker:
+if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
     print("Docker Setup Initiated")
     docker = True
     dockerSetup(dockerMAC)
     print("Docker Setup Complete")
-
 else:
     docker = False
 
@@ -85,8 +90,8 @@ if args.ip_range:
     else:
         ip_range_end = 255
 else:
-    ip_range_start = 0
-    ip_range_end = 255
+    ip_range_start = os.getenv('IP_RANGE_START', 0)
+    ip_range_end = os.getenv('IP_RANGE_END', 255)
 logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
 
 protocols = [yeelight, tasmota, native_single, native_multi]

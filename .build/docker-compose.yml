@@ -1,8 +1,19 @@
-version: '2'
+version: '3'
 services:
   diyHue:
     image: diyhue/core:amd64
     restart: always
+    environment:
+      - 'DEBUG=true'
+      - 'IP_ADDRESS="192.168.1.2"'
+      - 'MAC_ADDRESS="12:34:56:78:90"'
+      - 'IP_RANGE_START=0'
+      - 'IP_RANGE_END=255'
     volumes:
-      - ../exports:/opt/hue-emulator/export
-    network_mode: "host"
+      - ./exports:/opt/hue-emulator/export
+    ports:
+      - 80:80
+      - 443:443
+      - 1900:1900/udp 
+      - 2100:2100/udp
+    # network_mode: "host"

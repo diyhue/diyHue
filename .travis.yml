@@ -5,6 +5,7 @@ language: bash
 env:
   - ARCH=amd64
   - ARCH=arm
+  - ARCH=aarch64
 script:
 # Setup QEMU for ARM image build
 - docker run --rm --privileged multiarch/qemu-user-static:register
