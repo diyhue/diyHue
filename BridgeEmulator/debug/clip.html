@@ -44,7 +44,7 @@
         <form name="commandform">
             <h1>CLIP API Debugger</h1>
             <h2>URL:</h2>
-            <input name="commandurl" type="text" size="60" value="/api/1234/">
+            <input id="commandurl" name="commandurl" type="text" size="60" value="/api/1234/">
             <div id="buttons">
                 <button type="button" onclick="getHTML('GET')">GET</button>
                 <button type="button" onclick="getHTML('PUT')">PUT</button>
@@ -60,6 +60,12 @@
 </html>
 
 <script language="JavaScript">
+document.getElementById('commandurl').addEventListener('keypress', function (event) {
+    if (event.keyCode == 13) {
+        getHTML('GET');
+        event.preventDefault();
+    }
+});
 function getHTML(command)
 {
     if (window.XMLHttpRequest)
