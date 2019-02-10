@@ -8,5 +8,5 @@ def set_light(address, light, data):
     return state.text
 
 def get_light_state(address, light):
-    state = requests.get("http://"+address["ip"]+"/get?light=" + str(address["light_nr"]), timeout=3)
+    state = requests.get("http://"+address["ip"]+"/state?light=" + str(address["light_nr"]), timeout=3)
     return json.loads(state.text)
