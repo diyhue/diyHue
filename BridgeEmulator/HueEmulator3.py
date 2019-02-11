@@ -817,27 +817,27 @@ def scanForLights(): #scan for ESP8266 lights and strips
                 if response.status_code == 200:
                     device_data = json.loads(response.text)
                     logging.info(pretty_json(device_data))
-                    if "hue" in device_data:
-                        logging.info(ip + " is a hue " + device_data['hue'])
+                    if "modelid" in device_data:
+                        logging.info(ip + " is " + device_data['name'])
                         device_exist = False
                         if "protocol" in device_data:
                             protocol = device_data["protocol"]
                         else:
                             protocol = "native"
                         for light in bridge_config["lights_address"].keys():
-                            if bridge_config["lights_address"][light]["protocol"] == "native" and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
+                            if bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"] and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
                                 device_exist = True
                                 bridge_config["lights_address"][light]["ip"] = ip
                                 bridge_config["lights_address"][light]["protocol"] = protocol
+                                if "version" in device_data:
+                                    bridge_config["lights_address"][light].update({"version": device_data["version"], "type": device_data["type"], "name": device_data["name"]})
+
                         if not device_exist:
-                            light_name = "Hue " + device_data["hue"] + " " + device_data["modelid"]
-                            if "name" in device_data:
-                                light_name = device_data["name"]
-                            logging.info("Add new light: " + light_name)
+                            logging.info("Add new light: " + device_data["name"])
                             for x in range(1, int(device_data["lights"]) + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name if x == 1 else light_name + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
-                                new_lights.update({new_light_id: {"name": light_name if x == 1 else light_name + " " + str(x)}})
+                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                new_lights.update({new_light_id: {"name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x)}})
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": protocol, "mac": device_data["mac"]}
         except Exception as e:
             logging.info("ip " + ip + " is unknow device, " + str(e))
