@@ -1353,6 +1353,11 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             f = open(cwd + '/clip.html', 'rb')
             self._set_end_headers(f.read())
+        elif self.path == "/factory-reset":
+            self._set_headers()
+            saveConfig('before-reset.json')
+            bridge_config = json.loads(requests.get('https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/config.json').text)
+            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename":"/opt/hue-emulator/before-reset.json"}}] ,separators=(',', ':')), "utf8"))
         elif self.path == '/config.js':
             self._set_headers()
             #create a new user key in case none is available
