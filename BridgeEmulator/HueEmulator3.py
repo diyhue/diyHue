@@ -1343,6 +1343,7 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         #Some older Philips Tv's sent non-standard HTTP GET requests with a Content-Lenght and a
         # body. The HTTP body needs to be consumed and ignored in order to request be handle correctly.
+        global bridge_config
         self.read_http_request_body()
 
         if self.path == '/' or self.path == '/index.html':
