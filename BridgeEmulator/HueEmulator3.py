@@ -824,6 +824,9 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             protocol = device_data["protocol"]
                         else:
                             protocol = "native"
+                        lights = 1
+                        if "lights" in device_data:
+                            lights = device_data["lights"]
                         for light in bridge_config["lights_address"].keys():
                             if bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"] and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
                                 device_exist = True
@@ -834,7 +837,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
 
                         if not device_exist:
                             logging.info("Add new light: " + device_data["name"])
-                            for x in range(1, int(device_data["lights"]) + 1):
+                            for x in range(1, lights + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x)}})
