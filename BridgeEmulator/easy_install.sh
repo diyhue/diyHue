@@ -109,13 +109,13 @@ cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug/clip.htm
 # Install correct binaries
 case $arch in
     x86_64|i686|aarch64)
-	   cp entertainment-$arch /opt/hue-emulator/entertainment-srv
+        cp entertainment-$arch /opt/hue-emulator/entertainment-srv
+        cp coap-client-$arch /opt/hue-emulator/coap-client-linux
        ;;
-	   cp coap-client-$arch /opt/hue-emulator/coap-client-linux
     arm64)
-       cp entertainment-aarch64 /opt/hue-emulator/entertainment-srv
+        cp entertainment-aarch64 /opt/hue-emulator/entertainment-srv
+        cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
        ;;
-       cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
     armv*)
         cp entertainment-arm /opt/hue-emulator/entertainment-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
