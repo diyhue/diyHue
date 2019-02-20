@@ -150,7 +150,7 @@ def updateConfig():
                     bridge_config["lights"][light]["config"].update({"startup": {"mode": "safety","configured": False}})
     #set entertainment streaming to inactive on start/restart
     for group in bridge_config["groups"].keys():
-        if bridge_config["groups"][group]["type"] == "Entertainment":
+        if "type" in bridge_config["groups"][group] and bridge_config["groups"][group]["type"] == "Entertainment":
             bridge_config["groups"][group]["stream"].update({"active": False, "owner": None})
     #fix timezones bug
     if "values" not in bridge_config["capabilities"]["timezones"]:
