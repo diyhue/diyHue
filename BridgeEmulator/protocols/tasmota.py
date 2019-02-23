@@ -65,8 +65,6 @@ def discover(bridge_config, new_lights):
 
 
 
-
-
 def set_light(address, light, data):
     logging.debug("tasmota: <set_light> invoked! IP=" + address["ip"])
 
