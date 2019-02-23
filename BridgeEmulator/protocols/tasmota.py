@@ -32,7 +32,7 @@ def discover(bridge_config, new_lights):
             if response.status_code == 200:
                 device_data = json.loads(response.text)
                 #logging.debug(pretty_json(device_data))
-                if ("StatusSTS" in device_data) and ("Color" in device_data["StatusSTS"]):
+                if ("StatusSTS" in device_data):# and ("Color" in device_data["StatusSTS"]):
 
                     logging.debug("tasmota: " + ip + " is a Tasmota device ")
                     logging.debug ("tasmota: Hostname: " + device_data["StatusNET"]["Hostname"] )
@@ -57,6 +57,8 @@ def discover(bridge_config, new_lights):
 
         except Exception as e:
             logging.debug("tasmota: ip " + ip + " is unknow device, " + str(e))
+
+
 
 
 
@@ -95,10 +97,23 @@ def get_light_state(address, light):
     logging.debug("tasmota: <get_light_state> invoked!")
     data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
     light_data = json.loads(data)["StatusSTS"]
-    rgb = light_data["Color"].split(",")
-    logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
+
     state = {}
-    state['on'] = True if light_data["POWER"] == "ON" else False
-    state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
-    state["colormode"] = "xy"
+    state['on'] = True if light_data["POWER1"] == "ON" else False
+
+    if 'Color' not in light_data:
+        if state['on'] == True:
+            state["xy"] = convert_rgb_xy(255,255,255)
+            state["bri"] = int(255)
+            state["colormode"] = "xy"
+        else:
+            state["xy"] = convert_rgb_xy(1,1,1)
+            state["bri"] = int(0)
+            state["colormode"] = "xy"
+    else:
+        rgb = light_data["Color"].split(",")
+        logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
+        state['on'] = True if light_data["POWER1"] == "ON" else False
+        state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
+        state["colormode"] = "xy"
     return state
