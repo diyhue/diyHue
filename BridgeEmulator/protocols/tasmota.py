@@ -106,10 +106,6 @@ def get_light_state(address, light):
             state["xy"] = convert_rgb_xy(255,255,255)
             state["bri"] = int(255)
             state["colormode"] = "xy"
-        else:
-            state["xy"] = convert_rgb_xy(1,1,1)
-            state["bri"] = int(0)
-            state["colormode"] = "xy"
     else:
         rgb = light_data["Color"].split(",")
         logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
