@@ -91,8 +91,11 @@ def get_light_state(address, light):
     data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
     light_data = json.loads(data)["StatusSTS"]
     state = {}
-    
-    state['on'] = True if light_data["POWER" or "POWER1"] == "ON" else False
+
+    if 'POWER'in light_data:
+        state['on'] = True if light_data["POWER"] == "ON" else False
+    elif 'POWER1'in light_data:
+        state['on'] = True if light_data["POWER1"] == "ON" else False
 
     if 'Color' not in light_data:
         if state['on'] == True:
