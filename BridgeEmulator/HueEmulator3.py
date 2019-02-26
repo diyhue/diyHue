@@ -186,7 +186,7 @@ def entertainmentService():
                                     bridge_config["lights"][str(lightId)]["state"]["on"] = False
                                 else:
                                     bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
-                                if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                if bridge_config["lights_address"][str(lightId)]["protocol"] in ["native", "native_multi", "native_single"]:
                                     if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
                                     nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = [r, g, b]
@@ -222,7 +222,7 @@ def entertainmentService():
                                     bridge_config["lights"][str(lightId)]["state"]["on"] = False
                                 else:
                                     bridge_config["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
-                                if bridge_config["lights_address"][str(lightId)]["protocol"] == "native":
+                                if bridge_config["lights_address"][str(lightId)]["protocol"] in ["native", "native_multi", "native_single"]:
                                     if bridge_config["lights_address"][str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]] = {}
                                     nativeLights[bridge_config["lights_address"][str(lightId)]["ip"]][bridge_config["lights_address"][str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
