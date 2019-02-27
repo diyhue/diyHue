@@ -13,19 +13,19 @@
     "@material-ui/core": "1.0.0-rc.0",
     "@material-ui/icons": "1.0.0-rc.0",
     "emotion": "9.1.3",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "mdi-react": "3.3.0",
     "rc-slider": "8.6.1",
     "react": "16.3.2",
     "react-color": "2.14.1",
-    "react-dom": "16.3.2",
+    "react-dom": "16.3.3",
     "react-emotion": "9.1.3",
     "react-powerplug": "^1.0.0-rc.1",
-    "react-scripts": "1.1.4"
+    "react-scripts": "^2.1.3"
   },
   "devDependencies": {
     "husky": "^0.14.3",
-    "pretty-quick": "^1.5.0"
+    "pretty-quick": "^1.10.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -33,5 +33,11 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "precommit": "pretty-quick --staged"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }

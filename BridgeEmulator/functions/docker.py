@@ -20,7 +20,7 @@ def dockerSetup(mac):
         print("Config restored")
     else:
         print("Downloading default config")
-        res = requests.get("https://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/config.json", allow_redirects=True)
+        res = requests.get("https://raw.githubusercontent.com/diyHue/diyHue/master/BridgeEmulator/config.json", allow_redirects=True)
         open('/opt/hue-emulator/config.json', 'w+').write(res.text)
         copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
         print("Config downloaded")
