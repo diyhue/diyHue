@@ -355,7 +355,7 @@
                                   return a(m, e);
                                 }
                               }),
-                              secondary: "Brghtness"
+                              secondary: "Brightness"
                             })
                           ),
                         "ct" in m.state &&
