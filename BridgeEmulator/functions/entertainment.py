@@ -1,6 +1,7 @@
 import socket, logging
 from subprocess import Popen
 from functions.colors import convert_rgb_xy
+from functions.lightRequest import sendLightRequest
 
 def entertainmentService(lights, addresses, groups):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -38,16 +39,16 @@ def entertainmentService(lights, addresses, groups):
                                     if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
                                         if r == 0 and  g == 0 and  b == 0:
                                             if lightStatus[lightId]["on"]:
-                                                sendLightRequest(str(lightId), {"on": False, "transitiontime": 3})
+                                                sendLightRequest(str(lightId), {"on": False, "transitiontime": 3}, lights, addresses)
                                                 lightStatus[lightId]["on"] = False
                                         elif lightStatus[lightId]["on"] == False:
-                                            sendLightRequest(str(lightId), {"on": True, "transitiontime": 3})
+                                            sendLightRequest(str(lightId), {"on": True, "transitiontime": 3}, lights, addresses)
                                             lightStatus[lightId]["on"] = True
                                         elif abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"]) > 50: # to optimize, send brightness  only of difference is bigger than this value
-                                            sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3})
+                                            sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3}, lights, addresses)
                                             lightStatus[lightId]["bri"] = int((r + b + g) / 3)
                                         else:
-                                            sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3})
+                                            sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3}, lights, addresses)
                                 fremeID += 1
                                 if fremeID == 25:
                                     fremeID = 0
@@ -72,7 +73,7 @@ def entertainmentService(lights, addresses, groups):
                                 else:
                                     fremeID += 1
                                     if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
-                                        sendLightRequest(str(lightId), {"xy": [x,y]})
+                                        sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses)
                                         fremeID = 0
             if len(nativeLights) is not 0:
                 for ip in nativeLights.keys():
