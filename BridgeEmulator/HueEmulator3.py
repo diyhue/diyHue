@@ -21,7 +21,7 @@ from urllib.parse import parse_qs, urlparse
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
 from functions.html import (description, webform_hue, webform_linkbutton,
-                            webform_milight, webformDeconz, webformTradfri)
+                            webform_milight, webformDeconz, webformTradfri, lightsHttp)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
 from functions.docker import dockerSetup
@@ -124,7 +124,7 @@ bridge_config = defaultdict(lambda:defaultdict(str))
 new_lights = {}
 sensors_state = {}
 
-def updateLights():
+def getLightsVersions():
     lights = {}
     githubCatalog = json.loads(requests.get('https://raw.githubusercontent.com/diyhue/Lights/master/catalog.json').text)
     for light in bridge_config["lights_address"].keys():
@@ -134,7 +134,11 @@ def updateLights():
                 lights[light] = {"name": currentData["name"], "currentVersion": currentData["version"], "lastVersion": githubCatalog[currentData["type"]]["version"], "firmware": githubCatalog[currentData["type"]]["filename"]}
     return lights
 
-
+def updateLight(light, filename):
+    firmware = requests.get('https://github.com/diyhue/Lights/raw/master/Arduino/bin/' + filename, allow_redirects=True)
+    open('/tmp/' + filename, 'wb').write(firmware.content)
+    file = {'update': open('/tmp/' + filename,'rb')}
+    update = requests.post('http://' + bridge_config["lights_address"][light]["ip"] + '/update', files=file)
 
 def updateConfig():
     if "emulator" not in bridge_config:
@@ -1007,9 +1011,16 @@ class S(BaseHTTPRequestHandler):
         elif self.path == '/description.xml':
             self._set_headers()
             self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], mac, bridge_config["config"]["name"]), "utf8"))
-        elif self.path == '/upgrade':
+        elif self.path == "/lights.json":
             self._set_headers()
-            self._set_end_headers(bytes(json.dumps(updateLights() ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+            self._set_end_headers(bytes(json.dumps(getLightsVersions() ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+        elif self.path.startswith("/lights"):
+            self._set_headers()
+            get_parameters = parse_qs(urlparse(self.path).query)
+            if "light" in get_parameters:
+                updateLight(get_parameters["light"][0], get_parameters["filename"][0])
+            self._set_end_headers(bytes(lightsHttp(), "utf8"))
+
         elif self.path == '/save':
             self._set_headers()
             saveConfig()
