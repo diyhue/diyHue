@@ -573,6 +573,8 @@ def scanForLights(): #scan for ESP8266 lights and strips
                                     light_name = device_data["name"] + appendix    
 
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name, "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                new_lights.update({new_light_id: {"name": light_name}})
+
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": protocol, "mac": device_data["mac"]}
         except Exception as e:
             logging.info("ip " + ip + " is unknow device, " + str(e))
