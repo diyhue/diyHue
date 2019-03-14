@@ -72,7 +72,7 @@ def set_light(address, light, data):
             else:
                 sendRequest ("http://"+address["ip"]+"/cm?cmnd=Power%20off")
         elif key == "bri":
-            brightness = int(100.0 * (value / 255.0))
+            brightness = int(100.0 * (value / 254.0))
             sendRequest ("http://"+address["ip"]+"/cm?cmnd=Dimmer%20" + str(brightness))
         elif key == "ct":
             color = {}
@@ -105,7 +105,7 @@ def get_light_state(address, light):
     else:
         rgb = light_data["Color"].split(",")
         logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
-        state['on'] = True if light_data["POWER1"] == "ON" else False
         state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
+        state["bri"] = (int(light_data["Dimmer"]) / 100.0) * 254.0
         state["colormode"] = "xy"
     return state
