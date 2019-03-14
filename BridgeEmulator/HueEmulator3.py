@@ -556,8 +556,25 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             logging.info("Add new light: " + device_data["name"])
                             for x in range(1, lights + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x), "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
-                                new_lights.update({new_light_id: {"name": device_data["name"] if x == 1 else device_data["name"] + " " + str(x)}})
+                                
+                                # light name can only contain 32 characters
+                                # Check which light name length is possible
+                                if (1 == x): 
+                                    appendix = ""
+                                    max_light_name = 32
+                                else:
+                                    appendix = " " + str(x)
+                                    max_light_name = (32 - len(appendix))                                
+
+                                # Check if light name will contain more than 32 characters including appendix  
+                                if (max_light_name < len(device_data["name"])):
+                                    light_name = device_data["name"][:max_light_name] + appendix  
+                                else:
+                                    light_name = device_data["name"] + appendix    
+
+                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name, "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
+                                new_lights.update({new_light_id: {"name": light_name}})
+
                                 bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": protocol, "mac": device_data["mac"]}
         except Exception as e:
             logging.info("ip " + ip + " is unknow device, " + str(e))
