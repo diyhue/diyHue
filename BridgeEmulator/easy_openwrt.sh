@@ -2,11 +2,13 @@
 
 opkg update
 wait
-opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl coap-client
+opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl coap-client unzip coreutils-nohup
 wait
 mkdir /opt
 mkdir /opt/tmp
 mkdir /opt/hue-emulator
+pip3 install --upgrade pip
+wait
 pip3 install requests astral pytz
 wait
 cd /opt/tmp

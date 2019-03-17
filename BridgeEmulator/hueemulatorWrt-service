@@ -11,7 +11,7 @@ start() {
 sleep 5
 . /etc/profile
 echo "Starting $SCRIPT_NAME"
-python3 $SCRIPT_PATH/$SCRIPT_NAME & > /dev/null
+nohup python3 $SCRIPT_PATH/$SCRIPT_NAME >/dev/null 2>&1 &
 }
 echo none > $LED_PATH/$LED/trigger
 echo 1 > $LED_PATH/$LED/brightness
