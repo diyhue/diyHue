@@ -611,11 +611,11 @@ def motionDetected(sensor):
 
 def scanTradfri():
     if "tradfri" in bridge_config:
-        tradri_devices = json.loads(check_output("./coap-client-linux -m get -u \"" + bridge_config["tradfri"]["identity"] + "\" -k \"" + bridge_config["tradfri"]["psk"] + "\" \"coaps://" + bridge_config["tradfri"]["ip"] + ":5684/15001\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+        tradri_devices = json.loads(check_output("./coap-client-linux -m get -u " + quote(bridge_config["tradfri"]["identity"]) + " -k " + quote(bridge_config["tradfri"]["psk"]) + "\coaps:/" + quote(bridge_config["tradfri"]["ip"]) + ":5684/15001/", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
         logging.info(pretty_json(tradri_devices))
         lights_found = 0
         for device in tradri_devices:
-            device_parameters = json.loads(check_output("./coap-client-linux -m get -u \"" + bridge_config["tradfri"]["identity"] + "\" -k \"" + bridge_config["tradfri"]["psk"] + "\" \"coaps://" + bridge_config["tradfri"]["ip"] + ":5684/15001/" + str(device) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+            device_parameters = json.loads(check_output("./coap-client-linux -m get -u " + quote(bridge_config["tradfri"]["identity"]) + " -k " + quote(bridge_config["tradfri"]["psk"]) + "\coaps:/" + quote(bridge_config["tradfri"]["ip"]) + ":5684/15001/" + quote(str(device)), shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
             if "3311" in device_parameters:
                 new_light = True
                 for light in bridge_config["lights_address"]:
@@ -1048,7 +1048,7 @@ class S(BaseHTTPRequestHandler):
             if "code" in get_parameters:
                 #register new identity
                 new_identity = "Hue-Emulator-" + str(random.randrange(0, 999))
-                registration = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k \"" + get_parameters["code"][0] + "\" -e '{\"9090\":\"" + new_identity + "\"}' \"coaps://" + get_parameters["ip"][0] + ":5684/15011/9063\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+                registration = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k " + quote(get_parameters["code"][0]) + " -e '{\"9090\":\"" + new_identity + "}' \"coaps://" + quote(get_parameters["ip"][0]) + ":5684/15011/9063\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
                 bridge_config["tradfri"] = {"psk": registration["9091"], "ip": get_parameters["ip"][0], "identity": new_identity}
                 lights_found = scanTradfri()
                 if lights_found == 0:
