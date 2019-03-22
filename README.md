@@ -30,7 +30,7 @@ All documentation  and instructions can be found over at [diyhue.readthedocs.io]
 
 
 ## To Do
- - Improve web interface
+ - ~~Improve web interface~~
  - esp8266 alarm horn (+schematic)
  - esp8266 IR controller 
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
