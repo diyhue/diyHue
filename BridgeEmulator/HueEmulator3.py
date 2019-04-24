@@ -783,7 +783,7 @@ def scanDeconz():
                 new_light_id = nextFreeId(bridge_config, "lights")
                 logging.info("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
-                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
+                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": deconz_ip + ":" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
                 bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id, "modelid": deconz_lights[light]["modelid"], "type": deconz_lights[light]["type"]}
 
         #sensors
