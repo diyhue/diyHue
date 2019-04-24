@@ -556,21 +556,21 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             logging.info("Add new light: " + device_data["name"])
                             for x in range(1, lights + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
-                                
+
                                 # light name can only contain 32 characters
                                 # Check which light name length is possible
-                                if (1 == x): 
+                                if (1 == x):
                                     appendix = ""
                                     max_light_name = 32
                                 else:
                                     appendix = " " + str(x)
-                                    max_light_name = (32 - len(appendix))                                
+                                    max_light_name = (32 - len(appendix))
 
-                                # Check if light name will contain more than 32 characters including appendix  
+                                # Check if light name will contain more than 32 characters including appendix
                                 if (max_light_name < len(device_data["name"])):
-                                    light_name = device_data["name"][:max_light_name] + appendix  
+                                    light_name = device_data["name"][:max_light_name] + appendix
                                 else:
-                                    light_name = device_data["name"] + appendix    
+                                    light_name = device_data["name"] + appendix
 
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name, "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name}})
@@ -748,14 +748,14 @@ def websocketClient():
                         bridge_config["sensors"][bridge_sensor_id]["config"].update(message["config"])
                 elif message["r"] == "lights":
                     bridge_light_id = bridge_config["deconz"]["lights"][message["id"]]["bridgeid"]
-                    if "state" in message:
+                    if "state" in message and "colormode" not in message["state"]:
                         bridge_config["lights"][bridge_light_id]["state"].update(message["state"])
                         updateGroupStats(bridge_light_id, bridge_config["lights"], bridge_config["groups"])
             except Exception as e:
                 logging.info("unable to process the request" + str(e))
 
     try:
-        ws = EchoClient('ws://127.0.0.1:' + str(bridge_config["deconz"]["websocketport"]))
+        ws = EchoClient('ws://' + deconz_ip + ':' + str(bridge_config["deconz"]["websocketport"]))
         ws.connect()
         ws.run_forever()
     except KeyboardInterrupt:
@@ -765,7 +765,7 @@ def scanDeconz():
     if not bridge_config["deconz"]["enabled"]:
         if "username" not in bridge_config["deconz"]:
             try:
-                registration = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
+                registration = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
             except:
                 logging.info("registration fail, is the link button pressed?")
                 return
@@ -773,11 +773,11 @@ def scanDeconz():
                 bridge_config["deconz"]["username"] = registration[0]["success"]["username"]
                 bridge_config["deconz"]["enabled"] = True
     if "username" in bridge_config["deconz"]:
-        deconz_config = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
+        deconz_config = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
         bridge_config["deconz"]["websocketport"] = deconz_config["websocketport"]
 
         #lights
-        deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
+        deconz_lights = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
             if light not in bridge_config["deconz"]["lights"] and "modelid" in deconz_lights[light]:
                 new_light_id = nextFreeId(bridge_config, "lights")
@@ -787,7 +787,7 @@ def scanDeconz():
                 bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id, "modelid": deconz_lights[light]["modelid"], "type": deconz_lights[light]["type"]}
 
         #sensors
-        deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
+        deconz_sensors = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
             if sensor not in bridge_config["deconz"]["sensors"] and "modelid" in deconz_sensors[sensor]:
                 new_sensor_id = nextFreeId(bridge_config, "sensors")
