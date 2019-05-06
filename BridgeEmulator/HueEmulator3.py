@@ -106,8 +106,13 @@ logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_ran
 
 if args.deconz:
   deconz_ip = args.deconz
+  print("Deconz IP given as " + deconz_ip)
+elif os.getenv('IP_DECONZ'):
+  deconz_ip = os.getenv('IP_DECONZ')
+  print("Deconz IP given as " + deconz_ip)
 else:
   deconz_ip = "127.0.0.1"
+logging.info(deconz_ip)
 
 protocols = [yeelight, tasmota, native_single, native_multi]
 
