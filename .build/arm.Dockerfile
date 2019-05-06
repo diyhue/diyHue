@@ -1,5 +1,7 @@
-FROM resin/rpi-raspbian:stretch
+FROM balenalib/raspberrypi3-debian-python
 WORKDIR /opt/hue-emulator
+
+RUN [ "cross-build-start" ]
 
 #Install requirments
 RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
@@ -29,4 +31,7 @@ RUN chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = T
 
 ## cleanup
 RUN ls -la /opt/hue-emulator
+
+RUN [ "cross-build-start" ]
+
 ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --docker
