@@ -4,6 +4,8 @@ WORKDIR /opt/hue-emulator
 #Install requirments
 RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
+RUN pip install pytz --no-cache-dir
+
 ## install astral
 RUN cd /tmp && pwd && curl https://codeload.github.com/sffjunkie/astral/zip/1.6.1 -o astral.zip && unzip -q -o astral.zip && cd astral-1.6.1/ && python3 setup.py install && rm -rf /tmp/*
 
