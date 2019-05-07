@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM debian:stable
 WORKDIR /opt/hue-emulator
 
 #Install requirments
