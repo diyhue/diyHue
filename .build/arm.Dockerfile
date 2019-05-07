@@ -7,7 +7,7 @@ RUN [ "cross-build-start" ]
 RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 && rm -rf /var/lib/apt/lists/*
 
 ## install pytz
-RUN cd /tmp && pwd && curl https://github.com/stub42/pytz/archive/release_2019.1.zip -o pytz.zip && unzip -q -o pytz.zip && cd pytz-release_2019.1/src/ && python3 setup.py install && rm -rf /tmp/*
+RUN cd /tmp && pwd && curl https://codeload.github.com/stub42/pytz/zip/release_2019.1 -o pytz.zip && unzip -q -o pytz.zip && cd pytz-release_2019.1/src/ && python3 setup.py install && rm -rf /tmp/*
 
 ## install astral
 RUN cd /tmp && pwd && curl https://codeload.github.com/sffjunkie/astral/zip/1.6.1 -o astral.zip && unzip -q -o astral.zip && cd astral-1.6.1/ && python3 setup.py install && rm -rf /tmp/*
