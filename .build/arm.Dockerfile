@@ -30,11 +30,9 @@ COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 
 ## Add Docker Build scripts
 COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
-RUN chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = True |g" /opt/hue-emulator/HueEmulator3.py
 
 ## Cleanup
 RUN ls -la /opt/hue-emulator
 
 RUN [ "cross-build-end" ]
-#ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --deconz $DECONZ --docker
 CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]
