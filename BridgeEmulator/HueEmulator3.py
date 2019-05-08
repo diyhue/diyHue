@@ -67,8 +67,8 @@ if args.mac:
     dockerMAC = args.mac
     mac = str(args.mac).replace(":","")
     print("Host MAC given as " + mac)
-elif os.getenv('MAC_ADDRESS'):
-    dockerMAC = os.getenv('MAC_ADDRESS')
+elif os.getenv('MAC'):
+    dockerMAC = os.getenv('MAC')
     mac = str(dockerMAC).replace(":","")
     print("Host MAC given as " + mac)
 else:
