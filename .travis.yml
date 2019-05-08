@@ -23,6 +23,8 @@ script:
 # Kill and remove test container
 - docker kill diyHue
 - docker rm diyHue
+- docker history diyhue/core:$ARCH
+- docker images
 
 after_success:
 # Tag and push built images
