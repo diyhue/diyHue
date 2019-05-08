@@ -36,4 +36,5 @@ RUN chmod +x /opt/hue-emulator/genCert.sh && sed -i "s|docker = False|docker = T
 RUN ls -la /opt/hue-emulator
 
 RUN [ "cross-build-end" ]
-ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --deconz $DECONZ --docker
+#ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --deconz $DECONZ --docker
+CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]
