@@ -24,7 +24,7 @@ script:
 - docker kill diyHue
 - docker rm diyHue
 - docker history diyhue/core:$ARCH
-- docker image inspect diyhue/core:$ARCH --format='{{.Size}}'
+- docker images
 
 after_success:
 # Tag and push built images
