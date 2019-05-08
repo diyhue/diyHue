@@ -22,6 +22,7 @@ COPY ./BridgeEmulator/coap-client-x86_64 /opt/hue-emulator/coap-client-linux
 
 ## Add Docker Build scripts
 COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
+RUN chmod +x /opt/hue-emulator/genCert.sh
 
 ## Expose ports
 EXPOSE 80
