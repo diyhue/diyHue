@@ -32,4 +32,4 @@ EXPOSE 2100/udp
 
 ## Cleanup
 RUN ls -la /opt/hue-emulator
-ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --docker
+ENTRYPOINT python3 -u /opt/hue-emulator/HueEmulator3.py --mac $MAC --ip $IP --debug $DEBUG --deconz $DECONZ --docker
