@@ -1,4 +1,4 @@
-FROM debian:stable
+FROM debian:stable-slim
 WORKDIR /opt/hue-emulator
 
 ## Install requirements
