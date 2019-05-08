@@ -59,8 +59,11 @@ if (args.debug and (args.debug == "true" or args.debug == "True")) or (os.getenv
 if args.ip:
     HostIP = args.ip
     print("Host IP given as " + HostIP)
+elif os.getenv('IP'):
+    HostIP = os.getenv('IP')
+    print("Host IP given as " + HostIP)
 else:
-    HostIP = os.getenv('IP_ADDRESS', getIpAddress())
+    HostIP = getIpAddress()
     print("Using Host IP of " + HostIP)
 
 if args.mac:
@@ -81,8 +84,8 @@ if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
     docker = True
     dockerSetup(dockerMAC)
     print("Docker Setup Complete")
-elif os.getenv('MAC_ADDRESS'):
-    dockerMAC = os.getenv('MAC_ADDRESS')
+elif os.getenv('MAC'):
+    dockerMAC = os.getenv('MAC')
     mac = str(dockerMAC).replace(":","")
     print("Host MAC given as " + mac)
 else:
@@ -90,6 +93,17 @@ else:
 
 if args.ip_range:
     ranges = args.ip_range.split(',')
+    if ranges[0] and int(ranges[0]) >= 0:
+        ip_range_start = int(ranges[0])
+    else:
+        ip_range_start = 0
+
+    if ranges[1] and int(ranges[1]) > 0:
+        ip_range_end = int(ranges[1])
+    else:
+        ip_range_end = 255
+elif os.getenv('IP_RANGE'):
+    ranges = os.getenv('IP_RANGE').split(',')
     if ranges[0] and int(ranges[0]) >= 0:
         ip_range_start = int(ranges[0])
     else:
@@ -107,8 +121,8 @@ logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_ran
 if args.deconz:
   deconz_ip = args.deconz
   print("Deconz IP given as " + deconz_ip)
-elif os.getenv('IP_DECONZ'):
-  deconz_ip = os.getenv('IP_DECONZ')
+elif os.getenv('DECONZ'):
+  deconz_ip = os.getenv('DECONZ')
   print("Deconz IP given as " + deconz_ip)
 else:
   deconz_ip = "127.0.0.1"
