@@ -11,7 +11,7 @@ RUN apt update && apt install -y python3 python3-setuptools python3-pip openssl 
 ##RUN cd /tmp && curl https://codeload.github.com/Lawouach/WebSocket-for-Python/zip/0.5.1 -o ws4py.zip && unzip -q -o ws4py.zip && cd WebSocket-for-Python-0.5.1/ && python3 setup.py install && rm -rf /tmp/*
 
 ## install python3-requests
-##RUN cd /tmp && curl https://codeload.github.com/requests/requests/zip/v2.19.1 -o requests.zip && unzip -q -o requests.zip && cd requests-2.19.1/ && python3 setup.py install && rm -rf /tmp/*
+RUN cd /tmp && curl https://codeload.github.com/requests/requests/zip/v2.19.1 -o requests.zip && unzip -q -o requests.zip && cd requests-2.19.1/ && python3 setup.py install && rm -rf /tmp/*
 
 RUN pip3 install astral ws4py --no-cache-dir 
 
