@@ -123,3 +123,4 @@ Credits:
   - [@cheesemarathon](https://github.com/cheesemarathon) - Help with Docker images
   - [@Mevel](https://github.com/Mevel) - 433Mhz devices
   - [@Nikfinn99](https://github.com/Nikfinn99) - PCB designs
+  - [@crankyoldgit](https://github.com/crankyoldgit) - IR Remote library
