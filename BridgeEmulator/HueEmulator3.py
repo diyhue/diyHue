@@ -1008,7 +1008,6 @@ class S(BaseHTTPRequestHandler):
         self.send_response(401)
         self.send_header('WWW-Authenticate', 'Basic realm=\"Hue\"')
         self.send_header('Content-type', 'text/html')
-        self.end_headers()
 
     def _set_end_headers(self, data):
         self.send_header('Content-Length', len(data))
