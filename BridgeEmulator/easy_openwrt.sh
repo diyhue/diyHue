@@ -7,9 +7,9 @@ wait
 mkdir /opt
 mkdir /opt/tmp
 mkdir /opt/hue-emulator
-pip3 install --upgrade pip
+python3 -m pip install --upgrade pip
 wait
-pip3 install requests astral pytz
+python3 -m pip install requests astral pytz
 wait
 cd /opt/tmp
 wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
