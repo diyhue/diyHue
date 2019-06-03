@@ -30,7 +30,7 @@ All documentation  and instructions can be found over at [diyhue.readthedocs.io]
 
 
 ## To Do
- - Improve web interface
+ - ~~Improve web interface~~
  - esp8266 alarm horn (+schematic)
  - esp8266 IR controller 
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
@@ -123,3 +123,4 @@ Credits:
   - [@cheesemarathon](https://github.com/cheesemarathon) - Help with Docker images
   - [@Mevel](https://github.com/Mevel) - 433Mhz devices
   - [@Nikfinn99](https://github.com/Nikfinn99) - PCB designs
+  - [@crankyoldgit](https://github.com/crankyoldgit) - IR Remote library

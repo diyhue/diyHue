@@ -59,16 +59,19 @@ if (args.debug and (args.debug == "true" or args.debug == "True")) or (os.getenv
 if args.ip:
     HostIP = args.ip
     print("Host IP given as " + HostIP)
+elif os.getenv('IP'):
+    HostIP = os.getenv('IP')
+    print("Host IP given as " + HostIP)
 else:
-    HostIP = os.getenv('IP_ADDRESS', getIpAddress())
+    HostIP = getIpAddress()
     print("Using Host IP of " + HostIP)
 
 if args.mac:
     dockerMAC = args.mac
     mac = str(args.mac).replace(":","")
     print("Host MAC given as " + mac)
-elif os.getenv('MAC_ADDRESS'):
-    dockerMAC = os.getenv('MAC_ADDRESS')
+elif os.getenv('MAC'):
+    dockerMAC = os.getenv('MAC')
     mac = str(dockerMAC).replace(":","")
     print("Host MAC given as " + mac)
 else:
@@ -81,8 +84,8 @@ if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
     docker = True
     dockerSetup(dockerMAC)
     print("Docker Setup Complete")
-elif os.getenv('MAC_ADDRESS'):
-    dockerMAC = os.getenv('MAC_ADDRESS')
+elif os.getenv('MAC'):
+    dockerMAC = os.getenv('MAC')
     mac = str(dockerMAC).replace(":","")
     print("Host MAC given as " + mac)
 else:
@@ -99,6 +102,17 @@ if args.ip_range:
         ip_range_end = int(ranges[1])
     else:
         ip_range_end = 255
+elif os.getenv('IP_RANGE'):
+    ranges = os.getenv('IP_RANGE').split(',')
+    if ranges[0] and int(ranges[0]) >= 0:
+        ip_range_start = int(ranges[0])
+    else:
+        ip_range_start = 0
+
+    if ranges[1] and int(ranges[1]) > 0:
+        ip_range_end = int(ranges[1])
+    else:
+        ip_range_end = 255
 else:
     ip_range_start = os.getenv('IP_RANGE_START', 0)
     ip_range_end = os.getenv('IP_RANGE_END', 255)
@@ -106,8 +120,13 @@ logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_ran
 
 if args.deconz:
   deconz_ip = args.deconz
+  print("Deconz IP given as " + deconz_ip)
+elif os.getenv('DECONZ'):
+  deconz_ip = os.getenv('DECONZ')
+  print("Deconz IP given as " + deconz_ip)
 else:
   deconz_ip = "127.0.0.1"
+logging.info(deconz_ip)
 
 protocols = [yeelight, tasmota, native_single, native_multi]
 
@@ -223,9 +242,9 @@ def addHueMotionSensor(uniqueid, name="Hue motion sensor"):
     if uniqueid == "":
         uniqueid = "00:17:88:01:02:"
         if len(new_sensor_id) == 1:
-            uniqueid += "0" + new_sensor_id + ":"
+            uniqueid += "0" + new_sensor_id
         else:
-            uniqueid += new_sensor_id + ":"
+            uniqueid += new_sensor_id
     bridge_config["sensors"][nextFreeId(bridge_config, "sensors")] = {"name": "Hue temperature sensor 1", "uniqueid": uniqueid + ":d0:5b-02-0402", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
     motion_sensor = nextFreeId(bridge_config, "sensors")
     bridge_config["sensors"][motion_sensor] = {"name": name, "uniqueid": uniqueid + ":d0:5b-02-0406", "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
@@ -556,21 +575,21 @@ def scanForLights(): #scan for ESP8266 lights and strips
                             logging.info("Add new light: " + device_data["name"])
                             for x in range(1, lights + 1):
                                 new_light_id = nextFreeId(bridge_config, "lights")
-                                
+
                                 # light name can only contain 32 characters
                                 # Check which light name length is possible
-                                if (1 == x): 
+                                if (1 == x):
                                     appendix = ""
                                     max_light_name = 32
                                 else:
                                     appendix = " " + str(x)
-                                    max_light_name = (32 - len(appendix))                                
+                                    max_light_name = (32 - len(appendix))
 
-                                # Check if light name will contain more than 32 characters including appendix  
+                                # Check if light name will contain more than 32 characters including appendix
                                 if (max_light_name < len(device_data["name"])):
-                                    light_name = device_data["name"][:max_light_name] + appendix  
+                                    light_name = device_data["name"][:max_light_name] + appendix
                                 else:
-                                    light_name = device_data["name"] + appendix    
+                                    light_name = device_data["name"] + appendix
 
                                 bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name, "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
                                 new_lights.update({new_light_id: {"name": light_name}})
@@ -748,14 +767,14 @@ def websocketClient():
                         bridge_config["sensors"][bridge_sensor_id]["config"].update(message["config"])
                 elif message["r"] == "lights":
                     bridge_light_id = bridge_config["deconz"]["lights"][message["id"]]["bridgeid"]
-                    if "state" in message:
+                    if "state" in message and "colormode" not in message["state"]:
                         bridge_config["lights"][bridge_light_id]["state"].update(message["state"])
                         updateGroupStats(bridge_light_id, bridge_config["lights"], bridge_config["groups"])
             except Exception as e:
                 logging.info("unable to process the request" + str(e))
 
     try:
-        ws = EchoClient('ws://127.0.0.1:' + str(bridge_config["deconz"]["websocketport"]))
+        ws = EchoClient('ws://' + deconz_ip + ':' + str(bridge_config["deconz"]["websocketport"]))
         ws.connect()
         ws.run_forever()
     except KeyboardInterrupt:
@@ -765,7 +784,7 @@ def scanDeconz():
     if not bridge_config["deconz"]["enabled"]:
         if "username" not in bridge_config["deconz"]:
             try:
-                registration = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
+                registration = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api", "POST", "{\"username\": \"283145a4e198cc6535\", \"devicetype\":\"Hue Emulator\"}"))
             except:
                 logging.info("registration fail, is the link button pressed?")
                 return
@@ -773,21 +792,21 @@ def scanDeconz():
                 bridge_config["deconz"]["username"] = registration[0]["success"]["username"]
                 bridge_config["deconz"]["enabled"] = True
     if "username" in bridge_config["deconz"]:
-        deconz_config = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
+        deconz_config = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/config", "GET", "{}"))
         bridge_config["deconz"]["websocketport"] = deconz_config["websocketport"]
 
         #lights
-        deconz_lights = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
+        deconz_lights = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/lights", "GET", "{}"))
         for light in deconz_lights:
             if light not in bridge_config["deconz"]["lights"] and "modelid" in deconz_lights[light]:
                 new_light_id = nextFreeId(bridge_config, "lights")
                 logging.info("register new light " + new_light_id)
                 bridge_config["lights"][new_light_id] = deconz_lights[light]
-                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": "127.0.0.1:" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
+                bridge_config["lights_address"][new_light_id] = {"username": bridge_config["deconz"]["username"], "light_id": light, "ip": deconz_ip + ":" + str(bridge_config["deconz"]["port"]), "protocol": "deconz"}
                 bridge_config["deconz"]["lights"][light] = {"bridgeid": new_light_id, "modelid": deconz_lights[light]["modelid"], "type": deconz_lights[light]["type"]}
 
         #sensors
-        deconz_sensors = json.loads(sendRequest("http://127.0.0.1:" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
+        deconz_sensors = json.loads(sendRequest("http://" + deconz_ip + ":" + str(bridge_config["deconz"]["port"]) + "/api/" + bridge_config["deconz"]["username"] + "/sensors", "GET", "{}"))
         for sensor in deconz_sensors:
             if sensor not in bridge_config["deconz"]["sensors"] and "modelid" in deconz_sensors[sensor]:
                 new_sensor_id = nextFreeId(bridge_config, "sensors")
@@ -989,7 +1008,6 @@ class S(BaseHTTPRequestHandler):
         self.send_response(401)
         self.send_header('WWW-Authenticate', 'Basic realm=\"Hue\"')
         self.send_header('Content-type', 'text/html')
-        self.end_headers()
 
     def _set_end_headers(self, data):
         self.send_header('Content-Length', len(data))

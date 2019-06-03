@@ -16,13 +16,15 @@ script:
 #- docker tag diyhue/core:$ARCH diyhue/core:$ARCH-dev
 #- docker push diyhue/core:$ARCH-dev
 # Pull dev image to run tests
-- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' diyhue/core:$ARCH
+- docker run -d --name "diyHue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,200' -e 'DEBUG=true' diyhue/core:$ARCH
 # Wait for logs to populate, then list them
 - sleep 30
 - docker logs diyHue
 # Kill and remove test container
 - docker kill diyHue
 - docker rm diyHue
+- docker history diyhue/core:$ARCH
+- docker images
 
 after_success:
 # Tag and push built images

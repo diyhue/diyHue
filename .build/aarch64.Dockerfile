@@ -17,7 +17,6 @@ RUN apt-get update && \
     ln -s $(which coap-client) /opt/hue-emulator/coap-client-linux && \
 # Add Docker Build scripts
     chmod +x ./genCert.sh && \
-    sed -i "s|docker = False|docker = True |g" ./HueEmulator3.py && \
 # Remove unused binaries 
     find . -name 'entertainment-*' ! -name 'entertainment-srv' -delete && \
     find . -name 'coap-client-*' ! -name 'coap-client-linux' -delete
