@@ -43,7 +43,7 @@ ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', c
 ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
 ap.add_argument("--ip_range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
-ap.add_argument("--allow-host-ip", help="Allow discovery of lights on the host IP", type=str)
+ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
 
 args = ap.parse_args()
@@ -546,76 +546,105 @@ def scanHost(host, port):
     sock.close()
     return result
 
-def findHosts(port):
-    addr = ip_range_start
-    validHosts = []
+def iter_ips(port):
     host = HOST_IP.split('.')
-    while addr <= ip_range_end:
+    for addr in range(ip_range_start, ip_range_end + 1):
         host[3] = str(addr)
-        testHost = host[0]+"."+host[1]+"."+host[2]+"."+host[3]
-        if scanHost(testHost, port) == 0:
-            validHosts.append(testHost)
-        addr = addr+1
+        test_host = '%s.%s.%s.%s' % (*host,)
+        if test_host != HOST_IP:
+            yield (test_host, port)
+    if args.scan_on_host_ip:
+        yield ('127.0.0.1', port)
+
+def find_hosts(port):
+    validHosts = []
+    for host, port in iter_ips(port):
+        if scanHost(host, port) == 0:
+            hostWithPort = '%s:%s' % (host, port)
+            validHosts.append(hostWithPort)
 
     return validHosts
 
-def scanForLights(): #scan for ESP8266 lights and strips
+def find_light_in_config(bridge_config, mac_address):
+    for light in bridge_config["lights_address"].keys():
+        if (bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"]
+                and bridge_config["lights_address"][light]["mac"] == mac_address):
+            return light
+    return None
+
+def generate_light_name(base_name, light_nr):
+    # Light name can only contain 32 characters
+    suffix = ' %s' % light_nr
+    return '%s%s' % (base_name[:32-len(suffix)], suffix)
+
+def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
-    device_ips = findHosts(80)
+    device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
+    logging.debug('devs', device_ips)
     for ip in device_ips:
         try:
-            if args.allow_host_ip or ip != HOST_IP:
-                response = requests.get("http://" + ip + "/detect", timeout=3)
-                if response.status_code == 200:
-                    device_data = json.loads(response.text)
-                    logging.info(pretty_json(device_data))
-                    if "modelid" in device_data:
-                        logging.info(ip + " is " + device_data['name'])
-                        device_exist = False
-                        if "protocol" in device_data:
-                            protocol = device_data["protocol"]
-                        else:
-                            protocol = "native"
-                        lights = 1
-                        if "lights" in device_data:
-                            lights = device_data["lights"]
-                        for light in bridge_config["lights_address"].keys():
-                            if bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"] and bridge_config["lights_address"][light]["mac"] == device_data["mac"]:
-                                device_exist = True
-                                bridge_config["lights_address"][light]["ip"] = ip
-                                bridge_config["lights_address"][light]["protocol"] = protocol
-                                if "version" in device_data:
-                                    bridge_config["lights_address"][light].update({"version": device_data["version"], "type": device_data["type"], "name": device_data["name"]})
+            response = requests.get("http://" + ip + "/detect", timeout=3)
+            if response.status_code == 200:
+                # XXX JSON validation
+                device_data = json.loads(response.text)
+                logging.info(pretty_json(device_data))
+                if "modelid" in device_data:
+                    logging.info(ip + " is " + device_data['name'])
+                    if "protocol" in device_data:
+                        protocol = device_data["protocol"]
+                    else:
+                        protocol = "native"
 
-                        if not device_exist:
-                            logging.info("Add new light: " + device_data["name"])
-                            for x in range(1, lights + 1):
-                                new_light_id = nextFreeId(bridge_config, "lights")
+                    # Get number of lights
+                    lights = 1
+                    if "lights" in device_data:
+                        lights = device_data["lights"]
 
-                                # light name can only contain 32 characters
-                                # Check which light name length is possible
-                                if (1 == x):
-                                    appendix = ""
-                                    max_light_name = 32
-                                else:
-                                    appendix = " " + str(x)
-                                    max_light_name = (32 - len(appendix))
+                    # Try to find light in existing config
+                    light = find_light_in_config(bridge_config, device_data['mac'])
+                    if light:
+                        logging.info("Updating old light: " + device_data["name"])
+                        # Light found, update config
+                        bridge_config["lights_address"][light]["ip"] = ip
+                        bridge_config["lights_address"][light]["protocol"] = protocol
+                        if "version" in device_data:
+                            bridge_config["lights_address"][light].update({
+                                "version": device_data["version"],
+                                "type": device_data["type"],
+                                "name": device_data["name"]
+                            })
+                    else:
+                        # Light not found, add to config
+                        logging.info("Add new light: " + device_data["name"])
+                        for x in range(1, lights + 1):
+                            new_light_id = nextFreeId(bridge_config, "lights")
 
-                                # Check if light name will contain more than 32 characters including appendix
-                                if (max_light_name < len(device_data["name"])):
-                                    light_name = device_data["name"][:max_light_name] + appendix
-                                else:
-                                    light_name = device_data["name"] + appendix
+                            light_name = generate_light_name(device_data['name'], x)
 
-                                bridge_config["lights"][new_light_id] = {"state": light_types[device_data["modelid"]]["state"], "type": light_types[device_data["modelid"]]["type"], "name": light_name, "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "modelid": device_data["modelid"], "manufacturername": "Philips", "swversion": light_types[device_data["modelid"]]["swversion"]}
-                                new_lights.update({new_light_id: {"name": light_name}})
+                            rand_bytes = [random.randrange(0,256) for _ in range(3)]
+                            bridge_config["lights"][new_light_id] = {
+                                "state": light_types[device_data["modelid"]]["state"],
+                                "type": light_types[device_data["modelid"]]["type"],
+                                "name": light_name,
+                                "uniqueid": "00:17:88:01:00:%02x:%02x:%02x-0b" % (*rand_bytes,),
+                                "modelid": device_data["modelid"],
+                                "manufacturername": "Philips",
+                                "swversion": light_types[device_data["modelid"]]["swversion"]
+                            }
+                            new_lights.update({new_light_id: {"name": light_name}})
 
-                                bridge_config["lights_address"][new_light_id] = {"ip": ip, "light_nr": x, "protocol": protocol, "mac": device_data["mac"]}
+                            bridge_config["lights_address"][new_light_id] = {
+                                "ip": ip,
+                                "light_nr": x,
+                                "protocol": protocol,
+                                "mac": device_data["mac"]
+                            }
         except Exception as e:
-            logging.info("ip " + ip + " is unknow device, " + str(e))
+            logging.info("ip %s is unknown device: %s", ip, e)
+            raise
     scanDeconz()
     scanTradfri()
     saveConfig()
@@ -1258,6 +1287,10 @@ class S(BaseHTTPRequestHandler):
                                 #triger_horn() need development
                         rulesProcessor(sensorId, current_time) #process the rules to perform the action configured by application
             self._set_end_headers(bytes("done", "utf8"))
+        elif self.path.startswith("/scan"): # rescan
+            self._set_headers()
+            scan_for_lights()
+            self._set_end_headers(bytes("done", "utf8"))
         else:
             url_pices = self.path.rstrip('/').split('/')
             if len(url_pices) < 3:
@@ -1326,7 +1359,7 @@ class S(BaseHTTPRequestHandler):
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
-                    Thread(target=scanForLights).start()
+                    Thread(target=scan_for_lights).start()
                     sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                     self._set_end_headers(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif url_pices[3] == "":
