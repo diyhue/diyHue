@@ -139,9 +139,32 @@ def pretty_json(data):
 
 run_service = True
 
-bridge_config = defaultdict(lambda:defaultdict(str))
-new_lights = {}
-sensors_state = {}
+def initialize():
+    global bridge_config, new_lights, sensors_state
+    new_lights = {}
+    sensors_state = {}
+
+    try:
+        path = cwd + '/config.json'
+        if os.path.exists(path):
+            bridge_config = load_config(path)
+            logging.info("Config loaded")
+        else:
+            logging.info("Config not found, creating new config from default settings")
+            bridge_config = load_config(cwd + '/default-config.json')
+            saveConfig()
+    except Exception:
+        logging.exception("CRITICAL! Config file was not loaded")
+        sys.exit(1)
+
+    ip_pices = HostIP.split(".")
+    bridge_config["config"]["ipaddress"] = HostIP
+    bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
+    bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
+    bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
+
+    load_alarm_config()
+    generateSensorsState()
 
 def getLightsVersions():
     lights = {}
@@ -263,13 +286,9 @@ def addHueSwitch(uniqueid, sensorsType):
     return(new_sensor_id)
 
 #load config files
-try:
-    with open(cwd +'/config.json', 'r', encoding="utf-8") as fp:
-        bridge_config = json.load(fp)
-        logging.info("Config loaded")
-except Exception:
-    logging.exception("CRITICAL! Config file was not loaded")
-    sys.exit(1)
+def load_config(path):
+    with open(path, 'r', encoding="utf-8") as fp:
+        return json.load(fp)
 
 def resourceRecycle():
     sleep(5) #give time to application to delete all resources, then start the cleanup
@@ -286,7 +305,7 @@ def resourceRecycle():
                 del bridge_config[resource][key]
 
 
-def loadConfig():  #load and configure alarm virtual light
+def load_alarm_config():  #load and configure alarm virtual light
     if bridge_config["alarm_config"]["mail_username"] != "":
         logging.info("E-mail account configured")
         if "virtual_light" not in bridge_config["alarm_config"]:
@@ -298,7 +317,6 @@ def loadConfig():  #load and configure alarm virtual light
                 bridge_config["alarm_config"]["virtual_light"] = new_light_id
             else:
                 logging.info("Mail test failed")
-loadConfig()
 
 def saveConfig(filename='config.json'):
     with open(cwd + '/' + filename, 'w', encoding="utf-8") as fp:
@@ -313,14 +331,6 @@ def generateSensorsState():
             for key in bridge_config["sensors"][sensor]["state"].keys():
                 if key in ["lastupdated", "presence", "flag", "dark", "daylight", "status"]:
                     sensors_state[sensor]["state"].update({key: datetime.now()})
-
-generateSensorsState()
-
-ip_pices = HostIP.split(".")
-bridge_config["config"]["ipaddress"] = HostIP
-bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
-bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
-bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
 
 
 def schedulerProcessor():
@@ -1031,7 +1041,8 @@ class S(BaseHTTPRequestHandler):
         elif self.path == "/factory-reset":
             self._set_headers()
             saveConfig('before-reset.json')
-            bridge_config = json.loads(requests.get('https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/config.json').text)
+            bridge_config = load_config(cwd + '/default-config.json')
+            saveConfig()
             self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename":"/opt/hue-emulator/before-reset.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
         elif self.path == '/config.js':
             self._set_headers()
@@ -1558,6 +1569,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
     httpd.server_close()
 
 if __name__ == "__main__":
+    initialize()
     updateConfig()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
