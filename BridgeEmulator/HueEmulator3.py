@@ -1164,7 +1164,7 @@ class S(BaseHTTPRequestHandler):
                     pass
                 else:
                     self._set_AUTHHEAD()
-                    self._set_end_headers(bytes(self.headers.headers['Authorization'], "utf8"))
+                    self._set_end_headers(bytes(self.headers['Authorization'], "utf8"))
                     self._set_end_headers(bytes('not authenticated', "utf8"))
                     pass
             else:
