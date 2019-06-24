@@ -40,16 +40,15 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
 ap.add_argument("--http-port", help="The port to listen on for HTTP", nargs='?', const=None, type=int)
 ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
-ap.add_argument("--debug", help="Enables debug output", nargs='?', const=None, type=str)
+ap.add_argument("--debug", action='store_true', help="Enables debug output")
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
-ap.add_argument("--ip_range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
+ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
 ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
 
 args = ap.parse_args()
 
-if (args.debug and (args.debug == "true" or args.debug == "True")) or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
-    print("Debug Enabled")
+if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     ch = logging.StreamHandler(sys.stdout)
