@@ -1004,6 +1004,10 @@ def splitLightsToDevices(group, state, scene={}):
                 lightsData[light] = state
     else:
         lightsData = scene
+
+    # Make sure any lights haven't been deleted
+    lightsData = {k: v for k, v in lightsData.items() if k in bridge_config["lights_address"]}
+
     deviceIp = {}
     for light in lightsData.keys():
         if bridge_config["lights_address"][light]["ip"] not in deviceIp:
@@ -1622,19 +1626,28 @@ class S(BaseHTTPRequestHandler):
                             logging.info('Delete related sensor ' + sensor)
                 del bridge_config[url_pices[3]][url_pices[4]]
             if url_pices[3] == "lights":
-                del bridge_config["lights_address"][url_pices[4]]
+                del_light = url_pices[4]
+
+                # Delete the light address
+                del bridge_config["lights_address"][del_light]
+
+                # Remove this light from every group
+                for group_id, group in bridge_config["groups"].items():
+                    if "lights" in group and del_light in group["lights"]:
+                        group["lights"].remove(del_light)
+
+                # Delete the light from the deCONZ config
                 for light in list(bridge_config["deconz"]["lights"]):
-                    if bridge_config["deconz"]["lights"][light]["bridgeid"] == url_pices[4]:
+                    if bridge_config["deconz"]["lights"][light]["bridgeid"] == del_light:
                         del bridge_config["deconz"]["lights"][light]
+
+                # Delete the light from any scenes
                 for scene in list(bridge_config["scenes"]):
-                    if "lights" in bridge_config["scenes"][scene] and url_pices[4] in bridge_config["scenes"][scene]["lights"]:
-                        bridge_config["scenes"][scene]["lights"].remove(url_pices[4])
-                        del bridge_config["scenes"][scene]["lightstates"][url_pices[4]]
+                    if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
+                        bridge_config["scenes"][scene]["lights"].remove(del_light)
+                        del bridge_config["scenes"][scene]["lightstates"][del_light]
                         if len(bridge_config["scenes"][scene]["lights"]) == 0:
                             del bridge_config["scenes"][scene]
-                for group in bridge_config["groups"].keys():
-                    if url_pices[4] in bridge_config["groups"][group]["lights"]:
-                        bridge_config["groups"][group]["lights"].remove(url_pices[4])
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
