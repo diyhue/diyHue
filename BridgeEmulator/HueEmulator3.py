@@ -190,52 +190,82 @@ def updateLight(light, filename):
     file = {'update': open('/tmp/' + filename,'rb')}
     update = requests.post('http://' + bridge_config["lights_address"][light]["ip"] + '/update', files=file)
 
+# Make various updates to the config JSON structure to maintain backwards compatibility with old configs
 def updateConfig():
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
-    for sensor in bridge_config["deconz"]["sensors"].keys():
-        if "modelid" not in bridge_config["deconz"]["sensors"][sensor]:
-            bridge_config["deconz"]["sensors"][sensor]["modelid"] = bridge_config["sensors"][bridge_config["deconz"]["sensors"][sensor]["bridgeid"]]["modelid"]
-        if bridge_config["deconz"]["sensors"][sensor]["modelid"] == "TRADFRI motion sensor":
-            if "lightsensor" not in bridge_config["deconz"]["sensors"][sensor]:
-                bridge_config["deconz"]["sensors"][sensor]["lightsensor"] = "internal"
-    for sensor in bridge_config["sensors"].keys():
-        if bridge_config["sensors"][sensor]["type"] == "CLIPGenericStatus":
-            bridge_config["sensors"][sensor]["state"]["status"] = 0
-    for light in bridge_config["lights_address"].keys():
-        if bridge_config["lights_address"][light]["protocol"] =="native" and "mac" not in bridge_config["lights_address"][light]:
-            bridge_config["lights_address"][light]["mac"] = bridge_config["lights"][light]["uniqueid"][:17]
-            bridge_config["lights"][light]["uniqueid"] = "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b"
-        if bridge_config["lights_address"][light]["protocol"] =="deconz":
-            for key in list(bridge_config["lights"][light]):
+
+    # Update deCONZ sensors
+    for sensor_id, sensor in bridge_config["deconz"]["sensors"].items():
+        if "modelid" not in sensor:
+            sensor["modelid"] = bridge_config["sensors"][sensor["bridgeid"]]["modelid"]
+        if sensor["modelid"] == "TRADFRI motion sensor":
+            if "lightsensor" not in sensor:
+                sensor["lightsensor"] = "internal"
+
+    # Update sensors
+    for sensor_id, sensor in bridge_config["sensors"].items():
+        if sensor["type"] == "CLIPGenericStatus":
+            sensor["state"]["status"] = 0
+
+    # Update lights
+    for light_id, light_address in bridge_config["lights_address"].items():
+        light = bridge_config["lights"][light_id]
+
+        if light_address["protocol"] == "native" and "mac" not in light_address:
+            light_address["mac"] = light["uniqueid"][:17]
+            light["uniqueid"] = generate_unique_id()
+
+        # Update deCONZ protocol lights
+        if light_address["protocol"] == "deconz":
+            # Delete old keys
+            for key in list(light):
                 if key in ["hascolor", "ctmax", "ctmin", "etag"]:
-                    del bridge_config["lights"][light][key]
-            if bridge_config["lights"][light]["modelid"].startswith("TRADFRI"):
-                if bridge_config["lights"][light]["type"] == "Color temperature light":
-                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LTW001", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b","swversion": "1.46.13_r26312"})
-                elif bridge_config["lights"][light]["type"] == "Color light":
-                    bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
-                elif bridge_config["lights"][light]["type"] == "Dimmable light":
-                    bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.46.13_r26312"})
-        if "manufacturername" in bridge_config["lights"][light] and bridge_config["lights"][light]["manufacturername"] == "Philips": #update config lights firmware version
-            bridge_config["lights"][light].update({"swversion": "1.46.13_r26312", })
-            if bridge_config["lights"][light]["modelid"] in ["LTW001", "LWB010"]:
-                bridge_config["lights"][light].update({"config": {"archetype": "classicbulb", "function": "mixed","direction": "omnidirectional"}, "swversion": "1.46.13_r26312"})
-            elif bridge_config["lights"][light]["modelid"] == "LCT015":
-                bridge_config["lights"][light].update({"config": {"archetype": "sultanbulb", "function": "mixed","direction": "omnidirectional"}, "swversion": "1.46.13_r26312"})
-            elif bridge_config["lights"][light]["modelid"] == "LST002":
-                bridge_config["lights"][light].update({"config": {"archetype": "huelightstrip", "function": "mixed","direction": "omnidirectional"}, "swversion": "5.127.1.26581"})
-            if bridge_config["lights"][light]["modelid"] in ["LST002", "LCT015", "LTW001", "LWB010"]:
-                if "startup" not in bridge_config["lights"][light]["config"]:
-                    bridge_config["lights"][light]["config"].update({"startup": {"mode": "safety","configured": False}})
+                    del light[key]
+
+            if light["modelid"].startswith("TRADFRI"):
+                light.update({"manufacturername": "Philips", "swversion": "1.46.13_r26312"})
+
+                light["uniqueid"] = generate_unique_id()
+
+                if light["type"] == "Color temperature light":
+                    light["modelid"] = "LTW001"
+                elif light["type"] == "Color light":
+                    light["modelid"] = "LCT015"
+                    light["type"] = "Extended color light"
+                elif light["type"] == "Dimmable light":
+                    light["modelid"] = "LWB010"
+
+        # Update Philips lights firmware version
+        if "manufacturername" in light and light["manufacturername"] == "Philips":
+            swversion = "1.46.13_r26312"
+            if light["modelid"] in ["LST002", "LCT015", "LTW001", "LWB010"]:
+                # Update archetype for various Philips models
+                if light["modelid"] in ["LTW001", "LWB010"]:
+                    archetype = "classicbulb"
+                elif light["modelid"] == "LCT015":
+                    archetype = "sultanbulb"
+                elif light["modelid"] == "LST002":
+                    archetype = "huelightstrip"
+                    swversion = "5.127.1.26581"
+
+                light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
+
+                # Update startup config
+                if "startup" not in light["config"]:
+                    light["config"]["startup"] = {"mode": "safety", "configured": False}
+
+            # Finally, update the software version
+            light["swversion"] = swversion
+
     #set entertainment streaming to inactive on start/restart
-    for group in bridge_config["groups"].keys():
-        if "type" in bridge_config["groups"][group] and bridge_config["groups"][group]["type"] == "Entertainment":
-            bridge_config["groups"][group]["stream"].update({"active": False, "owner": None})
+    for group_id, group in bridge_config["groups"].items():
+        if "type" in group and group["type"] == "Entertainment":
+            group["stream"].update({"active": False, "owner": None})
+
     #fix timezones bug
     if "values" not in bridge_config["capabilities"]["timezones"]:
         timezones = bridge_config["capabilities"]["timezones"]
-        del bridge_config["capabilities"]["timezones"]
         bridge_config["capabilities"]["timezones"] = {"values": timezones}
 
 def addTradfriDimmer(sensor_id, group_id):
@@ -565,10 +595,10 @@ def find_hosts(port):
     return validHosts
 
 def find_light_in_config_from_mac(bridge_config, mac_address):
-    for light in bridge_config["lights_address"].keys():
-        if (bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"]
-                and bridge_config["lights_address"][light]["mac"] == mac_address):
-            return light
+    for light_id, light_address in bridge_config["lights_address"].items():
+        if (light_address["protocol"] in ["native", "native_single",  "native_multi"]
+                and light_address["mac"] == mac_address):
+            return light_id
     return None
 
 def find_light_in_config_from_uid(bridge_config, unique_id):
@@ -581,6 +611,10 @@ def generate_light_name(base_name, light_nr):
     # Light name can only contain 32 characters
     suffix = ' %s' % light_nr
     return '%s%s' % (base_name[:32-len(suffix)], suffix)
+
+def generate_unique_id():
+    rand_bytes = [random.randrange(0, 256) for _ in range(3)]
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (*rand_bytes,)
 
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
@@ -610,13 +644,15 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
 
                     # Try to find light in existing config
                     light = find_light_in_config_from_mac(bridge_config, device_data['mac'])
+
                     if light:
                         logging.info("Updating old light: " + device_data["name"])
                         # Light found, update config
-                        bridge_config["lights_address"][light]["ip"] = ip
-                        bridge_config["lights_address"][light]["protocol"] = protocol
+                        light_address = bridge_config["lights_address"][light]
+                        light_address["ip"] = ip
+                        light_address["protocol"] = protocol
                         if "version" in device_data:
-                            bridge_config["lights_address"][light].update({
+                            light_address.update({
                                 "version": device_data["version"],
                                 "type": device_data["type"],
                                 "name": device_data["name"]
@@ -629,12 +665,11 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
 
                             light_name = generate_light_name(device_data['name'], x)
 
-                            rand_bytes = [random.randrange(0,256) for _ in range(3)]
                             bridge_config["lights"][new_light_id] = {
                                 "state": light_types[device_data["modelid"]]["state"],
                                 "type": light_types[device_data["modelid"]]["type"],
                                 "name": light_name,
-                                "uniqueid": "00:17:88:01:00:%02x:%02x:%02x-0b" % (*rand_bytes,),
+                                "uniqueid": generate_unique_id(),
                                 "modelid": device_data["modelid"],
                                 "manufacturername": "Philips",
                                 "swversion": light_types[device_data["modelid"]]["swversion"]
