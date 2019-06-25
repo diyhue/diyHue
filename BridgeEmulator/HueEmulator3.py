@@ -577,13 +577,14 @@ def scanHost(host, port):
 
 def iter_ips(port):
     host = HOST_IP.split('.')
+    if args.scan_on_host_ip:
+        yield ('127.0.0.1', port)
+        return
     for addr in range(ip_range_start, ip_range_end + 1):
         host[3] = str(addr)
         test_host = '%s.%s.%s.%s' % (*host,)
         if test_host != HOST_IP:
             yield (test_host, port)
-    if args.scan_on_host_ip:
-        yield ('127.0.0.1', port)
 
 def find_hosts(port):
     validHosts = []
@@ -665,17 +666,23 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
 
                             light_name = generate_light_name(device_data['name'], x)
 
-                            bridge_config["lights"][new_light_id] = {
-                                "state": light_types[device_data["modelid"]]["state"],
-                                "type": light_types[device_data["modelid"]]["type"],
-                                "name": light_name,
-                                "uniqueid": generate_unique_id(),
-                                "modelid": device_data["modelid"],
+                            # Construct the configuration for this light from a few sources, in order of precedence
+                            # (later sources override earlier ones).
+                            # Global defaults
+                            new_light = {
                                 "manufacturername": "Philips",
-                                "swversion": light_types[device_data["modelid"]]["swversion"]
+                                "uniqueid": generate_unique_id(),
                             }
-                            new_lights.update({new_light_id: {"name": light_name}})
+                            # Defaults for this specific modelid
+                            if device_data["modelid"] in light_types:
+                                new_light.update(light_types[device_data["modelid"]])
+                            # Overrides from the response JSON
+                            new_light["modelid"] = device_data["modelid"]
+                            new_light["name"] = light_name
 
+                            # Add the light to new lights, and to bridge_config (in two places)
+                            new_lights[new_light_id] = {"name": light_name}
+                            bridge_config["lights"][new_light_id] = new_light
                             bridge_config["lights_address"][new_light_id] = {
                                 "ip": ip,
                                 "light_nr": x,
