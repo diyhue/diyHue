@@ -564,10 +564,16 @@ def find_hosts(port):
 
     return validHosts
 
-def find_light_in_config(bridge_config, mac_address):
+def find_light_in_config_from_mac(bridge_config, mac_address):
     for light in bridge_config["lights_address"].keys():
         if (bridge_config["lights_address"][light]["protocol"] in ["native", "native_single",  "native_multi"]
                 and bridge_config["lights_address"][light]["mac"] == mac_address):
+            return light
+    return None
+
+def find_light_in_config_from_uid(bridge_config, unique_id):
+    for light in bridge_config["lights"].keys():
+        if bridge_config["lights"][light]["uniqueid"] == unique_id:
             return light
     return None
 
@@ -603,7 +609,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                         lights = device_data["lights"]
 
                     # Try to find light in existing config
-                    light = find_light_in_config(bridge_config, device_data['mac'])
+                    light = find_light_in_config_from_mac(bridge_config, device_data['mac'])
                     if light:
                         logging.info("Updating old light: " + device_data["name"])
                         # Light found, update config
@@ -1174,16 +1180,31 @@ class S(BaseHTTPRequestHandler):
                     response = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/", "POST", "{\"devicetype\":\"Hue Emulator\"}"))
                     if "success" in response[0]:
                         hue_lights = json.loads(sendRequest("http://" + get_parameters["ip"][0] + "/api/" + response[0]["success"]["username"] + "/lights", "GET", "{}"))
+                        logging.debug('Got response from hue bridge: %s', hue_lights)
+
+                        # Look through all lights in the response, and check if we've seen them before
                         lights_found = 0
-                        for hue_light in hue_lights:
-                            new_light_id = nextFreeId(bridge_config, "lights")
-                            bridge_config["lights"][new_light_id] = hue_lights[hue_light]
-                            bridge_config["lights_address"][new_light_id] = {"username": response[0]["success"]["username"], "light_id": hue_light, "ip": get_parameters["ip"][0], "protocol": "hue"}
-                            lights_found += 1
+                        for light_nr, data in hue_lights.items():
+                            light_id = find_light_in_config_from_uid(bridge_config, data['uniqueid'])
+                            if light_id is None:
+                                light_id = nextFreeId(bridge_config, "lights")
+                                logging.info('Found new light: %s %s', light_id, data)
+                                lights_found += 1
+                                bridge_config["lights_address"][light_id] = {
+                                    "username": response[0]["success"]["username"],
+                                    "light_id": light_nr,
+                                    "ip": get_parameters["ip"][0],
+                                    "protocol": "hue"
+                                }
+                            else:
+                                logging.info('Found duplicate light: %s %s', light_id, data)
+                            bridge_config["lights"][light_id] = data
+
                         if lights_found == 0:
                             self._set_end_headers(bytes(webform_hue() + "<br> No lights where found", "utf8"))
                         else:
-                            self._set_end_headers(bytes(webform_hue() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+                            saveConfig()
+                            self._set_end_headers(bytes(webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
                     else:
                         self._set_end_headers(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
                 else:
