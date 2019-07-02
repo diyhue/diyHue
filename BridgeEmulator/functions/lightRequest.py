@@ -15,9 +15,9 @@ def sendLightRequest(light, data, lights, addresses):
             if "protocols." + protocol_name == protocol.__name__:
                 try:
                     light_state = protocol.set_light(addresses[light], lights[light], data)
-                except:
+                except Exception as e:
                     lights[light]["state"]["reachable"] = False
-                    logging.exception("request error")
+                    logging.warning("light not reachable: %s", e)
                 return
 
         if addresses[light]["protocol"] == "native": #ESP8266 light or strip
@@ -189,8 +189,13 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                 protocol_name = addresses[light]["protocol"]
                 for protocol in protocols:
                     if "protocols." + protocol_name == protocol.__name__:
-                        light_state = protocol.get_light_state(addresses[light], lights[light])
-                        lights[light]["state"].update(light_state)
+                        try:
+                            light_state = protocol.get_light_state(addresses[light], lights[light])
+                            lights[light]["state"].update(light_state)
+                        except Exception as e:
+                            lights[light]["state"]["reachable"] = False
+                            logging.warning("light not reachable: %s", e)
+
                 if addresses[light]["protocol"] == "native":
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/get?light=" + str(addresses[light]["light_nr"]), "GET", "{}"))
                     lights[light]["state"].update(light_data)
