@@ -40,6 +40,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--ip", help="The IP address of the host system", type=str)
 ap.add_argument("--http-port", help="The port to listen on for HTTP", type=int)
 ap.add_argument("--mac", help="The MAC address of the host system", type=str)
+ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
 ap.add_argument("--debug", action='store_true', help="Enables debug output")
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
 ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
@@ -1703,7 +1704,8 @@ if __name__ == "__main__":
         Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"]]).start()
         Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"]]).start()
         Thread(target=run, args=[False]).start()
-        Thread(target=run, args=[True]).start()
+        if not args.no_serve_https:
+            Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
         while True:
             sleep(10)
