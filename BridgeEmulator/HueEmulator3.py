@@ -37,9 +37,9 @@ update_lights_on_startup = False # if set to true all lights will be updated wit
 ap = argparse.ArgumentParser()
 
 # Arguements can also be passed as Environment Variables.
-ap.add_argument("--ip", help="The IP address of the host system", nargs='?', const=None, type=str)
-ap.add_argument("--http-port", help="The port to listen on for HTTP", nargs='?', const=None, type=int)
-ap.add_argument("--mac", help="The MAC address of the host system", nargs='?', const=None, type=str)
+ap.add_argument("--ip", help="The IP address of the host system", type=str)
+ap.add_argument("--http-port", help="The port to listen on for HTTP", type=int)
+ap.add_argument("--mac", help="The MAC address of the host system", type=str)
 ap.add_argument("--debug", action='store_true', help="Enables debug output")
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
 ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
