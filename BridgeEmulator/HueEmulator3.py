@@ -678,6 +678,8 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                             # Defaults for this specific modelid
                             if device_data["modelid"] in light_types:
                                 new_light.update(light_types[device_data["modelid"]])
+                                # Make sure to make a copy of the state dictionary so we don't share the dictionary
+                                new_light['state'] = light_types[device_data["modelid"]]['state'].copy()
                             # Overrides from the response JSON
                             new_light["modelid"] = device_data["modelid"]
                             new_light["name"] = light_name
