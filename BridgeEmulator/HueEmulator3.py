@@ -597,10 +597,12 @@ def find_hosts(port):
 
     return validHosts
 
-def find_light_in_config_from_mac(bridge_config, mac_address):
+def find_light_in_config_from_mac_and_nr(bridge_config, mac_address, light_nr):
     for light_id, light_address in bridge_config["lights_address"].items():
         if (light_address["protocol"] in ["native", "native_single",  "native_multi"]
-                and light_address["mac"] == mac_address):
+                and light_address["mac"] == mac_address
+                and ('light_nr' not in light_address or
+                    light_address['light_nr'] == light_nr)):
             return light_id
     return None
 
@@ -645,54 +647,56 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                     if "lights" in device_data:
                         lights = device_data["lights"]
 
-                    # Try to find light in existing config
-                    light = find_light_in_config_from_mac(bridge_config, device_data['mac'])
+                    # Add each light to config
+                    logging.info("Add new light: " + device_data["name"])
+                    for x in range(1, lights + 1):
+                        light = find_light_in_config_from_mac_and_nr(bridge_config,
+                                device_data['mac'], x)
 
-                    if light:
-                        logging.info("Updating old light: " + device_data["name"])
-                        # Light found, update config
-                        light_address = bridge_config["lights_address"][light]
-                        light_address["ip"] = ip
-                        light_address["protocol"] = protocol
-                        if "version" in device_data:
-                            light_address.update({
-                                "version": device_data["version"],
-                                "type": device_data["type"],
-                                "name": device_data["name"]
-                            })
-                    else:
-                        # Light not found, add to config
-                        logging.info("Add new light: " + device_data["name"])
-                        for x in range(1, lights + 1):
-                            new_light_id = nextFreeId(bridge_config, "lights")
+                        # Try to find light in existing config
+                        if light:
+                            logging.info("Updating old light: " + device_data["name"])
+                            # Light found, update config
+                            light_address = bridge_config["lights_address"][light]
+                            light_address["ip"] = ip
+                            light_address["protocol"] = protocol
+                            if "version" in device_data:
+                                light_address.update({
+                                    "version": device_data["version"],
+                                    "type": device_data["type"],
+                                    "name": device_data["name"]
+                                })
+                            continue
 
-                            light_name = generate_light_name(device_data['name'], x)
+                        new_light_id = nextFreeId(bridge_config, "lights")
 
-                            # Construct the configuration for this light from a few sources, in order of precedence
-                            # (later sources override earlier ones).
-                            # Global defaults
-                            new_light = {
-                                "manufacturername": "Philips",
-                                "uniqueid": generate_unique_id(),
-                            }
-                            # Defaults for this specific modelid
-                            if device_data["modelid"] in light_types:
-                                new_light.update(light_types[device_data["modelid"]])
-                                # Make sure to make a copy of the state dictionary so we don't share the dictionary
-                                new_light['state'] = light_types[device_data["modelid"]]['state'].copy()
-                            # Overrides from the response JSON
-                            new_light["modelid"] = device_data["modelid"]
-                            new_light["name"] = light_name
+                        light_name = generate_light_name(device_data['name'], x)
 
-                            # Add the light to new lights, and to bridge_config (in two places)
-                            new_lights[new_light_id] = {"name": light_name}
-                            bridge_config["lights"][new_light_id] = new_light
-                            bridge_config["lights_address"][new_light_id] = {
-                                "ip": ip,
-                                "light_nr": x,
-                                "protocol": protocol,
-                                "mac": device_data["mac"]
-                            }
+                        # Construct the configuration for this light from a few sources, in order of precedence
+                        # (later sources override earlier ones).
+                        # Global defaults
+                        new_light = {
+                            "manufacturername": "Philips",
+                            "uniqueid": generate_unique_id(),
+                        }
+                        # Defaults for this specific modelid
+                        if device_data["modelid"] in light_types:
+                            new_light.update(light_types[device_data["modelid"]])
+                            # Make sure to make a copy of the state dictionary so we don't share the dictionary
+                            new_light['state'] = light_types[device_data["modelid"]]['state'].copy()
+                        # Overrides from the response JSON
+                        new_light["modelid"] = device_data["modelid"]
+                        new_light["name"] = light_name
+
+                        # Add the light to new lights, and to bridge_config (in two places)
+                        new_lights[new_light_id] = {"name": light_name}
+                        bridge_config["lights"][new_light_id] = new_light
+                        bridge_config["lights_address"][new_light_id] = {
+                            "ip": ip,
+                            "light_nr": x,
+                            "protocol": protocol,
+                            "mac": device_data["mac"]
+                        }
         except Exception as e:
             logging.info("ip %s is unknown device: %s", ip, e)
             raise
