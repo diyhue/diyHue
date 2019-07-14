@@ -1524,6 +1524,9 @@ class S(BaseHTTPRequestHandler):
                         del bridge_config["scenes"][scene]["lightstates"][url_pices[4]]
                         if len(bridge_config["scenes"][scene]["lights"]) == 0:
                             del bridge_config["scenes"][scene]
+                for group in bridge_config["groups"].keys():
+                    if url_pices[4] in bridge_config["groups"][group]["lights"]:
+                        bridge_config["groups"][group]["lights"].remove(url_pices[4])
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
