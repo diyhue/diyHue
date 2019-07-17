@@ -8,7 +8,7 @@ ARG BUILD_ARCH=aarch64
 
 COPY requirements.txt BridgeEmulator .build/genCert.sh .build/openssl.conf ./
 
-COPY default-config.json config.json
+COPY BridgeEmulator/default-config.json BridgeEmulator/config.json
 
 #Install requirments
 RUN apt-get update && \
