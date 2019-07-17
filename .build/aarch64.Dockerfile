@@ -8,6 +8,8 @@ ARG BUILD_ARCH=aarch64
 
 COPY requirements.txt BridgeEmulator .build/genCert.sh .build/openssl.conf ./
 
+COPY default-config.json config.json
+
 #Install requirments
 RUN apt-get update && \
     apt-get install --no-install-recommends -y unzip curl nmap psmisc iproute2 libcoap-1-0-bin && \
