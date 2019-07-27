@@ -1530,7 +1530,7 @@ class S(BaseHTTPRequestHandler):
                                 sensors_state[url_pices[4]][key][element] = current_time
                         else:
                             bridge_config["sensors"][url_pices[4]][key] = value
-                            sensors_state[url_pices[3]][url_pices[4]][key] = current_time
+                            sensors_state[url_pices[4]][key] = current_time
                     rulesProcessor(url_pices[4], current_time)
                     if url_pices[4] == "1" and bridge_config[url_pices[3]][url_pices[4]]["modelid"] == "PHDL00":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
