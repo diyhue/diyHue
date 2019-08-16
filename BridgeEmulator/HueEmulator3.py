@@ -1100,9 +1100,11 @@ class S(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     server_version = 'nginx'
     sys_version = ''
-
+    
     def _set_headers(self):
+        
         self.send_response(200)
+        
         mimetypes = {"json": "application/json", "map": "application/json", "html": "text/html", "xml": "application/xml", "js": "text/javascript", "css": "text/css", "png": "image/png"}
         if self.path.endswith((".html",".json",".css",".map",".png",".js", ".xml")):
             self.send_header('Content-type', mimetypes[self.path.split(".")[-1]])
@@ -1118,6 +1120,11 @@ class S(BaseHTTPRequestHandler):
 
     def _set_end_headers(self, data):
         self.send_header('Content-Length', len(data))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods',
+                         'GET, OPTIONS, POST, PUT, DELETE')
+        self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1625,6 +1632,11 @@ class S(BaseHTTPRequestHandler):
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
+
+    def do_OPTIONS(self): 
+        self.send_response(200, "ok")
+        self._set_end_headers(bytes(json.dumps([{"status": "success"}]), "utf8"))
+
 
     def do_DELETE(self):
         self._set_headers()
