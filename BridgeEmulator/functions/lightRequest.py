@@ -45,7 +45,6 @@ def sendLightRequest(light, data, lights, addresses):
                         else:
                             url += "&switchcmd=Off"
             else:
-                logging.error(lights[light]["state"])
                 url += "&param=setcolbrightnessvalue"
                 color_data = {}
 
@@ -74,7 +73,6 @@ def sendLightRequest(light, data, lights, addresses):
                     (color_data["r"], color_data["g"], color_data["b"]) = convert_xy(xy[0], xy[1], 255)
                 url += "&color="+json.dumps(color_data)
                 url += "&brightness=" + str(round(float(bri)/255*100))
-                logging.error([url])
 
             urlObj = {}
             urlObj["url"] = url
