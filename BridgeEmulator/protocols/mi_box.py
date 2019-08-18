@@ -1,10 +1,11 @@
-import logging, binascii, socket, colorsys
+import logging, binascii, socket, colorsys, time
 from functions.colors import convert_rgb_xy, convert_xy
 
 commandCounter = 0
 sessionId1 = 0
 sessionId2 = 0
 sock = None
+lastSentMessageTime = 0
 
 def set_light(address, light, data):
 	colormode = light["state"]["colormode"]
@@ -34,10 +35,28 @@ def sendMsg(address, msg):
 	logging.info("sending udp message to MiLight box:"+bytesToHexStr(msg))
 	if sock is None:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	sock.sendto(msg, (address["ip"], address["port"]))
+		sock.connect((address["ip"], address["port"]))
+
+	sock.sendall(msg)
 
 def sendCmd(address, cmd):
-	global commandCounter, sessionId1, sessionId2
+	global sock, commandCounter, sessionId1, sessionId2, lastSentMessageTime
+
+	now = time.time()
+	if now - lastSentMessageTime > 30:
+		#if the last message time is over 60 seconds, the connection has probably been closed
+		#since udp doesn't have a way to see if a connection is alive or not, you have to check for this
+		#yourself using a ping system. But I don't know what the ping messages from the MiLight WiFi box
+		#look like so I'll just close the connection and create a new one
+		if sock is not None:
+			sock.close()
+		sock = None
+		sessionId1 = 0
+		sessionId2 = 0
+		commandCounter = 0
+		logging.info("creating new socket connection to MiLight box")
+	lastSentMessageTime = now
+
 	commandCounter += 1
 	if commandCounter > 255:
 		commandCounter = 0
