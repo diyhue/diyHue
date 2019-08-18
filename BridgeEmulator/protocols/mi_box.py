@@ -1,6 +1,7 @@
 import logging, binascii, socket, colorsys, time
 from functions.colors import convert_rgb_xy, convert_xy
 
+#todo: add support for multiple mi boxes? these globals don't look nice
 commandCounter = 0
 sessionId1 = 0
 sessionId2 = 0
@@ -11,25 +12,23 @@ def set_light(address, light, data):
 	for key, value in data.items():
 		light["state"][key] = value
 
+	on = light["state"]["on"]
+	if on:
+		sendOnCmd(address)
 	colormode = light["state"]["colormode"]
 	if colormode == "xy":
 		xy = light["state"]["xy"]
 		(r,g,b) = convert_xy(xy[0], xy[1], 100.0)
 		(hue, saturation, value) = colorsys.rgb_to_hsv(r,g,b)
 		sendHueCmd(address, hue*255)
-		time.sleep(0.1)
 		sendSaturationCmd(address, (1-saturation)*100)
 	elif colormode == "ct":
 		ct = light["state"]["ct"]
 		ct01 = (ct - 153) / (500 - 153) #map color temperature from 153-500 to 0-1
 		sendKelvinCmd(address, (1-ct01)*100)
 
-	time.sleep(0.1)
 	sendBrightnessCmd(address, (light["state"]["bri"]/255)*100)
-	time.sleep(0.1)
-	if light["state"]["on"]:
-		sendOnCmd(address)
-	else:
+	if not on:
 		sendOffCmd(address)
 
 def bytesToHexStr(b):
@@ -41,6 +40,7 @@ def sendMsg(address, msg):
 	logging.info("sending udp message to MiLight box:"+bytesToHexStr(msg))
 	if sock is None:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		sock.settimeout(0.5)
 		sock.connect((address["ip"], address["port"]))
 
 	sock.sendall(msg)
@@ -98,7 +98,11 @@ def sendCmd(address, cmd):
 	for i in range(len(msg) - headersLen):
 		crc = (crc + msg[headersLen+i]) & 255
 	msg += bytes([crc])
-	sendMsg(address, msg)
+
+	#send message multiple times to increase chance of it being received properly
+	for i in range(3):
+		sendMsg(address, msg)
+		data, address = sock.recvfrom(1024)
 
 def getSessionId(address):
 	global sessionId1, sessionId2
