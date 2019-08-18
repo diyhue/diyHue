@@ -8,19 +8,25 @@ sock = None
 lastSentMessageTime = 0
 
 def set_light(address, light, data):
+	for key, value in data.items():
+		light["state"][key] = value
+
 	colormode = light["state"]["colormode"]
 	if colormode == "xy":
 		xy = light["state"]["xy"]
 		(r,g,b) = convert_xy(xy[0], xy[1], 100.0)
 		(hue, saturation, value) = colorsys.rgb_to_hsv(r,g,b)
 		sendHueCmd(address, hue*255)
+		time.sleep(0.1)
 		sendSaturationCmd(address, (1-saturation)*100)
 	elif colormode == "ct":
 		ct = light["state"]["ct"]
 		ct01 = (ct - 153) / (500 - 153) #map color temperature from 153-500 to 0-1
 		sendKelvinCmd(address, (1-ct01)*100)
 
+	time.sleep(0.1)
 	sendBrightnessCmd(address, (light["state"]["bri"]/255)*100)
+	time.sleep(0.1)
 	if light["state"]["on"]:
 		sendOnCmd(address)
 	else:
