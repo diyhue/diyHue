@@ -1473,8 +1473,10 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "sensors":
                         if "state" not in post_dictionary:
                             post_dictionary["state"] = {}
+                        if "lastupdated" not in post_dictionary["state"]:
+                            post_dictionary["state"]["lastupdated"] = "none"
                         if post_dictionary["modelid"] == "PHWA01":
-                            post_dictionary.update({"state": {"status": 0}})
+                            post_dictionary["state"]["status"] = 0
                         elif post_dictionary["modelid"] == "PHA_CTRL_START":
                             post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}, "config": {"on": True,"reachable": True}})
                     elif url_pices[3] == "resourcelinks":
