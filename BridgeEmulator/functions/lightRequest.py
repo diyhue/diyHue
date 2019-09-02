@@ -293,4 +293,5 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                 if users[user]["last use date"] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                     i = 300
                     break
+            i += 1
             sleep(1)
