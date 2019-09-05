@@ -30,9 +30,11 @@ from functions.email import sendEmail
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
+from functions.remoteApi import remoteApi
 from protocols import protocols, yeelight, tasmota, native_single, native_multi
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
+dontBlameDiyHue = True # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
 
 ap = argparse.ArgumentParser()
 
@@ -1730,6 +1732,9 @@ if __name__ == "__main__":
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
+        if dontBlameDiyHue:
+            Thread(target=remoteApi, args=[bridge_config["config"]["whitelist"]]).start()
+
         while True:
             sleep(10)
     except Exception:
