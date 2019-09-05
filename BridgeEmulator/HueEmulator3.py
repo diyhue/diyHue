@@ -34,7 +34,7 @@ from functions.remoteApi import remoteApi
 from protocols import protocols, yeelight, tasmota, native_single, native_multi
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
-dontBlameDiyHue = True # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
+dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
 
 ap = argparse.ArgumentParser()
 
