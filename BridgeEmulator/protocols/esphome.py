@@ -75,12 +75,12 @@ def discover(bridge_config, new_lights):
                     white_device_data = json.loads(white_response.text)
                     color_device_data = json.loads(color_response.text)
                     properties = {"rgb": True, "ct": True, "ip": ip, "name": device_name, "id": mac + "." + ct_boost + "." + rgb_boost, "mac": mac}
-                    modelid="ESPHome-RGBW"
+                    modelid="LCT015"
                 elif (white_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a CT ESPHome device")
                     white_device_data = json.loads(white_response.text)
                     properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "id": mac + "." + ct_boost + "." + rgb_boost, "mac": mac}
-                    modelid="ESPHome-CT"
+                    modelid="LWB010"
                 elif (color_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a RGB ESPHome device")
                     color_device_data = json.loads(color_response.text)
