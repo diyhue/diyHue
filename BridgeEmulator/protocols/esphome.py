@@ -74,27 +74,27 @@ def discover(bridge_config, new_lights):
                     logging.debug("ESPHome: " + device_name + " is a RGBW ESPHome device")
                     white_device_data = json.loads(white_response.text)
                     color_device_data = json.loads(color_response.text)
-                    properties = {"rgb": True, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac}
+                    properties = {"rgb": True, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     modelid="LCT015"
                 elif (white_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a CT ESPHome device")
                     white_device_data = json.loads(white_response.text)
-                    properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac}
+                    properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     modelid="LWB010"
                 elif (color_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a RGB ESPHome device")
                     color_device_data = json.loads(color_response.text)
-                    properties = {"rgb": True, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac}
+                    properties = {"rgb": True, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     modelid="ESPHome-RGB"
                 elif (dim_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Dimmable ESPHome device")
                     dim_device_data = json.loads(dim_response.text)
-                    properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac}
+                    properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     modelid="ESPHome-Dimmable"
                 elif (toggle_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Toggle ESPHome device")
                     toggle_device_data = json.loads(toggle_response.text)
-                    properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac}
+                    properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     modelid="ESPHome-Toggle"
 
                 device_exist = False
