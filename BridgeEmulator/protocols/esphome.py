@@ -136,7 +136,6 @@ def set_light(address, light, data):
         postRequest(address["ip"], "/light/color_led/turn_off")
     if "xy" in data:
         postRequest(address["ip"], "/light/white_led/turn_off")
-    logging.debug("3 success")
     if "alert" in data:
         if data['alert'] == "select":
             request_data = request_data + "/switch/alert/turn_on"
@@ -170,11 +169,10 @@ def set_light(address, light, data):
                 else:
                     request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
         else:
-            logging.debug("4 success")
             request_data = request_data + "/turn_off"
-    logging.debug("5 success")
+
     postRequest(address["ip"], request_data)
-    logging.debug("6 success")
+
 
 
 
