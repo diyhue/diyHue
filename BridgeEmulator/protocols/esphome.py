@@ -161,7 +161,7 @@ def set_light(address, light, data):
                 else:
                     request_data = request_data + "?color_temp=" + str(data['ct'])
             if "xy" in data:
-                color = convert_xy(data['xy'][0], data['xy'][1], light["state"]["bri"])
+                color = convert_xy(data['xy'][0], data['xy'][1], 255)
                 red = str(color[0])
                 green = str(color[1])
                 blue = str(color[2])
