@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import argparse
 import base64
-import hashlib
 import json
 import logging
 import os
@@ -10,6 +9,7 @@ import socket
 import ssl
 import sys
 import requests
+import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -700,7 +700,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                                 "protocol": protocol,
                                 "mac": device_data["mac"]
                             }
-                except ValueError:  
+                except ValueError:
                     logging.info('Decoding JSON from %s has failed', ip)
         except Exception as e:
             logging.info("ip %s is unknown device: %s", ip, e)
@@ -1105,11 +1105,11 @@ class S(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     server_version = 'nginx'
     sys_version = ''
-    
+
     def _set_headers(self):
-        
+
         self.send_response(200)
-        
+
         mimetypes = {"json": "application/json", "map": "application/json", "html": "text/html", "xml": "application/xml", "js": "text/javascript", "css": "text/css", "png": "image/png"}
         if self.path.endswith((".html",".json",".css",".map",".png",".js", ".xml")):
             self.send_header('Content-type', mimetypes[self.path.split(".")[-1]])
@@ -1494,7 +1494,9 @@ class S(BaseHTTPRequestHandler):
             last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
             if (args.no_link_button or last_button_press+30 >= int(datetime.now().strftime("%s")) or
                     bridge_config["config"]["linkbutton"]):
-                username = hashlib.new('ripemd160', post_dictionary["devicetype"][0].encode('utf-8')).hexdigest()[:32]
+                username = str(uuid.uuid1()).replace('-', '')
+                if post_dictionary["devicetype"].startswith("Hue Essentials"):
+                    username = "hueess" + username[-26:]
                 bridge_config["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": post_dictionary["devicetype"]}
                 response = [{"success": {"username": username}}]
                 if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
@@ -1640,7 +1642,7 @@ class S(BaseHTTPRequestHandler):
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
-    def do_OPTIONS(self): 
+    def do_OPTIONS(self):
         self.send_response(200, "ok")
         self._set_end_headers(bytes(json.dumps([{"status": "success"}]), "utf8"))
 
