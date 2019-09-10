@@ -15,9 +15,10 @@ git clone https://github.com/diyHue/diyHue.git
 wait
 
 cd /opt/tmp/diyHue/BridgeEmulator
-cp HueEmulator3.py ssl_server2_diyhue.c config.json updater /opt/hue-emulator/
+cp HueEmulator3.py ssl_server2_diyhue.c default-config.json updater /opt/hue-emulator/
 cp -r web-ui /opt/hue-emulator/
 cp -r functions debug /opt/hue-emulator/
+cp -r default-config.json /opt/hue-emulator/config.json
 wait
 cp hueemulatorWrt-service /etc/init.d/
 
@@ -68,6 +69,7 @@ chmod +x /opt/hue-emulator/debug
 chmod +x /opt/hue-emulator/updater
 chmod +x /opt/hue-emulator/web-ui
 chmod +x /opt/hue-emulator/functions
+chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/entertainment-srv
 /etc/init.d/hueemulatorWrt-service enable
