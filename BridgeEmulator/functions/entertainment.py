@@ -81,7 +81,7 @@ def entertainmentService(lights, addresses, groups):
                     for light in nativeLights[ip].keys():
                         udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-                    sock.sendto(udpmsg, (ip, 2100))
+                    sock.sendto(udpmsg, (ip.split(":")[0], 2100))
         except Exception: #Assuming the only exception is a network timeout, please don't scream at me
             if syncing: #Reset sync status and kill relay service
                 logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state")

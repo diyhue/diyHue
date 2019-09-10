@@ -8,7 +8,7 @@ cd /tmp
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
 	# Debian-based distro
-	apt-get install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools
+	apt-get install -y unzip nmap python3 python3-requests python3-setuptools
 elif type pacman &> /dev/null; then
 	# Arch linux
 	pacman -Syq --noconfirm || exit 1
@@ -28,6 +28,15 @@ cd astral-master/
 python3 setup.py install
 cd ../
 rm -rf astral.zip astral-master/
+
+### installing WebSocket for Python
+echo -e "\033[36m Installing WebSocket for Python.\033[0m"
+curl -sL https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.4.zip -o ws4py.zip
+unzip -qo ws4py.zip
+cd WebSocket-for-Python-0.3.4/
+python3 setup.py install
+cd ../
+rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
@@ -83,7 +92,7 @@ else
                 exit 1
         fi
         mkdir /opt/hue-emulator
-        cp config.json /opt/hue-emulator/
+        cp default-config.json /opt/hue-emulator/
 
 	curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 	serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"

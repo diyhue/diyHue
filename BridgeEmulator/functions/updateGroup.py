@@ -7,7 +7,7 @@ def updateGroupStats(light, lights, groups): #set group stats based on lights st
             any_on = False
             all_on = True
             for group_light in groups[group]["lights"]:
-                if lights[group_light]["state"]["on"]:
+                if group_light in lights and lights[group_light]["state"]["on"]:
                     any_on = True
                 else:
                     all_on = False
