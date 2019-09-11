@@ -12,7 +12,7 @@ wait
 python3 -m pip install requests astral pytz ws4py
 wait
 cd /opt/tmp
-wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
+wget -q https://github.com/juanesf/diyHue/archive/master.zip -O diyHue.zip
 unzip -q -o  diyHue.zip
 wait
 cd /opt/tmp/diyHue-master/BridgeEmulator
