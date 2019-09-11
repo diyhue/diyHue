@@ -1703,7 +1703,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         server_address = ('', HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile="./cert.pem")
+        ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem")
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
         ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE

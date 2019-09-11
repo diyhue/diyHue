@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm -Rf /opt/hue-emulator
 opkg update
 wait
 opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl coap-client unzip coreutils-nohup
@@ -7,16 +8,18 @@ wait
 mkdir /opt
 mkdir /opt/tmp
 mkdir /opt/hue-emulator
-pip3 install --upgrade pip
+python3 -m pip install --upgrade pip
 wait
-pip3 install requests astral pytz
+python3 -m pip install requests astral pytz ws4py
 wait
 cd /opt/tmp
-wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
+wget -q https://github.com/juanesf/diyHue/archive/master.zip -O diyHue.zip
 unzip -q -o  diyHue.zip
 wait
 cd /opt/tmp/diyHue-master/BridgeEmulator
-cp HueEmulator3.py config.json updater /opt/hue-emulator/
+cp HueEmulator3.py updater /opt/hue-emulator/
+cp default-config.json /opt/hue-emulator/config.json
+cp default-config.json /opt/hue-emulator/default-config.json
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
 cp entertainment-mips /opt/hue-emulator/entertainment-srv
@@ -36,6 +39,7 @@ chmod +x /opt/hue-emulator/updater
 chmod +x /opt/hue-emulator/web-ui
 chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/config.json
+chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertainment-srv
 chmod +x /opt/hue-emulator/functions/network.py
 /etc/init.d/hueemulatorWrt-service enable
