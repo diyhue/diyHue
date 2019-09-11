@@ -213,7 +213,7 @@ def sendLightRequest(light, data, lights, addresses):
             logging.info("LightRequest: " + url)
 
 
-def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights states
+def syncWithLights(lights, addresses, users, groups, off_if_unreachable): #update Hue Bridge lights states
     while True:
         logging.info("sync with lights")
         for light in addresses:
@@ -237,7 +237,6 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                 elif addresses[light]["protocol"] == "hue":
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/api/" + addresses[light]["username"] + "/lights/" + addresses[light]["light_id"], "GET", "{}"))
                     lights[light]["state"].update(light_data["state"])
-                    lights[light]["state"]["reachable"] = True
                 elif addresses[light]["protocol"] == "ikea_tradfri":
                     light_data = json.loads(check_output("./coap-client-linux -m get -u \"" + addresses[light]["identity"] + "\" -k \"" + addresses[light]["preshared_key"] + "\" \"coaps://" + addresses[light]["ip"] + ":5684/15001/" + str(addresses[light]["device_id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
                     lights[light]["state"]["on"] = bool(light_data["3311"][0]["5850"])
@@ -288,6 +287,9 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                     lights[light]["state"]["bri"] = str(round(float(light_data)/100*255))
                     lights[light]["state"]["reachable"] = True
 
+                if off_if_unreachable:
+                    if lights[light]["state"]["reachable"] == False:
+                        lights[light]["state"]["on"] = False
                 updateGroupStats(light, lights, groups)
             except:
                 lights[light]["state"]["reachable"] = False

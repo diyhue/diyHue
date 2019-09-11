@@ -35,6 +35,7 @@ from protocols import protocols, yeelight, tasmota, native_single, native_multi
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
+off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 
 ap = argparse.ArgumentParser()
 
@@ -1731,7 +1732,7 @@ if __name__ == "__main__":
         Thread(target=ssdpSearch, args=[HOST_IP, mac]).start()
         Thread(target=ssdpBroadcast, args=[HOST_IP, mac]).start()
         Thread(target=schedulerProcessor).start()
-        Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"]]).start()
+        Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"], off_if_unreachable]).start()
         Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"]]).start()
         Thread(target=run, args=[False]).start()
         if not args.no_serve_https:
