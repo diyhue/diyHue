@@ -122,8 +122,6 @@ def discover(bridge_config, new_lights):
         except Exception as e:
             logging.debug("ESPHome: ip " + ip + " is unknown device, " + str(e))
 
-
-
 def set_light(address, light, data):
     logging.debug("ESPHome: <set_light> invoked! IP=" + address["ip"])
     logging.debug(light["modelid"])
@@ -133,10 +131,11 @@ def set_light(address, light, data):
     rgb_boost = int(address["rgb_boost"])
     request_data = ""
     #logging.debug("tasmota: key " + key)
-    if "ct" in data:
-        postRequest(address["ip"], "/light/color_led/turn_off")
-    if "xy" in data:
-        postRequest(address["ip"], "/light/white_led/turn_off")
+    if light["modelid"] == "LCT015": #RGBW
+        if "ct" in data:
+            postRequest(address["ip"], "/light/color_led/turn_off")
+        if "xy" in data:
+            postRequest(address["ip"], "/light/white_led/turn_off")
     if "alert" in data:
         if data['alert'] == "select":
             request_data = request_data + "/switch/alert/turn_on"
@@ -146,6 +145,48 @@ def set_light(address, light, data):
             if not(data['on']):
                 request_data = request_data + "/turn_off"
             else:
+                request_data = request_data + "/turn_on"
+                if "bri" in data:
+                    brightness = int(data['bri'])
+                    if light["modelid"] == "LCT015": #rgbw
+                        if light["state"]["colormode"] == "ct":
+                            brightness = ct_boost + brightness
+                        elif light["state"]["colormode"] == "xy":
+                            brightness = rgb_boost + brightness
+                    elif light["modelid"] == "LWB010": #CT
+                        brightness = ct_boost + brightness
+                    elif light["modelid"] == "ESPHome-RGB": #RGB
+                        brightness = rgb_boost + brightness
+                    elif light["modelid"] == "ESPHome-Dimmable": #Dimmable
+                        brightness = ct_boost + brightness
+                    brightness = str(brightness)
+                    if ("?" in request_data):
+                        request_data = request_data + "&brightness=" + brightness
+                    else:
+                        request_data = request_data + "?brightness=" + brightness
+                if light["modelid"] == ("LCT015" or "LWB010"):
+                    if "ct" in data:
+                        if ("?" in request_data):
+                            request_data = request_data + "&color_temp=" + str(data['ct'])
+                        else:
+                            request_data = request_data + "?color_temp=" + str(data['ct'])
+                if light["modelid"] == ("LCT015" or "ESPHome-RGB"):
+                    if "xy" in data:
+                        color = convert_xy(data['xy'][0], data['xy'][1], 255)
+                        red = str(color[0])
+                        green = str(color[1])
+                        blue = str(color[2])
+                        if ("?" in request_data):
+                            request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
+                        else:
+                            request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
+                if "transitiontime" in data:
+                    if ("?" in request_data):
+                        request_data = request_data + "&transition=" + str(data['transitiontime'])
+                    else:
+                        request_data = request_data + "?transition=" + str(data['transitiontime'])
+        except: #entertainment mode
+            if light["modelid"] == "LCT015": #only for RGBW
                 request_data = request_data + "/turn_on"
                 if "bri" in data:
                     brightness = int(data['bri'])
@@ -174,41 +215,9 @@ def set_light(address, light, data):
                         request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
                 if "transitiontime" in data:
                     if ("?" in request_data):
-                        request_data = request_data + "&transition=" + str(data['transitiontime'])
+                        request_data = request_data + "&transition=" + str("0.7") #lower transition time for entertainment
                     else:
-                        request_data = request_data + "?transition=" + str(data['transitiontime'])
-        except: #entertainment mode
-            request_data = request_data + "/turn_on"
-            if "bri" in data:
-                brightness = int(data['bri'])
-                if light["state"]["colormode"] == "ct":
-                    brightness = ct_boost + brightness
-                elif light["state"]["colormode"] == "xy":
-                    brightness = rgb_boost + brightness
-                brightness = str(brightness)
-                if ("?" in request_data):
-                    request_data = request_data + "&brightness=" + brightness
-                else:
-                    request_data = request_data + "?brightness=" + brightness
-            if "ct" in data:
-                if ("?" in request_data):
-                    request_data = request_data + "&color_temp=" + str(data['ct'])
-                else:
-                    request_data = request_data + "?color_temp=" + str(data['ct'])
-            if "xy" in data:
-                color = convert_xy(data['xy'][0], data['xy'][1], 255)
-                red = str(color[0])
-                green = str(color[1])
-                blue = str(color[2])
-                if ("?" in request_data):
-                    request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
-                else:
-                    request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
-            if "transitiontime" in data:
-                if ("?" in request_data):
-                    request_data = request_data + "&transition=" + str("0.7") #lower transition time for entertainment
-                else:
-                    request_data = request_data + "?transition=" + str("0.7")
+                        request_data = request_data + "?transition=" + str("0.7")
 
     postRequest(address["ip"], request_data)
 
@@ -218,6 +227,10 @@ def set_light(address, light, data):
 def get_light_state(address, light):
 
     # logging.debug("ESPHome: <get_light_state> invoked!")
+    # response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
+    # response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
+    # device = json.loads(response.text)['state'].split(';') #get device data
+
     # data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
     # light_data = json.loads(data)["StatusSTS"]
     state = {}
