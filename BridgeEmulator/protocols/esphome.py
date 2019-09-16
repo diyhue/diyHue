@@ -225,38 +225,24 @@ def set_light(address, light, data):
 
 
 def get_light_state(address, light):
-    #logging.debug("ESPHome: <get_light_state> invoked!")
-    #white_response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
-    #color_response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
-    #white_device = json.loads(white_response.text) #get white device data
-    #color_device = json.loads(color_response.text) #get color device data
-
-    # data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
-    # light_data = json.loads(data)["StatusSTS"]
+    logging.debug("ESPHome: <get_light_state> invoked!")
+    white_response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
+    color_response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
+    white_device = json.loads(white_response.text) #get white device data
+    color_device = json.loads(color_response.text) #get color device data
     state = {}
 
-    # if 'POWER'in light_data:
-    #     state['on'] = True if light_data["POWER"] == "ON" else False
-    # elif 'POWER1'in light_data:
-    #     state['on'] = True if light_data["POWER1"] == "ON" else False
+    if white_device['state'] == 'OFF' and color_device['state'] == 'OFF':
+        state['on'] = False
+    elif white_device['state'] == 'ON':
+        state['on'] = True
+        state['ct'] = int(white_device['color_temp'])
+        state['bri'] = int(white_device['brightness'])
+        state['colormode'] = "ct"
+    elif color_device['state'] == 'ON':
+        state['on'] = True
+        state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
+        state['bri'] = int(color_device['brightness'])
+        state['colormode'] = "xy"
 
-    # if 'Color' not in light_data:
-    #     if state['on'] == True:
-    #         state["xy"] = convert_rgb_xy(255,255,255)
-    #         state["bri"] = int(255)
-    #         state["colormode"] = "xy"
-    # else:
-    #     rgb = light_data["Color"].split(",")
-    #     logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
-    #     state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
-    #     state["bri"] = (int(light_data["Dimmer"]) / 100.0) * 254.0
-    #     state["colormode"] = "xy"
     return state
-
-
-# response = requests.get('http://light2.local/light/white_led', timeout=3, headers=head)
-# response = requests.post('http://light2.local/light/white_led/turn_on?brightness=255&transition=0.4&color_temp=370', timeout=3, headers=head)
-# response = requests.post('http://light2.local/light/white_led/turn_off', timeout=3, headers=head)
-# requests.post('http://light2.local/light/color_led/turn_on?brightness=255&transition=0.4&r=136&g=65&b=217', timeout=3, headers=head)
-# response = requests.get('http://light2.local/light/color_led', timeout=3, headers=head)
-# print(response.text)
