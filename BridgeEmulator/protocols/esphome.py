@@ -226,23 +226,62 @@ def set_light(address, light, data):
 
 def get_light_state(address, light):
     logging.debug("ESPHome: <get_light_state> invoked!")
-    white_response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
-    color_response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
-    white_device = json.loads(white_response.text) #get white device data
-    color_device = json.loads(color_response.text) #get color device data
     state = {}
+    if address["esphome_model"] == "ESPHome-RGBW":
+        white_response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
+        color_response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
+        white_device = json.loads(white_response.text) #get white device data
+        color_device = json.loads(color_response.text) #get color device data
+        if white_device['state'] == 'OFF' and color_device['state'] == 'OFF':
+            state['on'] = False
+        elif white_device['state'] == 'ON':
+            state['on'] = True
+            state['ct'] = int(white_device['color_temp'])
+            state['bri'] = int(white_device['brightness'])
+            state['colormode'] = "ct"
+        elif color_device['state'] == 'ON':
+            state['on'] = True
+            state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
+            state['bri'] = int(color_device['brightness'])
+            state['colormode'] = "xy"
 
-    if white_device['state'] == 'OFF' and color_device['state'] == 'OFF':
-        state['on'] = False
-    elif white_device['state'] == 'ON':
-        state['on'] = True
-        state['ct'] = int(white_device['color_temp'])
-        state['bri'] = int(white_device['brightness'])
-        state['colormode'] = "ct"
-    elif color_device['state'] == 'ON':
-        state['on'] = True
-        state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
-        state['bri'] = int(color_device['brightness'])
-        state['colormode'] = "xy"
+    elif address["esphome_model"] == "ESPHome-CT":
+        white_response = requests.get ("http://" + address["ip"] + "/light/white_led", timeout=3)
+        white_device = json.loads(white_response.text) #get white device data
+        if white_device['state'] == 'OFF':
+            state['on'] = False
+        elif white_device['state'] == 'ON':
+            state['on'] = True
+            state['ct'] = int(white_device['color_temp'])
+            state['bri'] = int(white_device['brightness'])
+            state['colormode'] = "ct"
+
+    elif address["esphome_model"] == "ESPHome-RGB":
+        color_response = requests.get ("http://" + address["ip"] + "/light/color_led", timeout=3)
+        color_device = json.loads(color_response.text)
+        if color_device['state'] == 'OFF':
+            state['on'] = False
+        elif color_device['state'] == 'ON':
+            state['on'] = True
+            state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
+            state['bri'] = int(color_device['brightness'])
+            state['colormode'] = "xy"
+
+    elif address["esphome_model"] == "ESPHome-Dimmable":
+        dimmable_response = requests.get ("http://" + address["ip"] + "/light/dimmable_led", timeout=3)
+        dimmable_device = json.loads(dimmable_response.text)
+        if dimmable_device['state'] == 'OFF':
+            state['on'] = False
+        elif dimmable_device['state'] == 'ON':
+            state['on'] = True
+            state['bri'] = int(dimmable_device['brightness'])
+
+    elif address["esphome_model"] == "ESPHome-Toggle":
+        toggle_response = requests.get ("http://" + address["ip"] + "/light/toggle_led", timeout=3)
+        toggle_device = json.loads(toggle_response.text)
+        if toggle_device['state'] == 'OFF':
+            state['on'] = False
+        elif toggle_device['state'] == 'ON':
+            state['on'] = True
 
     return state
