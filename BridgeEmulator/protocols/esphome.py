@@ -139,9 +139,39 @@ def set_light(address, light, data):
     if "alert" in data:
         if data['alert'] == "select":
             request_data = request_data + "/switch/alert/turn_on"
-    elif "on" in data:
+    else:
         request_data = request_data + getLightType(light, address, data)
-        if data['on']:
+        try:
+            if not(data['on']):
+                request_data = request_data + "/turn_off"
+            else:
+                request_data = request_data + "/turn_on"
+                if "bri" in data:
+                    brightness = int(data['bri'])
+                    if light["state"]["colormode"] == "ct":
+                        brightness = ct_boost + brightness
+                    elif light["state"]["colormode"] == "xy":
+                        brightness = rgb_boost + brightness
+                    brightness = str(brightness)
+                    if ("?" in request_data):
+                        request_data = request_data + "&brightness=" + brightness
+                    else:
+                        request_data = request_data + "?brightness=" + brightness
+                if "ct" in data:
+                    if ("?" in request_data):
+                        request_data = request_data + "&color_temp=" + str(data['ct'])
+                    else:
+                        request_data = request_data + "?color_temp=" + str(data['ct'])
+                if "xy" in data:
+                    color = convert_xy(data['xy'][0], data['xy'][1], 255)
+                    red = str(color[0])
+                    green = str(color[1])
+                    blue = str(color[2])
+                    if ("?" in request_data):
+                        request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
+                    else:
+                        request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
+        except: #entertainment mode
             request_data = request_data + "/turn_on"
             if "bri" in data:
                 brightness = int(data['bri'])
@@ -168,8 +198,6 @@ def set_light(address, light, data):
                     request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
                 else:
                     request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
-        else:
-            request_data = request_data + "/turn_off"
 
     postRequest(address["ip"], request_data)
 
