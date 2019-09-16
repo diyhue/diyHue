@@ -136,8 +136,7 @@ def set_light(address, light, data):
             postRequest(address["ip"], "/light/color_led/turn_off")
         if "xy" in data:
             postRequest(address["ip"], "/light/white_led/turn_off")
-    if "alert" in data:
-        if data['alert'] == "select":
+    if ("alert" in data) and (data['alert'] == "select"):
             request_data = request_data + "/switch/alert/turn_on"
     else:
         request_data = request_data + getLightType(light, address, data)
