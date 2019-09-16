@@ -127,6 +127,7 @@ def discover(bridge_config, new_lights):
 def set_light(address, light, data):
     logging.debug("ESPHome: <set_light> invoked! IP=" + address["ip"])
     logging.debug(light["modelid"])
+    logging.debug(data)
 
     ct_boost = int(address["ct_boost"])
     rgb_boost = int(address["rgb_boost"])
