@@ -30,8 +30,8 @@ from functions.email import sendEmail
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
+from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
 from functions.remoteApi import remoteApi
-from protocols import protocols, yeelight, tasmota, native_single, native_multi
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
@@ -141,7 +141,7 @@ else:
   deconz_ip = "127.0.0.1"
 logging.info(deconz_ip)
 
-protocols = [yeelight, tasmota, native_single, native_multi]
+protocols = [yeelight, tasmota, native_single, native_multi, esphome]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
@@ -243,6 +243,18 @@ def updateConfig():
                     light["type"] = "Extended color light"
                 elif light["type"] == "Dimmable light":
                     light["modelid"] = "LWB010"
+
+        # Update ESPHome light firmware version (adapted from Philips)
+        if "manufacturername" in light and light["manufacturername"] == "ESPHome":
+            swversion = "1.46.13_r26312"
+            if light["modelid"] in ["ESPHome-RGBW", "ESPHome-CT", "ESPHome-RGB", "ESPHome-Dimmable", "ESPHome-Toggle"]:
+                # Update archetype for various Philips models
+                if light["modelid"] in ["ESPHome-CT", "ESPHome-Dimmable", "ESPHome-Toggle"]:
+                    archetype = "classicbulb"
+                elif light["modelid"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
+                    archetype = "sultanbulb"
+
+                light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
 
         # Update Philips lights firmware version
         if "manufacturername" in light and light["manufacturername"] == "Philips":
@@ -630,6 +642,7 @@ def generate_unique_id():
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
