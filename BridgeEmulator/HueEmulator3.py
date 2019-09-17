@@ -645,7 +645,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
-    #logging.debug('devs', device_ips)
+    logging.debug('devs', device_ips)
     for ip in device_ips:
         try:
             response = requests.get("http://" + ip + "/detect", timeout=3)
