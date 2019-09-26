@@ -13,13 +13,22 @@ rm -Rf /etc/init.d/hueemulatorWrt-service
 echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
+echo -e "\033[32m Updating pip dependencies.\033[0m"
+python3 -m pip install --upgrade requests
+wait
+python3 -m pip install --upgrade astral
+wait
+python3 -m pip install --upgrade pytz
+wait
+python3 -m pip install --upgrade ws4py
+wait
 echo -e "\033[32m Creating directories.\033[0m"
 mkdir /opt
 mkdir /opt/tmp
 mkdir /opt/hue-emulator
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
-wget -q https://github.com/juanesf/diyHue/archive/master.zip -O diyHue.zip
+wget -q https://github.com/diyHue/diyHue/archive/master.zip -O diyHue.zip
 echo -e "\033[32m Unzip diyHue.\033[0m"
 unzip -q -o  diyHue.zip
 wait
