@@ -52,6 +52,7 @@ chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertainment-srv
 chmod +x /opt/hue-emulator/functions/network.py
+echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable
 wait
 echo -e "\033[32m modify http port 80 to 82: list listen_http 0.0.0.0:82, list listen_http [::]: 82 and server.port = 82.\033[0m"
