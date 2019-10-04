@@ -74,8 +74,8 @@ def command(ip, api_method, param):
         msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
         tcp_socket.send(msg.encode())
         tcp_socket.close()
-    except Exception:
-        logging.exception("Unexpected error")
+    except Exception as e:
+        logging.warning("Yeelight command error: %s", e)
 
 
 def set_light(address, light, data):
@@ -96,7 +96,7 @@ def set_light(address, light, data):
             #if ip[:-3] == "201" or ip[:-3] == "202":
             if light["name"].find("desklamp") > 0:
                 if value > 369: value = 369
-            payload["set_ct_abx"] = [int(1000000 / value), "smooth", transitiontime]
+            payload["set_ct_abx"] = [int((-4800/347) * value + 2989900/347), "smooth", transitiontime]
         elif key == "hue":
             payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
         elif key == "sat":
@@ -134,9 +134,9 @@ def get_light_state(address, light):
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
-        tempval = int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        tempval = int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
         if tempval > 369: tempval = 369
-        state["ct"] = tempval # int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+        state["ct"] = tempval # int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
         state["colormode"] = "ct"
     else:
         msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
@@ -163,7 +163,7 @@ def get_light_state(address, light):
             msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
             tcp_socket.send(msg_ct.encode())
             data = tcp_socket.recv(16 * 1024)
-            state["ct"] =  int(1000000 / int(json.loads(data[:-2].decode("utf8"))["result"][0]))
+            state["ct"] =  int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
             state["colormode"] = "ct"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #hs mode
             msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"

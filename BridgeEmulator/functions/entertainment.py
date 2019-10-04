@@ -1,6 +1,6 @@
 import socket, logging
 from subprocess import Popen
-from functions.colors import convert_rgb_xy
+from functions.colors import convert_rgb_xy, convert_xy
 from functions.lightRequest import sendLightRequest
 
 def entertainmentService(lights, addresses, groups):

@@ -17,7 +17,7 @@ def sendLightRequest(light, data, lights, addresses):
                     light_state = protocol.set_light(addresses[light], lights[light], data)
                 except Exception as e:
                     lights[light]["state"]["reachable"] = False
-                    logging.warning("light not reachable: %s", e)
+                    logging.warning(lights[light]["name"] + " light not reachable: %s", e)
                 return
 
         if addresses[light]["protocol"] == "native": #ESP8266 light or strip
@@ -213,7 +213,7 @@ def sendLightRequest(light, data, lights, addresses):
             logging.info("LightRequest: " + url)
 
 
-def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights states
+def syncWithLights(lights, addresses, users, groups, off_if_unreachable): #update Hue Bridge lights states
     while True:
         logging.info("sync with lights")
         for light in addresses:
@@ -224,13 +224,16 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                         try:
                             light_state = protocol.get_light_state(addresses[light], lights[light])
                             lights[light]["state"].update(light_state)
+                            lights[light]["state"]["reachable"] = True
                         except Exception as e:
                             lights[light]["state"]["reachable"] = False
-                            logging.warning("light not reachable: %s", e)
+                            lights[light]["state"]["on"] = False
+                            logging.warning(lights[light]["name"] + " is unreachable: %s", e)
 
                 if addresses[light]["protocol"] == "native":
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/get?light=" + str(addresses[light]["light_nr"]), "GET", "{}"))
                     lights[light]["state"].update(light_data)
+                    lights[light]["state"]["reachable"] = True
                 elif addresses[light]["protocol"] == "hue":
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/api/" + addresses[light]["username"] + "/lights/" + addresses[light]["light_id"], "GET", "{}"))
                     lights[light]["state"].update(light_data["state"])
@@ -247,6 +250,7 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                             lights[light]["state"]["ct"] = 470
                     else:
                         lights[light]["state"]["ct"] = 470
+                    lights[light]["state"]["reachable"] = True
                 elif addresses[light]["protocol"] == "milight":
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/gateways/" + addresses[light]["device_id"] + "/" + addresses[light]["mode"] + "/" + str(addresses[light]["group"]), "GET", "{}"))
                     if light_data["state"] == "ON":
@@ -265,6 +269,7 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                             lights[light]["state"]["sat"] = 255
                         else:
                             lights[light]["state"]["sat"] = int(light_data["saturation"] * 2.54)
+                    lights[light]["state"]["reachable"] = True
                 elif addresses[light]["protocol"] == "domoticz": #domoticz protocol
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/json.htm?type=devices&rid=" + addresses[light]["light_id"], "GET", "{}"))
                     if light_data["result"][0]["Status"] == "Off":
@@ -272,6 +277,7 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                     else:
                          lights[light]["state"]["on"] = True
                     lights[light]["state"]["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))
+                    lights[light]["state"]["reachable"] = True
                 elif addresses[light]["protocol"] == "jeedom": #jeedom protocol
                     light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/core/api/jeeApi.php?apikey=" + addresses[light]["light_api"] + "&type=cmd&id=" + addresses[light]["light_id"], "GET", "{}"))
                     if light_data == 0:
@@ -279,13 +285,16 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                     else:
                          lights[light]["state"]["on"] = True
                     lights[light]["state"]["bri"] = str(round(float(light_data)/100*255))
+                    lights[light]["state"]["reachable"] = True
 
-                lights[light]["state"]["reachable"] = True
+                if off_if_unreachable:
+                    if lights[light]["state"]["reachable"] == False:
+                        lights[light]["state"]["on"] = False
                 updateGroupStats(light, lights, groups)
             except:
                 lights[light]["state"]["reachable"] = False
                 lights[light]["state"]["on"] = False
-                logging.exception("light " + light + " is unreachable")
+                logging.warning(lights[light]["name"] + " is unreachable: %s", e)
         sleep(10) #wait at last 10 seconds before next sync
         i = 0
         while i < 300: #sync with lights every 300 seconds or instant if one user is connected
@@ -293,4 +302,5 @@ def syncWithLights(lights, addresses, users, groups): #update Hue Bridge lights 
                 if users[user]["last use date"] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                     i = 300
                     break
+            i += 1
             sleep(1)
