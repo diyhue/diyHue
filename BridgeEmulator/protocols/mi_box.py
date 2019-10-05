@@ -72,8 +72,6 @@ def sendCmd(address, cmd, tries=3):
 	commandCounter += 1
 	if commandCounter > 255:
 		commandCounter = 0
-	if commandCounter == 5:
-		commandCounter = 10
 
 	ip = address["ip"]
 	group = address["group"]
@@ -111,14 +109,18 @@ def sendCmd(address, cmd, tries=3):
 	logging.info("wait for receiving after sending command")
 	data = None
 	try:
-		data, address = sock.recvfrom(1024)
+		data, recvAddr = sock.recvfrom(1024)
 	except socket.timeout:
 		logging.info("socket timed out")
 	receiveConfirmed = False
 	if data is not None:
 		logging.info("received "+bytesToHexStr(data))
-		receiveConfirmed = True
-	if not receiveConfirmed and tries > 1:
+		if len(data) == 8 and data[-1] == 0:
+			logging.info("command receive confirmed")
+			receiveConfirmed = True
+	if receiveConfirmed:
+		return
+	if tries > 1:
 		logging.info("retrying sending command")
 		tries -= 1
 		closeSocket()
