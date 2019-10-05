@@ -1471,7 +1471,7 @@ class S(BaseHTTPRequestHandler):
                     # find the first unused id for new object
                     new_object_id = nextFreeId(bridge_config, url_pices[3])
                     if url_pices[3] == "scenes":
-post_dictionary.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
+                        post_dictionary.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
                         if "locked" not in post_dictionary:
                             post_dictionary["locked"] = False
                         if "picture" not in post_dictionary:
