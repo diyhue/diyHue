@@ -126,8 +126,7 @@ def sendCmd(address, cmd, tries=3):
 		closeSocket()
 		sendCmd(address, cmd, tries)
 	else:
-		logging.info("sending command failed after 3 tries")
-		#todo: throw error or something
+		raise Exception("sending command failed after 3 tries")
 
 def getSessionId(address):
 	global sessionId1, sessionId2
