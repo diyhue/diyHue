@@ -1542,7 +1542,7 @@ class S(BaseHTTPRequestHandler):
                         put_dictionary.update({"starttime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%S")})
                 elif url_pices[3] == "scenes":
                     if "storelightstate" in put_dictionary:
-                        for light in bridge_config["scenes"][url_pices[4]]["lightstates"]:
+                        for light in bridge_config["scenes"][url_pices[4]]["lights"]:
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light] = {}
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["on"] = bridge_config["lights"][light]["state"]["on"]
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
