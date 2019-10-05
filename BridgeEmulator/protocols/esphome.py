@@ -163,13 +163,13 @@ def set_light(address, light, data):
                         request_data = request_data + "&brightness=" + brightness
                     else:
                         request_data = request_data + "?brightness=" + brightness
-                if address["esphome_model"] == ("ESPHome-RGBW" or "ESPHome-CT"):
+                if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-CT"]:
                     if "ct" in data:
                         if ("?" in request_data):
                             request_data = request_data + "&color_temp=" + str(data['ct'])
                         else:
                             request_data = request_data + "?color_temp=" + str(data['ct'])
-                if address["esphome_model"] == ("ESPHome-RGBW" or "ESPHome-RGB"):
+                if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
                     if "xy" in data:
                         color = convert_xy(data['xy'][0], data['xy'][1], 255)
                         red = str(color[0])
