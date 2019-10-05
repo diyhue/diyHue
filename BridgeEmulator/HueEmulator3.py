@@ -1471,9 +1471,24 @@ class S(BaseHTTPRequestHandler):
                     # find the first unused id for new object
                     new_object_id = nextFreeId(bridge_config, url_pices[3])
                     if url_pices[3] == "scenes":
-                        post_dictionary.update({"lightstates": {}, "version": 2, "picture": "", "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
+post_dictionary.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
                         if "locked" not in post_dictionary:
                             post_dictionary["locked"] = False
+                        if "picture" not in post_dictionary:
+                            post_dictionary["picture"] = ""
+                        if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
+                            post_dictionary["lightstates"] = {}
+                        for light in post_dictionary["lights"]:
+                            post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
+                            if "bri" in bridge_config["lights"][light]["state"]:
+                                post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                            if "colormode" in bridge_config["lights"][light]["state"]:
+                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
+                                    post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+                                elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                    post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
+                                    post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
+
                     elif url_pices[3] == "groups":
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
