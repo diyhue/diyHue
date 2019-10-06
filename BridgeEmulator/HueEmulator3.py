@@ -1714,10 +1714,11 @@ class S(BaseHTTPRequestHandler):
 
                 # Delete the light from any scenes
                 for scene in list(bridge_config["scenes"]):
-                    if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
-                        bridge_config["scenes"][scene]["lights"].remove(del_light)
-                        del bridge_config["scenes"][scene]["lightstates"][del_light]
-                        if len(bridge_config["scenes"][scene]["lights"]) == 0:
+                    if del_light in bridge_config["scenes"][scene]["lightstates"]:
+                        del bridge_config["scenes"][scene]["lightstates"][del_light]:
+                        if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
+                            bridge_config["scenes"][scene]["lights"].remove(del_light)
+                        if len(bridge_config["scenes"][scene]["lights"]) == 0 or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
                             del bridge_config["scenes"][scene]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
