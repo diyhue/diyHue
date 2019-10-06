@@ -7,8 +7,7 @@ def remoteDiscover(config):
     url = 'https://discovery.diyhue.org'
     while True:
         try:
-            payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress
-"],"macaddress": config["mac"],"name": config["name"]}
+            payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress"],"macaddress": config["mac"],"name": config["name"]}
             response = requests.post(url, timeout=5, json=payload)
             print(response.text)
             sleep(30)
