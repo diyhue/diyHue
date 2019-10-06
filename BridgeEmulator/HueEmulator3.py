@@ -1560,7 +1560,8 @@ class S(BaseHTTPRequestHandler):
                         for light in bridge_config["scenes"][url_pices[4]]["lights"]:
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light] = {}
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["on"] = bridge_config["lights"][light]["state"]["on"]
-                            bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                            if "bri" in bridge_config["lights"][light]["state"]:
+                                bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
                             if "colormode" in bridge_config["lights"][light]["state"]:
                                 if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
                                     bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
