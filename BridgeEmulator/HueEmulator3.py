@@ -1716,7 +1716,7 @@ class S(BaseHTTPRequestHandler):
                 # Delete the light from any scenes
                 for scene in list(bridge_config["scenes"]):
                     if del_light in bridge_config["scenes"][scene]["lightstates"]:
-                        del bridge_config["scenes"][scene]["lightstates"][del_light]:
+                        del bridge_config["scenes"][scene]["lightstates"][del_light]
                         if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
                             bridge_config["scenes"][scene]["lights"].remove(del_light)
                         if len(bridge_config["scenes"][scene]["lights"]) == 0 or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
