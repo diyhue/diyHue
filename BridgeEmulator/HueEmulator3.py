@@ -32,6 +32,7 @@ from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
 from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
 from functions.remoteApi import remoteApi
+from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
