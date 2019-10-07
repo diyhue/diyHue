@@ -32,6 +32,7 @@ from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
 from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
 from functions.remoteApi import remoteApi
+from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
@@ -1218,7 +1219,7 @@ class S(BaseHTTPRequestHandler):
             if "device_id" in get_parameters:
                 #register new mi-light
                 new_light_id = nextFreeId(bridge_config, "lights")
-                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "MiLight " + get_parameters["mode"][0] + " " + get_parameters["device_id"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT001", "swversion": "66009461"}
+                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}, "type": "Extended color light", "name": "MiLight " + get_parameters["mode"][0] + " " + get_parameters["device_id"][0], "uniqueid": "1a2b3c4" + str(random.randrange(0, 99)), "modelid": "LCT015", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
                 new_lights.update({new_light_id: {"name": "MiLight " + get_parameters["mode"][0] + " " + get_parameters["device_id"][0]}})
                 bridge_config["lights_address"][new_light_id] = {"device_id": get_parameters["device_id"][0], "mode": get_parameters["mode"][0], "group": int(get_parameters["group"][0]), "ip": get_parameters["ip"][0], "protocol": "milight"}
                 self._set_end_headers(bytes(webform_milight() + "<br> Light added", "utf8"))
@@ -1471,9 +1472,24 @@ class S(BaseHTTPRequestHandler):
                     # find the first unused id for new object
                     new_object_id = nextFreeId(bridge_config, url_pices[3])
                     if url_pices[3] == "scenes":
-                        post_dictionary.update({"lightstates": {}, "version": 2, "picture": "", "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
+                        post_dictionary.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
                         if "locked" not in post_dictionary:
                             post_dictionary["locked"] = False
+                        if "picture" not in post_dictionary:
+                            post_dictionary["picture"] = ""
+                        if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
+                            post_dictionary["lightstates"] = {}
+                        for light in post_dictionary["lights"]:
+                            post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
+                            if "bri" in bridge_config["lights"][light]["state"]:
+                                post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                            if "colormode" in bridge_config["lights"][light]["state"]:
+                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
+                                    post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+                                elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                    post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
+                                    post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
+
                     elif url_pices[3] == "groups":
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
@@ -1542,10 +1558,11 @@ class S(BaseHTTPRequestHandler):
                         put_dictionary.update({"starttime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%S")})
                 elif url_pices[3] == "scenes":
                     if "storelightstate" in put_dictionary:
-                        for light in bridge_config["scenes"][url_pices[4]]["lightstates"]:
+                        for light in bridge_config["scenes"][url_pices[4]]["lights"]:
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light] = {}
                             bridge_config["scenes"][url_pices[4]]["lightstates"][light]["on"] = bridge_config["lights"][light]["state"]["on"]
-                            bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                            if "bri" in bridge_config["lights"][light]["state"]:
+                                bridge_config["scenes"][url_pices[4]]["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
                             if "colormode" in bridge_config["lights"][light]["state"]:
                                 if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
                                     bridge_config["scenes"][url_pices[4]]["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
@@ -1698,10 +1715,11 @@ class S(BaseHTTPRequestHandler):
 
                 # Delete the light from any scenes
                 for scene in list(bridge_config["scenes"]):
-                    if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
-                        bridge_config["scenes"][scene]["lights"].remove(del_light)
+                    if del_light in bridge_config["scenes"][scene]["lightstates"]:
                         del bridge_config["scenes"][scene]["lightstates"][del_light]
-                        if len(bridge_config["scenes"][scene]["lights"]) == 0:
+                        if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
+                            bridge_config["scenes"][scene]["lights"].remove(del_light)
+                        if len(bridge_config["scenes"][scene]["lights"]) == 0 or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
                             del bridge_config["scenes"][scene]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
@@ -1753,6 +1771,7 @@ if __name__ == "__main__":
         Thread(target=daylightSensor).start()
         if dontBlameDiyHue:
             Thread(target=remoteApi, args=[bridge_config["config"]]).start()
+        Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
             sleep(10)
