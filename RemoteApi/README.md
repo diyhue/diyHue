@@ -1,7 +1,7 @@
 # Remote Services
 
 This script is responsable for following services:
- - Remote api integrated in Hue Essentials
+ - Remote api integration with Hue Essentials
  - Remote discovery 
  
  
