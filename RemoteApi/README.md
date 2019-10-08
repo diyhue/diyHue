@@ -37,9 +37,7 @@ will be opened until the data from hue emulator will be send back the responce.
 
  ## Remote Discovery
  
- This is similar to official Hue remote discovery service (https://discovery.meethue.com), and can be accessed at address https://discovery.duyhue.org. Is intended to help
- bridge local ip detection for users that use DHCP and don't have ip reservation. Hue Essentials app use this to correct the 
- hue emulator bridge ip in case this was changed on the network.
+ This is similar to official Hue remote discovery service (https://discovery.meethue.com), and can be accessed at address https://discovery.diyhue.org. Is intended to help bridge local ip detection for users that use DHCP and don't have ip reservation. Hue Essentials app use this to correct the hue emulator bridge ip in case this was changed on the network.
  
 
 
