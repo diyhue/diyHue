@@ -39,27 +39,33 @@ def sendMsg(address, msg):
 	global sock
 	logging.info("sending udp message to MiLight box:"+bytesToHexStr(msg))
 	if sock is None:
+		logging.info("creating socket")
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.settimeout(0.5)
+		logging.info("connecting to ip")
 		sock.connect((address["ip"], address["port"]))
 
+	logging.info("sock.sendall")
 	sock.sendall(msg)
 
-def sendCmd(address, cmd):
+def closeSocket():
 	global sock, commandCounter, sessionId1, sessionId2, lastSentMessageTime
+	if sock is not None:
+		logging.info("force closing socket connection")
+		sock.close()
+	sock = None
+	sessionId1 = 0
+	sessionId2 = 0
+	commandCounter = 0
+
+def sendCmd(address, cmd, tries=3):
+	global sock, commandCounter, sessionId1, sessionId2, lastSentMessageTime
+	logging.info("sendcommand"+bytesToHexStr(cmd))
+	#todo: prevent sending multiple commands at once, this will start the session id request multiple times
 
 	now = time.time()
-	if now - lastSentMessageTime > 30:
-		#if the last message time is over 60 seconds, the connection has probably been closed
-		#since udp doesn't have a way to see if a connection is alive or not, you have to check for this
-		#yourself using a ping system. But I don't know what the ping messages from the MiLight WiFi box
-		#look like so I'll just close the connection and create a new one
-		if sock is not None:
-			sock.close()
-		sock = None
-		sessionId1 = 0
-		sessionId2 = 0
-		commandCounter = 0
+	if now - lastSentMessageTime > 10:
+		closeSocket()
 		logging.info("creating new socket connection to MiLight box")
 	lastSentMessageTime = now
 
@@ -99,10 +105,28 @@ def sendCmd(address, cmd):
 		crc = (crc + msg[headersLen+i]) & 255
 	msg += bytes([crc])
 
-	#send message multiple times to increase chance of it being received properly
-	for i in range(3):
-		sendMsg(address, msg)
-		data, address = sock.recvfrom(1024)
+	sendMsg(address, msg)
+	logging.info("wait for receiving after sending command")
+	data = None
+	try:
+		data, recvAddr = sock.recvfrom(1024)
+	except socket.timeout:
+		logging.info("socket timed out")
+	receiveConfirmed = False
+	if data is not None:
+		logging.info("received "+bytesToHexStr(data))
+		if len(data) == 8 and data[-1] == 0:
+			logging.info("command receive confirmed")
+			receiveConfirmed = True
+	if receiveConfirmed:
+		return
+	if tries > 1:
+		logging.info("retrying sending command")
+		tries -= 1
+		closeSocket()
+		sendCmd(address, cmd, tries)
+	else:
+		raise Exception("sending command failed after 3 tries")
 
 def getSessionId(address):
 	global sessionId1, sessionId2
@@ -110,6 +134,7 @@ def getSessionId(address):
 	totalTries = 0
 	while totalTries < 3:
 		totalTries+=1
+		logging.info("wait for receiving session id")
 		data, address = sock.recvfrom(1024)
 		if len(data) == 22:
 			data = bytes(data)
