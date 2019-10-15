@@ -8,7 +8,6 @@ def entertainmentService(lights, addresses, groups):
     serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 0
-    frameID = 0
     lightStatus = {}
     syncing = False #Flag to check whether or not we had been syncing when a timeout occurs
     while True:
