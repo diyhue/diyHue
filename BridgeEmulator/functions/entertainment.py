@@ -8,12 +8,14 @@ def entertainmentService(lights, addresses, groups):
     serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 0
+    frameID = 0
     lightStatus = {}
     syncing = False #Flag to check whether or not we had been syncing when a timeout occurs
     while True:
         try:
             data = serverSocket.recvfrom(106)[0]
             nativeLights = {}
+            esphomeLights = {}
             if data[:9].decode('utf-8') == "HueStream":
                 syncing = True #Set sync flag when receiving valid data
                 if data[14] == 0: #rgb colorspace
@@ -35,6 +37,11 @@ def entertainmentService(lights, addresses, groups):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = [r, g, b]
+                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                    bri = int(max(r,g,b))
+                                    if addresses[str(lightId)]["ip"] not in esphomeLights:
+                                        esphomeLights[addresses[str(lightId)]["ip"]] = {}
+                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
                                     if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
                                         if r == 0 and  g == 0 and  b == 0:
@@ -70,6 +77,10 @@ def entertainmentService(lights, addresses, groups):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
+                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                    if addresses[str(lightId)]["ip"] not in esphomeLights:
+                                        esphomeLights[addresses[str(lightId)]["ip"]] = {}
+                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = convert_xy(x, y, bri)
                                 else:
                                     fremeID += 1
                                     if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
@@ -82,10 +93,16 @@ def entertainmentService(lights, addresses, groups):
                         udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
+            if len(esphomeLights) is not 0:
+                for ip in esphomeLights.keys():
+                    udpmsg = bytearray()
+                    udpmsg += bytes([0]) + bytes([esphomeLights[ip]["color"][0]]) + bytes([esphomeLights[ip]["color"][1]]) + bytes([esphomeLights[ip]["color"][2]]) + bytes([esphomeLights[ip]["color"][3]])
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                    sock.sendto(udpmsg, (ip.split(":")[0], 2100))
         except Exception: #Assuming the only exception is a network timeout, please don't scream at me
             if syncing: #Reset sync status and kill relay service
                 logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state")
-                Popen(["killall", "entertainment-srv"])
+                Popen(["killall", "entertainment-s"])
                 for group in groups.keys():
                     if "type" in groups[group] and groups[group]["type"] == "Entertainment":
                         groups[group]["stream"].update({"active": False, "owner": None})
