@@ -26,10 +26,10 @@ def postRequest(address, request_data, timeout=3):
 def getLightType(light, address, data):
     request_data = ""
     if address["esphome_model"] == "ESPHome-RGBW":
-        if "ct" in data:
-            request_data = request_data + "/light/white_led"
-        elif "xy" in data:
+        if "xy" in data:
             request_data = request_data + "/light/color_led"
+        elif "ct" in data:
+            request_data = request_data + "/light/white_led"
         else:
             if light["state"]["colormode"] == "ct":
                 request_data = request_data + "/light/white_led"
