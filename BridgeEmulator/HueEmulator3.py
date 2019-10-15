@@ -1479,7 +1479,11 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["picture"] = ""
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
-                        for light in post_dictionary["lights"]:
+                        if "lights" in post_dictionary:
+                            lights = post_dictionary["lights"]
+                        elif "group" in post_dictionary:
+                            lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                        for light in lights:
                             post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
                             if "bri" in bridge_config["lights"][light]["state"]:
                                 post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
