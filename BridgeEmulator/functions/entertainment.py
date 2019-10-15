@@ -38,9 +38,9 @@ def entertainmentService(lights, addresses, groups):
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = [r, g, b]
                                 if addresses[str(lightId)]["protocol"] == "esphome":
-                                    bri = int(max(r,g,b))
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
+                                    bri = int(max(r,g,b))
                                     esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
                                     if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
@@ -80,7 +80,11 @@ def entertainmentService(lights, addresses, groups):
                                 if addresses[str(lightId)]["protocol"] == "esphome":
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
-                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = convert_xy(x, y, bri)
+                                    color = convert_xy(x, y, bri)
+                                    r = int(color[0])
+                                    g = int(color[1])
+                                    b = int(color[2])
+                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
                                     fremeID += 1
                                     if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
