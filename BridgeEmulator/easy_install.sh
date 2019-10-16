@@ -118,28 +118,28 @@ cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug/clip.htm
 # Install correct binaries
 case $arch in
     x86_64|i686|aarch64)
-        cp entertainment-$arch /opt/hue-emulator/entertainment-srv
+        cp entertainment-$arch /opt/hue-emulator/entertain-srv
         cp coap-client-$arch /opt/hue-emulator/coap-client-linux
        ;;
     arm64)
-        cp entertainment-aarch64 /opt/hue-emulator/entertainment-srv
+        cp entertainment-aarch64 /opt/hue-emulator/entertain-srv
         cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
        ;;
     armv*)
-        cp entertainment-arm /opt/hue-emulator/entertainment-srv
+        cp entertainment-arm /opt/hue-emulator/entertain-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
        ;;
     *)
         echo -e "\033[0;31m-------------------------------------------------------------------------------"
         echo -e "ERROR: Unsupported architecture $arch!"
-        echo -e "You will need to manually compile the entertainment-srv binary, "
+        echo -e "You will need to manually compile the entertain-srv binary, "
         echo -e "and install your own coap-client\033[0m"
         echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
         echo -e "Once installed, open this script and manually run the last 10 lines."
         exit 1
 esac
 
-chmod +x /opt/hue-emulator/entertainment-srv
+chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/

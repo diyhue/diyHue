@@ -25,7 +25,7 @@ COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
 COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
 
 ## armhf specific
-COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertainment-srv
+COPY ./BridgeEmulator/entertainment-arm /opt/hue-emulator/entertain-srv
 COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 
 ## Add Docker Build scripts
