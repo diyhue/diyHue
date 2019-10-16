@@ -26,14 +26,18 @@ def postRequest(address, request_data, timeout=3):
 def getLightType(light, address, data):
     request_data = ""
     if address["esphome_model"] == "ESPHome-RGBW":
-        if "xy" in data:
+        if "xy" in data: #revised according to hue api docs
             request_data = request_data + "/light/color_led"
         elif "ct" in data:
             request_data = request_data + "/light/white_led"
+        elif ("hue" in data) and ("sat" in data):
+            request_data = request_data + "/light/color_led"
         else:
-            if light["state"]["colormode"] == "ct":
+            if light["state"]["colormode"] == "xy":
+                request_data = request_data + "/light/color_led"
+            elif light["state"]["colormode"] == "ct":
                 request_data = request_data + "/light/white_led"
-            elif light["state"]["colormode"] in ["xy", "hs"]:
+            elif light["state"]["colormode"] == "hs":
                 request_data = request_data + "/light/color_led"
     elif address["esphome_model"] == "ESPHome-CT":
         request_data = request_data + "/light/white_led"
@@ -130,15 +134,18 @@ def set_light(address, light, data):
     ct_boost = int(address["ct_boost"])
     rgb_boost = int(address["rgb_boost"])
     request_data = ""
-    if address["esphome_model"] == "ESPHome-RGBW":
-        if "ct" in data:
-            postRequest(address["ip"], "/light/color_led/turn_off")
-        if ("xy" in data) or ("hue" in data) or ("sat" in data):
-            postRequest(address["ip"], "/light/white_led/turn_off")
-    if ("alert" in data) and (data['alert'] == "select"):
-            request_data = request_data + "/switch/alert/turn_on"
+    if ("alert" in data) and (data['alert'] == "select"): #one breath cycle, temporary for now until breath implemented in esphome firmware
+        request_data = request_data + "/switch/alert/turn_on"
+    # elif ("alert" in data) and (data['alert'] == "lselect"): #15 second breath cycle
+    #     request_data = request_data + "/switch/alert/turn_on"
+    # elif ("alert" in data) and (data['alert'] == "none"):
+    #     request_data = request_data + "/switch/alert/turn_off"
     else:
         request_data = request_data + getLightType(light, address, data)
+        if "white_led" in request_data:
+            postRequest(address["ip"], "/light/color_led/turn_off")
+        else:
+            postRequest(address["ip"], "/light/white_led/turn_off")
         if "on" in data:
             if not(data['on']):
                 request_data = request_data + "/turn_off"
@@ -165,14 +172,8 @@ def set_light(address, light, data):
                     request_data = request_data + "&brightness=" + brightness
                 else:
                     request_data = request_data + "?brightness=" + brightness
-            if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-CT"]:
-                if "ct" in data:
-                    if ("?" in request_data):
-                        request_data = request_data + "&color_temp=" + str(data['ct'])
-                    else:
-                        request_data = request_data + "?color_temp=" + str(data['ct'])
-            if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
-                if "xy" in data:
+            if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB", "ESPHome-CT"]:
+                if ("xy" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
                     color = convert_xy(data['xy'][0], data['xy'][1], 255)
                     red = str(color[0])
                     green = str(color[1])
@@ -181,7 +182,12 @@ def set_light(address, light, data):
                         request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
                     else:
                         request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
-                elif ("hue" in data) and ("sat" in data):
+                elif "ct" in data and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-CT"]):
+                    if ("?" in request_data):
+                        request_data = request_data + "&color_temp=" + str(data['ct'])
+                    else:
+                        request_data = request_data + "?color_temp=" + str(data['ct'])
+                elif ("hue" in data) and ("sat" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
                     if not("bri" in data):
                         bri = light["state"]["bri"]
                     else:
