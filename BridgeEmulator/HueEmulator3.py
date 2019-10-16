@@ -1175,7 +1175,7 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             #create a new user key in case none is available
             if len(bridge_config["config"]["whitelist"]) == 0:
-                bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {"create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"last use date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"name": "WegGui User"}
+                bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {"create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"last use date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"name": "WebGui User"}
             self._set_end_headers(bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
         elif self.path.endswith((".css",".map",".png",".js")):
             self._set_headers()
@@ -1479,7 +1479,11 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["picture"] = ""
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
-                        for light in post_dictionary["lights"]:
+                        if "lights" in post_dictionary:
+                            lights = post_dictionary["lights"]
+                        elif "group" in post_dictionary:
+                            lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                        for light in lights:
                             post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
                             if "bri" in bridge_config["lights"][light]["state"]:
                                 post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
