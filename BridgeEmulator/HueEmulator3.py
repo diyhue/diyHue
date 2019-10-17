@@ -1048,6 +1048,14 @@ def splitLightsToDevices(group, state, scene={}):
     lightsData = {k: v for k, v in lightsData.items() if k in bridge_config["lights_address"]}
 
     deviceIp = {}
+    if group != "0": #only set light state if light is part of group
+        lightdel=[]
+        for light in lightsData.keys():
+            if light not in bridge_config["groups"][group]["lights"]:
+                lightdel.append(light)
+        for light in lightdel:
+            del lightsData[light]
+
     for light in lightsData.keys():
         if bridge_config["lights_address"][light]["ip"] not in deviceIp:
             deviceIp[bridge_config["lights_address"][light]["ip"]] = {}
@@ -1442,7 +1450,7 @@ class S(BaseHTTPRequestHandler):
                                 all_on = False
                         self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":False,"alert":"none"}},separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif url_pices[3] == "info" and url_pices[4] == "timezones":
-                        self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"),ensure_ascii=False)
+                        self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif "scenes" == url_pices[3]: #trim lightstates for scenes
                         scenelist = copy.deepcopy(bridge_config)
                         for scene in scenelist["scenes"]:
@@ -1656,7 +1664,10 @@ class S(BaseHTTPRequestHandler):
                                 Popen(["killall", "entertain-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
-                        splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
+                            splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        else:
+                            splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
 
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary:
                         splitLightsToDevices(url_pices[4], put_dictionary)
@@ -1754,6 +1765,14 @@ class S(BaseHTTPRequestHandler):
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
+            elif url_pices[3] == "groups":
+                delscenes = []
+                for scene in bridge_config["scenes"]:
+                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                        delscenes.append(scene)
+                for scene in delscenes:
+                    del bridge_config["scenes"][scene]
+            logging.info(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False))
             self._set_end_headers(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
