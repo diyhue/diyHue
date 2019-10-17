@@ -1047,6 +1047,14 @@ def splitLightsToDevices(group, state, scene={}):
     lightsData = {k: v for k, v in lightsData.items() if k in bridge_config["lights_address"]}
 
     deviceIp = {}
+    if group != "0": #only set light state if light is part of group
+        lightdel=[]
+        for light in lightsData.keys():
+            if light not in bridge_config["groups"][group]["lights"]:
+                lightdel.append(light)
+        for light in lightdel:
+            del lightsData[light]
+
     for light in lightsData.keys():
         if bridge_config["lights_address"][light]["ip"] not in deviceIp:
             deviceIp[bridge_config["lights_address"][light]["ip"]] = {}
@@ -1635,7 +1643,10 @@ class S(BaseHTTPRequestHandler):
                                 Popen(["killall", "entertain-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
-                        splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
+                            splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        else:
+                            splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
 
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary:
                         splitLightsToDevices(url_pices[4], put_dictionary)
