@@ -1744,6 +1744,14 @@ class S(BaseHTTPRequestHandler):
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
+            elif url_pices[3] == "groups":
+                delscenes = []
+                for scene in bridge_config["scenes"]:
+                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                        delscenes.append(scene)
+                for scene in delscenes:
+                    del bridge_config["scenes"][scene]
+            logging.info(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False))
             self._set_end_headers(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
