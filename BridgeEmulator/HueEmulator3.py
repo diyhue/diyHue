@@ -179,10 +179,22 @@ def initialize():
     bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
     load_alarm_config()
     generateSensorsState()
+    sanitizeBridgeScenes()
     ## generte security key for Hue Essentials remote access
     if "Hue Essentials key" not in bridge_config["config"]:
         bridge_config["config"]["Hue Essentials key"] = str(uuid.uuid1()).replace('-', '')
 
+def sanitizeBridgeScenes():
+    delscenes = []
+    for scene in bridge_config["scenes"]:
+        if "type" in bridge_config["scenes"][scene]:
+            if ("GroupScene" == bridge_config["scenes"][scene]["type"]):
+                if bridge_config["scenes"][scene]["group"] not in bridge_config["groups"]:
+                    delscenes.append(scene)
+        else:
+            bridge_config["scenes"][scene]["type"] = "LightScene"
+    for scene in delscenes:
+        del bridge_config["scenes"][scene]
 
 def getLightsVersions():
     lights = {}
@@ -1423,6 +1435,7 @@ class S(BaseHTTPRequestHandler):
                     for scene in scenelist["scenes"]:
                         if "lightstates" in scenelist["scenes"][scene]:
                             del scenelist["scenes"][scene]["lightstates"]
+                        if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                             scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": scenelist["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif len(url_pices) == 4: #print specified object config
@@ -1431,6 +1444,7 @@ class S(BaseHTTPRequestHandler):
                         for scene in scenelist["scenes"]:
                             if "lightstates" in scenelist["scenes"][scene]:
                                 del scenelist["scenes"][scene]["lightstates"]
+                            if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                                 scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
@@ -1454,7 +1468,7 @@ class S(BaseHTTPRequestHandler):
                     elif "scenes" == url_pices[3]: #trim lightstates for scenes
                         scenelist = copy.deepcopy(bridge_config)
                         for scene in scenelist["scenes"]:
-                            if "lightstates" in scenelist["scenes"][scene]:
+                            if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                                 scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
