@@ -44,7 +44,7 @@ export CC=gcc && make no_test
 wait
 gcc -I../mbedtls/include ssl_server2_diyhue.c -o ssl_server2_diyhue -L../mbedtls/library -lmbedtls -lmbedx509 -lmbedcrypto
 wait
-cp /opt/hue-emulator/mbedtls/ssl_server2_diyhue /opt/hue-emulator/entertainment-srv
+cp /opt/hue-emulator/mbedtls/ssl_server2_diyhue /opt/hue-emulator/entertain-srv
 wait
 rm -Rf /opt/hue-emulator/mbedtls
 
@@ -71,7 +71,7 @@ chmod +x /opt/hue-emulator/web-ui
 chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/config.json
-chmod +x /opt/hue-emulator/entertainment-srv
+chmod +x /opt/hue-emulator/entertain-srv
 /etc/init.d/hueemulatorWrt-service enable
 wait
 echo -e "\033[32m Installation completed. run: nano /etc/config/uhttpd and mod htpp port 80 for 82, run: nano /etc/lighttpd/lighttpd.conf and mod server.port = 80 for 82. For save changes ctrl +x, y, and enter..\033[0m"

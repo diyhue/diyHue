@@ -1047,6 +1047,14 @@ def splitLightsToDevices(group, state, scene={}):
     lightsData = {k: v for k, v in lightsData.items() if k in bridge_config["lights_address"]}
 
     deviceIp = {}
+    if group != "0": #only set light state if light is part of group
+        lightdel=[]
+        for light in lightsData.keys():
+            if light not in bridge_config["groups"][group]["lights"]:
+                lightdel.append(light)
+        for light in lightdel:
+            del lightsData[light]
+
     for light in lightsData.keys():
         if bridge_config["lights_address"][light]["ip"] not in deviceIp:
             deviceIp[bridge_config["lights_address"][light]["ip"]] = {}
@@ -1175,7 +1183,7 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             #create a new user key in case none is available
             if len(bridge_config["config"]["whitelist"]) == 0:
-                bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {"create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"last use date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"name": "WegGui User"}
+                bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {"create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"last use date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),"name": "WebGui User"}
             self._set_end_headers(bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
         elif self.path.endswith((".css",".map",".png",".js")):
             self._set_headers()
@@ -1183,7 +1191,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
-            self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], mac, bridge_config["config"]["name"]), "utf8"))
+            self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]), "utf8"))
         elif self.path == "/lights.json":
             self._set_headers()
             self._set_end_headers(bytes(json.dumps(getLightsVersions() ,separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1427,7 +1435,7 @@ class S(BaseHTTPRequestHandler):
                                 all_on = False
                         self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":False,"alert":"none"}},separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif url_pices[3] == "info" and url_pices[4] == "timezones":
-                        self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"),ensure_ascii=False)
+                        self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
             elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
@@ -1479,7 +1487,11 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["picture"] = ""
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
-                        for light in post_dictionary["lights"]:
+                        if "lights" in post_dictionary:
+                            lights = post_dictionary["lights"]
+                        elif "group" in post_dictionary:
+                            lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                        for light in lights:
                             post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
                             if "bri" in bridge_config["lights"][light]["state"]:
                                 post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
@@ -1592,12 +1604,12 @@ class S(BaseHTTPRequestHandler):
                     if "active" in put_dictionary["stream"]:
                         if put_dictionary["stream"]["active"]:
                             logging.info("start hue entertainment")
-                            Popen(["/opt/hue-emulator/entertainment-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                            Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
                             logging.info("stop hue entertainent")
-                            Popen(["killall", "entertainment-srv"])
+                            Popen(["killall", "entertain-srv"])
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     else:
                         bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
@@ -1624,14 +1636,17 @@ class S(BaseHTTPRequestHandler):
                         if "active" in put_dictionary:
                             if put_dictionary["active"]:
                                 logging.info("start hue entertainment")
-                                Popen(["/opt/hue-emulator/entertainment-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                                Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                                 sleep(0.2)
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                             else:
-                                Popen(["killall", "entertainment-srv"])
+                                Popen(["killall", "entertain-srv"])
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary: #scene applied to group
-                        splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
+                            splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                        else:
+                            splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
 
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary:
                         splitLightsToDevices(url_pices[4], put_dictionary)
@@ -1729,6 +1744,14 @@ class S(BaseHTTPRequestHandler):
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
+            elif url_pices[3] == "groups":
+                delscenes = []
+                for scene in bridge_config["scenes"]:
+                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                        delscenes.append(scene)
+                for scene in delscenes:
+                    del bridge_config["scenes"][scene]
+            logging.info(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False))
             self._set_end_headers(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -1764,8 +1787,8 @@ if __name__ == "__main__":
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()
-        Thread(target=ssdpSearch, args=[HOST_IP, mac]).start()
-        Thread(target=ssdpBroadcast, args=[HOST_IP, mac]).start()
+        Thread(target=ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+        Thread(target=ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
         Thread(target=schedulerProcessor).start()
         Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"], off_if_unreachable]).start()
         Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"]]).start()

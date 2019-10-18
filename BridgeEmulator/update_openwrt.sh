@@ -40,7 +40,7 @@ cp /tmp/diyHue-config/cert.pem.bak /opt/hue-emulator/cert.pem
 cp default-config.json /opt/hue-emulator/default-config.json
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
-cp entertainment-mips /opt/hue-emulator/entertainment-srv
+cp entertainment-mips /opt/hue-emulator/entertain-srv
 rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
@@ -56,7 +56,7 @@ chmod +x /opt/hue-emulator/web-ui
 chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
-chmod +x /opt/hue-emulator/entertainment-srv
+chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
 echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable

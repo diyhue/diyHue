@@ -105,7 +105,7 @@ def entertainmentService(lights, addresses, groups):
         except Exception: #Assuming the only exception is a network timeout, please don't scream at me
             if syncing: #Reset sync status and kill relay service
                 logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state")
-                Popen(["killall", "entertainment-s"])
+                Popen(["killall", "entertain-srv"])
                 for group in groups.keys():
                     if "type" in groups[group] and groups[group]["type"] == "Entertainment":
                         groups[group]["stream"].update({"active": False, "owner": None})
