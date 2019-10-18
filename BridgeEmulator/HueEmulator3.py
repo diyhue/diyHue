@@ -1503,7 +1503,7 @@ class S(BaseHTTPRequestHandler):
             logging.info(self.data_string)
         url_pices = self.path.rstrip('/').split('/')
         if len(url_pices) == 4: #data was posted to a location
-            if url_pices[2] in bridge_config["config"]["whitelist"]:
+            if url_pices[2] in bridge_config["config"]["whitelist"]: #check to make sure request is authorized
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
                     Thread(target=scan_for_lights).start()
@@ -1514,7 +1514,7 @@ class S(BaseHTTPRequestHandler):
                 else: #create object
                     # find the first unused id for new object
                     new_object_id = nextFreeId(bridge_config, url_pices[3])
-                    if url_pices[3] == "scenes":
+                    if url_pices[3] == "scenes": # store scene
                         post_dictionary.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :url_pices[2]})
                         if "locked" not in post_dictionary:
                             post_dictionary["locked"] = False
@@ -1782,7 +1782,7 @@ class S(BaseHTTPRequestHandler):
             elif url_pices[3] == "groups":
                 delscenes = []
                 for scene in bridge_config["scenes"]:
-                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                    if (bridge_config["scenes"][scene]["group"] == url_pices[4]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                         delscenes.append(scene)
                 for scene in delscenes:
                     del bridge_config["scenes"][scene]
