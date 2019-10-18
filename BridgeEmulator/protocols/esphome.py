@@ -30,7 +30,7 @@ def getLightType(light, address, data):
             request_data = request_data + "/light/color_led"
         elif "ct" in data:
             request_data = request_data + "/light/white_led"
-        elif ("hue" in data) and ("sat" in data):
+        elif ("hue" in data) or ("sat" in data):
             request_data = request_data + "/light/color_led"
         else:
             if light["state"]["colormode"] == "xy":
@@ -187,12 +187,21 @@ def set_light(address, light, data):
                         request_data = request_data + "&color_temp=" + str(data['ct'])
                     else:
                         request_data = request_data + "?color_temp=" + str(data['ct'])
-                elif ("hue" in data) and ("sat" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
-                    if not("bri" in data):
+                elif (("hue" in data) or ("sat" in data)) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
+                    if (("hue" in data) and ("sat" in data)):
+                        hue = data['hue']
+                        sat = data['sat']
+                    elif "hue" in data:
+                        hue = data['hue']
+                        sat = light["state"]["sat"]
+                    elif "sat" in data:
+                        hue = light["state"]["hue"]
+                        sat = data['sat']
+                    if "bri" not in data:
                         bri = light["state"]["bri"]
                     else:
                         bri = data['bri']
-                    color = hsv_to_rgb(data['hue'], data['sat'], bri)
+                    color = hsv_to_rgb(hue, sat, bri)
                     red = str(color[0])
                     green = str(color[1])
                     blue = str(color[2])
