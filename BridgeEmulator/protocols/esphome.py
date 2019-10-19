@@ -119,7 +119,17 @@ def discover(bridge_config, new_lights):
                     light_name = "ESPHome id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
                     logging.debug("ESPHome: Adding ESPHome " + properties["id"])
                     new_light_id = nextFreeId(bridge_config, "lights")
-                    bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": mac, "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+                    bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
+                    bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
+                    bridge_config["lights"][new_light_id]["name"] = light_name
+                    bridge_config["lights"][new_light_id]["modelid"] = modelid
+                    bridge_config["lights"][new_light_id]["manufacturername"] = "Philips"
+                    bridge_config["lights"][new_light_id]["swversion"] = light_types[modelid]["swversion"]
+                    bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+                    bridge_config["lights"][new_light_id]["uniqueid"] = mac
+                    if modelid == "LCT015":
+                        bridge_config["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
+                        bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
                     new_lights.update({new_light_id: {"name": light_name}})
                     bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "esphome", "rgb_boost": rgb_boost, "ct_boost": ct_boost, "esphome_model": esphome_model}
 
