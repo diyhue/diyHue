@@ -167,6 +167,8 @@ def set_light(address, light, data):
                     brightness = rgb_boost + brightness
                 elif address["esphome_model"] == "ESPHome-Dimmable":
                     brightness = ct_boost + brightness
+                if brightness > 255: # do not send brightness values over 255
+                    brightness = 255
                 brightness = str(brightness)
                 if ("?" in request_data):
                     request_data = request_data + "&brightness=" + brightness
