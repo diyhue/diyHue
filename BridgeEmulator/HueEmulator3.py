@@ -1798,7 +1798,7 @@ if __name__ == "__main__":
         Thread(target=daylightSensor).start()
         if dontBlameDiyHue:
             Thread(target=remoteApi, args=[bridge_config["config"]]).start()
-        Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
+            Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
             sleep(10)
