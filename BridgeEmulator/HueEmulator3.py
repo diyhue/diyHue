@@ -1436,6 +1436,7 @@ class S(BaseHTTPRequestHandler):
                         if "lightstates" in scenelist["scenes"][scene]:
                             del scenelist["scenes"][scene]["lightstates"]
                         if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                            scenelist["scenes"][scene]["lights"] = {}
                             scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": scenelist["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif len(url_pices) == 4: #print specified object config
@@ -1445,6 +1446,7 @@ class S(BaseHTTPRequestHandler):
                             if "lightstates" in scenelist["scenes"][scene]:
                                 del scenelist["scenes"][scene]["lightstates"]
                             if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                                scenelist["scenes"][scene]["lights"] = {}
                                 scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
@@ -1469,6 +1471,7 @@ class S(BaseHTTPRequestHandler):
                         scenelist = copy.deepcopy(bridge_config)
                         for scene in scenelist["scenes"]:
                             if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                                scenelist["scenes"][scene]["lights"] = {}
                                 scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
