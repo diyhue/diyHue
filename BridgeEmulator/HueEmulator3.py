@@ -1069,8 +1069,8 @@ def splitLightsToDevices(group, state, scene={}):
             bridge_config["lights"][light]["state"]["colormode"] = "ct"
         elif "hue" in lightsData[light]:
             bridge_config["lights"][light]["state"]["colormode"] = "hs"
-        if "transitiontime" in lightsData[light]:
-            del lightsData[light]["transitiontime"]
+        # if "transitiontime" in lightsData[light]:
+        #     del lightsData[light]["transitiontime"]
         bridge_config["lights"][light]["state"].update(lightsData[light])
     updateGroupStats(list(lightsData.keys())[0], bridge_config["lights"], bridge_config["groups"])
 
