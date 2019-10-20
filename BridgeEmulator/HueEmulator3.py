@@ -1636,7 +1636,7 @@ class S(BaseHTTPRequestHandler):
                                     (bridge_config["scenes"][scene]["type"] == "GroupScene" and light in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]):
                                         # Either light is in the scene or part of the group now, add lightscene based on previous scenes
                                         new_state = next(iter(bridge_config["scenes"][scene]["lightstates"]))
-                                        new_state = bridge_config["scenes"][scene]["lightstates"]["new_state"]
+                                        new_state = bridge_config["scenes"][scene]["lightstates"][new_state]
                                         bridge_config["scenes"][scene]["lightstates"][light] = new_state
 
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
