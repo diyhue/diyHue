@@ -119,6 +119,7 @@ def discover(bridge_config, new_lights):
                     light_name = "ESPHome id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
                     logging.debug("ESPHome: Adding ESPHome " + properties["id"])
                     new_light_id = nextFreeId(bridge_config, "lights")
+                    bridge_config["lights"][new_light_id] = {}
                     bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
                     bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
                     bridge_config["lights"][new_light_id]["name"] = light_name
@@ -130,8 +131,14 @@ def discover(bridge_config, new_lights):
                     if modelid == "LCT015":
                         bridge_config["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
                         bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
-                    new_lights.update({new_light_id: {"name": light_name}})
-                    bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "esphome", "rgb_boost": rgb_boost, "ct_boost": ct_boost, "esphome_model": esphome_model}
+                    #new_lights.update({new_light_id: {"name": light_name}})
+                    bridge_config["lights_address"][new_light_id] = {}
+                    bridge_config["lights_address"][new_light_id]["ip"] = properties["ip"]
+                    bridge_config["lights_address"][new_light_id]["id"] = properties["id"]
+                    bridge_config["lights_address"][new_light_id]["protocol"] = "esphome"
+                    bridge_config["lights_address"][new_light_id]["rgb_boost"] = rgb_boost
+                    bridge_config["lights_address"][new_light_id]["ct_boost"] = ct_boost
+                    bridge_config["lights_address"][new_light_id]["esphome_model"] = esphome_model
 
         except Exception as e:
             logging.debug("ESPHome: ip " + ip + " is unknown device, " + str(e))
