@@ -1628,6 +1628,16 @@ class S(BaseHTTPRequestHandler):
                         return
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
+                    if url_pices[3] == "groups" and "lights" in put_dictionary: #need to update scene lightstates
+                        for scene in bridge_config["scenes"]: # iterate over scenes
+                            for light in put_dictionary["lights"]: # check each scene to make sure it has a lightstate for each new light
+                                if light not in bridge_config["scenes"][scene]["lightstates"]: # copy first light state to new light
+                                    if ("lights" in bridge_config["scenes"][scene] and light in bridge_config["scenes"][scene]["lights"]) or \
+                                    (bridge_config["scenes"][scene]["type"] == "GroupScene" and light in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]):
+                                        # Either light is in the scene or part of the group now, add lightscene based on previous scenes
+                                        new_state = next(iter(bridge_config["scenes"][scene]["lightstates"]))
+                                        new_state = bridge_config["scenes"][scene]["lightstates"]["new_state"]
+                                        bridge_config["scenes"][scene]["lightstates"][light] = new_state
 
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
             if len(url_pices) == 6:
