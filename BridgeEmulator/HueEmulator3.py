@@ -1718,7 +1718,7 @@ class S(BaseHTTPRequestHandler):
                 try:
                     del bridge_config[url_pices[3]][url_pices[4]]
                 except:
-                    logging.info([url_pices[3]] + ": " + url_pices[4] + " does not exist")
+                    logging.info(str([url_pices[3]]) + ": " + str(url_pices[4]) + " does not exist")
             if url_pices[3] == "lights":
                 del_light = url_pices[4]
 
