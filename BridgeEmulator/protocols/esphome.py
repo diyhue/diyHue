@@ -124,7 +124,7 @@ def discover(bridge_config, new_lights):
                     bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
                     bridge_config["lights"][new_light_id]["name"] = light_name
                     bridge_config["lights"][new_light_id]["modelid"] = modelid
-                    bridge_config["lights"][new_light_id]["manufacturername"] = "Philips"
+                    bridge_config["lights"][new_light_id]["manufacturername"] = light_types[modelid]["manufacturername"]
                     bridge_config["lights"][new_light_id]["swversion"] = light_types[modelid]["swversion"]
                     bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
                     bridge_config["lights"][new_light_id]["uniqueid"] = mac
