@@ -35,7 +35,6 @@ from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
-dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 
 ap = argparse.ArgumentParser()
@@ -203,6 +202,9 @@ def updateLight(light, filename):
 def updateConfig():
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
+        
+    if "Remote API enabled" not in bridge_config["config"]:
+        bridge_config["config"]["Remote API enabled"] = False
 
     # Update deCONZ sensors
     for sensor_id, sensor in bridge_config["deconz"]["sensors"].items():
@@ -1796,8 +1798,7 @@ if __name__ == "__main__":
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
-        if dontBlameDiyHue:
-            Thread(target=remoteApi, args=[bridge_config["config"]]).start()
+        Thread(target=remoteApi, args=[bridge_config["config"]]).start()
         Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
