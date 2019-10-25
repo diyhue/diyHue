@@ -8,7 +8,7 @@ from time import sleep
 def remoteApi(config):
     url = 'https://remote.diyhue.org/devices'
     while True:
-        if config["internetservices"]["remoteaccess"] == "connected":
+        if config["Remote API enabled"]:
             try:
                 response = requests.get(url + '?apikey=' + base64.urlsafe_b64encode(bytes(config["Hue Essentials key"], "utf8")).decode("utf-8"), timeout=35)
                 if response.status_code == 200:
