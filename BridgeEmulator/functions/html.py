@@ -9,7 +9,7 @@ def description(ip, port, mac, name):
 <device>
 <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
 <friendlyName>""" + name + """ (""" + ip + """)</friendlyName>
-<manufacturer>Royal Philips Electronics</manufacturer>
+<manufacturer>Signify</manufacturer>
 <manufacturerURL>http://www.philips.com</manufacturerURL>
 <modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
 <modelName>Philips hue bridge 2015</modelName>
