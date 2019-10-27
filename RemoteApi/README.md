@@ -9,7 +9,7 @@ This script is responsible for following services:
  
  ### Configuration
  
- Remote API is disabled by default in diyHue. In order to turn it on you need to manually edit the script HueEmulator3.py located in /opt/hue-emulator/ and replace `dontBlameDiyHue = False` with `dontBlameDiyHue = True` (a service restart is required:  `sudo systemctl restart hue-emulator`). You will also need to enable Away from Home in the Hue Essentials app.
+ Remote API is disabled by default in diyHue. In order to turn it on you need to enable Away from Home in the Hue Essentials app.
 
  
  ### Security

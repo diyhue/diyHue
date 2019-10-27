@@ -35,7 +35,6 @@ from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
-dontBlameDiyHue = False # If set to True it will enable a custom remote service that works with Hue Essentials (Beta!!!)
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 
 ap = argparse.ArgumentParser()
@@ -203,6 +202,9 @@ def updateLight(light, filename):
 def updateConfig():
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
+        
+    if "Remote API enabled" not in bridge_config["config"]:
+        bridge_config["config"]["Remote API enabled"] = False
 
     # Update deCONZ sensors
     for sensor_id, sensor in bridge_config["deconz"]["sensors"].items():
@@ -1485,6 +1487,8 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["locked"] = False
                         if "picture" not in post_dictionary:
                             post_dictionary["picture"] = ""
+                        if "type" not in post_dictionary:
+                            post_dictionary["type"] = "LightScene"
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
                         if "lights" in post_dictionary:
@@ -1496,13 +1500,17 @@ class S(BaseHTTPRequestHandler):
                             if "bri" in bridge_config["lights"][light]["state"]:
                                 post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
                             if "colormode" in bridge_config["lights"][light]["state"]:
-                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
+                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and bridge_config["lights"][light]["state"]["colormode"] in bridge_config["lights"][light]["state"]:
                                     post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
                                 elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
                                     post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
                                     post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
 
                     elif url_pices[3] == "groups":
+                        if "type" not in post_dictionary:
+                            post_dictionary["type"] = "LightGroup"
+                        if post_dictionary["type"] == "Room" and "class" not in post_dictionary:
+                            post_dictionary["class"] = "Other"
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
                         try:
@@ -1628,6 +1636,16 @@ class S(BaseHTTPRequestHandler):
                         return
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
+                    if url_pices[3] == "groups" and "lights" in put_dictionary: #need to update scene lightstates
+                        for scene in bridge_config["scenes"]: # iterate over scenes
+                            for light in put_dictionary["lights"]: # check each scene to make sure it has a lightstate for each new light
+                                if light not in bridge_config["scenes"][scene]["lightstates"]: # copy first light state to new light
+                                    if ("lights" in bridge_config["scenes"][scene] and light in bridge_config["scenes"][scene]["lights"]) or \
+                                    (bridge_config["scenes"][scene]["type"] == "GroupScene" and light in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]):
+                                        # Either light is in the scene or part of the group now, add lightscene based on previous scenes
+                                        new_state = next(iter(bridge_config["scenes"][scene]["lightstates"]))
+                                        new_state = bridge_config["scenes"][scene]["lightstates"][new_state]
+                                        bridge_config["scenes"][scene]["lightstates"][light] = new_state
 
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
             if len(url_pices) == 6:
@@ -1715,7 +1733,10 @@ class S(BaseHTTPRequestHandler):
                         if sensor != url_pices[4] and "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(bridge_config["sensors"][url_pices[4]]["uniqueid"][:26]):
                             del bridge_config["sensors"][sensor]
                             logging.info('Delete related sensor ' + sensor)
-                del bridge_config[url_pices[3]][url_pices[4]]
+                try:
+                    del bridge_config[url_pices[3]][url_pices[4]]
+                except:
+                    logging.info(str([url_pices[3]]) + ": " + str(url_pices[4]) + " does not exist")
             if url_pices[3] == "lights":
                 del_light = url_pices[4]
 
@@ -1738,7 +1759,7 @@ class S(BaseHTTPRequestHandler):
                         del bridge_config["scenes"][scene]["lightstates"][del_light]
                         if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
                             bridge_config["scenes"][scene]["lights"].remove(del_light)
-                        if len(bridge_config["scenes"][scene]["lights"]) == 0 or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
+                        if ("lights" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lights"]) == 0) or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
                             del bridge_config["scenes"][scene]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
@@ -1747,7 +1768,7 @@ class S(BaseHTTPRequestHandler):
             elif url_pices[3] == "groups":
                 delscenes = []
                 for scene in bridge_config["scenes"]:
-                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                    if "group" in bridge_config["scenes"][scene] and bridge_config["scenes"][scene]["group"] == url_pices[4]:
                         delscenes.append(scene)
                 for scene in delscenes:
                     del bridge_config["scenes"][scene]
@@ -1796,8 +1817,7 @@ if __name__ == "__main__":
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
-        if dontBlameDiyHue:
-            Thread(target=remoteApi, args=[bridge_config["config"]]).start()
+        Thread(target=remoteApi, args=[bridge_config["config"]]).start()
         Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
