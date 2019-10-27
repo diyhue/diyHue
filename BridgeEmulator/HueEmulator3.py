@@ -1634,6 +1634,16 @@ class S(BaseHTTPRequestHandler):
                         return
                 else:
                     bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
+                    if url_pices[3] == "groups" and "lights" in put_dictionary: #need to update scene lightstates
+                        for scene in bridge_config["scenes"]: # iterate over scenes
+                            for light in put_dictionary["lights"]: # check each scene to make sure it has a lightstate for each new light
+                                if light not in bridge_config["scenes"][scene]["lightstates"]: # copy first light state to new light
+                                    if ("lights" in bridge_config["scenes"][scene] and light in bridge_config["scenes"][scene]["lights"]) or \
+                                    (bridge_config["scenes"][scene]["type"] == "GroupScene" and light in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]):
+                                        # Either light is in the scene or part of the group now, add lightscene based on previous scenes
+                                        new_state = next(iter(bridge_config["scenes"][scene]["lightstates"]))
+                                        new_state = bridge_config["scenes"][scene]["lightstates"][new_state]
+                                        bridge_config["scenes"][scene]["lightstates"][light] = new_state
 
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/"
             if len(url_pices) == 6:
@@ -1721,7 +1731,10 @@ class S(BaseHTTPRequestHandler):
                         if sensor != url_pices[4] and "uniqueid" in bridge_config["sensors"][sensor] and bridge_config["sensors"][sensor]["uniqueid"].startswith(bridge_config["sensors"][url_pices[4]]["uniqueid"][:26]):
                             del bridge_config["sensors"][sensor]
                             logging.info('Delete related sensor ' + sensor)
-                del bridge_config[url_pices[3]][url_pices[4]]
+                try:
+                    del bridge_config[url_pices[3]][url_pices[4]]
+                except:
+                    logging.info(str([url_pices[3]]) + ": " + str(url_pices[4]) + " does not exist")
             if url_pices[3] == "lights":
                 del_light = url_pices[4]
 
@@ -1744,7 +1757,7 @@ class S(BaseHTTPRequestHandler):
                         del bridge_config["scenes"][scene]["lightstates"][del_light]
                         if "lights" in bridge_config["scenes"][scene] and del_light in bridge_config["scenes"][scene]["lights"]:
                             bridge_config["scenes"][scene]["lights"].remove(del_light)
-                        if len(bridge_config["scenes"][scene]["lights"]) == 0 or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
+                        if ("lights" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lights"]) == 0) or len(bridge_config["scenes"][scene]["lightstates"]) == 0:
                             del bridge_config["scenes"][scene]
             elif url_pices[3] == "sensors":
                 for sensor in list(bridge_config["deconz"]["sensors"]):
