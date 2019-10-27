@@ -1487,6 +1487,8 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["locked"] = False
                         if "picture" not in post_dictionary:
                             post_dictionary["picture"] = ""
+                        if "type" not in post_dictionary:
+                            post_dictionary["type"] = "LightScene"
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
                         if "lights" in post_dictionary:
