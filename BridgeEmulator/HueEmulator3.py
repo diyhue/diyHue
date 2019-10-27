@@ -202,7 +202,7 @@ def updateLight(light, filename):
 def updateConfig():
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
-        
+
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
 
@@ -213,6 +213,11 @@ def updateConfig():
         if sensor["modelid"] == "TRADFRI motion sensor":
             if "lightsensor" not in sensor:
                 sensor["lightsensor"] = "internal"
+
+    # Update scenes
+    for scene_id, scene in bridge_config["scenes"].items():
+        if "type" not in scene:
+            scene["type"] = LightGroup
 
     # Update sensors
     for sensor_id, sensor in bridge_config["sensors"].items():
