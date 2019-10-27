@@ -1500,7 +1500,7 @@ class S(BaseHTTPRequestHandler):
                             if "bri" in bridge_config["lights"][light]["state"]:
                                 post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
                             if "colormode" in bridge_config["lights"][light]["state"]:
-                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"]:
+                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and bridge_config["lights"][light]["state"]["colormode"] in bridge_config["lights"][light]["state"]:
                                     post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
                                 elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
                                     post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
