@@ -214,7 +214,7 @@ def updateLight(light, filename):
 def updateConfig():
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
-        
+
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
 
@@ -225,6 +225,11 @@ def updateConfig():
         if sensor["modelid"] == "TRADFRI motion sensor":
             if "lightsensor" not in sensor:
                 sensor["lightsensor"] = "internal"
+
+    # Update scenes
+    for scene_id, scene in bridge_config["scenes"].items():
+        if "type" not in scene:
+            scene["type"] = LightGroup
 
     # Update sensors
     for sensor_id, sensor in bridge_config["sensors"].items():
@@ -1549,6 +1554,8 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "groups":
                         if "type" not in post_dictionary:
                             post_dictionary["type"] = "LightGroup"
+                        if post_dictionary["type"] == "Room" and "class" not in post_dictionary:
+                            post_dictionary["class"] = "Other"
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
                         try:
