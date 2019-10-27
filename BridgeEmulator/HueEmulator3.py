@@ -1509,7 +1509,7 @@ class S(BaseHTTPRequestHandler):
                     elif url_pices[3] == "groups":
                         if "type" not in post_dictionary:
                             post_dictionary["type"] = "LightGroup"
-                        if "class" not in post_dictionary:
+                        if post_dictionary["type"] == "Room" and class" not in post_dictionary:
                             post_dictionary["class"] = "Other"
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
