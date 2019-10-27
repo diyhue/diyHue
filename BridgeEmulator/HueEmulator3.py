@@ -1751,7 +1751,7 @@ class S(BaseHTTPRequestHandler):
             elif url_pices[3] == "groups":
                 delscenes = []
                 for scene in bridge_config["scenes"]:
-                    if bridge_config["scenes"][scene]["group"] == url_pices[4]:
+                    if "group" in bridge_config["scenes"][scene] and bridge_config["scenes"][scene]["group"] == url_pices[4]:
                         delscenes.append(scene)
                 for scene in delscenes:
                     del bridge_config["scenes"][scene]
