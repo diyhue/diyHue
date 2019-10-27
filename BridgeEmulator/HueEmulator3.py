@@ -1507,6 +1507,8 @@ class S(BaseHTTPRequestHandler):
                                     post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
 
                     elif url_pices[3] == "groups":
+                        if "type" not in post_dictionary:
+                            post_dictionary["type"] = "LightGroup"
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
                         try:
