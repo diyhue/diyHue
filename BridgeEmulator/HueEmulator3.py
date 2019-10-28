@@ -217,7 +217,7 @@ def updateConfig():
     # Update scenes
     for scene_id, scene in bridge_config["scenes"].items():
         if "type" not in scene:
-            scene["type"] = LightGroup
+            scene["type"] = "LightGroup"
 
     # Update sensors
     for sensor_id, sensor in bridge_config["sensors"].items():
