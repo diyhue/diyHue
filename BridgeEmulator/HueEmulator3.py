@@ -252,18 +252,6 @@ def updateConfig():
                 elif light["type"] == "Dimmable light":
                     light["modelid"] = "LWB010"
 
-        # Update ESPHome light firmware version (adapted from Philips)
-        if "manufacturername" in light and light["manufacturername"] == "ESPHome":
-            swversion = "1.46.13_r26312"
-            if light["modelid"] in ["ESPHome-RGBW", "ESPHome-CT", "ESPHome-RGB", "ESPHome-Dimmable", "ESPHome-Toggle"]:
-                # Update archetype for various Philips models
-                if light["modelid"] in ["ESPHome-CT", "ESPHome-Dimmable", "ESPHome-Toggle"]:
-                    archetype = "classicbulb"
-                elif light["modelid"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
-                    archetype = "sultanbulb"
-
-                light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
-
         # Update Philips lights firmware version
         if "manufacturername" in light and light["manufacturername"] == "Philips":
             swversion = "1.46.13_r26312"

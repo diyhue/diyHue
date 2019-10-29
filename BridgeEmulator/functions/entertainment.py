@@ -14,6 +14,7 @@ def entertainmentService(lights, addresses, groups):
         try:
             data = serverSocket.recvfrom(106)[0]
             nativeLights = {}
+            esphomeLights = {}
             if data[:9].decode('utf-8') == "HueStream":
                 syncing = True #Set sync flag when receiving valid data
                 if data[14] == 0: #rgb colorspace
@@ -35,6 +36,11 @@ def entertainmentService(lights, addresses, groups):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = [r, g, b]
+                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                    if addresses[str(lightId)]["ip"] not in esphomeLights:
+                                        esphomeLights[addresses[str(lightId)]["ip"]] = {}
+                                    bri = int(max(r,g,b))
+                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
                                     if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
                                         if r == 0 and  g == 0 and  b == 0:
@@ -70,6 +76,14 @@ def entertainmentService(lights, addresses, groups):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
+                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                    if addresses[str(lightId)]["ip"] not in esphomeLights:
+                                        esphomeLights[addresses[str(lightId)]["ip"]] = {}
+                                    color = convert_xy(x, y, bri)
+                                    r = int(color[0])
+                                    g = int(color[1])
+                                    b = int(color[2])
+                                    esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
                                     fremeID += 1
                                     if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
@@ -80,6 +94,12 @@ def entertainmentService(lights, addresses, groups):
                     udpmsg = bytearray()
                     for light in nativeLights[ip].keys():
                         udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+                    sock.sendto(udpmsg, (ip.split(":")[0], 2100))
+            if len(esphomeLights) is not 0:
+                for ip in esphomeLights.keys():
+                    udpmsg = bytearray()
+                    udpmsg += bytes([0]) + bytes([esphomeLights[ip]["color"][0]]) + bytes([esphomeLights[ip]["color"][1]]) + bytes([esphomeLights[ip]["color"][2]]) + bytes([esphomeLights[ip]["color"][3]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
         except Exception: #Assuming the only exception is a network timeout, please don't scream at me
