@@ -38,7 +38,7 @@ wait
 cd /opt/hue-emulator
 git clone https://github.com/ARMmbed/mbedtls.git
 wait
-cp /opt/hue-emultor/ssl_server2_diyhue.c /opt/hue-emultor/mbedtls
+cp /opt/hue-emulator/ssl_server2_diyhue.c /opt/hue-emulator/mbedtls
 cd /opt/hue-emulator/mbedtls
 export CC=gcc && make no_test
 wait
