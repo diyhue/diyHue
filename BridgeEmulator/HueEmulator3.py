@@ -1432,7 +1432,7 @@ class S(BaseHTTPRequestHandler):
                             del scenelist["scenes"][scene]["lightstates"]
                         if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                             scenelist["scenes"][scene]["lights"] = {}
-                            scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
+                            scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": scenelist["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif len(url_pices) == 4: #print specified object config
                     if "scenes" == url_pices[3]: #trim lightstates for scenes
@@ -1443,7 +1443,7 @@ class S(BaseHTTPRequestHandler):
                                 del scenelist["scenes"][scene]["lightstates"]
                             if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                                 scenelist["scenes"][scene]["lights"] = {}
-                                scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
+                                scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1469,7 +1469,7 @@ class S(BaseHTTPRequestHandler):
                             scenelist["scenes"][scene] = bridge_config["scenes"][scene]
                             if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                                 scenelist["scenes"][scene]["lights"] = {}
-                                scenelist["scenes"][scene]["lights"] = scenelist["groups"][scenelist["scenes"][scene]["group"]]["lights"]
+                                scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
