@@ -25,7 +25,7 @@ light_types["LCT015"] = {"type": "Extended color light", "swversion": "1.46.13_r
 light_types["LCT015"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "effect": "none", "colormode": "ct", "reachable": True}
 light_types["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
 light_types["LCT015"]["capabilities"] = {"certified": True, "control": {"mindimlevel": 1000, "maxlumen": 806, "ct":{"min": 153, "max": 500}}}
-light_types["LCT015"]["streaming"]: {"renderer": True, "proxy": True}
+light_types["LCT015"]["streaming"] = {"renderer": True, "proxy": True}
 
 
 light_types["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581"}
