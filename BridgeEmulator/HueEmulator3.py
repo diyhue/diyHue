@@ -34,9 +34,9 @@ from protocols import protocols, yeelight, tasmota, native_single, native_multi,
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
-disableOnlineDiscover = False
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
+protocols = [yeelight, tasmota, native_single, native_multi, esphome]
 
 ap = argparse.ArgumentParser()
 
@@ -51,6 +51,7 @@ ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <S
 ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
 ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
+ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
 
 args = ap.parse_args()
 
@@ -142,7 +143,13 @@ else:
   deconz_ip = "127.0.0.1"
 logging.info(deconz_ip)
 
-protocols = [yeelight, tasmota, native_single, native_multi, esphome]
+if args.disable_online_discover or ((os.getenv('disable-online-discover') and (os.getenv('disable-online-discover') == "true" or os.getenv('disable-online-discover') == "True"))):
+    disableOnlineDiscover = True
+    logging.info("Online Discovery/Remote API Disabled!")
+else:
+    disableOnlineDiscover = False
+    logging.info("Online Discovery/Remote API Enabled!")
+
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
