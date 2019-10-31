@@ -1426,6 +1426,7 @@ class S(BaseHTTPRequestHandler):
                 if len(url_pices) == 3: #print entire config
                     #trim off lightstates as per hue api
                     scenelist = {}
+                    scenelist["scenes"] = {}
                     for scene in bridge_config["scenes"]:
                         scenelist["scenes"][scene] = bridge_config["scenes"][scene]
                         if "lightstates" in scenelist["scenes"][scene]:
@@ -1437,6 +1438,7 @@ class S(BaseHTTPRequestHandler):
                 elif len(url_pices) == 4: #print specified object config
                     if "scenes" == url_pices[3]: #trim lightstates for scenes
                         scenelist = {}
+                        scenelist["scenes"] = {}
                         for scene in bridge_config["scenes"]:
                             scenelist["scenes"][scene] = bridge_config["scenes"][scene]
                             if "lightstates" in scenelist["scenes"][scene]:
@@ -1465,6 +1467,7 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif "scenes" == url_pices[3]: #trim lightstates for scenes
                         scenelist = {}
+                        scenelist["scenes"] = {}
                         for scene in bridge_config["scenes"]:
                             scenelist["scenes"][scene] = bridge_config["scenes"][scene]
                             if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
