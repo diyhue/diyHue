@@ -29,10 +29,15 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
  - Docker ;-)
 
 
+## Recomandation:
+ - Hue Assistant phone app for remote control and entertainment effects.
+ - WS2812 Strip + Wemos D1 mini board for cool entertainment affects.
+ - RaspberryPi 3B connected via ethernet port to your network for bridge emulation.
+
 ## To Do
  - ~~Improve web interface~~
  - esp8266 alarm horn (+schematic)
- - esp8266 IR controller 
+ - ~~esp8266 IR controller~~
  - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
  - ~~control IKEA Trådfri lights from HUE applications~~
  - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~

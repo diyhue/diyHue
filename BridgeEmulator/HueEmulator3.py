@@ -36,6 +36,7 @@ from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
+protocols = [yeelight, tasmota, native_single, native_multi, esphome]
 
 ap = argparse.ArgumentParser()
 
@@ -50,6 +51,7 @@ ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <S
 ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
 ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
+ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
 
 args = ap.parse_args()
 
@@ -141,7 +143,13 @@ else:
   deconz_ip = "127.0.0.1"
 logging.info(deconz_ip)
 
-protocols = [yeelight, tasmota, native_single, native_multi, esphome]
+if args.disable_online_discover or ((os.getenv('disable-online-discover') and (os.getenv('disable-online-discover') == "true" or os.getenv('disable-online-discover') == "True"))):
+    disableOnlineDiscover = True
+    logging.info("Online Discovery/Remote API Disabled!")
+else:
+    disableOnlineDiscover = False
+    logging.info("Online Discovery/Remote API Enabled!")
+
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
@@ -200,6 +208,15 @@ def updateLight(light, filename):
 
 # Make various updates to the config JSON structure to maintain backwards compatibility with old configs
 def updateConfig():
+
+    #### bridge emulator config
+
+    if int(bridge_config["config"]["swversion"]) < 1935074050:
+        bridge_config["config"]["swversion"] = "1935074050"
+        bridge_config["config"]["apiversion"] = "1.35.0"
+
+    ### end bridge config
+
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
 
@@ -252,6 +269,18 @@ def updateConfig():
                 elif light["type"] == "Dimmable light":
                     light["modelid"] = "LWB010"
 
+        # Update ESPHome light firmware version (adapted from Philips)
+        if "manufacturername" in light and light["manufacturername"] == "ESPHome":
+            swversion = "1.46.13_r26312"
+            if light["modelid"] in ["ESPHome-RGBW", "ESPHome-CT", "ESPHome-RGB", "ESPHome-Dimmable", "ESPHome-Toggle"]:
+                # Update archetype for various Philips models
+                if light["modelid"] in ["ESPHome-CT", "ESPHome-Dimmable", "ESPHome-Toggle"]:
+                    archetype = "classicbulb"
+                elif light["modelid"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
+                    archetype = "sultanbulb"
+
+                light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
+
         # Update Philips lights firmware version
         if "manufacturername" in light and light["manufacturername"] == "Philips":
             swversion = "1.46.13_r26312"
@@ -259,11 +288,18 @@ def updateConfig():
                 # Update archetype for various Philips models
                 if light["modelid"] in ["LTW001", "LWB010"]:
                     archetype = "classicbulb"
+                    light["productname"] = "Hue white lamp"
+                    light["productid"] = "Philips-LWB014-1-A19DLv3"
+                    light["capabilities"] = {"certified": True,"control": {"ct": {"max": 500,"min": 153},"maxlumen": 840,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": False}}
                 elif light["modelid"] == "LCT015":
                     archetype = "sultanbulb"
+                    light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": True,"renderer": True}}
+                    light["productname"] = "Hue color lamp"
                 elif light["modelid"] == "LST002":
                     archetype = "huelightstrip"
                     swversion = "5.127.1.26581"
+                    light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
+                    light["productname"] = "Hue lightstrip plus"
 
                 light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
 
@@ -277,6 +313,8 @@ def updateConfig():
     #set entertainment streaming to inactive on start/restart
     for group_id, group in bridge_config["groups"].items():
         if "type" in group and group["type"] == "Entertainment":
+            if "stream" not in group:
+                group["stream"] = {}
             group["stream"].update({"active": False, "owner": None})
 
     #fix timezones bug
@@ -717,7 +755,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
                     logging.info('Decoding JSON from %s has failed', ip)
         except Exception as e:
             logging.info("ip %s is unknown device: %s", ip, e)
-            raise
+            #raise
     scanDeconz()
     scanTradfri()
     saveConfig()
@@ -1504,6 +1542,8 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["type"] = "LightGroup"
                         if post_dictionary["type"] in ["Room", "Zone"] and "class" not in post_dictionary:
                             post_dictionary["class"] = "Other"
+                        elif post_dictionary["type"] == "Entertainment" and "stream" not in post_dictionary:
+                            post_dictionary["stream"] = {"active": False, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"}
                         post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
                     elif url_pices[3] == "schedules":
                         try:
@@ -1604,11 +1644,15 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "groups" and "stream" in put_dictionary:
                     if "active" in put_dictionary["stream"]:
                         if put_dictionary["stream"]["active"]:
+                            for light in bridge_config["groups"][url_pices[4]]["lights"]:
+                                bridge_config["lights"][light]["state"]["mode"] = "streaming"
                             logging.info("start hue entertainment")
                             Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
+                            for light in bridge_config["groups"][url_pices[4]]["lights"]:
+                                bridge_config["lights"][light]["state"]["mode"] = "homeautomation"
                             logging.info("stop hue entertainent")
                             Popen(["killall", "entertain-srv"])
                             bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
@@ -1811,7 +1855,8 @@ if __name__ == "__main__":
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
         Thread(target=remoteApi, args=[bridge_config["config"]]).start()
-        Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
+        if disableOnlineDiscover == False:
+            Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
             sleep(10)
