@@ -29,8 +29,8 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
  - Docker ;-)
 
 
-## Recomandation:
- - Hue Assistant phone app for remote control and entertainment effects.
+## Recommendation:
+ - Hue Essentials phone app for remote control and entertainment effects.
  - WS2812 Strip + Wemos D1 mini board for cool entertainment affects.
  - RaspberryPi 3B connected via ethernet port to your network for bridge emulation.
 
