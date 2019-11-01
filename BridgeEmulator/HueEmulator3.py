@@ -1732,11 +1732,14 @@ class S(BaseHTTPRequestHandler):
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
-                if url_pices[3] == "sensors" and url_pices[5] == "state":
-                    current_time = datetime.now()
-                    for key in put_dictionary.keys():
-                        sensors_state[url_pices[4]]["state"].update({key: current_time})
-                    rulesProcessor(url_pices[4], current_time)
+                if url_pices[3] == "sensors":
+                    if url_pices[5] == "state":
+                        current_time = datetime.now()
+                        for key in put_dictionary.keys():
+                            sensors_state[url_pices[4]]["state"].update({key: current_time})
+                        rulesProcessor(url_pices[4], current_time)
+                    elif url_pices[4] == "1":
+                        bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
                 try:
