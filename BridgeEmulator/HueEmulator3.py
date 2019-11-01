@@ -303,6 +303,9 @@ def updateConfig():
 
                 light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
 
+                if "mode" in light["state"]:
+                    light["state"]["mode"] = "homeautomation"
+
                 # Update startup config
                 if "startup" not in light["config"]:
                     light["config"]["startup"] = {"mode": "safety", "configured": False}
@@ -1457,7 +1460,6 @@ class S(BaseHTTPRequestHandler):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
-                        new_lights.clear()
                     elif url_pices[3] == "groups" and url_pices[4] == "0":
                         any_on = False
                         all_on = True
@@ -1504,6 +1506,7 @@ class S(BaseHTTPRequestHandler):
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
+                    new_lights.clear()
                     Thread(target=scan_for_lights).start()
                     sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                     self._set_end_headers(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],separators=(',', ':'),ensure_ascii=False), "utf8"))
