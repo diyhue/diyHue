@@ -303,6 +303,9 @@ def updateConfig():
 
                 light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
 
+                if "mode" in light["state"]:
+                    light["state"]["mode"] = "homeautomation"
+
                 # Update startup config
                 if "startup" not in light["config"]:
                     light["config"]["startup"] = {"mode": "safety", "configured": False}
@@ -1457,7 +1460,6 @@ class S(BaseHTTPRequestHandler):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
-                        new_lights.clear()
                     elif url_pices[3] == "groups" and url_pices[4] == "0":
                         any_on = False
                         all_on = True
@@ -1504,6 +1506,7 @@ class S(BaseHTTPRequestHandler):
             if url_pices[2] in bridge_config["config"]["whitelist"]:
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     #if was a request to scan for lights of sensors
+                    new_lights.clear()
                     Thread(target=scan_for_lights).start()
                     sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                     self._set_end_headers(bytes(json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1676,7 +1679,7 @@ class S(BaseHTTPRequestHandler):
                     if url_pices[3] == "groups" and "lights" in put_dictionary: #need to update scene lightstates
                         for scene in bridge_config["scenes"]: # iterate over scenes
                             for light in put_dictionary["lights"]: # check each scene to make sure it has a lightstate for each new light
-                                if light not in bridge_config["scenes"][scene]["lightstates"]: # copy first light state to new light
+                                if (light not in bridge_config["scenes"][scene]["lightstates"]) and ("lightstates" in bridge_config["scenes"][scene]): # copy first light state to new light
                                     if ("lights" in bridge_config["scenes"][scene] and light in bridge_config["scenes"][scene]["lights"]) or \
                                     (bridge_config["scenes"][scene]["type"] == "GroupScene" and light in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]):
                                         # Either light is in the scene or part of the group now, add lightscene based on previous scenes
