@@ -77,23 +77,23 @@ else
 	case $machine_type in
 		 aarch64)
 			  echo -e "\033[32m Copying entertainment-aarch64.\033[0m"
-			  cp entertainment-aarch64 /opt/hue-emulator/entertain-srv
+			  cp entertainment-openwrt-aarch64 /opt/hue-emulator/entertain-srv
 			  ;;
 		 arm*)
 			  echo -e "\033[32m Copying entertainment-arm.\033[0m"
-			  cp entertainment-arm /opt/hue-emulator/entertain-srv
+			  cp entertainment-openwrt-arm /opt/hue-emulator/entertain-srv
 			  ;;
 		 x86_64|amd64)
 			  echo -e "\033[32m Copying entertainment-x86_64.\033[0m"
-			  cp entertainment-x86_64 /opt/hue-emulator/entertain-srv
+			  cp entertainment-openwrt-x86_64 /opt/hue-emulator/entertain-srv
 			  ;;
 		 i?86)
 			  echo -e "\033[32m Copying entertainment-i686.\033[0m"
-			  cp entertainment-i686 /opt/hue-emulator/entertain-srv
+			  cp entertainment-openwrt-i686 /opt/hue-emulator/entertain-srv
 			  ;;
 		 *) # Default to MIPS
 			  echo -e "\033[32m Copying entertainment-mips.\033[0m"
-			  cp entertainment-mips /opt/hue-emulator/entertain-srv
+			  cp entertainment-openwrt-mips /opt/hue-emulator/entertain-srv
 			  ;;
 	esac
 fi
@@ -122,5 +122,5 @@ echo -e "\033[32m Update completed.\033[0m"
 rm -Rf /opt/tmp
 echo -e "\033[32m Restarting...\033[0m"
 wait
-reboot 03
+reboot 10
 exit 0

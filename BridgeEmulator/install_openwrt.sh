@@ -22,7 +22,6 @@ cp -r default-config.json /opt/hue-emulator/config.json
 wait
 cp hueemulatorWrt-service /etc/init.d/
 
-
 wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
 wait
 unzip -q -o astral.zip
@@ -32,7 +31,6 @@ python3 setup.py install
 wait
 cd ../
 rm -rf astral.zip astral-master/
-
 
 wait
 cd /opt/hue-emulator
@@ -47,8 +45,7 @@ wait
 cp /opt/hue-emulator/mbedtls/ssl_server2_diyhue /opt/hue-emulator/entertain-srv
 wait
 rm -Rf /opt/hue-emulator/mbedtls
-
-
+wait
 mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 curl https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 wait
@@ -60,8 +57,6 @@ touch /opt/hue-emulator/cert.pem
 cat private.key > /opt/hue-emulator/cert.pem
 cat public.crt >> /opt/hue-emulator/cert.pem
 rm private.key public.crt
-
-
 
 chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
@@ -81,15 +76,3 @@ wait
 nano /etc/lighttpd/lighttpd.conf
 echo -e "\033[32m Installation completed.\033[0m"
 exit 0
-
-
-
-
-
-
-
-
-
-
-
-
