@@ -23,6 +23,13 @@ def postRequest(address, request_data, timeout=3):
     response = requests.post("http://" + address + request_data, timeout=3, headers=head)
     return response.text
 
+def addRequest(request_data, data_type, new_data):
+    if ("?" in request_data):
+        request_data = request_data + "&" + str(data_type) + "=" + str(new_data)
+    else:
+        request_data = request_data + "?" + str(data_type) + "=" + str(new_data)
+    return request_data
+
 def getLightType(light, address, data):
     request_data = ""
     if address["esphome_model"] == "ESPHome-RGBW":
@@ -186,26 +193,15 @@ def set_light(address, light, data):
                     brightness = ct_boost + brightness
                 if brightness > 255: # do not send brightness values over 255
                     brightness = 255
-                brightness = str(brightness)
-                if ("?" in request_data):
-                    request_data = request_data + "&brightness=" + brightness
-                else:
-                    request_data = request_data + "?brightness=" + brightness
+                request_data = addRequest(request_data, "brightness", brightness)
             if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB", "ESPHome-CT"]:
                 if ("xy" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
                     color = convert_xy(data['xy'][0], data['xy'][1], 255)
-                    red = str(color[0])
-                    green = str(color[1])
-                    blue = str(color[2])
-                    if ("?" in request_data):
-                        request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
-                    else:
-                        request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
+                    request_data = addRequest(request_data, "r", color[0])
+                    request_data = addRequest(request_data, "g", color[1])
+                    request_data = addRequest(request_data, "b", color[2])
                 elif "ct" in data and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-CT"]):
-                    if ("?" in request_data):
-                        request_data = request_data + "&color_temp=" + str(data['ct'])
-                    else:
-                        request_data = request_data + "?color_temp=" + str(data['ct'])
+                    request_data = addRequest(request_data, "color_temp", data['ct'])
                 elif (("hue" in data) or ("sat" in data)) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
                     if (("hue" in data) and ("sat" in data)):
                         hue = data['hue']
@@ -221,18 +217,13 @@ def set_light(address, light, data):
                     else:
                         bri = data['bri']
                     color = hsv_to_rgb(hue, sat, bri)
-                    red = str(color[0])
-                    green = str(color[1])
-                    blue = str(color[2])
-                    if ("?" in request_data):
-                        request_data = request_data + "&r=" + red + "&g=" + green + "&b=" + blue 
-                    else:
-                        request_data = request_data + "?r=" + red + "&g=" + green + "&b=" + blue
+                    request_data = addRequest(request_data, "r", color[0])
+                    request_data = addRequest(request_data, "g", color[1])
+                    request_data = addRequest(request_data, "b", color[2])
             if "transitiontime" in data:
-                if ("?" in request_data):
-                    request_data = request_data + "&transition=" + str(int(data['transitiontime']/10))
-                else:
-                    request_data = request_data + "?transition=" + str(int(data['transitiontime']/10))
+                request_data = addRequest(request_data, "transition", data['transitiontime']/10)
+            else: #Utilize default interval of 0.4
+                request_data = addRequest(request_data, "transition", 0.4)
 
     postRequest(address["ip"], request_data)
 
