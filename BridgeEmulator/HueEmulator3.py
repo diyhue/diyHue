@@ -1641,6 +1641,7 @@ class S(BaseHTTPRequestHandler):
                         else:
                             bridge_config["sensors"][url_pices[4]][key] = value
                             sensors_state[url_pices[4]][key] = current_time
+                    sensors_state[url_pices[4]]["state"]["lastupdated"] = current_time
                     rulesProcessor(url_pices[4], current_time)
                     if url_pices[4] == "1" and bridge_config[url_pices[3]][url_pices[4]]["modelid"] == "PHDL00":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
@@ -1737,6 +1738,7 @@ class S(BaseHTTPRequestHandler):
                         current_time = datetime.now()
                         for key in put_dictionary.keys():
                             sensors_state[url_pices[4]]["state"].update({key: current_time})
+                        sensors_state[url_pices[4]]["state"]["lastupdated"] = current_time
                         rulesProcessor(url_pices[4], current_time)
                     elif url_pices[4] == "1":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
