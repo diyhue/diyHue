@@ -240,6 +240,18 @@ def updateConfig():
     for sensor_id, sensor in bridge_config["sensors"].items():
         if sensor["type"] == "CLIPGenericStatus":
             sensor["state"]["status"] = 0
+        elif sensor["type"] == "ZLLTemperature" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+            sensor["capabilities"] = {"certified": True, "primary": False}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swversion"] = "6.1.1.27575"
+        elif sensor["type"] == "ZLLPresence" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+            sensor["capabilities"] = {"certified": True, "primary": True}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swversion"] = "6.1.1.27575"
+        elif sensor["type"] == "ZLLLightLevel" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+            sensor["capabilities"] = {"certified": True, "primary": False}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swversion"] = "6.1.1.27575"
 
     # Update lights
     for light_id, light_address in bridge_config["lights_address"].items():
@@ -319,6 +331,8 @@ def updateConfig():
             if "stream" not in group:
                 group["stream"] = {}
             group["stream"].update({"active": False, "owner": None})
+
+        group["sensors"] = []
 
     #fix timezones bug
     if "values" not in bridge_config["capabilities"]["timezones"]:
@@ -1413,7 +1427,7 @@ class S(BaseHTTPRequestHandler):
                         if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["bridgeId"]]["uniqueid"][:-1] + "0":
                             bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["lightSensorId"] = sensor
                             break
-                    generateSensorsState()
+                    generateDxState()
             else: #switch action request
                 if get_parameters["mac"][0] in bridge_config["emulator"]["sensors"]:
                     sensorId = bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["bridgeId"]
@@ -1582,7 +1596,7 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}, "config": {"on": True,"reachable": True}})
                     elif url_pices[3] == "resourcelinks":
                         post_dictionary.update({"owner" :url_pices[2]})
-                    generateSensorsState()
+                    generateDxState()
                     bridge_config[url_pices[3]][new_object_id] = post_dictionary
                     logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4, separators=(',', ': ')))
                     self._set_end_headers(bytes(json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':'),ensure_ascii=False), "utf8"))
