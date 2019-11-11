@@ -25,13 +25,14 @@ echo -e "\033[32m Unzip diyHue.\033[0m"
 unzip -q -o  diyHue.zip
 wait
 echo -e "\033[32m Copying unzip files to directories.\033[0m"
+arch=`uname -m`
 cd /opt/tmp/diyHue-master/BridgeEmulator
 cp HueEmulator3.py updater /opt/hue-emulator/
 cp default-config.json /opt/hue-emulator/config.json
 cp default-config.json /opt/hue-emulator/default-config.json
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
-cp entertainment-openwrt-mips /opt/hue-emulator/entertain-srv
+cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
 rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
