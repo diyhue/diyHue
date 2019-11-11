@@ -1316,7 +1316,7 @@ class S(BaseHTTPRequestHandler):
                     if "action=Activate" in self.path:
                         self._set_headers()
                         bridge_config["config"]["linkbutton"] = False
-                        bridge_config["linkbutton"]["lastlinkbuttonpushed"] = datetime.now().strftime("%s")
+                        bridge_config["linkbutton"]["lastlinkbuttonpushed"] = str(int(datetime.now().timestamp()))
                         saveConfig()
                         self._set_end_headers(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
@@ -1487,7 +1487,7 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                bridge_config["config"]["linkbutton"] = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().strftime("%s"))
+                bridge_config["config"]["linkbutton"] = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().timestamp())
                 if len(url_pices) == 3: #print entire config
                     #trim off lightstates as per hue api
                     scenelist = {}
@@ -1648,7 +1648,7 @@ class S(BaseHTTPRequestHandler):
                 logging.info(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path.startswith("/api") and "devicetype" in post_dictionary: #new registration by linkbutton
             last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
-            if (args.no_link_button or last_button_press+30 >= int(datetime.now().strftime("%s")) or
+            if (args.no_link_button or last_button_press+30 >= int(datetime.now().timestamp()) or
                     bridge_config["config"]["linkbutton"]):
                 username = str(uuid.uuid1()).replace('-', '')
                 if post_dictionary["devicetype"].startswith("Hue Essentials"):
