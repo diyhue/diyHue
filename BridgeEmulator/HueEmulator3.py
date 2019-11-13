@@ -675,7 +675,7 @@ def iter_ips(port):
         return
     for addr in range(ip_range_start, ip_range_end + 1):
         host[3] = str(addr)
-        test_host = '%s.%s.%s.%s' % (*host,)
+        test_host = '.'.join(host)
         if test_host != HOST_IP:
             yield (test_host, port)
 
