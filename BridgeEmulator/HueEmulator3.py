@@ -205,7 +205,7 @@ def sanitizeBridgeScenes():
                 if lightstate not in bridge_config["lights"]: # light is not present anymore on the bridge
                     del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete unused lightstate
 
-        if len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
+        if "lightstates" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
             del bridge_config["scenes"][scene]
 
 def getLightsVersions():
