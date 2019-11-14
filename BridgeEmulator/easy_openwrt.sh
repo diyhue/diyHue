@@ -29,8 +29,7 @@ cd /opt/tmp/diyHue-master/BridgeEmulator
 cp HueEmulator3.py updater /opt/hue-emulator/
 cp default-config.json /opt/hue-emulator/config.json
 cp default-config.json /opt/hue-emulator/default-config.json
-cp -r web-ui /opt/hue-emulator/
-cp -r functions protocols debug /opt/hue-emulator/
+cp -r debug functions protocols web-ui /opt/hue-emulator/
 echo -e "\033[32m Detecting processor architecture.\033[0m"
 wait
 arch=`uname -m`
@@ -59,6 +58,7 @@ chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
+chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable
 wait
