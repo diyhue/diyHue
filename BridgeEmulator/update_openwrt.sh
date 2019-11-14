@@ -43,61 +43,8 @@ cp /tmp/diyHue-config/cert.pem.bak /opt/hue-emulator/cert.pem
 cp default-config.json /opt/hue-emulator/default-config.json
 cp -r web-ui /opt/hue-emulator/
 cp -r functions protocols debug /opt/hue-emulator/
-
-if [ "$COMPILE_ENTERTAIN_SRV" = "true" ]
-then
-
-	# Build from Source
-	opkg update
-	wait
-	opkg install gcc make automake ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client
-	wait
-	cd /opt/tmp/diyHue*/BridgeEmulator
-	mv ssl_server2_diyhue.c /opt/hue-emulator/
-	cd /opt/hue-emulator
-	wait
-	git clone https://github.com/ARMmbed/mbedtls.git
-	cp /opt/hue-emulator/ssl_server2_diyhue.c /opt/hue-emulator/mbedtls
-	cd /opt/hue-emulator/mbedtls
-	git checkout master
-	git submodule update --init --recursive
-	export CC=gcc && make no_test
-	wait
-	gcc -I../mbedtls/include ssl_server2_diyhue.c -o ssl_server2_diyhue -L../mbedtls/library -lmbedtls -lmbedx509 -lmbedcrypto
-	wait
-	cp /opt/hue-emulator/mbedtls/ssl_server2_diyhue /opt/hue-emulator/entertain-srv
-	cd /opt/tmp/diyHue-master/BridgeEmulator
-	wait
-	rm -Rf /opt/hue-emulator/mbedtls
-
-else
-	
-	# Use Prebuilt Binary
-	machine_type=$(uname -m)
-	case $machine_type in
-		 aarch64)
-			  echo -e "\033[32m Copying entertainment-aarch64.\033[0m"
-			  cp entertainment-openwrt-aarch64 /opt/hue-emulator/entertain-srv
-			  ;;
-		 arm*)
-			  echo -e "\033[32m Copying entertainment-arm.\033[0m"
-			  cp entertainment-openwrt-arm /opt/hue-emulator/entertain-srv
-			  ;;
-		 x86_64|amd64)
-			  echo -e "\033[32m Copying entertainment-x86_64.\033[0m"
-			  cp entertainment-openwrt-x86_64 /opt/hue-emulator/entertain-srv
-			  ;;
-		 i?86)
-			  echo -e "\033[32m Copying entertainment-i686.\033[0m"
-			  cp entertainment-openwrt-i686 /opt/hue-emulator/entertain-srv
-			  ;;
-		 *) # Default to MIPS
-			  echo -e "\033[32m Copying entertainment-mips.\033[0m"
-			  cp entertainment-openwrt-mips /opt/hue-emulator/entertain-srv
-			  ;;
-	esac
-fi
-
+arch=`uname -m`
+cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
 rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
