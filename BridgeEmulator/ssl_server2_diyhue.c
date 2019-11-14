@@ -105,7 +105,7 @@ int main(void)
 #endif
 
 #define DFL_SERVER_ADDR NULL
-#define DFL_SERVER_PORT "4433"
+#define DFL_SERVER_PORT "443"
 #define DFL_DEBUG_LEVEL 0
 #define DFL_NBIO 0
 #define DFL_EVENT 0
