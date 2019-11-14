@@ -44,7 +44,8 @@ wait
 echo -e "\033[32m Copying startup service.\033[0m"
 cp hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Generating certificate.\033[0m"
-mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+#mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+mac=`cat /sys/class/net/br-lan/address`
 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
 echo -e "\033[32m Changing permissions.\033[0m"
 chmod +x /etc/init.d/hueemulatorWrt-service
@@ -72,5 +73,5 @@ echo -e "\033[32m Installation completed.\033[0m"
 rm -Rf /opt/tmp
 echo -e "\033[32m Restarting...\033[0m"
 wait
-reboot 03
+reboot 10
 exit 0

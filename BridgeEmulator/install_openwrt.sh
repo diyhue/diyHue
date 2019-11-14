@@ -70,7 +70,8 @@ cd /opt/hue-emulator
 rm -Rf /opt/hue-emulator/mbedtls-1ab9b5714852c6810c0a0bfd8c3b5c60a9a15482
 wait
 echo -e "\033[32m Creating certificate.\033[0m"
-mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+#mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+mac=`cat /sys/class/net/br-lan/address`
 curl https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 wait
 serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
@@ -104,5 +105,5 @@ wait
 nano /etc/lighttpd/lighttpd.conf
 echo -e "\033[32m Installation completed.\033[0m"
 wait
-reboot 05
+reboot 10
 exit 0
