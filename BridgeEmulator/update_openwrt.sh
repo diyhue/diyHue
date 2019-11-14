@@ -38,14 +38,20 @@ cp HueEmulator3.py updater /opt/hue-emulator/
 cp /tmp/diyHue-config/config.json.bak /opt/hue-emulator/config.json
 cp /tmp/diyHue-config/cert.pem.bak /opt/hue-emulator/cert.pem
 cp default-config.json /opt/hue-emulator/default-config.json
-cp -r web-ui /opt/hue-emulator/
-cp -r functions protocols debug /opt/hue-emulator/
-cp entertainment-mips /opt/hue-emulator/entertain-srv
+cp -r functions protocols debug web-ui /opt/hue-emulator/
+echo -e "\033[32m Detecting processor architecture.\033[0m"
+wait
+arch=`uname -m`
+wait
+echo -e "\033[32m Architecture detected: $arch\033[0m"
+echo -e "\033[32m Copying binary $arch for Openwrt.\033[0m"
+cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
+echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
 rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 echo -e "\033[32m Copying startup service.\033[0m"
-cp hueemulatorWrt-service /etc/init.d/
+cp /opt/tmp/diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Changing permissions.\033[0m"
 chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
@@ -65,5 +71,5 @@ echo -e "\033[32m Update completed.\033[0m"
 rm -Rf /opt/tmp
 echo -e "\033[32m Restarting...\033[0m"
 wait
-reboot 03
+reboot 10
 exit 0

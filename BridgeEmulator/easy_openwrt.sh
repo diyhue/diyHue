@@ -29,16 +29,23 @@ cd /opt/tmp/diyHue-master/BridgeEmulator
 cp HueEmulator3.py updater /opt/hue-emulator/
 cp default-config.json /opt/hue-emulator/config.json
 cp default-config.json /opt/hue-emulator/default-config.json
-cp -r web-ui /opt/hue-emulator/
-cp -r functions protocols debug /opt/hue-emulator/
-cp entertainment-mips /opt/hue-emulator/entertain-srv
+cp -r debug functions protocols web-ui /opt/hue-emulator/
+echo -e "\033[32m Detecting processor architecture.\033[0m"
+wait
+arch=`uname -m`
+wait
+echo -e "\033[32m Architecture detected: $arch\033[0m"
+echo -e "\033[32m Copying binary $arch for Openwrt.\033[0m"
+cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
+echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
 rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 echo -e "\033[32m Copying startup service.\033[0m"
 cp hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Generating certificate.\033[0m"
-mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+#mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
+mac=`cat /sys/class/net/br-lan/address`
 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
 echo -e "\033[32m Changing permissions.\033[0m"
 chmod +x /etc/init.d/hueemulatorWrt-service
@@ -52,6 +59,7 @@ chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
+chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable
 wait
@@ -65,5 +73,5 @@ echo -e "\033[32m Installation completed.\033[0m"
 rm -Rf /opt/tmp
 echo -e "\033[32m Restarting...\033[0m"
 wait
-reboot 03
+reboot 10
 exit 0
