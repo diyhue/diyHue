@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# To build entertainment srv from source use:
-# export COMPILE_ENTERTAIN_SRV=true
-
 echo -e "\033[32m Disable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service disable
 echo -e "\033[32m Create directory for backup configuration.\033[0m"
