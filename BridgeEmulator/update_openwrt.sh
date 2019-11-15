@@ -28,7 +28,7 @@ mkdir /opt/tmp
 mkdir /opt/hue-emulator
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
-wget -q https://github.com/juanesf/diyHue/archive/master.zip -O diyHue.zip
+wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
 echo -e "\033[32m Unzip diyHue.\033[0m"
 unzip -q -o  diyHue.zip
 wait
