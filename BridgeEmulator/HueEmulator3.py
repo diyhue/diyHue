@@ -718,7 +718,7 @@ def generate_light_name(base_name, light_nr):
 
 def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
-    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (*rand_bytes,)
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2],rand_bytes[3])
 
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
