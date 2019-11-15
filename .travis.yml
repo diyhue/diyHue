@@ -29,7 +29,7 @@ script:
 after_success:
 - >
   # do not push pull requests
-  if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+  if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [[ $TRAVIS_BRANCH != *"-"* ]]; then
     # login to docker hub
     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
     # install manifest tool
