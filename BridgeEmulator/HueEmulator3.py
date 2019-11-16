@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import argparse
 import base64
+import copy
 import json
 import logging
 import os
@@ -197,16 +198,15 @@ def sanitizeBridgeScenes():
                 del bridge_config["scenes"][scene] # delete the group
             else:
                 for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
-                    if lightstate not in  bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]: # if the light is no longer member in the group:
+                    if lightstate not in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]: # if the light is no longer member in the group:
                         del bridge_config["scenes"][scene]["lightstates"][lightstate] # delete the lighstate of the missing light
         else: # must be a lightscene
             for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
                 if lightstate not in bridge_config["lights"]: # light is not present anymore on the bridge
-                    del (bridge_config["scenes"][scene]["lightstates"][lightstate])
+                    del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete unused lightstate
 
-        if len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
+        if "lightstates" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
             del bridge_config["scenes"][scene]
-
 
 def getLightsVersions():
     lights = {}
@@ -253,8 +253,6 @@ def updateConfig():
     for scene_id, scene in bridge_config["scenes"].items():
         if "type" not in scene:
             scene["type"] = "LightGroup"
-        if "lighstates" not in scene:
-            scene["lighstates"] = {}
 
     # Update sensors
     for sensor_id, sensor in bridge_config["sensors"].items():
@@ -300,18 +298,6 @@ def updateConfig():
                     light["type"] = "Extended color light"
                 elif light["type"] == "Dimmable light":
                     light["modelid"] = "LWB010"
-
-        # Update ESPHome light firmware version (adapted from Philips)
-        if "manufacturername" in light and light["manufacturername"] == "ESPHome":
-            swversion = "1.46.13_r26312"
-            if light["modelid"] in ["ESPHome-RGBW", "ESPHome-CT", "ESPHome-RGB", "ESPHome-Dimmable", "ESPHome-Toggle"]:
-                # Update archetype for various Philips models
-                if light["modelid"] in ["ESPHome-CT", "ESPHome-Dimmable", "ESPHome-Toggle"]:
-                    archetype = "classicbulb"
-                elif light["modelid"] in ["ESPHome-RGBW", "ESPHome-RGB"]:
-                    archetype = "sultanbulb"
-
-                light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
 
         # Update Philips lights firmware version
         if "manufacturername" in light and light["manufacturername"] == "Philips":
@@ -1498,12 +1484,30 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["config"]["linkbutton"] = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().timestamp())
                 if len(url_pices) == 3: #print entire config
                     #trim off lightstates as per hue api
+                    scenelist = {}
+                    scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
+                    for scene in list(scenelist["scenes"]):
+                        if "lightstates" in list(scenelist["scenes"][scene]):
+                            del scenelist["scenes"][scene]["lightstates"]
+                        if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                            scenelist["scenes"][scene]["lights"] = {}
+                            scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                     sanitizeBridgeScenes()
-                    self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": bridge_config["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
+                    self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": scenelist["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif len(url_pices) == 4: #print specified object config
                     if "scenes" == url_pices[3]: #trim lightstates for scenes
-                        sanitizeBridgeScenes()
-                    self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':'),ensure_ascii=False), "utf8"))
+                        scenelist = {}
+                        scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
+                        for scene in list(scenelist["scenes"]):
+                            if "lightstates" in list(scenelist["scenes"][scene]):
+                                del scenelist["scenes"][scene]["lightstates"]
+                            if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                                scenelist["scenes"][scene]["lights"] = {}
+                                scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
+                        self._set_end_headers(bytes(json.dumps(scenelist["scenes"],separators=(',', ':'),ensure_ascii=False), "utf8"))
+                    else:
+                        self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':'),ensure_ascii=False), "utf8"))
+                    sanitizeBridgeScenes()
                 elif (len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == 'state')):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
@@ -1519,9 +1523,17 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps({"name":"Group 0","lights": [l for l in bridge_config["lights"]],"sensors": [s for s in bridge_config["sensors"]],"type":"LightGroup","state":{"all_on":all_on,"any_on":any_on},"recycle":False,"action":{"on":False,"alert":"none"}},separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif url_pices[3] == "info" and url_pices[4] == "timezones":
                         self._set_end_headers(bytes(json.dumps(bridge_config["capabilities"][url_pices[4]]["values"],separators=(',', ':'),ensure_ascii=False), "utf8"))
+                    elif "scenes" == url_pices[3]: #trim lightstates for scenes
+                        scenelist = {}
+                        scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
+                        for scene in list(scenelist["scenes"]):
+                            if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
+                                scenelist["scenes"][scene]["lights"] = {}
+                                scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
+                        self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
-            elif len(url_pices) == 3 or url_pices[3] == "config": #used by applications to discover the bridge
+            elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""},separators=(',', ':'),ensure_ascii=False), "utf8"))
             else: #user is not in whitelist
                 self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
