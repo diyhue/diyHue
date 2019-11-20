@@ -1,6 +1,7 @@
 [![license](https://img.shields.io/badge/license-GPLv3%2FApache%202.0%2FCC%20BY--SA%204.0-blue.svg)](https://github.com/diyhue/diyHue/blob/master/LICENSE.md)
 [![CommitActivity](https://img.shields.io/github/commit-activity/y/diyhue/diyhue.svg)](https://github.com/diyhue/diyHue/commits/master)
-[![ZenHub](https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png)](https://zenhub.com)
+
+[![Discourse](https://img.shields.io/discourse/users?server=https%3A%2F%2Fdiyhue.discourse.group)](https://diyhue.discourse.group)
 
 [![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://join.slack.com/t/diyhue/shared_invite/enQtNzAwNDE1NDY2MzQxLTljNGMwZmE0OWRhNDIwM2FjOGM1ZTcxNjNmYjc5ZmE3MjZlNmNjMmUzYmRkZjhhOGNjOTc4NzA0MGVkYzE2NWM) [![SlackStatus](https://slackinvite.squishedmooo.com/badge.svg?colorB=8ebc06)](https://slackinvite.squishedmooo.com/)
 
@@ -34,16 +35,6 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
  - WS2812 Strip + Wemos D1 mini board for cool entertainment affects.
  - RaspberryPi 3B connected via ethernet port to your network for bridge emulation.
 
-## To Do
- - ~~Improve web interface~~
- - esp8266 alarm horn (+schematic)
- - ~~esp8266 IR controller~~
- - ~~Working directly with ZigBee lights, switches and sensors with RaspBee module~~
- - ~~control IKEA Trådfri lights from HUE applications~~
- - ~~Create ESP8266 bridge device to add MI Lights to Hue Bridge emulator.~~
- - ~~On/Off control for other home devices using virtual lights~~
- - Alarm (~~email notification~~ + eps8266 horn)
- - ~~Hue Entertainment support~~
 
 ## Working HUE features:
   - Control lights (all functions)
@@ -68,6 +59,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
   - Kodi Hue Ambilight
   - Jeedom
   - Hue Sync for PC
+  - Deconz
  
  ## Working smartphone applications:
   - Hue (official application)
@@ -96,6 +88,27 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
   - Pwm Dimming (up to 6 lights for every esp8266)
   - On/Off plugs/lights (up to 6 lights for every esp8266)
   - On/Off 433Mhz devices (multiple devices for every esp8266)
+  
+## To Do
+ - esp8266 alarm horn (+schematic) 
+ - Alarm (~~email notification~~ + eps8266 horn)
+ 
+## Support:
+If you need help with diyHue you can get support from other users, aswell as the maintainer.
+
+[![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://join.slack.com/t/diyhue/shared_invite/enQtNzAwNDE1NDY2MzQxLTljNGMwZmE0OWRhNDIwM2FjOGM1ZTcxNjNmYjc5ZmE3MjZlNmNjMmUzYmRkZjhhOGNjOTc4NzA0MGVkYzE2NWM) For fast and live Support.
+
+[![Discourse](https://img.shields.io/discourse/users?server=https%3A%2F%2Fdiyhue.discourse.group)](https://diyhue.discourse.group) Our Board might already have your fix and answer ready. Have a look!
+
+Since Slack is faster at providing live Support but not as good when it comes to save and show known Issues, we kindly ask you to open a Topic at our Discourse group. This will provide Help for others in the future. 
+
+
+
+Note:
+Please provide some Logs to make it easier for all of us. Enable Debug by manually starting diyHue with additional `--debug true` argument.
+
+diyHue is Opensource and maintained by volunteers in their free time. You are welcome to contribute and become a recognised member of the diyHue community. 
+
  
 ## Stability:
 All the lights in my house are controlled by this solution so the stability is very important to me as there is no turning back to classic illumination (all switches were replaced with Ikea Trådfri Remotes and holes covered). However, I don't use all the functions, so I'm unable to perform full tests on every change. What I do currently use is Deconz with all Trådfri devices (lights + sensors), Xiaomi Motion Sensor, native ESP8266 bulbs, ESP8266 + WS2812B strips, and Xiaomi YeeLight color bulbs.
