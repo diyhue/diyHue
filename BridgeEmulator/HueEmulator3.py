@@ -406,7 +406,7 @@ def load_config(path):
 
 def resourceRecycle():
     sleep(5) #give time to application to delete all resources, then start the cleanup
-    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": []}
+    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
     for resourcelink in bridge_config["resourcelinks"].keys():
         for link in bridge_config["resourcelinks"][resourcelink]["links"]:
             link_parts = link.split("/")
