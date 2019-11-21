@@ -196,6 +196,7 @@ def sanitizeBridgeScenes():
         if "type" in bridge_config["scenes"][scene] and bridge_config["scenes"][scene]["type"] == "GroupScene": # scene has "type" key and "type" is "GroupScene"
             if bridge_config["scenes"][scene]["group"] not in bridge_config["groups"]: # the group don't exist
                 del bridge_config["scenes"][scene] # delete the group
+                continue # avoid KeyError on next if statement
             else:
                 for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
                     if lightstate not in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]: # if the light is no longer member in the group:
@@ -203,7 +204,7 @@ def sanitizeBridgeScenes():
         else: # must be a lightscene
             for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
                 if lightstate not in bridge_config["lights"]: # light is not present anymore on the bridge
-                    del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete unused lightstate
+                    del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete invalid lightstate
 
         if "lightstates" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
             del bridge_config["scenes"][scene]
