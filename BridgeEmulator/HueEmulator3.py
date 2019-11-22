@@ -484,6 +484,15 @@ def schedulerProcessor():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             bridge_config["schedules"][schedule]["status"] = "disabled"
+                    elif schedule_time.startswith("R/PT"):
+                        timmer = schedule_time[4:]
+                        (h, m, s) = timmer.split(':')
+                        d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        print("#### " + bridge_config["schedules"][schedule]["starttime"] + " vs " + (datetime.utcnow() - d).replace(microsecond=0).isoformat())
+                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
+                            logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
+                            bridge_config["schedules"][schedule]["starttime"] = datetime.utcnow().replace(microsecond=0).isoformat()
+                            sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     else:
                         if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                             logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
