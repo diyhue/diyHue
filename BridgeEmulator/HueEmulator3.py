@@ -1804,7 +1804,7 @@ class S(BaseHTTPRequestHandler):
 
                     updateGroupStats(url_pices[4], bridge_config["lights"], bridge_config["groups"])
                     sendLightRequest(url_pices[4], put_dictionary, bridge_config["lights"], bridge_config["lights_address"])
-                if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
+                if not url_pices[4] == "0" or not "scene" in put_dictionary: #group 0 and scene recall must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
