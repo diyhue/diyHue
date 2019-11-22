@@ -196,6 +196,7 @@ def sanitizeBridgeScenes():
         if "type" in bridge_config["scenes"][scene] and bridge_config["scenes"][scene]["type"] == "GroupScene": # scene has "type" key and "type" is "GroupScene"
             if bridge_config["scenes"][scene]["group"] not in bridge_config["groups"]: # the group don't exist
                 del bridge_config["scenes"][scene] # delete the group
+                continue # avoid KeyError on next if statement
             else:
                 for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
                     if lightstate not in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]: # if the light is no longer member in the group:
@@ -203,7 +204,7 @@ def sanitizeBridgeScenes():
         else: # must be a lightscene
             for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
                 if lightstate not in bridge_config["lights"]: # light is not present anymore on the bridge
-                    del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete unused lightstate
+                    del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete invalid lightstate
 
         if "lightstates" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
             del bridge_config["scenes"][scene]
@@ -407,7 +408,7 @@ def load_config(path):
 
 def resourceRecycle():
     sleep(5) #give time to application to delete all resources, then start the cleanup
-    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": []}
+    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
     for resourcelink in bridge_config["resourcelinks"].keys():
         for link in bridge_config["resourcelinks"][resourcelink]["links"]:
             link_parts = link.split("/")
@@ -483,6 +484,15 @@ def schedulerProcessor():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             bridge_config["schedules"][schedule]["status"] = "disabled"
+                    elif schedule_time.startswith("R/PT"):
+                        timmer = schedule_time[4:]
+                        (h, m, s) = timmer.split(':')
+                        d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+                        print("#### " + bridge_config["schedules"][schedule]["starttime"] + " vs " + (datetime.utcnow() - d).replace(microsecond=0).isoformat())
+                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
+                            logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
+                            bridge_config["schedules"][schedule]["starttime"] = datetime.utcnow().replace(microsecond=0).isoformat()
+                            sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     else:
                         if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                             logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
@@ -1092,7 +1102,6 @@ def splitLightsToDevices(group, state, scene={}):
                     bridge_config["groups"][grp]["action"]["bri"] = 254
                 elif bridge_config["groups"][grp]["action"]["bri"] < 1:
                     bridge_config["groups"][grp]["action"]["bri"] = 1
-                bridge_config["groups"][grp]["state"]["bri"] = bridge_config["groups"][grp]["action"]["bri"]
                 del state["bri_inc"]
                 state.update({"bri": bridge_config["groups"][grp]["action"]["bri"]})
             elif "ct_inc" in state:
@@ -1101,9 +1110,16 @@ def splitLightsToDevices(group, state, scene={}):
                     bridge_config["groups"][grp]["action"]["ct"] = 500
                 elif bridge_config["groups"][grp]["action"]["ct"] < 153:
                     bridge_config["groups"][grp]["action"]["ct"] = 153
-                bridge_config["groups"][grp]["state"]["ct"] = bridge_config["groups"][grp]["action"]["ct"]
                 del state["ct_inc"]
                 state.update({"ct": bridge_config["groups"][grp]["action"]["ct"]})
+            elif "hue_inc" in state:
+                bridge_config["groups"][grp]["action"]["hue"] += int(state["hue_inc"])
+                if bridge_config["groups"][grp]["action"]["hue"] > 65535:
+                    bridge_config["groups"][grp]["action"]["hue"] -= 65535
+                elif bridge_config["groups"][grp]["action"]["hue"] < 0:
+                    bridge_config["groups"][grp]["action"]["hue"] += 65535
+                del state["hue_inc"]
+                state.update({"hue": bridge_config["groups"][grp]["action"]["hue"]})
             for light in bridge_config["groups"][grp]["lights"]:
                 lightsData[light] = state
     else:
@@ -1533,7 +1549,7 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
-            elif (url_pices[2] == "nouser" or url_pices[2] == "none" or url_pices[2] == "config"): #used by applications to discover the bridge
+            elif len(url_pices) == 4 and url_pices[3] == "config": #used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""},separators=(',', ':'),ensure_ascii=False), "utf8"))
             else: #user is not in whitelist
                 self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1664,7 +1680,7 @@ class S(BaseHTTPRequestHandler):
         url_pices = self.path.rstrip('/').split('/')
         logging.info(self.path)
         logging.info(self.data_string)
-        if url_pices[2] in bridge_config["config"]["whitelist"]:
+        if url_pices[2] in bridge_config["config"]["whitelist"] or (url_pices[2] == "0" and self.client_address[0] == "127.0.0.1"):
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/"
@@ -1788,7 +1804,7 @@ class S(BaseHTTPRequestHandler):
 
                     updateGroupStats(url_pices[4], bridge_config["lights"], bridge_config["groups"])
                     sendLightRequest(url_pices[4], put_dictionary, bridge_config["lights"], bridge_config["lights_address"])
-                if not url_pices[4] == "0": #group 0 is virtual, must not be saved in bridge configuration
+                if not url_pices[4] == "0" or not "scene" in put_dictionary: #group 0 and scene recall must not be saved in bridge configuration
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
