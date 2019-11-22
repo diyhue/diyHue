@@ -1680,7 +1680,7 @@ class S(BaseHTTPRequestHandler):
         url_pices = self.path.rstrip('/').split('/')
         logging.info(self.path)
         logging.info(self.data_string)
-        if url_pices[2] in bridge_config["config"]["whitelist"]:
+        if url_pices[2] in bridge_config["config"]["whitelist"] or (url_pices[2] == "0" and self.client_address[0] == "127.0.0.1"):
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/"
