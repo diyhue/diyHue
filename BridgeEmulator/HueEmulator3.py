@@ -1093,7 +1093,6 @@ def splitLightsToDevices(group, state, scene={}):
                     bridge_config["groups"][grp]["action"]["bri"] = 254
                 elif bridge_config["groups"][grp]["action"]["bri"] < 1:
                     bridge_config["groups"][grp]["action"]["bri"] = 1
-                bridge_config["groups"][grp]["state"]["bri"] = bridge_config["groups"][grp]["action"]["bri"]
                 del state["bri_inc"]
                 state.update({"bri": bridge_config["groups"][grp]["action"]["bri"]})
             elif "ct_inc" in state:
@@ -1102,9 +1101,16 @@ def splitLightsToDevices(group, state, scene={}):
                     bridge_config["groups"][grp]["action"]["ct"] = 500
                 elif bridge_config["groups"][grp]["action"]["ct"] < 153:
                     bridge_config["groups"][grp]["action"]["ct"] = 153
-                bridge_config["groups"][grp]["state"]["ct"] = bridge_config["groups"][grp]["action"]["ct"]
                 del state["ct_inc"]
                 state.update({"ct": bridge_config["groups"][grp]["action"]["ct"]})
+            elif "hue_inc" in state:
+                bridge_config["groups"][grp]["action"]["hue"] += int(state["hue_inc"])
+                if bridge_config["groups"][grp]["action"]["hue"] > 65535:
+                    bridge_config["groups"][grp]["action"]["hue"] -= 65535
+                elif bridge_config["groups"][grp]["action"]["hue"] < 0:
+                    bridge_config["groups"][grp]["action"]["hue"] += 65535
+                del state["hue_inc"]
+                state.update({"hue": bridge_config["groups"][grp]["action"]["hue"]}
             for light in bridge_config["groups"][grp]["lights"]:
                 lightsData[light] = state
     else:
