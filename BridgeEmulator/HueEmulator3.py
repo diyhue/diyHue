@@ -1119,7 +1119,7 @@ def splitLightsToDevices(group, state, scene={}):
                 elif bridge_config["groups"][grp]["action"]["hue"] < 0:
                     bridge_config["groups"][grp]["action"]["hue"] += 65535
                 del state["hue_inc"]
-                state.update({"hue": bridge_config["groups"][grp]["action"]["hue"]}
+                state.update({"hue": bridge_config["groups"][grp]["action"]["hue"]})
             for light in bridge_config["groups"][grp]["lights"]:
                 lightsData[light] = state
     else:
