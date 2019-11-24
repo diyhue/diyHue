@@ -1600,20 +1600,20 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary["type"] = "LightScene"
                         if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
                             post_dictionary["lightstates"] = {}
-                        if "lights" in post_dictionary:
-                            lights = post_dictionary["lights"]
-                        elif "group" in post_dictionary:
-                            lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
-                        for light in lights:
-                            post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
-                            if "bri" in bridge_config["lights"][light]["state"]:
-                                post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
-                            if "colormode" in bridge_config["lights"][light]["state"]:
-                                if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and bridge_config["lights"][light]["state"]["colormode"] in bridge_config["lights"][light]["state"]:
-                                    post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
-                                elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
-                                    post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
-                                    post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
+                            if "lights" in post_dictionary:
+                                lights = post_dictionary["lights"]
+                            elif "group" in post_dictionary:
+                                lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                            for light in lights:
+                                post_dictionary["lightstates"][light] = {"on": bridge_config["lights"][light]["state"]["on"]}
+                                if "bri" in bridge_config["lights"][light]["state"]:
+                                    post_dictionary["lightstates"][light]["bri"] = bridge_config["lights"][light]["state"]["bri"]
+                                if "colormode" in bridge_config["lights"][light]["state"]:
+                                    if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and bridge_config["lights"][light]["state"]["colormode"] in bridge_config["lights"][light]["state"]:
+                                        post_dictionary["lightstates"][light][bridge_config["lights"][light]["state"]["colormode"]] = bridge_config["lights"][light]["state"][bridge_config["lights"][light]["state"]["colormode"]]
+                                    elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                        post_dictionary["lightstates"][light]["hue"] = bridge_config["lights"][light]["state"]["hue"]
+                                        post_dictionary["lightstates"][light]["sat"] = bridge_config["lights"][light]["state"]["sat"]
 
                     elif url_pices[3] == "groups":
                         if "type" not in post_dictionary:
