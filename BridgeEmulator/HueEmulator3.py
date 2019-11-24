@@ -1815,7 +1815,7 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                     dxState["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time
                     bridge_config["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
-                if not url_pices[4] == "0" or not "scene" in put_dictionary: #group 0 is virtual, must not be saved in bridge configuration, also the recall scene
+                if  url_pices[4] != "0" and "scene" not in put_dictionary: #group 0 is virtual, must not be saved in bridge configuration, also the recall scene
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
