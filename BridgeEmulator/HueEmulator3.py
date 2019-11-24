@@ -480,7 +480,7 @@ def schedulerProcessor():
                         timmer = schedule_time[2:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).strftime("%Y-%m-%dT%H:%M:%S"):
+                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             bridge_config["schedules"][schedule]["status"] = "disabled"
@@ -575,15 +575,15 @@ def switchScene(group, direction):
         updateGroupStats(light, bridge_config["lights"], bridge_config["groups"])
 
 
-def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
+def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
     ddx = 0
-    sensor_found = False
+    device_found = False
     ddx_sensor = []
     for condition in bridge_config["rules"][rule]["conditions"]:
         try:
             url_pices = condition["address"].split('/')
-            if url_pices[1] == "sensors" and sensor == url_pices[2]:
-                sensor_found = True
+            if url_pices[1] == device[0] and url_pices[2] == device[1]:
+                device_found = True
             if condition["operator"] == "eq":
                 if condition["value"] == "true":
                     if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
@@ -625,19 +625,19 @@ def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
             logging.info("rule " + rule + " failed, reason:" + str(e))
 
 
-    if sensor_found:
+    if device_found:
         return [True, ddx, ddx_sensor]
     else:
         return [False]
 
-def ddxRecheck(rule, sensor, current_time, ddx_delay, ddx_sensor):
+def ddxRecheck(rule, device, current_time, ddx_delay, ddx_sensor):
     for x in range(ddx_delay):
         if current_time != dxState[ddx_sensor[1]][ddx_sensor[2]][ddx_sensor[3]][ddx_sensor[4]]:
             logging.info("ddx rule " + rule + " canceled after " + str(x) + " seconds")
             return # rule not valid anymore because sensor state changed while waiting for ddx delay
         sleep(1)
     current_time = datetime.now()
-    rule_state = checkRuleConditions(rule, sensor, current_time, True)
+    rule_state = checkRuleConditions(rule, device, current_time, True)
     if rule_state[0]: #if all conditions are meet again
         logging.info("delayed rule " + rule + " is triggered")
         bridge_config["rules"][rule]["lasttriggered"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -645,12 +645,12 @@ def ddxRecheck(rule, sensor, current_time, ddx_delay, ddx_sensor):
         for action in bridge_config["rules"][rule]["actions"]:
             sendRequest("/api/" + bridge_config["rules"][rule]["owner"] + action["address"], action["method"], json.dumps(action["body"]))
 
-def rulesProcessor(sensor, current_time):
+def rulesProcessor(device, current_time):
     bridge_config["config"]["localtime"] = current_time.strftime("%Y-%m-%dT%H:%M:%S") #required for operator dx to address /config/localtime
     actionsToExecute = []
     for rule in bridge_config["rules"].keys():
         if bridge_config["rules"][rule]["status"] == "enabled":
-            rule_result = checkRuleConditions(rule, sensor, current_time)
+            rule_result = checkRuleConditions(rule, device, current_time)
             if rule_result[0]:
                 if rule_result[1] == 0: #is not ddx rule
                     logging.info("rule " + rule + " is triggered")
@@ -660,7 +660,7 @@ def rulesProcessor(sensor, current_time):
                         actionsToExecute.append(action)
                 else: #if ddx rule
                     logging.info("ddx rule " + rule + " will be re validated after " + str(rule_result[1]) + " seconds")
-                    Thread(target=ddxRecheck, args=[rule, sensor, current_time, rule_result[1], rule_result[2]]).start()
+                    Thread(target=ddxRecheck, args=[rule, device, current_time, rule_result[1], rule_result[2]]).start()
     for action in actionsToExecute:
         sendRequest("/api/" +    list(bridge_config["config"]["whitelist"])[0] + action["address"], action["method"], json.dumps(action["body"]))
 
@@ -811,7 +811,7 @@ def longPressButton(sensor, buttonevent):
         logging.info("still pressed")
         current_time =  datetime.now()
         dxState["sensors"][sensor]["state"]["lastupdated"] = current_time
-        rulesProcessor(sensor, current_time)
+        rulesProcessor(["sensors",sensor], current_time)
         sleep(0.5)
     return
 
@@ -824,7 +824,7 @@ def motionDetected(sensor):
             bridge_config["sensors"][sensor]["state"]["lastupdated"] =  datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
             current_time =  datetime.now()
             dxState["sensors"][sensor]["state"]["presence"] = current_time
-            rulesProcessor(sensor, current_time)
+            rulesProcessor(["sensors",sensor], current_time)
         sleep(1)
     logging.info("set motion sensor " + sensor + " to motion = False")
     return
@@ -958,7 +958,7 @@ def websocketClient():
                         current_time = datetime.now()
                         for key in message["state"].keys():
                             dxState["sensors"][bridge_sensor_id]["state"][key] = current_time
-                        rulesProcessor(bridge_sensor_id, current_time)
+                        rulesProcessor(["sensors", bridge_sensor_id], current_time)
                         if "buttonevent" in message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] in ["TRADFRI remote control","RWL021"]:
                             if message["state"]["buttonevent"] in [2001, 3001, 4001, 5001]:
                                 Thread(target=longPressButton, args=[bridge_sensor_id, message["state"]["buttonevent"]]).start()
@@ -1199,14 +1199,14 @@ def daylightSensor():
         logging.info("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
         bridge_config["sensors"]["1"]["state"] = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
         dxState["sensors"]["1"]["state"]["daylight"] = current_time
-        rulesProcessor("1", current_time)
+        rulesProcessor(["sensors","1"], current_time)
     if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
         logging.info("will start the sleep for sunrise")
         sleep(deltaSunriseOffset)
         logging.info("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
         bridge_config["sensors"]["1"]["state"] = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
         dxState["sensors"]["1"]["state"]["daylight"] = current_time
-        rulesProcessor("1", current_time)
+        rulesProcessor(["sensors","1"], current_time)
 
 
 class S(BaseHTTPRequestHandler):
@@ -1479,7 +1479,7 @@ class S(BaseHTTPRequestHandler):
                             if "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensorId]["state"]["presence"] == True:
                                 sendEmail(bridge_config["alarm_config"], bridge_config["sensors"][sensorId]["name"])
                                 #triger_horn() need development
-                        rulesProcessor(sensorId, current_time) #process the rules to perform the action configured by application
+                        rulesProcessor(["sensors", sensorId], current_time) #process the rules to perform the action configured by application
             self._set_end_headers(bytes("done", "utf8"))
         elif self.path.startswith("/scan"): # rescan
             self._set_headers()
@@ -1523,7 +1523,6 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':'),ensure_ascii=False), "utf8"))
-                    sanitizeBridgeScenes()
                 elif (len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == 'state')):
                     if url_pices[4] == "new": #return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
@@ -1629,7 +1628,7 @@ class S(BaseHTTPRequestHandler):
                             post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": post_dictionary["localtime"]})
                         except KeyError:
                             post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "localtime": post_dictionary["time"]})
-                        if post_dictionary["localtime"].startswith("PT"):
+                        if post_dictionary["localtime"].startswith("PT") or post_dictionary["localtime"].startswith("R/PT"):
                             post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
                         if not "status" in post_dictionary:
                             post_dictionary.update({"status": "enabled"})
@@ -1681,13 +1680,15 @@ class S(BaseHTTPRequestHandler):
         logging.info(self.path)
         logging.info(self.data_string)
         if url_pices[2] in bridge_config["config"]["whitelist"] or (url_pices[2] == "0" and self.client_address[0] == "127.0.0.1"):
+            current_time = datetime.now()
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/"
             if len(url_pices) == 5:
                 if url_pices[3] == "schedules":
-                    if "status" in put_dictionary and put_dictionary["status"] == "enabled" and bridge_config["schedules"][url_pices[4]]["localtime"].startswith("PT"):
-                        put_dictionary.update({"starttime": (datetime.utcnow()).strftime("%Y-%m-%dT%H:%M:%S")})
+                    if "status" in put_dictionary and put_dictionary["status"] == "enabled" and (bridge_config["schedules"][url_pices[4]]["localtime"].startswith("PT") or bridge_config["schedules"][url_pices[4]]["localtime"].startswith("R/PT")):
+                        bridge_config["schedules"][url_pices[4]]["starttime"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                    bridge_config[url_pices[3]][url_pices[4]].update(put_dictionary)
                 elif url_pices[3] == "scenes":
                     if "storelightstate" in put_dictionary:
                         if "lights" in bridge_config["scenes"][url_pices[4]]:
@@ -1718,7 +1719,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["sensors"][url_pices[4]][key] = value
                             dxState["sensors"][url_pices[4]][key] = current_time
                     dxState["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time
-                    rulesProcessor(url_pices[4], current_time)
+                    bridge_config["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
                     if url_pices[4] == "1" and bridge_config[url_pices[3]][url_pices[4]]["modelid"] == "PHDL00":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                 elif url_pices[3] == "groups" and "stream" in put_dictionary:
@@ -1782,8 +1783,7 @@ class S(BaseHTTPRequestHandler):
                             splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                         else:
                             splitLightsToDevices(url_pices[4], {}, bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
-
-                    elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary:
+                    elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary or "hue_inc" in put_dictionary:
                         splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:
                         switchScene(url_pices[4], put_dictionary["scene_inc"])
@@ -1793,6 +1793,8 @@ class S(BaseHTTPRequestHandler):
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pices[4]]["state"]["all_on"] = put_dictionary["on"]
+                            dxState["groups"][url_pices[4]]["state"]["any_on"] = current_time
+                            dxState["groups"][url_pices[4]]["state"]["all_on"] = current_time
                         bridge_config["groups"][url_pices[4]][url_pices[5]].update(put_dictionary)
                         splitLightsToDevices(url_pices[4], put_dictionary)
                 elif url_pices[3] == "lights": #state is applied to a light
@@ -1804,20 +1806,20 @@ class S(BaseHTTPRequestHandler):
 
                     updateGroupStats(url_pices[4], bridge_config["lights"], bridge_config["groups"])
                     sendLightRequest(url_pices[4], put_dictionary, bridge_config["lights"], bridge_config["lights_address"])
-                if not url_pices[4] == "0" or not "scene" in put_dictionary: #group 0 and scene recall must not be saved in bridge configuration
+                elif url_pices[3] == "sensors":
+                    if url_pices[5] == "state":
+                        for key in put_dictionary.keys():
+                            if bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
+                                dxState["sensors"][url_pices[4]]["state"][key] = current_time
+                    elif url_pices[4] == "1":
+                        bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
+                    dxState["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time
+                    bridge_config["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
+                if  url_pices[4] != "0" and "scene" not in put_dictionary: #group 0 is virtual, must not be saved in bridge configuration, also the recall scene
                     try:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]].update(put_dictionary)
                     except KeyError:
                         bridge_config[url_pices[3]][url_pices[4]][url_pices[5]] = put_dictionary
-                if url_pices[3] == "sensors":
-                    if url_pices[5] == "state":
-                        current_time = datetime.now()
-                        for key in put_dictionary.keys():
-                            dxState["sensors"][url_pices[4]]["state"].update({key: current_time})
-                        dxState["sensors"][url_pices[4]]["state"]["lastupdated"] = current_time
-                        rulesProcessor(url_pices[4], current_time)
-                    elif url_pices[4] == "1":
-                        bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
                 response_location = "/" + url_pices[3] + "/" + url_pices[4] + "/" + url_pices[5] + "/"
             if len(url_pices) == 7:
                 try:
@@ -1829,8 +1831,10 @@ class S(BaseHTTPRequestHandler):
             response_dictionary = []
             for key, value in put_dictionary.items():
                 response_dictionary.append({"success":{response_location + key: value}})
+            sleep(0.3)
             self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':'),ensure_ascii=False), "utf8"))
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
+            rulesProcessor([url_pices[3], url_pices[4]], current_time)
             sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
