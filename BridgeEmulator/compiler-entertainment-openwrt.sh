@@ -65,9 +65,9 @@ wait
 arch=`uname -m`
 echo -e "\033[32m Compiled binary for: $arch.\033[0m"
 echo -e "\033[32m uploading binary $arch to remote server.\033[0m"
-curl --upload-file /opt/hue-emulator/entertain-srv https://transfer.sh/entertain-srv
+curl --upload-file /opt/hue-emulator/entertain-srv-$arch https://transfer.sh/entertain-srv-$arch
 echo -e "\033[32m Download the binary at:\033[0m"
-echo -e "\033[32m https://transfer.sh/entertain-srv\033[0m"
+echo -e "\033[32m https://transfer.sh/entertain-srv$arch\033[0m"
 rm -Rf /opt/hue-emulator/
 rm -Rf /opt/tmp
 rm -Rf /opt/
