@@ -1,5 +1,4 @@
 #!/bin/bash
-
 arch=`uname -m`
 export LC_ALL=C
 export CC=gcc
