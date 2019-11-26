@@ -22,7 +22,7 @@ wait
 unzip 1ab9b5714852c6810c0a0bfd8c3b5c60a9a15482
 wait
 mv mbedtls-1ab9b5714852c6810c0a0bfd8c3b5c60a9a15482 mbedtls
-rm -Rf 1ab9b5714852c6810c0a0bfd8c3b5c60a9a15482
+rm -Rf 1ab9b5714852c6810c0a0bfd8c3b5c60a9a15482.zip
 cd /opt/hue-emulator/mbedtls
 echo -e "\033[32m Download entertainment source file to compile binary.\033[0m"
 wget --no-check-certificate https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/ssl_server2_diyhue.c
