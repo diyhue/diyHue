@@ -1560,7 +1560,7 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
-            elif len(url_pices) == 4 and url_pices[3] == "config": #used by applications to discover the bridge
+            elif (len(url_pices) == 4 and url_pices[3] == "config") or (len(url_pices) == 3 and url_pices[2] == "config"): #used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""},separators=(',', ':'),ensure_ascii=False), "utf8"))
             else: #user is not in whitelist
                 self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
