@@ -163,7 +163,7 @@ def webformDeconz(bridge_config):
 <fieldset>
 <legend>Deconz Switches Setup</legend>\n"""
     for deconzSensor in bridge_config["deconz"]["sensors"].keys():
-        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
+        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer","TRADFRI on/off switch"]:
             content += "<div class=\"pure-control-group\">\n"
             content += "<label for=\"sensor-" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"sensor-" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
