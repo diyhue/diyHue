@@ -1903,6 +1903,9 @@ class S(BaseHTTPRequestHandler):
                 for sensor in list(bridge_config["deconz"]["sensors"]):
                     if bridge_config["deconz"]["sensors"][sensor]["bridgeid"] == url_pices[4]:
                         del bridge_config["deconz"]["sensors"][sensor]
+                for sensor in list(bridge_config["emulator"]["sensors"]):
+                    if bridge_config["emulator"]["sensors"][sensor]["bridgeId"] == url_pices[4]:
+                        del bridge_config["emulator"]["sensors"][sensor]
             elif url_pices[3] == "groups":
                 sanitizeBridgeScenes()
             logging.info(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False))
