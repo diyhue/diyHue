@@ -78,7 +78,7 @@ def discover(bridge_config, new_lights):
                 dim_response = requests.get ("http://" + ip + "/light/dimmable_led", timeout=3)
                 toggle_response = requests.get ("http://" + ip + "/light/toggle_led", timeout=3)
 
-                if (white_response.status_code != 200 and color_response.status_code != 200 and dim_response != 200 and toggle_response != 200):
+                if (white_response.status_code != 200 and color_response.status_code != 200 and dim_response.status_code != 200 and toggle_response.status_code != 200):
                     logging.debug("ESPHome: Device has improper configuration! Exiting.")
                     raise
                 elif (white_response.status_code == 200 and color_response.status_code == 200):
