@@ -1,16 +1,4 @@
 {
-   "alarm_config":{
-      "mail_from":"your_email@gmail.com",
-      "mail_username":"",
-      "mail_password":"",
-      "mail_recipients":[
-         "first_recipient@mail.com",
-         "second_recipient@mail.com"
-      ],
-      "mail_subject":"HUE ALARM TRIGGERED!",
-      "smtp_port":465,
-      "smtp_server":"smtp.gmail.com"
-   },
    "capabilities":{
       "groups":{
          "available":64
