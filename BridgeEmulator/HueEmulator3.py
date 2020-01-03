@@ -240,6 +240,7 @@ def updateConfig():
 
     if "alarm" not in bridge_config["emulator"]:
         bridge_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
+    if "alarm_config" in bridge_config:
         del bridge_config["alarm_config"]
 
     if "Remote API enabled" not in bridge_config["config"]:
