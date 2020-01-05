@@ -39,6 +39,9 @@
             "available":63
          }
       },
+      "streaming":{
+            "available":63
+      },
       "timezones":{
          "values":[
             "CET",
