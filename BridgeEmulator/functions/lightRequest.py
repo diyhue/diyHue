@@ -7,13 +7,15 @@ from datetime import datetime
 from time import sleep
 from functions.updateGroup import updateGroupStats
 
-def sendLightRequest(light, data, lights, addresses):
+def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None):
     payload = {}
     if light in addresses:
         protocol_name = addresses[light]["protocol"]
         for protocol in protocols:
             if "protocols." + protocol_name == protocol.__name__:
                 try:
+                    if entertainmentHostIP and protocol_name == "yeelight":
+                        protocol.enableMusic(addresses[light]["ip"], entertainmentHostIP)
                     light_state = protocol.set_light(addresses[light], lights[light], data)
                 except Exception as e:
                     lights[light]["state"]["reachable"] = False
