@@ -205,7 +205,7 @@ class YeelightConnection(object):
                     pass
             except Exception as e:
                 tempSock.close()
-                raise ConnectionError("Yeelight with IP %s doesn't want to connect in music mode: %s", self._ip, e)
+                raise ConnectionError("Yeelight with IP {} doesn't want to connect in music mode: {}".format(self._ip, e))
         
         logging.info("Yeelight device with IP %s is now in music mode", self._ip)
 
