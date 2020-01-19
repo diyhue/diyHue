@@ -3,7 +3,7 @@ from functions.request import sendRequest
 from functions.colors import convert_rgb_xy, convert_xy  
 from subprocess import check_output
 from protocols import protocols
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 from functions.updateGroup import updateGroupStats
 
@@ -301,8 +301,13 @@ def syncWithLights(lights, addresses, users, groups, off_if_unreachable): #updat
         i = 0
         while i < 300: #sync with lights every 300 seconds or instant if one user is connected
             for user in users.keys():
-                if users[user]["last use date"] == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
-                    i = 300
-                    break
+                lu = users[user]["last use date"]
+                try: #in case if last use is not a proper datetime
+                    lu = datetime.strptime(lu, "%Y-%m-%dT%H:%M:%S")
+                    if abs(datetime.now() - lu) <= timedelta(seconds = 2):
+                        i = 300
+                        break
+                except:
+                    pass
             i += 1
             sleep(1)
