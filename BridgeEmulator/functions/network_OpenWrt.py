@@ -11,9 +11,16 @@ if os.name != "nt":
                                 bytes(ifname[:15], 'utf-8')))[20:24])
 
 def getIpAddress():
-    ip = socket.gethostbyname(socket.gethostname())
-    if ip.startswith("127.") and os.name != "nt":
+    ip = None
+
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except:
+        pass
+    
+    if (not ip or ip.startswith("127.")) and os.name != "nt":
         interfaces = [
+            "br0",
             "br-lan",
             "eth0",
             "eth1",

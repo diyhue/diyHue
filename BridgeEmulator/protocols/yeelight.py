@@ -72,7 +72,7 @@ def command(ip, light, api_method, param):
     if ip in Connections:
         c = Connections[ip]
     else:
-        c = YeelightConnection(ip, light)
+        c = YeelightConnection(ip)
         Connections[ip] = c
     try:
         c.command(api_method, param)
@@ -116,20 +116,67 @@ def set_light(address, light, data):
         command(address["ip"], light, key, value)
 
 def get_light_state(address, light):
-    ip = address["ip"]
-    if ip in Connections:
-        c = Connections[ip]
+    #logging.info("name is: " + light["name"])
+    #if light["name"].find("desklamp") > 0: logging.info("is desk lamp")
+    state = {}
+    tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_socket.settimeout(5)
+    tcp_socket.connect((address["ip"], int(55443)))
+    msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
+    tcp_socket.send(msg.encode())
+    data = tcp_socket.recv(16 * 1024)
+    light_data = json.loads(data[:-2].decode("utf8"))["result"]
+    if light_data[0] == "on": #powerstate
+        state['on'] = True
     else:
-        c = YeelightConnection(ip, light)
-        Connections[ip] = c
-    try:
-        state = Connections[ip].get_state()
-        if not c._music and c._connected:
-            c.disconnect()
-        return state
-    finally:
-        if not c._music and c._connected:
-            c.disconnect()
+        state['on'] = False
+    state["bri"] = int(int(light_data[1]) * 2.54)
+    #if ip[:-3] == "201" or ip[:-3] == "202":
+    if light["name"].find("desklamp") > 0:
+        msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+        tcp_socket.send(msg_ct.encode())
+        data = tcp_socket.recv(16 * 1024)
+        tempval = int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+        if tempval > 369: tempval = 369
+        state["ct"] = tempval # int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+        state["colormode"] = "ct"
+    else:
+        msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
+        tcp_socket.send(msg_mode.encode())
+        data = tcp_socket.recv(16 * 1024)
+        if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
+            msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
+            tcp_socket.send(msg_rgb.encode())
+            data = tcp_socket.recv(16 * 1024)
+            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+            hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+            r = hex_rgb[:2]
+            if r == "  ":
+                r = "00"
+            g = hex_rgb[3:4]
+            if g == "  ":
+                g = "00"
+            b = hex_rgb[-2:]
+            if b == "  ":
+                b = "00"
+            state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+            state["colormode"] = "xy"
+        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
+            msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+            tcp_socket.send(msg_ct.encode())
+            data = tcp_socket.recv(16 * 1024)
+            state["ct"] =  int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+            state["colormode"] = "ct"
+        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #hs mode
+            msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
+            tcp_socket.send(msg_hsv.encode())
+            data = tcp_socket.recv(16 * 1024)
+            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+            state["hue"] = int(int(hue_data[0]) * 182)
+            state["sat"] = int(int(hue_data[1]) * 2.54)
+            state["colormode"] = "hs"
+    tcp_socket.close()
+    return state
 
 def enableMusic(ip, host_ip):
     if ip in Connections:
@@ -137,7 +184,7 @@ def enableMusic(ip, host_ip):
         if not c._music:
             c.enableMusic(host_ip)
     else:
-        c = YeelightConnection(ip, light)
+        c = YeelightConnection(ip)
         Connections[ip] = c
         c.enableMusic(host_ip)
 
@@ -151,9 +198,8 @@ class YeelightConnection(object):
     _socket = None
     _host_ip = ""
 
-    def __init__(self, ip, light):
+    def __init__(self, ip):
         self._ip = ip
-        self._light = light
 
     def connect(self, simple = False): #Use simple when you don't need to reconnect music mode
         self.disconnect() #To clean old socket
@@ -247,63 +293,3 @@ class YeelightConnection(object):
             self.send(msg.encode())
         except Exception as e:
             logging.warning("Yeelight command error: %s", e)
-
-    def get_state(self):
-        #logging.info("name is: " + self._light["name"])
-        #if self._light["name"].find("desklamp") > 0: logging.info("is desk lamp")
-        state = {}
-        msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
-        self.send(msg.encode())
-        data = self.recv(16 * 1024)
-        light_data = json.loads(data[:-2].decode("utf8"))["result"]
-        if light_data[0] == "on": #powerstate
-            state['on'] = True
-        else:
-            state['on'] = False
-        state["bri"] = int(int(light_data[1]) * 2.54)
-        #if ip[:-3] == "201" or ip[:-3] == "202":
-        if self._light["name"].find("desklamp") > 0:
-            msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
-            self.send(msg_ct.encode())
-            data = self.recv(16 * 1024)
-            tempval = int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
-            if tempval > 369: tempval = 369
-            state["ct"] = tempval # int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
-            state["colormode"] = "ct"
-        else:
-            msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
-            self.send(msg_mode.encode())
-            data = self.recv(16 * 1024)
-            if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
-                msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
-                self.send(msg_rgb.encode())
-                data = self.recv(16 * 1024)
-                hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-                hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-                r = hex_rgb[:2]
-                if r == "  ":
-                    r = "00"
-                g = hex_rgb[3:4]
-                if g == "  ":
-                    g = "00"
-                b = hex_rgb[-2:]
-                if b == "  ":
-                    b = "00"
-                state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
-                state["colormode"] = "xy"
-            elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
-                msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
-                self.send(msg_ct.encode())
-                data = self.recv(16 * 1024)
-                state["ct"] =  int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
-                state["colormode"] = "ct"
-            elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #hs mode
-                msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
-                self.send(msg_hsv.encode())
-                data = self.recv(16 * 1024)
-                hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-                state["hue"] = int(int(hue_data[0]) * 182)
-                state["sat"] = int(int(hue_data[1]) * 2.54)
-                state["colormode"] = "hs"
-        return state
-
