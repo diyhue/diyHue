@@ -25,7 +25,7 @@ def entertainmentService(lights, addresses, groups):
                             if lightId != 0:
                                 r = int((data[i+3] * 256 + data[i+4]) / 256)
                                 g = int((data[i+5] * 256 + data[i+6]) / 256)
-                                b = int((data[i+7] * 256 + data[i+7]) / 256)
+                                b = int((data[i+7] * 256 + data[i+8]) / 256)
                                 if lightId not in lightStatus:
                                     lightStatus[lightId] = {"on": False, "bri": 1}
                                 if r == 0 and  g == 0 and  b == 0:
@@ -58,7 +58,7 @@ def entertainmentService(lights, addresses, groups):
                                 fremeID += 1
                                 if fremeID == 25:
                                     fremeID = 0
-                            i = i + 9
+                        i = i + 9
                 elif data[14] == 1: #cie colorspace
                     i = 16
                     while i < len(data):
@@ -67,7 +67,7 @@ def entertainmentService(lights, addresses, groups):
                             if lightId != 0:
                                 x = (data[i+3] * 256 + data[i+4]) / 65535
                                 y = (data[i+5] * 256 + data[i+6]) / 65535
-                                bri = int((data[i+7] * 256 + data[i+7]) / 256)
+                                bri = int((data[i+7] * 256 + data[i+8]) / 256)
                                 if bri == 0:
                                     lights[str(lightId)]["state"]["on"] = False
                                 else:
@@ -89,6 +89,7 @@ def entertainmentService(lights, addresses, groups):
                                     if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
                                         sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses)
                                         fremeID = 0
+                        i = i + 9
             if len(nativeLights) is not 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
