@@ -93,7 +93,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                     if frameID == 24 : #24 = every seconds, increase in case the destination device is overloaded
                                         sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses, None, host_ip)
                                         frameID = 0
-						i = i + 9
+                        i = i + 9
             if len(nativeLights) is not 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
