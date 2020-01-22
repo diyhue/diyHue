@@ -9,7 +9,7 @@ import sys
 from time import sleep
 from subprocess import check_output
 from functions import light_types, nextFreeId
-from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
+from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightness
 from functions.network import getIpAddress
 
 def getRequest(address, request_data, timeout=3):
@@ -150,7 +150,7 @@ def discover(bridge_config, new_lights):
         except Exception as e:
             logging.debug("ESPHome: ip " + ip + " is unknown device, " + str(e))
 
-def set_light(address, light, data):
+def set_light(address, light, data, rgb = None):
     logging.debug("ESPHome: <set_light> invoked! IP=" + address["ip"])
     logging.debug(light["modelid"])
     logging.debug(data)
@@ -196,7 +196,10 @@ def set_light(address, light, data):
                 request_data = addRequest(request_data, "brightness", brightness)
             if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB", "ESPHome-CT"]:
                 if ("xy" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
-                    color = convert_xy(data['xy'][0], data['xy'][1], 255)
+                    if rgb:
+                        color = rgbBrightness(rgb, light["state"]["bri"])
+                    else:
+                        color = convert_xy(data['xy'][0], data['xy'][1], light["state"]["bri"])
                     request_data = addRequest(request_data, "r", color[0])
                     request_data = addRequest(request_data, "g", color[1])
                     request_data = addRequest(request_data, "b", color[2])

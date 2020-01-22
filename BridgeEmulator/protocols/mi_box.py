@@ -1,5 +1,5 @@
 import logging, binascii, socket, colorsys, time
-from functions.colors import convert_rgb_xy, convert_xy
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 #todo: add support for multiple mi boxes? these globals don't look nice
 commandCounter = 0
@@ -8,7 +8,7 @@ sessionId2 = 0
 sock = None
 lastSentMessageTime = 0
 
-def set_light(address, light, data):
+def set_light(address, light, data, rgb = None):
 	for key, value in data.items():
 		light["state"][key] = value
 
@@ -18,7 +18,10 @@ def set_light(address, light, data):
 	colormode = light["state"]["colormode"]
 	if colormode == "xy":
 		xy = light["state"]["xy"]
-		(r,g,b) = convert_xy(xy[0], xy[1], 100.0)
+		if rgb:
+			r, g, b = rgbBrightness(rgb, light["state"]["bri"])
+		else:
+			r, g, b = convert_xy(xy[0], xy[1], light["state"]["bri"])
 		(hue, saturation, value) = colorsys.rgb_to_hsv(r,g,b)
 		sendHueCmd(address, hue*255)
 		sendSaturationCmd(address, (1-saturation)*100)
