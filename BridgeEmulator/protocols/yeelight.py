@@ -5,7 +5,7 @@ import socket
 import sys
 
 from functions import light_types, nextFreeId
-from functions.colors import convert_rgb_xy, convert_xy
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}
 
@@ -80,12 +80,12 @@ def command(ip, light, api_method, param):
         if not c._music and c._connected:
             c.disconnect()
 
-def set_light(address, light, data):
+def set_light(address, light, data, rgb = None):
     method = 'TCP'
     payload = {}
     transitiontime = 400
     if "transitiontime" in data:
-        transitiontime = data["transitiontime"] * 100
+        transitiontime = int(data["transitiontime"] * 100)
     for key, value in data.items():
         if key == "on":
             if value:
@@ -104,7 +104,11 @@ def set_light(address, light, data):
         elif key == "sat":
             payload["set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
-            color = convert_xy(value[0], value[1], light["state"]["bri"])
+            bri = light["state"]["bri"]
+            if rgb:
+                color = rgbBrightness(rgb, bri)
+            else:
+                color = convert_xy(value[0], value[1], bri)
             payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif key == "alert" and value != "none":
             payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]

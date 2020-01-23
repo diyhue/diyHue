@@ -1,13 +1,13 @@
 import logging, json
 from functions.request import sendRequest
-from functions.colors import convert_rgb_xy, convert_xy  
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness 
 from subprocess import check_output
 from protocols import protocols
 from datetime import datetime, timedelta
 from time import sleep
 from functions.updateGroup import updateGroupStats
 
-def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None):
+def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHostIP = None):
     payload = {}
     if light in addresses:
         protocol_name = addresses[light]["protocol"]
@@ -16,7 +16,10 @@ def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None)
                 try:
                     if entertainmentHostIP and protocol_name == "yeelight":
                         protocol.enableMusic(addresses[light]["ip"], entertainmentHostIP)
-                    light_state = protocol.set_light(addresses[light], lights[light], data)
+                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
+                        protocol.set_light(addresses[light], lights[light], data, rgb)
+                    else:
+                        protocol.set_light(addresses[light], lights[light], data)
                 except Exception as e:
                     lights[light]["state"]["reachable"] = False
                     logging.warning(lights[light]["name"] + " light not reachable: %s", e)
@@ -72,7 +75,10 @@ def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None)
                     color_data["t"] = ct255
                 elif colormode == "xy":
                     color_data["m"] = 3
-                    (color_data["r"], color_data["g"], color_data["b"]) = convert_xy(xy[0], xy[1], 255)
+                    if rgb:
+                        (color_data["r"], color_data["g"], color_data["b"]) = rgbBrightness(rgb, bri)
+                    else:
+                        (color_data["r"], color_data["g"], color_data["b"]) = convert_xy(xy[0], xy[1], bri)
                 url += "&color="+json.dumps(color_data)
                 url += "&brightness=" + str(round(float(bri)/255*100))
 
@@ -107,7 +113,10 @@ def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None)
                     payload["saturation"] = value * 100 / 255
                 elif key == "xy":
                     payload["color"] = {}
-                    (payload["color"]["r"], payload["color"]["g"], payload["color"]["b"]) = convert_xy(value[0], value[1], lights[light]["state"]["bri"])
+                    if rgb:
+                        payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = rgbBrightness(rgb, lights[light]["state"]["bri"])
+                    else:
+                        payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = convert_xy(value[0], value[1], lights[light]["state"]["bri"])
             logging.info(json.dumps(payload))
 
         elif addresses[light]["protocol"] == "ikea_tradfri": #IKEA Tradfri bulb
@@ -166,8 +175,11 @@ def sendLightRequest(light, data, lights, addresses, entertainmentHostIP = None)
                 logging.info(pretty_json(data))
                 bri = data["bri"] if "bri" in data else lights[light]["state"]["bri"]
                 xy = data["xy"] if "xy" in data else lights[light]["state"]["xy"]
-                rgb = convert_xy(xy[0], xy[1], bri)
-                msg = bytearray([0x41, rgb[0], rgb[1], rgb[2], 0x00, 0xf0, 0x0f])
+                if rgb:
+                    color = rgbBrightness(rgb, bri)
+                else:
+                    color = convert_xy(xy[0], xy[1], bri)
+                msg = bytearray([0x41, color[0], color[1], color[2], 0x00, 0xf0, 0x0f])
                 checksum = sum(msg) & 0xFF
                 msg.append(checksum)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP

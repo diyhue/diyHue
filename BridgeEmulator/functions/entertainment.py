@@ -7,7 +7,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
-    fremeID = 0
+    frameID = 0
     lightStatus = {}
     syncing = False #Flag to check whether or not we had been syncing when a timeout occurs
     while True:
@@ -25,40 +25,47 @@ def entertainmentService(lights, addresses, groups, host_ip):
                             if lightId != 0:
                                 r = int((data[i+3] * 256 + data[i+4]) / 256)
                                 g = int((data[i+5] * 256 + data[i+6]) / 256)
-                                b = int((data[i+7] * 256 + data[i+7]) / 256)
+                                b = int((data[i+7] * 256 + data[i+8]) / 256)
+                                proto = addresses[str(lightId)]["protocol"]
                                 if lightId not in lightStatus:
                                     lightStatus[lightId] = {"on": False, "bri": 1}
                                 if r == 0 and  g == 0 and  b == 0:
                                     lights[str(lightId)]["state"]["on"] = False
                                 else:
                                     lights[str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
-                                if addresses[str(lightId)]["protocol"] in ["native", "native_multi", "native_single"]:
+                                if proto in ["native", "native_multi", "native_single"]:
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = [r, g, b]
-                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                if proto == "esphome":
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
                                     bri = int(max(r,g,b))
                                     esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
-                                    if fremeID == 24: # => every seconds, increase in case the destination device is overloaded
-                                        if r == 0 and  g == 0 and  b == 0:
+                                    if frameID == 24: # => every seconds, increase in case the destination device is overloaded
+                                        gottaSend = False
+                                        yee = proto == "yeelight"
+                                        brABS = abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"])
+                                        if r == 0 and g == 0 and b == 0: #Turn off if color is black
                                             if lightStatus[lightId]["on"]:
-                                                sendLightRequest(str(lightId), {"on": False, "transitiontime": 3}, lights, addresses, host_ip)
+                                                sendLightRequest(str(lightId), {"on": False, "transitiontime": 3}, lights, addresses, None, host_ip)
                                                 lightStatus[lightId]["on"] = False
-                                        elif lightStatus[lightId]["on"] == False:
-                                            sendLightRequest(str(lightId), {"on": True, "transitiontime": 3}, lights, addresses, host_ip)
-                                            lightStatus[lightId]["on"] = True
-                                        elif abs(int((r + b + g) / 3) - lightStatus[lightId]["bri"]) > 50: # to optimize, send brightness  only of difference is bigger than this value
-                                            sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 3}, lights, addresses, host_ip)
-                                            lightStatus[lightId]["bri"] = int((r + b + g) / 3)
                                         else:
-                                            sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3}, lights, addresses, host_ip)
-                                fremeID += 1
-                                if fremeID == 25:
-                                    fremeID = 0
-                            i = i + 9 #TODO CHECK BOTTOM SEGMENT, THERE IS NO "i" INCREMENTATION
+                                            if lightStatus[lightId]["on"] == False: #Turn on if color is not black
+                                                sendLightRequest(str(lightId), {"on": True, "transitiontime": 3}, lights, addresses, None, host_ip)
+                                                lightStatus[lightId]["on"] = True
+                                            elif brABS > 50: # to optimize, send brightness only if difference is bigger than this value
+                                                sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 150 / brABS}, lights, addresses, None, host_ip)
+                                                lightStatus[lightId]["bri"] = int((r + b + g) / 3)
+                                            else:
+                                                gottaSend = True
+                                            if gottaSend or yee:
+                                                sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3}, lights, addresses, [r, g, b], host_ip)
+                                frameID += 1
+                                if frameID == 25:
+                                    frameID = 0
+                        i = i + 9
                 elif data[14] == 1: #cie colorspace
                     i = 16
                     while i < len(data):
@@ -67,7 +74,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
                             if lightId != 0:
                                 x = (data[i+3] * 256 + data[i+4]) / 65535
                                 y = (data[i+5] * 256 + data[i+6]) / 65535
-                                bri = int((data[i+7] * 256 + data[i+7]) / 256)
+                                bri = int((data[i+7] * 256 + data[i+8]) / 256)
                                 if bri == 0:
                                     lights[str(lightId)]["state"]["on"] = False
                                 else:
@@ -79,16 +86,14 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                 if addresses[str(lightId)]["protocol"] == "esphome":
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
-                                    color = convert_xy(x, y, bri)
-                                    r = int(color[0])
-                                    g = int(color[1])
-                                    b = int(color[2])
+                                    r, g, b = convert_xy(x, y, bri)
                                     esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [r, g, b, bri]
                                 else:
-                                    fremeID += 1
-                                    if fremeID == 24 : #24 = every seconds, increase in case the destination device is overloaded
-                                        sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses, host_ip)
-                                        fremeID = 0
+                                    frameID += 1
+                                    if frameID == 24 : #24 = every seconds, increase in case the destination device is overloaded
+                                        sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses, None, host_ip)
+                                        frameID = 0
+                        i = i + 9
             if len(nativeLights) is not 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
