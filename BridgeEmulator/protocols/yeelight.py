@@ -81,6 +81,13 @@ def command(ip, light, api_method, param):
             c.disconnect()
 
 def set_light(address, light, data, rgb = None):
+    ip = address["ip"]
+    if ip in Connections:
+        c = Connections[ip]
+    else:
+        c = YeelightConnection(ip)
+        Connections[ip] = c
+
     method = 'TCP'
     payload = {}
     transitiontime = 400
@@ -117,7 +124,14 @@ def set_light(address, light, data, rgb = None):
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
     # check if hue wants to change brightness
     for key, value in payload.items():
-        command(address["ip"], light, key, value)
+        try:
+            c.command(key, value)
+        except Exception as e:
+            if not c._music and c._connected:
+                c.disconnect()
+            raise e
+    if not c._music and c._connected:
+        c.disconnect()
 
 def get_light_state(address, light):
     #logging.info("name is: " + light["name"])
