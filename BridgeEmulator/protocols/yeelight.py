@@ -100,7 +100,10 @@ def set_light(address, light, data, rgb = None):
             else:
                 payload["set_power"] = ["off", "smooth", transitiontime]
         elif key == "bri":
-            payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
+            if c._music and c._ct:
+                payload["set_bright"] = [int(value / 3 / 2.55) + 1, "smooth", transitiontime]
+            else:
+                payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
         elif key == "ct":
             #if ip[:-3] == "201" or ip[:-3] == "202":
             if light["name"].find("desklamp") > 0:
@@ -116,7 +119,19 @@ def set_light(address, light, data, rgb = None):
                 color = rgbBrightness(rgb, bri)
             else:
                 color = convert_xy(value[0], value[1], bri)
-            payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
+            limit = 3 if color[0] > 230 else 2 if color[0] > 170 else 1 if color[0] > 110 else 0 #TODO to be reviewed, just random numbers
+            if abs(color[0] - color[1]) <= limit and abs(color[0] - color[2]) <= limit and abs(color[1] - color[2]) <= limit:
+                if not c._ct:
+                    payload["set_bright"] = [int(bri / 3 / 2.55) + 1, "smooth", transitiontime]
+                c._ct = True
+                payload["set_ct_abx"] = [6500, "smooth", transitiontime]
+            else:
+                if c._ct:
+                    payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
+                    payload["set_bright"] = [int(bri / 2.55) + 1, "smooth", transitiontime / 2]
+                    c._ct = False
+                else:
+                    payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif key == "alert" and value != "none":
             payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
 
@@ -148,7 +163,12 @@ def get_light_state(address, light):
         state['on'] = True
     else:
         state['on'] = False
-    state["bri"] = int(int(light_data[1]) * 2.54)
+    #TODO may be do something about it, because this fix is bad, it won't work if entertainment's Connections dictionary instance will be in another place
+    ip = address["ip"]
+    if ip in Connections and Connections[ip]._ct:
+        state["bri"] = int(sorted((0, int(light_data[1]) * 3 * 2.54, 255))[1])
+    else:
+        state["bri"] = int(int(light_data[1]) * 2.54)
     #if ip[:-3] == "201" or ip[:-3] == "202":
     if light["name"].find("desklamp") > 0:
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
@@ -214,6 +234,7 @@ class YeelightConnection(object):
     _music = False
     _connected = False
     _socket = None
+    _ct = False
     _host_ip = ""
 
     def __init__(self, ip):
