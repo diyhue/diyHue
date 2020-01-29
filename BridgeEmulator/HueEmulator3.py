@@ -1813,7 +1813,8 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "sensors":
                     if url_pices[5] == "state":
                         for key in put_dictionary.keys():
-                            if bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
+                            # track time of state changes in dxState  
+                            if not key in bridge_config["sensors"][url_pices[4]]["state"] or bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
                                 dxState["sensors"][url_pices[4]]["state"][key] = current_time
                     elif url_pices[4] == "1":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
