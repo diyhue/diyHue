@@ -1160,8 +1160,7 @@ def splitLightsToDevices(group, state, scene={}):
 def groupZero(state):
     lightsData = {}
     for light in bridge_config["lights"].keys():
-        if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
-            lightsData[light] = state
+        lightsData[light] = state
     Thread(target=splitLightsToDevices, args=["0", {}, lightsData]).start()
     for group in bridge_config["groups"].keys():
         bridge_config["groups"][group]["action"].update(state)
