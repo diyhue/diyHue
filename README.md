@@ -23,8 +23,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 
 ## Requirements:
  - Python 3
- - Nmap package for esp8266 lights autodiscover ```sudo apt install nmap```
- - Python ws4py package only if zigbee module is used ```sudo pip install ws4py```
+ - Python modules: ws4py, requests, astral
  
  or
  - Docker ;-)
@@ -33,7 +32,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 ## Recommendation:
  - Hue Essentials phone app for remote control and entertainment effects.
  - WS2812 Strip + Wemos D1 mini board for cool entertainment affects.
- - RaspberryPi 3B connected via ethernet port to your network for bridge emulation.
+ - RaspberryPi 3B connected via ethernet port to your network for bridge emulation (avoid using 2 interfaces in the same time).
 
 
 ## Working HUE features:
