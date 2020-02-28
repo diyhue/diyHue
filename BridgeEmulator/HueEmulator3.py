@@ -1837,7 +1837,8 @@ class S(BaseHTTPRequestHandler):
             sleep(0.3)
             self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':'),ensure_ascii=False), "utf8"))
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
-            rulesProcessor([url_pices[3], url_pices[4]], current_time)
+            if len(url_pices) > 4:
+                rulesProcessor([url_pices[3], url_pices[4]], current_time)
             sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
