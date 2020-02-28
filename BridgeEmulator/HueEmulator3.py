@@ -1173,14 +1173,13 @@ def daylightSensor():
     if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
         return
 
-    import pytz, astral
-    from astral import Astral, Location
-    a = Astral()
-    a.solar_depression = 'civil'
-    loc = Location(('Current', bridge_config["config"]["timezone"].split("/")[1], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]), bridge_config["config"]["timezone"], 0))
-    sun = loc.sun(date=datetime.now(), local=True)
-    deltaSunset = sun['sunset'].replace(tzinfo=None) - datetime.now()
-    deltaSunrise = sun['sunrise'].replace(tzinfo=None) - datetime.now()
+    import pytz
+    from astral.sun import sun
+    from astral import LocationInfo
+    localzone = LocationInfo('localzone', bridge_config["config"]["timezone"].split("/")[1], bridge_config["config"]["timezone"], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]))
+    s = sun(localzone.observer, date=datetime.now())
+    deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.now()
+    deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.now()
     deltaSunsetOffset = deltaSunset.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunsetoffset"] * 60
     deltaSunriseOffset = deltaSunrise.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunriseoffset"] * 60
     logging.info("deltaSunsetOffset: " + str(deltaSunsetOffset))
