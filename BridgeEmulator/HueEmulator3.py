@@ -719,6 +719,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
