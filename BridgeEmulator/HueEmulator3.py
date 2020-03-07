@@ -30,7 +30,7 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
+from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
@@ -1811,7 +1811,7 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "sensors":
                     if url_pices[5] == "state":
                         for key in put_dictionary.keys():
-                            # track time of state changes in dxState  
+                            # track time of state changes in dxState
                             if not key in bridge_config["sensors"][url_pices[4]]["state"] or bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
                                 dxState["sensors"][url_pices[4]]["state"][key] = current_time
                     elif url_pices[4] == "1":
@@ -1933,6 +1933,8 @@ if __name__ == "__main__":
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
+    if bridge_config["emulator"]["mqtt"]["enabled"]:
+        mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()

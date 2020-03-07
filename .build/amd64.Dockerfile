@@ -8,7 +8,7 @@ RUN apt update && apt install -y python3 python3-setuptools python3-pip openssl 
 RUN cd /tmp && curl https://codeload.github.com/requests/requests/zip/v2.19.1 -o requests.zip && unzip -q -o requests.zip && cd requests-2.19.1/ && python3 setup.py install && rm -rf /tmp/*
 
 ## Install astral & ws4py python libraries
-RUN pip3 install astral==1.6.1 ws4py==0.5.1 --no-cache-dir
+RUN pip3 install astral==1.6.1 ws4py==0.5.1 paho-mqtt==1.5.0 --no-cache-dir
 
 ## Install diyHue
 COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
