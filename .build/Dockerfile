@@ -1,11 +1,29 @@
-FROM debian:stable-slim
+# This image just moves the correct bins to a specific folder.
+# Can also be used to compile the binaries (for an even better experiance)
+FROM debian:stable-slim as binselector
 WORKDIR /opt/hue-emulator
 
-## Install requirements 
+# Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
+ARG TARGETPLATFORM
+
+COPY BridgeEmulator .build/select.sh ./
+
+RUN chmod +x ./select.sh && \
+    mkdir out && \
+    ./select.sh
+
+# ============================ Actual image from here ====================
+FROM debian:stable-slim as prod
+WORKDIR /opt/hue-emulator
+ARG TARGETPLATFORM
+
+COPY requirements.txt ./
+
+## Install requirements  
 RUN apt update && apt install --no-install-recommends -y \
-    python3 python3-setuptools python3-pip \
+    python3-minimal python3-pip python3-setuptools \
     openssl nmap psmisc iproute2 \
-    && pip3 install astral==1.6.1 ws4py==0.5.1 requests==2.20.0 paho-mqtt==1.5.0 --no-cache-dir \
+    && pip3 install -r requirements.txt --no-cache-dir \
     && apt purge -y python3-pip python3-setuptools \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
@@ -16,9 +34,8 @@ COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
 COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
 
-## x86_64 specific
-COPY ./BridgeEmulator/entertainment-x86_64 /opt/hue-emulator/entertain-srv
-COPY ./BridgeEmulator/coap-client-x86_64 /opt/hue-emulator/coap-client-linux
+## Copy correct (compiled) C file from previous image
+COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/
 
 ## Add Docker Build scripts
 COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
