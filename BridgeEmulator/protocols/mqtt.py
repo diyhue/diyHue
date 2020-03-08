@@ -151,4 +151,4 @@ def mqttServer(config, lights, adresses, sensors):
     client.connect(config["mqttServer"], config["mqttPort"])
 
     # start the loop to keep receiving data
-    client.loop_forever()
+    client.loop_start()
