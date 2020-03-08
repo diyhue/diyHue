@@ -107,10 +107,12 @@ def discover(bridge_config, new_lights):
             light_ct = "ct" in keys and data["ct"] == True
 
             modelid = None
-            if light_color:
-                modelid = "ESPHome-RGB"
+            if light_color and light_ct:
+                modelid = "LCT015"
+            elif light_color: # Every light as LCT001? Or also support other lights
+                modelid = "LCT001"
             elif light_brightness:
-                modelid = "ESPHome-Dimmable"
+                modelid = "LWB010"
             elif light_ct:
                 modelid = "LTW001"
             else:
@@ -119,7 +121,8 @@ def discover(bridge_config, new_lights):
             # Create the light with data from auto discovery
             bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": data["unique_id"] }
             bridge_config["lights"][new_light_id]["manufacturername"] = data["device"]["manufacturer"]
-            bridge_config["lights"][new_light_id]["modelid"] = data["device"]["model"]
+            bridge_config["lights"][new_light_id]["modelid"] = modelid
+            bridge_config["lights"][new_light_id]["productname"] = data["device"]["model"]
             bridge_config["lights"][new_light_id]["swversion"] = data["device"]["sw_version"]
             
             # Set the type and a base state
