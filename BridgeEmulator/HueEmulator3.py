@@ -1934,6 +1934,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 if __name__ == "__main__":
     initialize()
     updateConfig()
+    saveConfig()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
