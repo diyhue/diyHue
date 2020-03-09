@@ -129,6 +129,7 @@ You also may want to see my new project [qtHue](https://github.com/mariusmotea/q
 ![qtHue](https://github.com/mariusmotea/qtHue/blob/master/Screenshot.png?raw=true)
 
 Credits:
+  - [Stephan van Rooij](https://github.com/svrooij) - zigbee2mqtt integration
   - [@avinashraja98](https://github.com/avinashraja98) - Hue Entertainment server
   - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) Internal WebGUI
   - [@J3n50m4t](https://github.com/J3n50m4t) - Yeelight integration
