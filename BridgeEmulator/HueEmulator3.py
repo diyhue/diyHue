@@ -30,7 +30,7 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
+from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
@@ -242,6 +242,9 @@ def updateConfig():
         bridge_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
     if "alarm_config" in bridge_config:
         del bridge_config["alarm_config"]
+
+    if "mqtt" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
 
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
@@ -719,6 +722,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
@@ -1811,7 +1815,7 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "sensors":
                     if url_pices[5] == "state":
                         for key in put_dictionary.keys():
-                            # track time of state changes in dxState  
+                            # track time of state changes in dxState
                             if not key in bridge_config["sensors"][url_pices[4]]["state"] or bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
                                 dxState["sensors"][url_pices[4]]["state"][key] = current_time
                     elif url_pices[4] == "1":
@@ -1930,9 +1934,12 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 if __name__ == "__main__":
     initialize()
     updateConfig()
+    saveConfig()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
+    if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
+        mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()

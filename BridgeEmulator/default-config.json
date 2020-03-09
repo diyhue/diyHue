@@ -568,6 +568,21 @@
 
       }
    },
+   "emulator": {
+    "alarm": {
+        "email": "",
+        "lasttriggered": 100000,
+        "on": false
+    },
+    "mqtt": {
+        "discoveryPrefix": "homeassistant",
+        "enabled": false,
+        "mqttPassword": "",
+        "mqttPort": 1883,
+        "mqttServer": "mqtt",
+        "mqttUser": ""
+    }
+   },
    "groups":{
 
    },
