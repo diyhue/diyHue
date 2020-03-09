@@ -1,7 +1,11 @@
 import json
 import logging
+import random
+
+# External libraries
 import paho.mqtt.client as mqtt
 
+# internal functions
 from functions import light_types, nextFreeId
 from functions.colors import hsv_to_rgb
 
@@ -20,6 +24,7 @@ def on_connect(client, userdata, flags, rc):
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
+    # Start autodetection on lights
     autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
     client.subscribe(autodiscoveryTopic)
 
@@ -45,7 +50,7 @@ def on_state_update(msg):
     logging.debug(json.dumps(data, indent=4))
 
 def set_light(address, light, data):
-    state = {}
+    state = {"transition": 0.3}
     colorFromHsv = False
     for key, value in data.items():
         if key == "on":
@@ -58,6 +63,8 @@ def set_light(address, light, data):
             colorFromHsv = True
         if key == "alert":
             state['alert'] = value
+        if key == "transitiontime":
+            state['transition'] = value / 10
 
     if colorFromHsv:
         color = hsv_to_rgb(data['hue'], data['sat'], light["state"]["bri"])
@@ -119,21 +126,22 @@ def discover(bridge_config, new_lights):
                 modelid = "Plug 01"
         
             # Create the light with data from auto discovery
-            bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": data["unique_id"] }
+            bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1" }
             bridge_config["lights"][new_light_id]["manufacturername"] = data["device"]["manufacturer"]
             bridge_config["lights"][new_light_id]["modelid"] = modelid
             bridge_config["lights"][new_light_id]["productname"] = data["device"]["model"]
             bridge_config["lights"][new_light_id]["swversion"] = data["device"]["sw_version"]
             
-            # Set the type and a base state
+            # Set the type, a default state and possibly a light config
             bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
             bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
-
-            # Some lights have a predefined config
             bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+
+            # Add the lights to new lights, so it shows up in the search screen
+            new_lights.update({new_light_id: {"name": light_name}})
             
             # Save the mqtt parameters
-            bridge_config["lights_address"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"192.168.0.0" }
+            bridge_config["lights_address"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"none" }
             bridge_config["lights_address"][new_light_id]["state_topic"] = data["state_topic"]
             bridge_config["lights_address"][new_light_id]["command_topic"] = data["command_topic"]
 

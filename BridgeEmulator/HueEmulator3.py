@@ -243,6 +243,9 @@ def updateConfig():
     if "alarm_config" in bridge_config:
         del bridge_config["alarm_config"]
 
+    if "mqtt" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": false, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "","mqttUser": ""}
+
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
 
@@ -1934,7 +1937,7 @@ if __name__ == "__main__":
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
-    if bridge_config["emulator"]["mqtt"]["enabled"]:
+    if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
         mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
         if update_lights_on_startup:
