@@ -32,7 +32,7 @@ RUN apt update && apt install --no-install-recommends -y \
 COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
 COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
-COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html ./BridgeEmulator/default-config.json /opt/hue-emulator/
+COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
 
 ## Copy correct (compiled) C file from previous image
 COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/

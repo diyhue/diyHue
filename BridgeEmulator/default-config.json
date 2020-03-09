@@ -579,7 +579,7 @@
         "enabled": false,
         "mqttPassword": "",
         "mqttPort": 1883,
-        "mqttServer": "",
+        "mqttServer": "mqtt",
         "mqttUser": ""
     }
    },
