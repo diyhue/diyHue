@@ -29,6 +29,16 @@ python3 setup.py install
 cd ../
 rm -rf astral.zip astral-master/
 
+
+### installing paho-mqtt library
+echo -e "\033[36m Installing Python MQTT.\033[0m"
+curl -sL https://files.pythonhosted.org/packages/59/11/1dd5c70f0f27a88a3a05772cd95f6087ac479fac66d9c7752ee5e16ddbbc/paho-mqtt-1.5.0.tar.gz -o paho-mqtt-1.5.0.tar.gz
+tar zxvf paho-mqtt-1.5.0.tar.gz
+cd paho-mqtt-1.5.0/
+python3 setup.py install
+cd ../
+rm -rf paho-mqtt-1.5.0.tar.gz paho-mqtt-1.5.0/
+
 ### installing WebSocket for Python
 echo -e "\033[36m Installing WebSocket for Python.\033[0m"
 curl -sL https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.4.zip -o ws4py.zip
