@@ -1952,7 +1952,7 @@ if __name__ == "__main__":
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
-        Thread(target=remoteApi, args=[bridge_config["config"]]).start()
+        Thread(target=remoteApi, args=[HOST_IP, bridge_config["config"]]).start()
         if disableOnlineDiscover == False:
             Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
