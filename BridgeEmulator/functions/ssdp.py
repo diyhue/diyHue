@@ -10,7 +10,7 @@ def ssdpSearch(ip, port, mac):
     SSDP_PORT = 1900
     multicast_group_c = SSDP_ADDR
     multicast_group_s = (SSDP_ADDR, SSDP_PORT)
-    server_address = ('', SSDP_PORT)
+    server_address = (ip, SSDP_PORT)
     Response_message = 'HTTP/1.1 200 OK\r\nHOST: 239.255.255.250:1900\r\nEXT:\r\nCACHE-CONTROL: max-age=100\r\nLOCATION: http://' + ip + ':' + str(port) + '/description.xml\r\nSERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.20.0\r\nhue-bridgeid: ' + (mac[:6] + 'FFFE' + mac[6:]).upper() + '\r\n'
     custom_response_message = {0: {"st": "upnp:rootdevice", "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac + "::upnp:rootdevice"}, 1: {"st": "uuid:2f402f80-da50-11e1-9b23-" + mac, "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac}, 2: {"st": "urn:schemas-upnp-org:device:basic:1", "usn": "uuid:2f402f80-da50-11e1-9b23-" + mac}}
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
