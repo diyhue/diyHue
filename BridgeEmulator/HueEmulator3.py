@@ -1912,7 +1912,7 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 def run(https, server_class=ThreadingSimpleServer, handler_class=S):
     if https:
-        server_address = ('', HOST_HTTPS_PORT)
+        server_address = (HOST_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem")
@@ -1925,7 +1925,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         logging.info('Starting ssl httpd...')
     else:
-        server_address = ('', HOST_HTTP_PORT)
+        server_address = (HOST_IP, HOST_HTTP_PORT)
         httpd = server_class(server_address, handler_class)
         logging.info('Starting httpd...')
     httpd.serve_forever()
