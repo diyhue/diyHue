@@ -64,7 +64,7 @@ def set_light(address, light, data):
     logging.debug("tasmota: <set_light> invoked! IP=" + address["ip"])
 
     for key, value in data.items():
-        #logging.debug("tasmota: key " + key)
+        logging.debug("tasmota: key " + key)
 
         if key == "on":
             if value:
@@ -78,34 +78,56 @@ def set_light(address, light, data):
             color = {}
         elif key == "xy":
             color = convert_xy(value[0], value[1], light["state"]["bri"])
-            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
+            #sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
+            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + rgb_to_hex((color[0],color[1],color[2])))
+            logging.debug('request hex: '+rgb_to_hex((color[0],color[1],color[2])))
 
         elif key == "alert":
                 if value == "select":
                     sendRequest ("http://" + address["ip"] + "/cm?cmnd=dimmer%20100")
 
 
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    return list(tup)
+
+
+def rgb_to_hex(rgb):
+    return '%02x%02x%02x' % rgb
+    #return '#%02x%02x%02x' % rgb
 
 def get_light_state(address, light):
     logging.debug("tasmota: <get_light_state> invoked!")
     data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
+    #logging.debug(data)
     light_data = json.loads(data)["StatusSTS"]
+    #logging.debug(light_data)
     state = {}
 
     if 'POWER'in light_data:
         state['on'] = True if light_data["POWER"] == "ON" else False
+        #logging.debug('POWER')
     elif 'POWER1'in light_data:
         state['on'] = True if light_data["POWER1"] == "ON" else False
+        #logging.debug('POWER1')
 
     if 'Color' not in light_data:
+       #logging.debug('not Color')
         if state['on'] == True:
             state["xy"] = convert_rgb_xy(255,255,255)
             state["bri"] = int(255)
             state["colormode"] = "xy"
     else:
-        rgb = light_data["Color"].split(",")
+        #logging.debug('Color')
+        hex = light_data["Color"]
+        rgb = hex_to_rgb(hex)
+        logging.debug(rgb)
+        #rgb = light_data["Color"].split(",")
         logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
-        state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
+        # state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
+        state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
         state["bri"] = (int(light_data["Dimmer"]) / 100.0) * 254.0
         state["colormode"] = "xy"
     return state
