@@ -9,6 +9,9 @@ light_types = {}
 light_types["Tasmota"] = {"type": "Extended color light", "swversion": "1.46.13_r26312"}
 light_types["Tasmota"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}
 
+light_types["Shelly"] = {"type": "shelly1", "swversion": "1.46.13_r26312"}
+light_types["Shelly"]["state"] = {"on": False, "alert": "none", "reachable": True}
+
 light_types["ESPHome-RGB"] = {"type": "Extended color light", "swversion": "1.46.13_r26312", "manufacturername": "ESPHome"}
 light_types["ESPHome-RGB"]["state"] = {"on": False, "bri": 254, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}
 light_types["ESPHome-RGB"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
