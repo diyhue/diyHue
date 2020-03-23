@@ -22,6 +22,8 @@ python3 -m pip install --upgrade pytz
 wait
 python3 -m pip install --upgrade ws4py
 wait
+python3 -m pip install --upgrade paho-mqtt
+wait
 echo -e "\033[32m Creating directories.\033[0m"
 mkdir /opt
 mkdir /opt/tmp
