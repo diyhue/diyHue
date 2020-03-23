@@ -30,13 +30,13 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome, mqtt
+from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, native_single, native_multi, esphome]
+protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome]
 
 ap = argparse.ArgumentParser()
 
@@ -721,6 +721,7 @@ def generate_unique_id():
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=shelly.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
     Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
