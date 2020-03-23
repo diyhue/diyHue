@@ -1,22 +1,12 @@
-FROM balenalib/raspberrypi3-debian-python
+FROM balenalib/raspberrypi3-debian-python:3-latest
 WORKDIR /opt/hue-emulator
 
 RUN [ "cross-build-start" ]
 
 ## Install requirments
-RUN apt update && apt install -y python3 python3-setuptools openssl unzip curl nmap psmisc iproute2 tzdata && rm -rf /var/lib/apt/lists/*
-
-## Install pytz
-RUN pip install pytz --no-cache-dir
-
-## Install astral
-RUN cd /tmp && pwd && curl https://codeload.github.com/sffjunkie/astral/zip/1.6.1 -o astral.zip && unzip -q -o astral.zip && cd astral-1.6.1/ && python3 setup.py install && rm -rf /tmp/*
-
-## Install python3-ws4py
-RUN cd /tmp && curl https://codeload.github.com/Lawouach/WebSocket-for-Python/zip/0.5.1 -o ws4py.zip && unzip -q -o ws4py.zip && cd WebSocket-for-Python-0.5.1/ && python3 setup.py install && rm -rf /tmp/*
-
-## Install python3-requests
-RUN cd /tmp && curl https://codeload.github.com/requests/requests/zip/v2.19.1 -o requests.zip && unzip -q -o requests.zip && cd requests-2.19.1/ && python3 setup.py install && rm -rf /tmp/*
+RUN apt update && apt install -y openssl nmap psmisc iproute2 tzdata \
+    && pip install pytz astral==1.6.1 ws4py==0.5.1 requests==2.20.0 paho-mqtt==1.5.0 --no-cache-dir \
+    && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue
 COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
@@ -32,8 +22,11 @@ COPY ./BridgeEmulator/coap-client-arm /opt/hue-emulator/coap-client-linux
 COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
 RUN chmod +x /opt/hue-emulator/genCert.sh
 
-## Cleanup
-RUN ls -la /opt/hue-emulator
+## Debug
+# RUN ls -la /opt/hue-emulator
 
 RUN [ "cross-build-end" ]
+
+EXPOSE 80 443 1900/udp 1982/udp 2100/udp
+
 CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]

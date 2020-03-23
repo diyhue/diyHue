@@ -27,11 +27,10 @@ from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
 from functions.docker import dockerSetup
 from functions.entertainment import entertainmentService
-from functions.email import sendEmail
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
+from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
@@ -184,7 +183,6 @@ def initialize():
     bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
     bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
     bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
-    load_alarm_config()
     generateDxState()
     sanitizeBridgeScenes()
     ## generte security key for Hue Essentials remote access
@@ -230,14 +228,23 @@ def updateConfig():
 
     #### bridge emulator config
 
-    if int(bridge_config["config"]["swversion"]) < 1935074050:
-        bridge_config["config"]["swversion"] = "1935074050"
+    if int(bridge_config["config"]["swversion"]) < 1935144020:
+        bridge_config["config"]["swversion"] = "1935144020"
         bridge_config["config"]["apiversion"] = "1.35.0"
 
     ### end bridge config
 
     if "emulator" not in bridge_config:
         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
+
+
+    if "alarm" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
+    if "alarm_config" in bridge_config:
+        del bridge_config["alarm_config"]
+
+    if "mqtt" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
 
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
@@ -367,7 +374,7 @@ def addTradfriCtRemote(sensor_id, group_id):
         bridge_config["resourcelinks"][resourcelinkId]["links"].append("/rules/" + ruleId)
 
 def addTradfriOnOffSwitch(sensor_id, group_id):
-    rules = [{"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": True},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"}],"name": "Remote " + sensor_id + " button on"}, {"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": False},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "2002"}],"name": "Remote " + sensor_id + " button off"},{ "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " up-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "1001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " dn-press" }]
+    rules = [{"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": True},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"}],"name": "Remote " + sensor_id + " button on"}, {"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": False},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "2002"}],"name": "Remote " + sensor_id + " button off"},{ "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "1001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " up-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " dn-press" }]
     resourcelinkId = nextFreeId(bridge_config, "resourcelinks")
     bridge_config["resourcelinks"][resourcelinkId] = {"classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/sensors/" + sensor_id], "name": "Emulator rules " + sensor_id,"owner": list(bridge_config["config"]["whitelist"])[0]}
     for rule in rules:
@@ -375,7 +382,7 @@ def addTradfriOnOffSwitch(sensor_id, group_id):
         bridge_config["rules"][ruleId] = rule
         bridge_config["rules"][ruleId].update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "lasttriggered": None, "owner": list(bridge_config["config"]["whitelist"])[0], "recycle": True, "status": "enabled", "timestriggered": 0})
         bridge_config["resourcelinks"][resourcelinkId]["links"].append("/rules/" + ruleId)
-        
+
 def addTradfriSceneRemote(sensor_id, group_id):
     rules = [{"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": True},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"},{"address": "/groups/" + group_id + "/state/any_on","operator": "eq","value": "false"}],"name": "Remote " + sensor_id + " button on"}, {"actions": [{"address": "/groups/" + group_id + "/action","body": {"on": False},"method": "PUT"}],"conditions": [{"address": "/sensors/" + sensor_id + "/state/lastupdated","operator": "dx"},{"address": "/sensors/" + sensor_id + "/state/buttonevent","operator": "eq","value": "1002"},{"address": "/groups/" + group_id + "/state/any_on","operator": "eq","value": "true"}],"name": "Remote " + sensor_id + " button off"},{ "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " up-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": 56, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " up-long" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -30, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " dn-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "bri_inc": -56, "transitiontime": 9 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " dn-long" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "scene_inc": -1 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " ctl-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "scene_inc": -1 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " ctl-long" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "scene_inc": 1 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "5002" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " ct-press" }, { "actions": [{ "address": "/groups/" + group_id + "/action", "body": { "scene_inc": 1 }, "method": "PUT" }], "conditions": [{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "5001" }, { "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }], "name": "Dimmer Switch " + sensor_id + " ct-long" }]
     resourcelinkId = nextFreeId(bridge_config, "resourcelinks")
@@ -429,20 +436,6 @@ def resourceRecycle():
             if "recycle" in bridge_config[resource][key] and bridge_config[resource][key]["recycle"] and key not in resourcelinks[resource]:
                 logging.info("delete " + resource + " / " + key)
                 del bridge_config[resource][key]
-
-
-def load_alarm_config():  #load and configure alarm virtual light
-    if bridge_config["alarm_config"]["mail_username"] != "":
-        logging.info("E-mail account configured")
-        if "virtual_light" not in bridge_config["alarm_config"]:
-            logging.info("Send test email")
-            if sendEmail(bridge_config["alarm_config"], "dummy test"):
-                logging.info("Mail succesfully sent\nCreate alarm virtual light")
-                new_light_id = nextFreeId(bridge_config, "lights")
-                bridge_config["lights"][new_light_id] = {"state": {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.690456, 0.295907], "ct": 461, "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}, "type": "Extended color light", "name": "Alarm", "uniqueid": "1234567ffffff", "modelid": "LLC012", "swversion": "66009461"}
-                bridge_config["alarm_config"]["virtual_light"] = new_light_id
-            else:
-                logging.info("Mail test failed")
 
 def saveConfig(filename='config.json'):
     with open(cwd + '/' + filename, 'w', encoding="utf-8") as fp:
@@ -498,7 +491,6 @@ def schedulerProcessor():
                         timmer = schedule_time[4:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        print("#### " + bridge_config["schedules"][schedule]["starttime"] + " vs " + (datetime.utcnow() - d).replace(microsecond=0).isoformat())
                         if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
                             bridge_config["schedules"][schedule]["starttime"] = datetime.utcnow().replace(microsecond=0).isoformat()
@@ -730,6 +722,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
@@ -969,12 +962,13 @@ def websocketClient():
                         for key in message["state"].keys():
                             dxState["sensors"][bridge_sensor_id]["state"][key] = current_time
                         rulesProcessor(["sensors", bridge_sensor_id], current_time)
-                        if "buttonevent" in message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] in ["TRADFRI remote control","RWL021"]:
+                        if "buttonevent" in message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] in ["TRADFRI remote control","RWL021","TRADFRI on/off switch"]:
                             if message["state"]["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
                                 Thread(target=longPressButton, args=[bridge_sensor_id, message["state"]["buttonevent"]]).start()
-                        if "presence" in message["state"] and message["state"]["presence"] and "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"]:
-                            sendEmail(bridge_config["alarm_config"], bridge_config["sensors"][bridge_sensor_id]["name"])
-                            bridge_config["alarm_config"]["virtual_light"]
+                        if "presence" in message["state"] and message["state"]["presence"] and bridge_config["emulator"]["alarm"]["on"] and bridge_config["emulator"]["alarm"]["lasttriggered"] + 300 < datetime.now().timestamp():
+                            logging.info("Alarm triggered, sending email...")
+                            requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridge_config["emulator"]["alarm"]["email"], "sensor": bridge_config["sensors"][bridge_sensor_id]["name"]})
+                            bridge_config["emulator"]["alarm"]["lasttriggered"] = int(datetime.now().timestamp())
                     elif "config" in message and bridge_config["sensors"][bridge_sensor_id]["config"]["on"]:
                         bridge_config["sensors"][bridge_sensor_id]["config"].update(message["config"])
                 elif message["r"] == "lights":
@@ -1170,8 +1164,7 @@ def splitLightsToDevices(group, state, scene={}):
 def groupZero(state):
     lightsData = {}
     for light in bridge_config["lights"].keys():
-        if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
-            lightsData[light] = state
+        lightsData[light] = state
     Thread(target=splitLightsToDevices, args=["0", {}, lightsData]).start()
     for group in bridge_config["groups"].keys():
         bridge_config["groups"][group]["action"].update(state)
@@ -1184,14 +1177,13 @@ def daylightSensor():
     if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
         return
 
-    import pytz, astral
-    from astral import Astral, Location
-    a = Astral()
-    a.solar_depression = 'civil'
-    loc = Location(('Current', bridge_config["config"]["timezone"].split("/")[1], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]), bridge_config["config"]["timezone"], 0))
-    sun = loc.sun(date=datetime.now(), local=True)
-    deltaSunset = sun['sunset'].replace(tzinfo=None) - datetime.now()
-    deltaSunrise = sun['sunrise'].replace(tzinfo=None) - datetime.now()
+    import pytz
+    from astral.sun import sun
+    from astral import LocationInfo
+    localzone = LocationInfo('localzone', bridge_config["config"]["timezone"].split("/")[1], bridge_config["config"]["timezone"], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]))
+    s = sun(localzone.observer, date=datetime.now())
+    deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.now()
+    deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.now()
     deltaSunsetOffset = deltaSunset.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunsetoffset"] * 60
     deltaSunriseOffset = deltaSunrise.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunriseoffset"] * 60
     logging.info("deltaSunsetOffset: " + str(deltaSunsetOffset))
@@ -1487,9 +1479,11 @@ class S(BaseHTTPRequestHandler):
                                 else:
                                     bridge_config["sensors"][lightSensorId]["state"].update({"lightlevel": 6000, "dark": True, "daylight": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S") })
 
-                            #if alarm is activ trigger the alarm
-                            if "virtual_light" in bridge_config["alarm_config"] and bridge_config["lights"][bridge_config["alarm_config"]["virtual_light"]]["state"]["on"] and bridge_config["sensors"][sensorId]["state"]["presence"] == True:
-                                sendEmail(bridge_config["alarm_config"], bridge_config["sensors"][sensorId]["name"])
+                            #trigger the alarm if active
+                            if bridge_config["emulator"]["alarm"]["on"] and bridge_config["emulator"]["alarm"]["lasttriggered"] + 300 < datetime.now().timestamp():
+                                logging.info("Alarm triggered, sending email...")
+                                requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridge_config["emulator"]["alarm"]["email"], "sensor": bridge_config["sensors"][sensorId]["name"]})
+                                bridge_config["emulator"]["alarm"]["lasttriggered"] = int(datetime.now().timestamp())
                                 #triger_horn() need development
                         rulesProcessor(["sensors", sensorId], current_time) #process the rules to perform the action configured by application
             self._set_end_headers(bytes("done", "utf8"))
@@ -1821,7 +1815,8 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "sensors":
                     if url_pices[5] == "state":
                         for key in put_dictionary.keys():
-                            if bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
+                            # track time of state changes in dxState
+                            if not key in bridge_config["sensors"][url_pices[4]]["state"] or bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
                                 dxState["sensors"][url_pices[4]]["state"][key] = current_time
                     elif url_pices[4] == "1":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
@@ -1846,7 +1841,8 @@ class S(BaseHTTPRequestHandler):
             sleep(0.3)
             self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':'),ensure_ascii=False), "utf8"))
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
-            rulesProcessor([url_pices[3], url_pices[4]], current_time)
+            if len(url_pices) > 4:
+                rulesProcessor([url_pices[3], url_pices[4]], current_time)
             sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1938,9 +1934,12 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 if __name__ == "__main__":
     initialize()
     updateConfig()
+    saveConfig()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
+    if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
+        mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()
