@@ -127,6 +127,8 @@ def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHo
                 elif key == "transitiontime":
                     payload["5712"] = value
                 elif key == "bri":
+                    if value > 254:
+                        value = 254
                     payload["5851"] = value
                 elif key == "ct":
                     if value < 270:

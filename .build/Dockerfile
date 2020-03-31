@@ -1,3 +1,18 @@
+# This image just moves the correct bins to a specific folder.
+# Can also be used to compile the binaries (for an even better experience)
+FROM debian:stable-slim as binselector
+WORKDIR /opt/hue-emulator
+
+# Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
+ARG TARGETPLATFORM
+
+COPY BridgeEmulator .build/select.sh ./
+
+RUN chmod +x ./select.sh && \
+    mkdir out && \
+    ./select.sh
+
+# ============================ Actual image from here ====================
 FROM debian:stable-slim as prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
@@ -19,9 +34,8 @@ COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
 COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
 
-## x86_64 specific
-COPY ./BridgeEmulator/entertainment-x86_64 /opt/hue-emulator/entertain-srv
-COPY ./BridgeEmulator/coap-client-x86_64 /opt/hue-emulator/coap-client-linux
+## Copy correct (compiled) C file from previous image
+COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/
 
 ## Add Docker Build scripts
 COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/

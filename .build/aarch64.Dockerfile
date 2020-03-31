@@ -10,7 +10,7 @@ COPY requirements.txt BridgeEmulator .build/genCert.sh .build/openssl.conf ./
 
 #Install requirments
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y unzip curl nmap psmisc iproute2 libcoap-1-0-bin && \
+    apt-get install --no-install-recommends -y nmap psmisc iproute2 libcoap-1-0-bin && \
     rm -rf /var/lib/apt/lists/* && \
     pip3 install --no-cache-dir -r requirements.txt && \
     mv ./entertainment-${BUILD_ARCH} ./entertain-srv && \
@@ -22,6 +22,6 @@ RUN apt-get update && \
     find . -name 'coap-client-*' ! -name 'coap-client-linux' -delete
 
 # Expose ports
-EXPOSE 80 443 1900/udp 2100/udp
+EXPOSE 80 443 1900/udp 1982/udp 2100/udp
 
 CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]

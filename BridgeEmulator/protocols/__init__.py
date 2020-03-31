@@ -1,3 +1,3 @@
-from protocols import yeelight, tasmota, mi_box, native_single, native_multi, esphome
+from protocols import yeelight, tasmota, shelly, mi_box, native_single, native_multi, esphome, mqtt
 
-protocols = [yeelight, tasmota, mi_box, native_single, native_multi, esphome]
+protocols = [yeelight, tasmota, shelly, mi_box, native_single, native_multi, esphome, mqtt]

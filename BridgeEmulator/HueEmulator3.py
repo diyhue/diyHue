@@ -30,13 +30,13 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome
+from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, native_single, native_multi, esphome]
+protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome]
 
 ap = argparse.ArgumentParser()
 
@@ -228,8 +228,8 @@ def updateConfig():
 
     #### bridge emulator config
 
-    if int(bridge_config["config"]["swversion"]) < 1935074050:
-        bridge_config["config"]["swversion"] = "1935074050"
+    if int(bridge_config["config"]["swversion"]) < 1935144020:
+        bridge_config["config"]["swversion"] = "1935144020"
         bridge_config["config"]["apiversion"] = "1.35.0"
 
     ### end bridge config
@@ -242,6 +242,9 @@ def updateConfig():
         bridge_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
     if "alarm_config" in bridge_config:
         del bridge_config["alarm_config"]
+
+    if "mqtt" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
 
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
@@ -718,7 +721,9 @@ def generate_unique_id():
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=shelly.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
@@ -1160,8 +1165,7 @@ def splitLightsToDevices(group, state, scene={}):
 def groupZero(state):
     lightsData = {}
     for light in bridge_config["lights"].keys():
-        if "virtual_light" not in bridge_config["alarm_config"] or light != bridge_config["alarm_config"]["virtual_light"]:
-            lightsData[light] = state
+        lightsData[light] = state
     Thread(target=splitLightsToDevices, args=["0", {}, lightsData]).start()
     for group in bridge_config["groups"].keys():
         bridge_config["groups"][group]["action"].update(state)
@@ -1174,14 +1178,13 @@ def daylightSensor():
     if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
         return
 
-    import pytz, astral
-    from astral import Astral, Location
-    a = Astral()
-    a.solar_depression = 'civil'
-    loc = Location(('Current', bridge_config["config"]["timezone"].split("/")[1], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]), bridge_config["config"]["timezone"], 0))
-    sun = loc.sun(date=datetime.now(), local=True)
-    deltaSunset = sun['sunset'].replace(tzinfo=None) - datetime.now()
-    deltaSunrise = sun['sunrise'].replace(tzinfo=None) - datetime.now()
+    import pytz
+    from astral.sun import sun
+    from astral import LocationInfo
+    localzone = LocationInfo('localzone', bridge_config["config"]["timezone"].split("/")[1], bridge_config["config"]["timezone"], float(bridge_config["sensors"]["1"]["config"]["lat"][:-1]), float(bridge_config["sensors"]["1"]["config"]["long"][:-1]))
+    s = sun(localzone.observer, date=datetime.now())
+    deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.now()
+    deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.now()
     deltaSunsetOffset = deltaSunset.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunsetoffset"] * 60
     deltaSunriseOffset = deltaSunrise.total_seconds() + bridge_config["sensors"]["1"]["config"]["sunriseoffset"] * 60
     logging.info("deltaSunsetOffset: " + str(deltaSunsetOffset))
@@ -1813,7 +1816,8 @@ class S(BaseHTTPRequestHandler):
                 elif url_pices[3] == "sensors":
                     if url_pices[5] == "state":
                         for key in put_dictionary.keys():
-                            if bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
+                            # track time of state changes in dxState
+                            if not key in bridge_config["sensors"][url_pices[4]]["state"] or bridge_config["sensors"][url_pices[4]]["state"][key] != put_dictionary[key]:
                                 dxState["sensors"][url_pices[4]]["state"][key] = current_time
                     elif url_pices[4] == "1":
                         bridge_config["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
@@ -1838,7 +1842,8 @@ class S(BaseHTTPRequestHandler):
             sleep(0.3)
             self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':'),ensure_ascii=False), "utf8"))
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
-            rulesProcessor([url_pices[3], url_pices[4]], current_time)
+            if len(url_pices) > 4:
+                rulesProcessor([url_pices[3], url_pices[4]], current_time)
             sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
@@ -1930,9 +1935,12 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 if __name__ == "__main__":
     initialize()
     updateConfig()
+    saveConfig()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
+    if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
+        mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()
