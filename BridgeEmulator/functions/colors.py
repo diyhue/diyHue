@@ -1,4 +1,16 @@
-def convert_rgb_xy(red,green,blue):
+def rgbBrightness(rgb, brightness):
+    r = sorted((0, int(rgb[0] * brightness) >> 8, 255))[1] #calculate with brightness and clamp
+    g = sorted((0, int(rgb[1] * brightness) >> 8, 255))[1]
+    b = sorted((0, int(rgb[2] * brightness) >> 8, 255))[1]
+    return [r, g, b]
+
+def clampRGB(rgb):
+    r = sorted((0, int(rgb[0]), 255))[1]
+    g = sorted((0, int(rgb[1]), 255))[1]
+    b = sorted((0, int(rgb[2]), 255))[1]
+    return [r, g, b]
+
+def convert_rgb_xy(red, green, blue):
     red = pow((red + 0.055) / (1.0 + 0.055), 2.4) if red > 0.04045 else red / 12.92
     green = pow((green + 0.055) / (1.0 + 0.055), 2.4) if green > 0.04045 else green / 12.92
     blue = pow((blue + 0.055) / (1.0 + 0.055), 2.4) if blue > 0.04045 else blue / 12.92
@@ -51,7 +63,7 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     r = 0 if r < 0 else r
     g = 0 if g < 0 else g
     b = 0 if b < 0 else b
-    return [int(r * bri), int(g * bri), int(b * bri)]
+    return clampRGB([r * bri, g * bri, b * bri])
 
 def hsv_to_rgb(h, s, v):
     s = float(s / 254)
@@ -84,5 +96,4 @@ def hsv_to_rgb(h, s, v):
         g = 0
         b = x
 
-    r, g, b = int(r * 255), int(g * 255), int(b * 255)
-    return r, g, b
+    return clampRGB([r * 255, g * 255, b * 255])
