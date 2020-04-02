@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>API Debug tool</title>
+        <style>
+            body{
+                font-family: verdana;
+                margin: 20px;
+            }
+            h1{
+                margin: 0px;
+                font-size: 20px;
+            }
+            h2{
+                font-size: 16px;
+                margin-top: 20px;
+                color: grey;
+            }
+            #buttons{
+                clear: left;
+            }
+            input{
+                width: 100%;
+            }
+            form{
+                background: #e8e8e8;
+                width: 500px;
+                padding: 20px;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+            }
+            textarea{
+                padding-top: 10px;
+                width: 100%;
+                font-family: monaco,monospace;
+                font-size: 12px;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <form name="commandform">
+            <h1>CLIP API Debugger</h1>
+            <h2>URL:</h2>
+            <input id="commandurl" name="commandurl" type="text" size="60" value="/api/1234/">
+            <div id="buttons">
+                <button type="button" onclick="getHTML('GET')">GET</button>
+                <button type="button" onclick="getHTML('PUT')">PUT</button>
+                <button type="button" onclick="getHTML('POST')">POST</button>
+                <button type="button" onclick="getHTML('DELETE')">DELETE</button>
+            </div>
+            <h2>Message Body:</h2>
+            <textarea name="messagebody" rows="10" cols="100"></textarea>
+            <h2>Command Response:</h2>
+            <textarea name="response" rows="25" cols="100"></textarea>
+        </form>
+    </body>
+</html>
+
+<script language="JavaScript">
+document.getElementById('commandurl').addEventListener('keypress', function (event) {
+    if (event.keyCode == 13) {
+        getHTML('GET');
+        event.preventDefault();
+    }
+});
+function getHTML(command)
+{
+    if (window.XMLHttpRequest)
+    {
+        var http = new XMLHttpRequest();
+        http.open(command, document.commandform.commandurl.value, true);
+
+        http.onreadystatechange = function()
+        {
+            if(http.readyState == 4)
+            {
+                if(http.status==200)
+                {
+                    document.commandform.response.value="Bad JSON: "+http.responseText
+                    document.commandform.response.value=JSON.stringify(JSON.parse(http.responseText), null, '\t');
+                }
+                else
+                {
+                    document.commandform.response.value="Error "+http.status
+                }
+            }
+        }
+        http.send(document.commandform.messagebody.value);
+    }
+    return false;
+}
+</script>
