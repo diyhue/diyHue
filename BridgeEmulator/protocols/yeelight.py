@@ -132,6 +132,12 @@ def set_light(address, light, data, rgb = None):
             raise e
     if not c._music and c._connected:
         c.disconnect()
+        
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    return list(tup)
 
 def get_light_state(address, light):
     #logging.info("name is: " + light["name"])
@@ -168,16 +174,8 @@ def get_light_state(address, light):
             data = tcp_socket.recv(16 * 1024)
             hue_data = json.loads(data[:-2].decode("utf8"))["result"]
             hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-            r = hex_rgb[:2]
-            if r == "  ":
-                r = "00"
-            g = hex_rgb[3:4]
-            if g == "  ":
-                g = "00"
-            b = hex_rgb[-2:]
-            if b == "  ":
-                b = "00"
-            state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+            rgb=hex_to_rgb(hex_rgb)
+            state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
             state["colormode"] = "xy"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
             msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
