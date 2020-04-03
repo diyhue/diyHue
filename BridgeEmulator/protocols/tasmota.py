@@ -120,13 +120,11 @@ def get_light_state(address, light):
             state["bri"] = int(255)
             state["colormode"] = "xy"
     else:
-        logging.debug('Color')
-        rgb = []
-        if len(light_data["Color"]) == 6: #data was sent in hex format:
-            rgb = hex_to_rgb(light_data["Color"])
-        else:
-            rgb = light_data["Color"].split(",")
+        #logging.debug('Color')
+        hex = light_data["Color"]
+        rgb = hex_to_rgb(hex)
         logging.debug(rgb)
+        #rgb = light_data["Color"].split(",")
         logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
         # state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
         state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
