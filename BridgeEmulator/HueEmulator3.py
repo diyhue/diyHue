@@ -228,8 +228,8 @@ def updateConfig():
 
     #### bridge emulator config
 
-    if int(bridge_config["config"]["swversion"]) < 1935144020:
-        bridge_config["config"]["swversion"] = "1935144020"
+    if int(bridge_config["config"]["swversion"]) < 1937113020:
+        bridge_config["config"]["swversion"] = "1937113020"
         bridge_config["config"]["apiversion"] = "1.35.0"
 
     ### end bridge config
