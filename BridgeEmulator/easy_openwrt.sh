@@ -16,7 +16,7 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install requests astral pytz ws4py
+python3 -m pip install requests astral pytz ws4py paho-mqtt
 wait
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
