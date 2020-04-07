@@ -30,13 +30,13 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, native_single, native_multi, esphome, mqtt
+from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, native_single, native_multi, esphome]
+protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome]
 
 ap = argparse.ArgumentParser()
 
@@ -228,8 +228,8 @@ def updateConfig():
 
     #### bridge emulator config
 
-    if int(bridge_config["config"]["swversion"]) < 1935144020:
-        bridge_config["config"]["swversion"] = "1935144020"
+    if int(bridge_config["config"]["swversion"]) < 1937113020:
+        bridge_config["config"]["swversion"] = "1937113020"
         bridge_config["config"]["apiversion"] = "1.35.0"
 
     ### end bridge config
@@ -721,6 +721,7 @@ def generate_unique_id():
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
     Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=shelly.discover, args=[bridge_config, new_lights]).start()
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
     Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
@@ -1947,7 +1948,7 @@ if __name__ == "__main__":
         Thread(target=ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
         Thread(target=schedulerProcessor).start()
         Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"], off_if_unreachable]).start()
-        Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"]]).start()
+        Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"], HOST_IP]).start()
         Thread(target=run, args=[False]).start()
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()

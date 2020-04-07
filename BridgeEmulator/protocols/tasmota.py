@@ -9,7 +9,7 @@ import sys
 from time import sleep
 from subprocess import check_output
 from functions import light_types, nextFreeId
-from functions.colors import convert_rgb_xy, convert_xy
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from functions.network import getIpAddress
 
 
@@ -60,7 +60,7 @@ def discover(bridge_config, new_lights):
 
 
 
-def set_light(address, light, data):
+def set_light(address, light, data, rgb = None):
     logging.debug("tasmota: <set_light> invoked! IP=" + address["ip"])
 
     for key, value in data.items():
@@ -77,11 +77,11 @@ def set_light(address, light, data):
         elif key == "ct":
             color = {}
         elif key == "xy":
-            color = convert_xy(value[0], value[1], light["state"]["bri"])
-            #sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
-            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + rgb_to_hex((color[0],color[1],color[2])))
-            logging.debug('request hex: '+rgb_to_hex((color[0],color[1],color[2])))
-
+            if rgb:
+                color = rgbBrightness(rgb, light["state"]["bri"])
+            else:
+                color = convert_xy(value[0], value[1], light["state"]["bri"])
+            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
         elif key == "alert":
                 if value == "select":
                     sendRequest ("http://" + address["ip"] + "/cm?cmnd=dimmer%20100")

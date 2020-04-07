@@ -5,7 +5,9 @@ import socket
 import sys
 
 from functions import light_types, nextFreeId
-from functions.colors import convert_rgb_xy, convert_xy
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+
+Connections = {}
 
 def discover(bridge_config, new_lights):
     group = ("239.255.255.250", 1982)
@@ -66,24 +68,31 @@ def discover(bridge_config, new_lights):
             sock.close()
             break
 
-def command(ip, api_method, param):
+def command(ip, light, api_method, param):
+    if ip in Connections:
+        c = Connections[ip]
+    else:
+        c = YeelightConnection(ip)
+        Connections[ip] = c
     try:
-        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcp_socket.settimeout(5)
-        tcp_socket.connect((ip, int(55443)))
-        msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
-        tcp_socket.send(msg.encode())
-        tcp_socket.close()
-    except Exception as e:
-        logging.warning("Yeelight command error: %s", e)
+        c.command(api_method, param)
+    finally:
+        if not c._music and c._connected:
+            c.disconnect()
 
+def set_light(address, light, data, rgb = None):
+    ip = address["ip"]
+    if ip in Connections:
+        c = Connections[ip]
+    else:
+        c = YeelightConnection(ip)
+        Connections[ip] = c
 
-def set_light(address, light, data):
     method = 'TCP'
     payload = {}
     transitiontime = 400
     if "transitiontime" in data:
-        transitiontime = data["transitiontime"] * 100
+        transitiontime = int(data["transitiontime"] * 100)
     for key, value in data.items():
         if key == "on":
             if value:
@@ -102,7 +111,11 @@ def set_light(address, light, data):
         elif key == "sat":
             payload["set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
-            color = convert_xy(value[0], value[1], light["state"]["bri"])
+            bri = light["state"]["bri"]
+            if rgb:
+                color = rgbBrightness(rgb, bri)
+            else:
+                color = convert_xy(value[0], value[1], bri)
             payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif key == "alert" and value != "none":
             payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
@@ -111,7 +124,14 @@ def set_light(address, light, data):
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
     # check if hue wants to change brightness
     for key, value in payload.items():
-        command(address["ip"], key, value)
+        try:
+            c.command(key, value)
+        except Exception as e:
+            if not c._music and c._connected:
+                c.disconnect()
+            raise e
+    if not c._music and c._connected:
+        c.disconnect()
 
 def get_light_state(address, light):
     #logging.info("name is: " + light["name"])
@@ -175,3 +195,119 @@ def get_light_state(address, light):
             state["colormode"] = "hs"
     tcp_socket.close()
     return state
+
+def enableMusic(ip, host_ip):
+    if ip in Connections:
+        c = Connections[ip]
+        if not c._music:
+            c.enableMusic(host_ip)
+    else:
+        c = YeelightConnection(ip)
+        Connections[ip] = c
+        c.enableMusic(host_ip)
+
+def disableMusic(ip):
+    if ip in Connections: # Else? LOL
+        Connections[ip].disableMusic()
+
+class YeelightConnection(object):
+    _music = False
+    _connected = False
+    _socket = None
+    _host_ip = ""
+
+    def __init__(self, ip):
+        self._ip = ip
+
+    def connect(self, simple = False): #Use simple when you don't need to reconnect music mode
+        self.disconnect() #To clean old socket
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.settimeout(5)
+        self._socket.connect((self._ip, int(55443)))
+        if not simple and self._music:
+            self.enableMusic(self._host_ip)
+        else:
+            self._connected = True
+
+    def disconnect(self):
+        self._connected = False
+        if self._socket:
+            self._socket.close()
+        self._socket = None
+
+    def enableMusic(self, host_ip):
+        if self._connected and self._music:
+            raise AssertionError("Already in music mode!")
+
+        self._host_ip = host_ip
+
+        tempSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Setup listener
+        tempSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        tempSock.settimeout(5)
+
+        tempSock.bind(("", 0))
+        port = tempSock.getsockname()[1] #Get listener port
+
+        tempSock.listen(3)
+
+        if not self._connected:
+            self.connect(True) #Basic connect for set_music
+
+        self.command("set_music", [1, host_ip, port]) #MAGIC
+        self.disconnect() #Disconnect from basic mode
+
+        while 1:
+            try:
+                conn, addr = tempSock.accept()
+                if addr[0] == self._ip: #Ignore wrong connections
+                    tempSock.close() #Close listener
+                    self._socket = conn #Replace socket with music one
+                    self._connected = True
+                    self._music = True
+                    break
+                else:
+                    try:
+                        logging.info("Rejecting connection to the music mode listener from %s", self._ip)
+                        conn.close()
+                    except:
+                        pass
+            except Exception as e:
+                tempSock.close()
+                raise ConnectionError("Yeelight with IP {} doesn't want to connect in music mode: {}".format(self._ip, e))
+        
+        logging.info("Yeelight device with IP %s is now in music mode", self._ip)
+
+    def disableMusic(self):
+        if not self._music:
+            return
+
+        if self._socket:
+            self._socket.close()
+            self._socket = None
+        self._music = False
+        logging.info("Yeelight device with IP %s is no longer using music mode", self._ip)
+
+    def send(self, data: bytes, flags: int = 0):
+        try:
+            if not self._connected:
+                self.connect()
+            self._socket.send(data, flags)
+        except Exception as e:
+            self._connected = False
+            raise e
+
+    def recv(self, bufsize: int, flags: int = 0) -> bytes:
+        try:
+            if not self._connected:
+                self.connect()
+            return self._socket.recv(bufsize, flags)
+        except Exception as e:
+            self._connected = False
+            raise e
+
+    def command(self, api_method, param):
+        try:
+            msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
+            self.send(msg.encode())
+        except Exception as e:
+            logging.warning("Yeelight command error: %s", e)

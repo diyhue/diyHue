@@ -142,6 +142,7 @@ You also may want to see my new project [qtHue](https://github.com/mariusmotea/q
 
 ## Credits
 
+- Ben ([@cheesemarathon](https://github.com/cheesemarathon)) All fancy github integrations
 - [Stephan van Rooij](https://github.com/svrooij) - zigbee2mqtt integration
 - [@avinashraja98](https://github.com/avinashraja98) - Hue Entertainment server
 - Federico Zivolo ([@FezVrasta](https://github.com/FezVrasta)) Internal WebGUI
