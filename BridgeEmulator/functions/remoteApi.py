@@ -9,7 +9,7 @@ def remoteApi(BIND_IP, config):
     if BIND_IP == '':
         ip = "localhost"
     else:
-        ip = BIND_IP:
+        ip = BIND_IP
     url = 'https://remote.diyhue.org/devices'
     while True:
         if config["Remote API enabled"]:
