@@ -574,6 +574,8 @@
         "lasttriggered": 100000,
         "on": false
     },
+    "lights": {},
+    "sensors: {},
     "mqtt": {
         "discoveryPrefix": "homeassistant",
         "enabled": false,
