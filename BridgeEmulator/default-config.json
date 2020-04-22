@@ -575,7 +575,7 @@
         "on": false
     },
     "lights": {},
-    "sensors: {},
+    "sensors": {},
     "mqtt": {
         "discoveryPrefix": "homeassistant",
         "enabled": false,
