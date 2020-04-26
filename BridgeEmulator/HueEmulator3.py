@@ -41,12 +41,13 @@ protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome]
 ap = argparse.ArgumentParser()
 
 # Arguements can also be passed as Environment Variables.
-ap.add_argument("--ip", help="The IP address of the host system", type=str)
-ap.add_argument("--http-port", help="The port to listen on for HTTP", type=int)
-ap.add_argument("--mac", help="The MAC address of the host system", type=str)
-ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
 ap.add_argument("--debug", action='store_true', help="Enables debug output")
+ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
 ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
+ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
+ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
+ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
+ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
 ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
 ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
@@ -63,11 +64,20 @@ if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.get
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     root.addHandler(ch)
+    
+if args.bind_ip:
+    BIND_IP = args.bind_ip
+elif os.getenv('BIND_IP'):
+    BIND_IP = os.getenv('BIND_IP')
+else:
+    BIND_IP = ''
 
 if args.ip:
     HOST_IP = args.ip
 elif os.getenv('IP'):
     HOST_IP = os.getenv('IP')
+elif BIND_IP:
+    HOST_IP = BIND_IP
 else:
     HOST_IP = getIpAddress()
 
@@ -1913,7 +1923,7 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
 
 def run(https, server_class=ThreadingSimpleServer, handler_class=S):
     if https:
-        server_address = ('', HOST_HTTPS_PORT)
+        server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem")
@@ -1926,7 +1936,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         logging.info('Starting ssl httpd...')
     else:
-        server_address = ('', HOST_HTTP_PORT)
+        server_address = (BIND_IP, HOST_HTTP_PORT)
         httpd = server_class(server_address, handler_class)
         logging.info('Starting httpd...')
     httpd.serve_forever()
@@ -1953,7 +1963,7 @@ if __name__ == "__main__":
         if not args.no_serve_https:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
-        Thread(target=remoteApi, args=[bridge_config["config"]]).start()
+        Thread(target=remoteApi, args=[BIND_IP, bridge_config["config"]]).start()
         if disableOnlineDiscover == False:
             Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
