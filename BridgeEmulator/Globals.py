@@ -1,0 +1,13 @@
+def initialize():
+    global bridge_config
+    global new_lights
+    global docker
+    global args
+    global new_lights
+    global dx_state
+    global cwd
+    global mac
+    global dockerMAC
+    global BIND_IP
+    global HOST_HTTP_PORT
+    global HOST_HTTPS_PORT

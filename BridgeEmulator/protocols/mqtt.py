@@ -1,7 +1,7 @@
 import json
 import logging
 import random
-
+import Globals
 # External libraries
 import paho.mqtt.client as mqtt
 
@@ -95,21 +95,21 @@ def get_light_state(address, light):
 
     return state
 
-def discover(bridge_config, new_lights):
+def discover():
     logging.info("MQTT discovery called")
     for key, data in discoveredDevices.items():
         device_new = True
-        for lightkey in bridge_config["lights_address"].keys():
-            if bridge_config["lights_address"][lightkey]["protocol"] == "mqtt" and bridge_config["lights_address"][lightkey]["uid"] == key:
+        for lightkey in Globals.bridge_config["lights_address"].keys():
+            if Globals.bridge_config["lights_address"][lightkey]["protocol"] == "mqtt" and Globals.bridge_config["lights_address"][lightkey]["uid"] == key:
                 device_new = False
-                bridge_config["lights_address"][lightkey]["command_topic"] = data["command_topic"]
-                bridge_config["lights_address"][lightkey]["state_topic"] = data["state_topic"]
+                Globals.bridge_config["lights_address"][lightkey]["command_topic"] = data["command_topic"]
+                Globals.bridge_config["lights_address"][lightkey]["state_topic"] = data["state_topic"]
                 break
         
         if device_new:
             light_name = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
             logging.debug("MQTT: Adding light " + light_name)
-            new_light_id = nextFreeId(bridge_config, "lights")
+            new_light_id = nextFreeId(Globals.bridge_config, "lights")
 
             # Device capabilities
             keys = data.keys()
@@ -130,24 +130,24 @@ def discover(bridge_config, new_lights):
                 modelid = "Plug 01"
         
             # Create the light with data from auto discovery
-            bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1" }
-            bridge_config["lights"][new_light_id]["manufacturername"] = data["device"]["manufacturer"]
-            bridge_config["lights"][new_light_id]["modelid"] = modelid
-            bridge_config["lights"][new_light_id]["productname"] = data["device"]["model"]
-            bridge_config["lights"][new_light_id]["swversion"] = data["device"]["sw_version"]
+            Globals.bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1" }
+            Globals.bridge_config["lights"][new_light_id]["manufacturername"] = data["device"]["manufacturer"]
+            Globals.bridge_config["lights"][new_light_id]["modelid"] = modelid
+            Globals.bridge_config["lights"][new_light_id]["productname"] = data["device"]["model"]
+            Globals.bridge_config["lights"][new_light_id]["swversion"] = data["device"]["sw_version"]
             
             # Set the type, a default state and possibly a light config
-            bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
-            bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
-            bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+            Globals.bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
+            Globals.bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
+            Globals.bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
 
             # Add the lights to new lights, so it shows up in the search screen
-            new_lights.update({new_light_id: {"name": light_name}})
+            Globals.new_lights.update({new_light_id: {"name": light_name}})
             
             # Save the mqtt parameters
-            bridge_config["lights_address"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"none" }
-            bridge_config["lights_address"][new_light_id]["state_topic"] = data["state_topic"]
-            bridge_config["lights_address"][new_light_id]["command_topic"] = data["command_topic"]
+            Globals.bridge_config["lights_address"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"none" }
+            Globals.bridge_config["lights_address"][new_light_id]["state_topic"] = data["state_topic"]
+            Globals.bridge_config["lights_address"][new_light_id]["command_topic"] = data["command_topic"]
 
 
 def mqttServer(config, lights, adresses, sensors):
