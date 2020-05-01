@@ -1973,5 +1973,4 @@ if __name__ == "__main__":
         logging.exception("server stopped ")
     finally:
         run_service = False
-        saveConfig()
-        logging.info('config saved')
+        logging.info('gracefully exit')
