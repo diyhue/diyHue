@@ -55,8 +55,6 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                             if lightStatus[lightId]["on"] == False: #Turn on if color is not black
                                                 sendLightRequest(str(lightId), {"on": True, "transitiontime": 3}, lights, addresses, None, host_ip)
                                                 lightStatus[lightId]["on"] = True
-                                            elif proto == "hue":
-                                                sendLightRequest(str(lightId), {"xy": convert_rgb_xy(r, g, b), "transitiontime": 3, "bri": int((r + b + g) / 3)}, lights, addresses, [r, g, b], host_ip)
                                             elif brABS > 50: # to optimize, send brightness only if difference is bigger than this value
                                                 sendLightRequest(str(lightId), {"bri": int((r + b + g) / 3), "transitiontime": 150 / brABS}, lights, addresses, None, host_ip)
                                                 lightStatus[lightId]["bri"] = int((r + b + g) / 3)
