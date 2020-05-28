@@ -1473,6 +1473,8 @@ class S(BaseHTTPRequestHandler):
                         current_time = datetime.now()
                         if bridge_config["sensors"][sensorId]["type"] in ["ZLLSwitch","ZGPSwitch"]:
                             bridge_config["sensors"][sensorId]["state"].update({"buttonevent": int(get_parameters["button"][0]), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                            if "battery" in get_parameters:
+                                bridge_config["sensors"][sensorId]["config"]["battery"] = int(get_parameters["battery"][0])
                             dxState["sensors"][sensorId]["state"]["lastupdated"] = current_time
                         elif bridge_config["sensors"][sensorId]["type"] == "ZLLPresence":
                             lightSensorId = bridge_config["emulator"]["sensors"][get_parameters["mac"][0]]["lightSensorId"]
