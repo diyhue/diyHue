@@ -6,9 +6,10 @@ def nextFreeId(bridge_config, element):
         i += 1
     return str(i)
 
+
 def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
-    return "00:17:88:01:02:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
 # Define light defininitions for discovery features and adding device data to config
 light_types = {}
@@ -30,7 +31,7 @@ light_types["ESPHOME-Toggle"] = {"type": "On/Off plug-in unit", "swversion": "V1
 light_types["ESPHOME-Toggle"]["state"] = {"on": False, "alert": "none", "reachable": True}
 light_types["ESPHOME-Toggle"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
 
-light_types["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "modelid": "LCT001"}
+light_types["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.46.13_r26312"}
 light_types["LCT001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
 light_types["LCT001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "powerfail"}}
 light_types["LCT001"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}},
@@ -40,12 +41,7 @@ light_types["LCT015"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "
 light_types["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
 light_types["LCT015"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": False,"renderer": True}}
 
-light_types["LLC012"] = {"type": "Color light", "swversion": "5.23.1.13452", "manufacturername": "Philips"}
-light_types["LLC012"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "xy", "reachable": True}
-light_types["LLC012"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
-light_types["LLC012"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": False,"renderer": True}}
-
-light_types["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581", "manufacturername": "Philips"}
+light_types["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581"}
 light_types["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 light_types["LST002"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
 
@@ -53,7 +49,7 @@ light_types["LWB010"] = {"type": "Dimmable light", "swversion": "1.46.13_r26312"
 light_types["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
 light_types["LWB010"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
 
-light_types["LTW001"] = {"type": "Color temperature light", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
+light_types["LTW001"] = {"type": "Color temperature light", "swversion": "1.46.13_r26312"}
 light_types["LTW001"]["state"] = {"on": False, "colormode": "ct", "alert": "none", "mode": "homeautomation", "reachable": True, "bri": 254, "ct": 230}
 light_types["LTW001"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 1000,"maxlumen": 806,"ct": {"min": 153,"max": 454}},"streaming": {"renderer": False,"proxy": False}}
 

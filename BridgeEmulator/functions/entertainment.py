@@ -3,6 +3,7 @@ from subprocess import Popen
 from functions.colors import convert_rgb_xy, convert_xy
 from functions.lightRequest import sendLightRequest
 import paho.mqtt.publish as publish
+import Globals
 
 
 cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller than this values
@@ -25,7 +26,7 @@ def skipSimilarFrames(light, color, brightness):
     return 0
 
 
-def entertainmentService(lights, addresses, groups, emulator, host_ip):
+def entertainmentService(lights, addresses, groups, emulator):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
@@ -138,20 +139,20 @@ def entertainmentService(lights, addresses, groups, emulator, host_ip):
                                     fremeID = 1
 
                         i = i + 9
-            if len(nativeLights) is not 0:
+            if len(nativeLights) != 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
                     for light in nativeLights[ip].keys():
                         udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
-            if len(esphomeLights) is not 0:
+            if len(esphomeLights) != 0:
                 for ip in esphomeLights.keys():
                     udpmsg = bytearray()
                     udpmsg += bytes([0]) + bytes([esphomeLights[ip]["color"][0]]) + bytes([esphomeLights[ip]["color"][1]]) + bytes([esphomeLights[ip]["color"][2]]) + bytes([esphomeLights[ip]["color"][3]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
-            if len(mqttLights) is not 0:
+            if len(mqttLights) != 0:
                 auth = None
                 if emulator["mqtt"]["mqttUser"] != "" and emulator["mqtt"]["mqttPassword"] != "":
                     auth = {'username':emulator["mqtt"]["mqttUser"], 'password':emulator["mqtt"]["mqttPassword"]}

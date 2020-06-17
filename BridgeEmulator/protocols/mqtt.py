@@ -1,11 +1,13 @@
 import json
 import logging
 import random
+import requests
 from datetime import datetime
 from time import strftime
 from functions.config import loadConfig, saveConfig, addHueMotionSensor, addHueSwitch
 from threading import Thread
 from time import sleep
+import Globals
 
 import traceback
 
@@ -18,8 +20,8 @@ from functions import light_types, nextFreeId, generate_unique_id
 from functions.colors import hsv_to_rgb
 from functions.rules import rulesProcessor
 
+
 client = mqtt.Client()
-dxState = {"sensors": {}}
 
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s.%(msecs)03d %(levelname)s:\t%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -65,59 +67,60 @@ def longPressButton(sensor, buttonevent, bridge_config):
     while bridge_config["sensors"][sensor]["state"]["buttonevent"] == buttonevent:
         logging.info("still pressed")
         current_time =  datetime.now()
-        dxState["sensors"][sensor] = {"state": {"lastupdated": current_time}}
-        rulesProcessor(["sensors",sensor], current_time, bridge_config, dxState)
+        Globals.dxState["sensors"][sensor] = {"state": {"lastupdated": current_time}}
+        rulesProcessor(["sensors",sensor], current_time)
         sleep(0.5)
     return
 
 # on_message handler (linked to client below)
 def on_message(client, userdata, msg):
     try:
+        current_time =  datetime.now()
         logging.debug("MQTT: got state message on " + msg.topic)
         data = json.loads(msg.payload)
         if msg.topic.startswith(discoveryPrefix + "/light/"):
             on_autodiscovery_light(msg)
         elif msg.topic == "zigbee2mqtt/bridge/config/devices":
-            logging.info("MQTT: got state message on " + msg.topic)
             for key in data:
                 if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
-                    if key["friendly_name"] not in userdata["emulator"]["sensors"]: ## Add the new sensor
+                    if key["friendly_name"] not in Globals.bridge_config["emulator"]["sensors"]: ## Add the new sensor
                         print("Add new mqtt sensor" + key["modelID"])
-                        newSensorId = nextFreeId(userdata, "sensors")
+                        newSensorId = nextFreeId(Globals.bridge_config, "sensors")
                         if key["modelID"] in standardSensorsData and "structure" in standardSensorsData[key["modelID"]]:
-                            userdata["sensors"][newSensorId] = standardSensorsData[key["modelID"]]["structure"]
-                            userdata["sensors"][newSensorId]["uniqueid"] = convertHexToMac(key["ieeeAddr"]) + "-01-1000"
-                            userdata["sensors"][newSensorId]["name"] = key["friendly_name"]
-                            userdata["emulator"]["sensors"][key["friendly_name"]] = {"bridgeId": newSensorId, "modelid": key["modelID"]}
+                            Globals.bridge_config["sensors"][newSensorId] = standardSensorsData[key["modelID"]]["structure"]
+                            Globals.bridge_config["sensors"][newSensorId]["uniqueid"] = convertHexToMac(key["ieeeAddr"]) + "-01-1000"
+                            Globals.bridge_config["sensors"][newSensorId]["name"] = key["friendly_name"]
+                            Globals.bridge_config["emulator"]["sensors"][key["friendly_name"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "protocol": "mqtt"}
                         ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                         elif key["modelID"] in motionSensors:
                             logging.info("MQTT: add new motion sensor " + key["modelID"])
-                            newSensorId = addHueMotionSensor("", userdata, name=key["friendly_name"])
-                            userdata["emulator"]["sensors"][key["ieeeAddr"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "lightSensor": "on"}
+                            newSensorId = addHueMotionSensor("", name=key["friendly_name"])
+                            Globals.bridge_config["emulator"]["sensors"][key["ieeeAddr"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "lightSensor": "on", "protocol": "mqtt"}
+                else:
+                    logging.info("MQTT: unsupported sensor " + data["modelIF"])
         else:
             device = msg.topic.split("/")[1]
-            if device in userdata["emulator"]["sensors"]:
-                bridgeId = userdata["emulator"]["sensors"][device]["bridgeId"]
-                if userdata["sensors"][bridgeId]["config"]["on"] == False:
+            if device in Globals.bridge_config["emulator"]["sensors"]:
+                bridgeId = Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"]
+                if Globals.bridge_config["sensors"][bridgeId]["config"]["on"] == False:
                     return
-                current_time =  datetime.now()
                 convertedPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                dxState["sensors"][bridgeId] = {"state": {}}
+                Globals.dxState["sensors"][bridgeId] = {"state": {}}
                 if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
                     return
                 ### If is a motion sensor update the light level
-                if userdata["sensors"][userdata["emulator"]["sensors"][device]["bridgeId"]]["modelid"] in motionSensors:
+                if Globals.bridge_config["sensors"][Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"]]["modelid"] in motionSensors:
                     convertedPayload["presence"] = data["occupancy"]
                     lightPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                    lightSensor = findLightSensors(userdata["sensors"], userdata["emulator"]["sensors"][device]["bridgeId"])
-                    if userdata["emulator"]["sensors"][device]["lightSensor"] == "on": # use build it light senor or the daylight logical sensor
+                    lightSensor = findLightSensors(Globals.bridge_config["sensors"], Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"])
+                    if Globals.bridge_config["emulator"]["sensors"][device]["lightSensor"] == "on": # use build it light senor or the daylight logical sensor
                         if "illuminance_lux" in data:
                             if data["illuminance_lux"] > 10:
                                 lightPayload["dark"] = False
                             else:
                                 lightPayload["dark"] = True
                         else:
-                            lightPayload["dark"] = not userdata["sensors"]["1"]["state"]["daylight"]
+                            lightPayload["dark"] = not Globals.bridge_config["sensors"]["1"]["state"]["daylight"]
                     else: # is always dark
                         lightPayload["dark"] = True
                     if  lightPayload["dark"]:
@@ -125,23 +128,31 @@ def on_message(client, userdata, msg):
                     else:
                         lightPayload["lightlevel"] = 25000
                     lightPayload["daylight"] = not lightPayload["dark"]
-                    userdata["sensors"][lightSensor]["state"].update(lightPayload)
-                    dxState["sensors"][lightSensor] = {"state": {"dark": current_time}}
-                elif userdata["sensors"][userdata["emulator"]["sensors"][device]["bridgeId"]]["modelid"] in standardSensors:
-                    convertedPayload = standardSensorsData[userdata["emulator"]["sensors"][device]["modelid"]]["dataConversion"][data[standardSensorsData[userdata["emulator"]["sensors"][device]["modelid"]]["dataConversion"]["rootKey"]]]
+                    Globals.bridge_config["sensors"][lightSensor]["state"].update(lightPayload)
+                    Globals.dxState["sensors"][lightSensor] = {"state": {"dark": current_time}}
 
-                userdata["sensors"][bridgeId]["state"].update(convertedPayload)
+                    # send email if alarm is enabled:
+                    if data["occupancy"] and Globals.bridge_config["emulator"]["alarm"]["on"] and Globals.bridge_config["emulator"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
+                        logging.info("Alarm triggered, sending email...")
+                        requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": Globals.bridge_config["emulator"]["alarm"]["email"], "sensor": Globals.bridge_config["sensors"][bridgeId]["name"]}, timeout=10)
+                        Globals.bridge_config["emulator"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
+
+                elif Globals.bridge_config["sensors"][Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"]]["modelid"] in standardSensors:
+                    convertedPayload = standardSensorsData[Globals.bridge_config["emulator"]["sensors"][device]["modelid"]]["dataConversion"][data[standardSensorsData[Globals.bridge_config["emulator"]["sensors"][device]["modelid"]]["dataConversion"]["rootKey"]]]
+
+                Globals.bridge_config["sensors"][bridgeId]["state"].update(convertedPayload)
                 for key in convertedPayload.keys():
-                    dxState["sensors"][bridgeId]["state"][key] = current_time
+                    Globals.dxState["sensors"][bridgeId]["state"][key] = current_time
                 if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
-                    Thread(target=longPressButton, args=[userdata["emulator"]["sensors"][device]["bridgeId"], convertedPayload["buttonevent"], userdata]).start()
-                rulesProcessor(["sensors", userdata["emulator"]["sensors"][device]["bridgeId"]], current_time, userdata, dxState)
+                    Thread(target=longPressButton, args=[Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"], convertedPayload["buttonevent"], Globals.bridge_config]).start()
+                rulesProcessor(["sensors", Globals.bridge_config["emulator"]["sensors"][device]["bridgeId"]], current_time)
+
             on_state_update(msg)
     except:
         traceback.print_exc()
 
 def on_state_update(msg):
-    logging.debug("MQTT: got state message on " + msg.topic)
+    #logging.debug("MQTT: got state message on " + msg.topic)
     data = json.loads(msg.payload)
     latestStates[msg.topic] = data
     logging.debug(json.dumps(data, indent=4))
@@ -206,21 +217,21 @@ def get_light_state(address, light):
 
     return state
 
-def discover(bridge_config, new_lights):
+def discover():
     logging.info("MQTT discovery called")
     for key, data in discoveredDevices.items():
         device_new = True
-        for lightkey in bridge_config["lights_address"].keys():
-            if bridge_config["lights_address"][lightkey]["protocol"] == "mqtt" and bridge_config["lights_address"][lightkey]["uid"] == key:
+        for lightkey in Globals.bridge_config["emulator"]["lights"].keys():
+            if Globals.bridge_config["emulator"]["lights"][lightkey]["protocol"] == "mqtt" and Globals.bridge_config["emulator"]["lights"][lightkey]["uid"] == key:
                 device_new = False
-                bridge_config["lights_address"][lightkey]["command_topic"] = data["command_topic"]
-                bridge_config["lights_address"][lightkey]["state_topic"] = data["state_topic"]
+                Globals.bridge_config["emulator"]["lights"][lightkey]["command_topic"] = data["command_topic"]
+                Globals.bridge_config["emulator"]["lights"][lightkey]["state_topic"] = data["state_topic"]
                 break
 
         if device_new:
             light_name = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
             logging.debug("MQTT: Adding light " + light_name)
-            new_light_id = nextFreeId(bridge_config, "lights")
+            new_light_id = nextFreeId(Globals.bridge_config, "lights")
 
             # Device capabilities
             keys = data.keys()
@@ -240,14 +251,14 @@ def discover(bridge_config, new_lights):
             else:
                 modelid = "Plug 01"
 
-            bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": generate_unique_id(), "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-            new_lights.update({new_light_id: {"name": light_name}})
+            Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": generate_unique_id(), "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+            Globals.new_lights.update({new_light_id: {"name": light_name}})
 
             # Add the lights to new lights, so it shows up in the search screen
-            new_lights.update({new_light_id: {"name": light_name}})
+            Globals.new_lights.update({new_light_id: {"name": light_name}})
 
             # Save the mqtt parameters
-            bridge_config["lights_address"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"mqtt", "state_topic": data["state_topic"], "command_topic": data["command_topic"]}
+            Globals.bridge_config["emulator"]["lights"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"mqtt", "state_topic": data["state_topic"], "command_topic": data["command_topic"]}
 
     ### Discover Sensors
 
@@ -270,22 +281,20 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("zigbee2mqtt/+")
     client.subscribe("zigbee2mqtt/bridge/config/devices")
 
-def mqttServer(bridge_config):
+def mqttServer():
     # ================= MQTT CLIENT Connection========================
     # Set user/password on client if supplied
-    if bridge_config["emulator"]["mqtt"]["mqttUser"] != "" and bridge_config["emulator"]["mqtt"]["mqttPassword"] != "":
-        client.username_pw_set(bridge_config["emulator"]["mqtt"]["mqttUser"],bridge_config["emulator"]["mqtt"]["mqttPassword"])
+    if Globals.bridge_config["emulator"]["mqtt"]["mqttUser"] != "" and bridge_config["emulator"]["mqtt"]["mqttPassword"] != "":
+        client.username_pw_set(Globals.bridge_config["emulator"]["mqtt"]["mqttUser"],Globals.bridge_config["emulator"]["mqtt"]["mqttPassword"])
 
-    if bridge_config["emulator"]["mqtt"]['discoveryPrefix'] is not None:
-        discoveryPrefix = bridge_config["emulator"]["mqtt"]['discoveryPrefix']
+    if Globals.bridge_config["emulator"]["mqtt"]['discoveryPrefix'] is not None:
+        discoveryPrefix = Globals.bridge_config["emulator"]["mqtt"]['discoveryPrefix']
 
     # Setup handlers
     client.on_connect = on_connect
     client.on_message = on_message
     # Connect to the server
-    client.connect(bridge_config["emulator"]["mqtt"]["mqttServer"], bridge_config["emulator"]["mqtt"]["mqttPort"])
-
-    client.user_data_set(bridge_config)
+    client.connect(Globals.bridge_config["emulator"]["mqtt"]["mqttServer"], Globals.bridge_config["emulator"]["mqtt"]["mqttPort"])
 
 
     # start the loop to keep receiving data

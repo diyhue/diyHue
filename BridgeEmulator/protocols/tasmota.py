@@ -2,7 +2,7 @@ import json
 import logging
 import random
 import requests
-
+import Globals
 import socket
 import sys
 
@@ -20,7 +20,7 @@ def sendRequest(url, timeout=3):
     return response.text
 
 
-def discover(bridge_config, new_lights):
+def discover():
     logging.debug("tasmota: <discover> invoked!")
 
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
@@ -40,20 +40,20 @@ def discover(bridge_config, new_lights):
 
                     properties = {"rgb": True, "ct": False, "ip": ip, "name": device_data["StatusNET"]["Hostname"], "id": device_data["StatusNET"]["Mac"], "mac": device_data["StatusNET"]["Mac"]}
                     device_exist = False
-                    for light in bridge_config["lights_address"].keys():
-                        if bridge_config["lights_address"][light]["protocol"] == "tasmota" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
+                    for light in Globals.bridge_config["lights_address"].keys():
+                        if Globals.bridge_config["lights_address"][light]["protocol"] == "tasmota" and  Globals.bridge_config["lights_address"][light]["id"] == properties["id"]:
                             device_exist = True
-                            bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                            Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
                             logging.debug("tasmota: light id " + properties["id"] + " already exist, updating ip...")
                             break
                     if (not device_exist):
                         light_name = "Tasmota id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
                         logging.debug("tasmota: Add Tasmota: " + properties["id"])
                         modelid = "Tasmota"
-                        new_light_id = nextFreeId(bridge_config, "lights")
-                        bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Tasmota", "swversion": light_types[modelid]["swversion"]}
-                        new_lights.update({new_light_id: {"name": light_name}})
-                        bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "tasmota"}
+                        new_light_id = nextFreeId(Globals.bridge_config, "lights")
+                        Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Tasmota", "swversion": light_types[modelid]["swversion"]}
+                        Globals.new_lights.update({new_light_id: {"name": light_name}})
+                        Globals.bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "tasmota"}
 
         except Exception as e:
             logging.debug("tasmota: ip " + ip + " is unknow device, " + str(e))

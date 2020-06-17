@@ -3,13 +3,14 @@ import logging
 import random
 import socket
 import sys
+import Globals
 
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}
 
-def discover(bridge_config, new_lights):
+def discover():
     group = ("239.255.255.250", 1982)
     message = "\r\n".join([
         'M-SEARCH * HTTP/1.1',
@@ -40,10 +41,10 @@ def discover(bridge_config, new_lights):
                 elif line[:5] == "model":
                     properties["model"] = line.split(": ",1)[1]
             device_exist = False
-            for light in bridge_config["lights_address"].keys():
-                if bridge_config["lights_address"][light]["protocol"] == "yeelight" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
+            for light in Globals.bridge_config["lights_address"].keys():
+                if Globals.bridge_config["lights_address"][light]["protocol"] == "yeelight" and  Globals.bridge_config["lights_address"][light]["id"] == properties["id"]:
                     device_exist = True
-                    bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                    Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
                     logging.debug("light id " + properties["id"] + " already exist, updating ip...")
                     break
             if (not device_exist):
@@ -57,10 +58,10 @@ def discover(bridge_config, new_lights):
                     modelid = "LCT015"
                 elif properties["ct"]:
                     modelid = "LTW001"
-                new_light_id = nextFreeId(bridge_config, "lights")
-                bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-                new_lights.update({new_light_id: {"name": light_name}})
-                bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
+                new_light_id = nextFreeId(Globals.bridge_config, "lights")
+                Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+                Globals.new_lights.update({new_light_id: {"name": light_name}})
+                Globals.bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
 
 
         except socket.timeout:
@@ -132,6 +133,12 @@ def set_light(address, light, data, rgb = None):
             raise e
     if not c._music and c._connected:
         c.disconnect()
+        
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    return list(tup)
 
 def get_light_state(address, light):
     #logging.info("name is: " + light["name"])
@@ -168,16 +175,8 @@ def get_light_state(address, light):
             data = tcp_socket.recv(16 * 1024)
             hue_data = json.loads(data[:-2].decode("utf8"))["result"]
             hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
-            r = hex_rgb[:2]
-            if r == "  ":
-                r = "00"
-            g = hex_rgb[3:4]
-            if g == "  ":
-                g = "00"
-            b = hex_rgb[-2:]
-            if b == "  ":
-                b = "00"
-            state["xy"] = convert_rgb_xy(int(r,16), int(g,16), int(b,16))
+            rgb=hex_to_rgb(hex_rgb)
+            state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
             state["colormode"] = "xy"
         elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
             msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"

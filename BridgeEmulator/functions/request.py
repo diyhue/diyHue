@@ -8,7 +8,7 @@ def sendRequest(url, method, data, timeout=3, delay=0):
     head = {"Content-type": "application/json"}
     if method == "POST":
         if type(data) is dict:
-            response = requests.post(url, data=data)
+            response = requests.post(url, data=data, timeout=timeout)
         else:
             response = requests.post(url, data=bytes(data, "utf8"), timeout=timeout, headers=head)
         return response.text
