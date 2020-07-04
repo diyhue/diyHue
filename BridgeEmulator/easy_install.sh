@@ -123,7 +123,7 @@ else
 		rm private.key public.crt
 	fi
 fi
-cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug/clip.html /opt/hue-emulator/
+cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
 
 # Install correct binaries
 case $arch in

@@ -1266,7 +1266,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(bytes(f.read(), "utf8"))
         elif self.path == "/debug/clip.html":
             self._set_headers()
-            f = open(cwd + '/clip.html', 'rb')
+            f = open(cwd + '/debug/clip.html', 'rb')
             self._set_end_headers(f.read())
         elif self.path == "/factory-reset":
             self._set_headers()
