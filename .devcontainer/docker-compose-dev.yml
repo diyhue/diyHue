@@ -4,12 +4,10 @@ services:
   diyhue:
     build:
       context: ../
-      args:
-        - TARGETPLATFORM=linux/amd64
-      dockerfile: ./.build/Dockerfile
+      dockerfile: ./.devcontainer/Dockerfile
     container_name: diyHue
     restart: always
-    stop_grace_period: 5s
+    stop_grace_period: 0s
     environment:
       - disable-online-discover=true
       - DEBUG=true

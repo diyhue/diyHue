@@ -37,8 +37,7 @@ COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-
 ## Copy correct (compiled) C file from previous image
 COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/
 
-## Add Docker Build scripts
-COPY ./.build/genCert.sh ./.build/openssl.conf /opt/hue-emulator/
+## Change Docker script permissions
 RUN chmod +x /opt/hue-emulator/genCert.sh
 
 ## Expose ports

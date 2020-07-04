@@ -14,3 +14,7 @@ Sensors/*
 /bin/
 /lib/
 /share/
+
+# Ignore userdata
+BridgeEmulator/export/
+BridgeEmulator/cert.pem
