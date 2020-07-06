@@ -153,7 +153,7 @@ else:
   deconz_ip = "127.0.0.1"
 logging.info(deconz_ip)
 
-if args.disable_online_discover or ((os.getenv('disable-online-discover') and (os.getenv('disable-online-discover') == "true" or os.getenv('disable-online-discover') == "True"))):
+if args.disable_online_discover or ((os.getenv('disableonlinediscover') and (os.getenv('disableonlinediscover') == "true" or os.getenv('disableonlinediscover') == "True"))):
     disableOnlineDiscover = True
     logging.info("Online Discovery/Remote API Disabled!")
 else:
