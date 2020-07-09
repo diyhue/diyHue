@@ -3,8 +3,8 @@ version: '3'
 services:
   diyhue:
     build:
-      context: ../
-      dockerfile: ./.devcontainer/Dockerfile
+      context: ../../
+      dockerfile: ./.idea/docker/Dockerfile
     restart: always
     stop_grace_period: 0s
     environment:
@@ -12,6 +12,8 @@ services:
       - DEBUG=true
       - MAC=00:00:00:00:00:00
       - IP=192.168.1.1
+    volumes:
+      - ../../BridgeEmulator:/opt/hue-emulator
     ports:
       - '80:80'
       - '443:443'
