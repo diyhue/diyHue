@@ -53,6 +53,8 @@ def set_light(address, light, data):
     state = {"transition": 0.3}
     colorFromHsv = False
     for key, value in data.items():
+        if key == "ct":
+            state['color_temp'] = value
         if key == "on":
             state['state'] = "ON" if value == True else "OFF"
         if key == "bri":
@@ -85,6 +87,8 @@ def get_light_state(address, light):
             state['on'] = (value == 'ON')
         if key == "brightness":
             state['bri'] = value
+        if key == "color_temp":
+            state['ct'] = value
         if key == "color":
             state["colormode"] = "xy"
             state['xy'] = [value['x'], value['y']]
@@ -111,7 +115,7 @@ def discover(bridge_config, new_lights):
             keys = data.keys()
             light_color = "xy" in keys and data["xy"] == True
             light_brightness = "brightness" in keys and data["brightness"] == True
-            light_ct = "ct" in keys and data["ct"] == True
+            light_ct = "color_temp" in keys and data["color_temp"] == True
 
             modelid = None
             if light_color and light_ct:
