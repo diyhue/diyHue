@@ -6,7 +6,11 @@ echo -e "\033[32m Updating repository.\033[0m"
 opkg update
 wait
 echo -e "\033[32m Installing dependencies.\033[0m"
-opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl coap-client unzip coreutils-nohup
+opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools
+wait
+opkg install curl coap-client unzip coreutils-nohup openssl-util
+wait
+opkg install python3-requests python3-astral python3-pytz python3-paho-mqtt
 wait
 echo -e "\033[32m Creating directories.\033[0m"
 mkdir /opt
@@ -16,7 +20,7 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install requests astral pytz ws4py paho-mqtt
+python3 -m pip install ws4py
 wait
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
