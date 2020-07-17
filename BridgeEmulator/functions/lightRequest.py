@@ -312,6 +312,7 @@ def syncWithLights(lights, addresses, users, groups, off_if_unreachable): #updat
                     if lights[light]["state"]["reachable"] == False:
                         lights[light]["state"]["on"] = False
                 updateGroupStats(light, lights, groups)
+                sleep(0.5)
             except Exception as e:
                 lights[light]["state"]["reachable"] = False
                 lights[light]["state"]["on"] = False
