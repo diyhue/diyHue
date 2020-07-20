@@ -99,6 +99,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 - On/Off plugs/lights (up to 6 lights for every esp8266)
 - On/Off 433Mhz devices (multiple devices for every esp8266)
 - MQTT lights [see mqtt](https://diyhue.readthedocs.io/en/latest/lights/mqtt.html)
+- [Hyperion.ng](https://github.com/hyperion-project/hyperion.ng)
   
 ## To Do
 
