@@ -25,7 +25,6 @@ from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri, lightsHttp)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.network import getIpAddress
-from functions.docker import dockerSetup
 from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
@@ -38,135 +37,135 @@ update_lights_on_startup = False # if set to true all lights will be updated wit
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
 
-ap = argparse.ArgumentParser()
-
-# Arguements can also be passed as Environment Variables.
-ap.add_argument("--debug", action='store_true', help="Enables debug output")
-ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
-ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
-ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
-ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
-ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
-ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
-ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
-ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
-ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
-ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
-ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
-
-args = ap.parse_args()
-
-if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-    
-if args.bind_ip:
-    BIND_IP = args.bind_ip
-elif os.getenv('BIND_IP'):
-    BIND_IP = os.getenv('BIND_IP')
-else:
-    BIND_IP = ''
-
-if args.ip:
-    HOST_IP = args.ip
-elif os.getenv('IP'):
-    HOST_IP = os.getenv('IP')
-elif BIND_IP:
-    HOST_IP = BIND_IP
-else:
-    HOST_IP = getIpAddress()
-
-if args.http_port:
-    HOST_HTTP_PORT = args.http_port
-elif os.getenv('HTTP_PORT'):
-    HOST_HTTP_PORT = os.getenv('HTTP_PORT')
-else:
-    HOST_HTTP_PORT = 80
-HOST_HTTPS_PORT = 443 # Hardcoded for now
-
-logging.info("Using Host %s:%s" % (HOST_IP, HOST_HTTP_PORT))
-
-if args.mac:
-    dockerMAC = args.mac
-    mac = str(args.mac).replace(":","")
-    print("Host MAC given as " + mac)
-elif os.getenv('MAC'):
-    dockerMAC = os.getenv('MAC')
-    mac = str(dockerMAC).replace(":","")
-    print("Host MAC given as " + mac)
-else:
-    dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8')[:-1]
-    mac = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8').replace(":","")[:-1]
-logging.info(mac)
-
-if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
-    print("Docker Setup Initiated")
-    docker = True
-    dockerSetup(dockerMAC)
-    print("Docker Setup Complete")
-elif os.getenv('MAC'):
-    dockerMAC = os.getenv('MAC')
-    mac = str(dockerMAC).replace(":","")
-    print("Host MAC given as " + mac)
-else:
-    docker = False
-
-if args.ip_range:
-    ranges = args.ip_range.split(',')
-    if ranges[0] and int(ranges[0]) >= 0:
-        ip_range_start = int(ranges[0])
-    else:
-        ip_range_start = 0
-
-    if ranges[1] and int(ranges[1]) > 0:
-        ip_range_end = int(ranges[1])
-    else:
-        ip_range_end = 255
-elif os.getenv('IP_RANGE'):
-    ranges = os.getenv('IP_RANGE').split(',')
-    if ranges[0] and int(ranges[0]) >= 0:
-        ip_range_start = int(ranges[0])
-    else:
-        ip_range_start = 0
-
-    if ranges[1] and int(ranges[1]) > 0:
-        ip_range_end = int(ranges[1])
-    else:
-        ip_range_end = 255
-else:
-    ip_range_start = os.getenv('IP_RANGE_START', 0)
-    ip_range_end = os.getenv('IP_RANGE_END', 255)
-logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
-
-if args.deconz:
-  deconz_ip = args.deconz
-  print("Deconz IP given as " + deconz_ip)
-elif os.getenv('DECONZ'):
-  deconz_ip = os.getenv('DECONZ')
-  print("Deconz IP given as " + deconz_ip)
-else:
-  deconz_ip = "127.0.0.1"
-logging.info(deconz_ip)
-
-if args.disable_online_discover or ((os.getenv('disableonlinediscover') and (os.getenv('disableonlinediscover') == "true" or os.getenv('disableonlinediscover') == "True"))):
-    disableOnlineDiscover = True
-    logging.info("Online Discovery/Remote API Disabled!")
-else:
-    disableOnlineDiscover = False
-    logging.info("Online Discovery/Remote API Enabled!")
-
-
-cwd = os.path.split(os.path.abspath(__file__))[0]
+# ap = argparse.ArgumentParser()
+#
+# # Arguements can also be passed as Environment Variables.
+# ap.add_argument("--debug", action='store_true', help="Enables debug output")
+# ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
+# ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
+# ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
+# ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
+# ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
+# ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
+# ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
+# ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
+# ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
+# ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
+# ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
+#
+# args = ap.parse_args()
+#
+# if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
+#     root = logging.getLogger()
+#     root.setLevel(logging.DEBUG)
+#     ch = logging.StreamHandler(sys.stdout)
+#     ch.setLevel(logging.DEBUG)
+#     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#     ch.setFormatter(formatter)
+#     root.addHandler(ch)
+#
+# if args.bind_ip:
+#     BIND_IP = args.bind_ip
+# elif os.getenv('BIND_IP'):
+#     BIND_IP = os.getenv('BIND_IP')
+# else:
+#     BIND_IP = ''
+#
+# if args.ip:
+#     HOST_IP = args.ip
+# elif os.getenv('IP'):
+#     HOST_IP = os.getenv('IP')
+# elif BIND_IP:
+#     HOST_IP = BIND_IP
+# else:
+#     HOST_IP = getIpAddress()
+#
+# if args.http_port:
+#     HOST_HTTP_PORT = args.http_port
+# elif os.getenv('HTTP_PORT'):
+#     HOST_HTTP_PORT = os.getenv('HTTP_PORT')
+# else:
+#     HOST_HTTP_PORT = 80
+# HOST_HTTPS_PORT = 443 # Hardcoded for now
+#
+# logging.info("Using Host %s:%s" % (HOST_IP, HOST_HTTP_PORT))
+#
+# if args.mac:
+#     dockerMAC = args.mac
+#     mac = str(args.mac).replace(":","")
+#     print("Host MAC given as " + mac)
+# elif os.getenv('MAC'):
+#     dockerMAC = os.getenv('MAC')
+#     mac = str(dockerMAC).replace(":","")
+#     print("Host MAC given as " + mac)
+# else:
+#     dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8')[:-1]
+#     mac = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8').replace(":","")[:-1]
+# logging.info(mac)
+#
+# if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
+#     print("Docker Setup Initiated")
+#     docker = True
+#     dockerSetup(dockerMAC)
+#     print("Docker Setup Complete")
+# elif os.getenv('MAC'):
+#     dockerMAC = os.getenv('MAC')
+#     mac = str(dockerMAC).replace(":","")
+#     print("Host MAC given as " + mac)
+# else:
+#     docker = False
+#
+# if args.ip_range:
+#     ranges = args.ip_range.split(',')
+#     if ranges[0] and int(ranges[0]) >= 0:
+#         ip_range_start = int(ranges[0])
+#     else:
+#         ip_range_start = 0
+#
+#     if ranges[1] and int(ranges[1]) > 0:
+#         ip_range_end = int(ranges[1])
+#     else:
+#         ip_range_end = 255
+# elif os.getenv('IP_RANGE'):
+#     ranges = os.getenv('IP_RANGE').split(',')
+#     if ranges[0] and int(ranges[0]) >= 0:
+#         ip_range_start = int(ranges[0])
+#     else:
+#         ip_range_start = 0
+#
+#     if ranges[1] and int(ranges[1]) > 0:
+#         ip_range_end = int(ranges[1])
+#     else:
+#         ip_range_end = 255
+# else:
+#     ip_range_start = os.getenv('IP_RANGE_START', 0)
+#     ip_range_end = os.getenv('IP_RANGE_END', 255)
+# logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
+#
+# if args.deconz:
+#   deconz_ip = args.deconz
+#   print("Deconz IP given as " + deconz_ip)
+# elif os.getenv('DECONZ'):
+#   deconz_ip = os.getenv('DECONZ')
+#   print("Deconz IP given as " + deconz_ip)
+# else:
+#   deconz_ip = "127.0.0.1"
+# logging.info(deconz_ip)
+#
+# if args.disable_online_discover or ((os.getenv('disableonlinediscover') and (os.getenv('disableonlinediscover') == "true" or os.getenv('disableonlinediscover') == "True"))):
+#     disableOnlineDiscover = True
+#     logging.info("Online Discovery/Remote API Disabled!")
+# else:
+#     disableOnlineDiscover = False
+#     logging.info("Online Discovery/Remote API Enabled!")
+#
+#
+# cwd = os.path.split(os.path.abspath(__file__))[0]
 
 
 
 def pretty_json(data):
-    return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
+    return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
 run_service = True
 
@@ -1929,7 +1928,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem")
+        ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem") # change to new cert location
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
         ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
