@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from configManager import configInit
 import datetime
 import os
 import json
 import logging
+import uuid
 
 
 def _open_json(path):
@@ -44,4 +46,14 @@ class Config:
         path = self.configDir + '/' + filename
         _write_json(path, self.json_config)
 
+    def write_args(self, args):
+        self.json_config = configInit.write_args(args, self.json_config)
 
+    def generate_security_key(self):
+        self.json_config = configInit.generate_security_key(self.json_config)
+
+    def sanitizeBridgeScenes(self):
+        self.json_config = configInit.sanitizeBridgeScenes(self.json_config)
+
+    def updateConfig(self):
+        self.json_config = configInit.updateConfig(self.json_config)

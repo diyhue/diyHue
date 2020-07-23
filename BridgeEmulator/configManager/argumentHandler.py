@@ -23,14 +23,14 @@ def generate_certificate(mac):
     logging.info("Certificate created")
 
 
-def process_arguments():
-    if configManager.runtimeConfig.arg["DEBUG"]:
+def process_arguments(configDir, args):
+    if args["DEBUG"]:
         set_log_level("DEBUG")
         logging.info("Debug logging enabled")
     else:
         set_log_level("INFO")
-    if not path.isfile(configManager.bridgeConfig.configDir + "/cert.pem"):
-        generate_certificate(configManager.runtimeConfig.arg["FULLMAC"])
+    if not path.isfile(configDir + "/cert.pem"):
+        generate_certificate(args["FULLMAC"])
 
 
 def parse_arguments():
