@@ -507,7 +507,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
             #raise
     scanDeconz()
     scanTradfri()
-    saveConfig()
+    configManager.bridgeConfig.save_config()
 
 def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
@@ -686,6 +686,7 @@ def websocketClient():
                 logging.info("unable to process the request" + str(e))
 
     try:
+        deconz_ip = configManager.runtimeConfig.arg["DECONZ"]
         ws = EchoClient('ws://' + deconz_ip + ':' + str(bridge_config["deconz"]["websocketport"]))
         ws.connect()
         ws.run_forever()
@@ -883,7 +884,7 @@ def groupZero(state):
 def daylightSensor():
     if bridge_config["sensors"]["1"]["modelid"] != "PHDL00" or not bridge_config["sensors"]["1"]["config"]["configured"]:
         return
-
+    # this doesn't even work???
     import pytz
     from astral.sun import sun
     from astral import LocationInfo
@@ -966,10 +967,9 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(f.read())
         elif self.path == "/factory-reset":
             self._set_headers()
-            saveConfig('before-reset.json')
-            bridge_config = load_config(cwd + '/default-config.json')
-            saveConfig()
-            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename":"/opt/hue-emulator/before-reset.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+            previous = configManager.bridgeConfig.reset_config()
+            previous = configManager.bridgeConfig.configDir + previous
+            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename": previous}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
         elif self.path == '/config.js':
             self._set_headers()
             #create a new user key in case none is available
@@ -982,6 +982,8 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
+            HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
+            mac = configManager.runtimeConfig.arg["MAC"]
             self._set_end_headers(bytes(description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]), "utf8"))
         elif self.path == "/lights.json":
             self._set_headers()
@@ -995,7 +997,7 @@ class S(BaseHTTPRequestHandler):
 
         elif self.path == '/save':
             self._set_headers()
-            saveConfig()
+            configManager.bridgeConfig.save_config()
             self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"saved","filename":"/opt/hue-emulator/config.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             self._set_headers()
@@ -1036,7 +1038,7 @@ class S(BaseHTTPRequestHandler):
                         self._set_headers()
                         bridge_config["config"]["linkbutton"] = False
                         bridge_config["linkbutton"]["lastlinkbuttonpushed"] = str(int(datetime.now().timestamp()))
-                        saveConfig()
+                        configManager.bridgeConfig.save_config()
                         self._set_end_headers(bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
                         self._set_AUTHHEAD()
@@ -1045,7 +1047,7 @@ class S(BaseHTTPRequestHandler):
                         self._set_headers()
                         tmp_password = str(base64.b64encode(bytes(get_parameters["username"][0] + ":" + get_parameters["password"][0], "utf8"))).split('\'')
                         bridge_config["linkbutton"]["linkbutton_auth"] = tmp_password[1]
-                        saveConfig()
+                        configManager.bridgeConfig.save_config()
                         self._set_end_headers(bytes(webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again', "utf8"))
                     else:
                         self._set_headers()
@@ -1086,7 +1088,7 @@ class S(BaseHTTPRequestHandler):
                         if lights_found == 0:
                             self._set_end_headers(bytes(webform_hue() + "<br> No lights where found", "utf8"))
                         else:
-                            saveConfig()
+                            configManager.bridgeConfig.save_config()
                             self._set_end_headers(bytes(webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
                     else:
                         self._set_end_headers(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
@@ -1223,7 +1225,7 @@ class S(BaseHTTPRequestHandler):
                         if ("type" in scenelist["scenes"][scene]) and ("GroupScene" == scenelist["scenes"][scene]["type"]):
                             scenelist["scenes"][scene]["lights"] = {}
                             scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
-                    sanitizeBridgeScenes()
+                    configManager.bridgeConfig.sanitizeBridgeScenes()
                     self._set_end_headers(bytes(json.dumps({"lights": bridge_config["lights"], "groups": bridge_config["groups"], "config": bridge_config["config"], "scenes": scenelist["scenes"], "schedules": bridge_config["schedules"], "rules": bridge_config["rules"], "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif len(url_pices) == 4: #print specified object config
                     if "scenes" == url_pices[3]: #trim lightstates for scenes
@@ -1371,7 +1373,7 @@ class S(BaseHTTPRequestHandler):
                 logging.info(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],sort_keys=True, indent=4, separators=(',', ': ')))
         elif self.path.startswith("/api") and "devicetype" in post_dictionary: #new registration by linkbutton
             last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
-            if (args.no_link_button or last_button_press+30 >= int(datetime.now().timestamp()) or
+            if (configManager.runtimeConfig.arg["noLinkButton"] or last_button_press+30 >= int(datetime.now().timestamp()) or
                     bridge_config["config"]["linkbutton"]):
                 username = str(uuid.uuid1()).replace('-', '')
                 if post_dictionary["devicetype"].startswith("Hue Essentials"):
@@ -1384,7 +1386,7 @@ class S(BaseHTTPRequestHandler):
                 logging.info(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
             else:
                 self._set_end_headers(bytes(json.dumps([{"error": {"type": 101, "address": self.path, "description": "link button not pressed" }}], separators=(',', ':'),ensure_ascii=False), "utf8"))
-        saveConfig()
+        configManager.bridgeConfig.save_config()
 
     def do_PUT(self):
         self._set_headers()
@@ -1552,7 +1554,7 @@ class S(BaseHTTPRequestHandler):
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
             if len(url_pices) > 4:
                 rulesProcessor([url_pices[3], url_pices[4]], current_time)
-            sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
+            configManager.bridgeConfig.sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
@@ -1612,7 +1614,7 @@ class S(BaseHTTPRequestHandler):
                     if bridge_config["emulator"]["sensors"][sensor]["bridgeId"] == url_pices[4]:
                         del bridge_config["emulator"]["sensors"][sensor]
             elif url_pices[3] == "groups":
-                sanitizeBridgeScenes()
+                configManager.bridgeConfig.sanitizeBridgeScenes()
             logging.info(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False))
             self._set_end_headers(bytes(json.dumps([{"success": "/" + url_pices[3] + "/" + url_pices[4] + " deleted."}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
@@ -1620,6 +1622,8 @@ class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
     pass
 
 def run(https, server_class=ThreadingSimpleServer, handler_class=S):
+    BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
+    HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
     if https:
         server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
@@ -1642,14 +1646,18 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
 
 if __name__ == "__main__":
     initialize()
-    updateConfig()
-    saveConfig()
+    configManager.bridgeConfig.updateConfig()
+    configManager.bridgeConfig.save_config()
     Thread(target=resourceRecycle).start()
     if bridge_config["deconz"]["enabled"]:
         scanDeconz()
     if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
         mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
     try:
+        BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
+        HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
+        mac = configManager.runtimeConfig.arg["MAC"]
+        HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()
         Thread(target=ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
@@ -1658,11 +1666,11 @@ if __name__ == "__main__":
         Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"], off_if_unreachable]).start()
         Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"], HOST_IP]).start()
         Thread(target=run, args=[False]).start()
-        if not args.no_serve_https:
+        if not configManager.runtimeConfig.arg["noServeHttps"]:
             Thread(target=run, args=[True]).start()
         Thread(target=daylightSensor).start()
         Thread(target=remoteApi, args=[BIND_IP, bridge_config["config"]]).start()
-        if disableOnlineDiscover == False:
+        if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
             Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:

@@ -19,7 +19,7 @@ def get_environment_variable(var, boolean=False):
 
 def generate_certificate(mac):
     logging.info("Generating certificate")
-    call(["/opt/hue-emulator/genCert.sh", mac])
+    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", mac])
     logging.info("Certificate created")
 
 
@@ -35,7 +35,7 @@ def process_arguments(configDir, args):
 
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
-                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": ''}
+                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False, "noServeHttps": False}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -58,6 +58,12 @@ def parse_arguments():
 
     if args.scan_on_host_ip:
         argumentDict["scanOnHostIP"] = True
+
+    if args.no_link_button:
+        argumentDict["noLinkButton"] = True
+
+    if args.no_serve_https:
+        argumentDict["noServeHttps"] = True
 
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True
@@ -125,9 +131,12 @@ def parse_arguments():
             ip_range_end = int(ranges[1])
         else:
             ip_range_end = 255
+    elif get_environment_variable('IP_RANGE_START') and get_environment_variable('IP_RANGE_END'):
+        ip_range_start = get_environment_variable('IP_RANGE_START')
+        ip_range_end = get_environment_variable('IP_RANGE_END')
     else:
-        ip_range_start = get_environment_variable('IP_RANGE_START', 0)
-        ip_range_end = get_environment_variable('IP_RANGE_END', 255)
+        ip_range_start = 0
+        ip_range_end = 255
     argumentDict["IP_RANGE_START"] = ip_range_start
     argumentDict["IP_RANGE_END"] = ip_range_end
     logging.info("IP range for light discovery: " + str(ip_range_start) + "-" + str(ip_range_end))

@@ -7,6 +7,7 @@ runtimeConfig = runtimeConfigHandler.Config()
 
 # Restore configuration
 bridgeConfig.load_config()
+runtimeConfig.populate()
 
 # Initialize runtime configuration
 argumentHandler.process_arguments(bridgeConfig.configDir, runtimeConfig.arg)

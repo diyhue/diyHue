@@ -44,6 +44,16 @@ class Config:
             os.makedirs(self.configDir)
         path = self.configDir + '/' + filename
         _write_json(path, self.json_config)
+        return filename
+
+    def reset_config(self):
+        backup = self.save_config(True)
+        try:
+            os.remove(self.configDir + "/config.json")
+        except:
+            logging.exception("Something went wrong when deleting the config")
+        self.load_config()
+        return backup
 
     def write_args(self, args):
         self.json_config = configInit.write_args(args, self.json_config)
