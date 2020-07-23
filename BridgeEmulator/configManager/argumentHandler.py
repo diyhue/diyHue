@@ -35,7 +35,7 @@ def process_arguments(configDir, args):
 
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
-                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "disableOnlineDiscover": ''}
+                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": ''}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -55,6 +55,9 @@ def parse_arguments():
     ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
 
     args = ap.parse_args()
+
+    if args.scan_on_host_ip:
+        argumentDict["scanOnHostIP"] = True
 
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True

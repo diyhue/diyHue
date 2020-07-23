@@ -1,3 +1,12 @@
+import uuid
+from random import randrange
+
+
+def _generate_unique_id():
+    rand_bytes = [randrange(0, 256) for _ in range(3)]
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
+
+
 def write_args(args, json_config):
     host_ip = args["HOST_IP"]
     ip_pieces = host_ip.split(".")
@@ -98,7 +107,7 @@ def updateConfig(json_config):
 
         if light_address["protocol"] == "native" and "mac" not in light_address:
             light_address["mac"] = light["uniqueid"][:17]
-            light["uniqueid"] = generate_unique_id()
+            light["uniqueid"] = _generate_unique_id()
 
         # Update deCONZ protocol lights
         if light_address["protocol"] == "deconz":
@@ -110,7 +119,7 @@ def updateConfig(json_config):
             if light["modelid"].startswith("TRADFRI"):
                 light.update({"manufacturername": "Philips", "swversion": "1.46.13_r26312"})
 
-                light["uniqueid"] = generate_unique_id()
+                light["uniqueid"] = _generate_unique_id()
 
                 if light["type"] == "Color temperature light":
                     light["modelid"] = "LTW001"

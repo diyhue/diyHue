@@ -32,187 +32,21 @@ from functions.updateGroup import updateGroupStats
 from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt, hyperion
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
+import configManager
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
-
-# ap = argparse.ArgumentParser()
-#
-# # Arguements can also be passed as Environment Variables.
-# ap.add_argument("--debug", action='store_true', help="Enables debug output")
-# ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
-# ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
-# ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
-# ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
-# ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
-# ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
-# ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
-# ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
-# ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
-# ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
-# ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
-#
-# args = ap.parse_args()
-#
-# if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
-#     root = logging.getLogger()
-#     root.setLevel(logging.DEBUG)
-#     ch = logging.StreamHandler(sys.stdout)
-#     ch.setLevel(logging.DEBUG)
-#     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#     ch.setFormatter(formatter)
-#     root.addHandler(ch)
-#
-# if args.bind_ip:
-#     BIND_IP = args.bind_ip
-# elif os.getenv('BIND_IP'):
-#     BIND_IP = os.getenv('BIND_IP')
-# else:
-#     BIND_IP = ''
-#
-# if args.ip:
-#     HOST_IP = args.ip
-# elif os.getenv('IP'):
-#     HOST_IP = os.getenv('IP')
-# elif BIND_IP:
-#     HOST_IP = BIND_IP
-# else:
-#     HOST_IP = getIpAddress()
-#
-# if args.http_port:
-#     HOST_HTTP_PORT = args.http_port
-# elif os.getenv('HTTP_PORT'):
-#     HOST_HTTP_PORT = os.getenv('HTTP_PORT')
-# else:
-#     HOST_HTTP_PORT = 80
-# HOST_HTTPS_PORT = 443 # Hardcoded for now
-#
-# logging.info("Using Host %s:%s" % (HOST_IP, HOST_HTTP_PORT))
-#
-# if args.mac:
-#     dockerMAC = args.mac
-#     mac = str(args.mac).replace(":","")
-#     print("Host MAC given as " + mac)
-# elif os.getenv('MAC'):
-#     dockerMAC = os.getenv('MAC')
-#     mac = str(dockerMAC).replace(":","")
-#     print("Host MAC given as " + mac)
-# else:
-#     dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8')[:-1]
-#     mac = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % HOST_IP, shell=True).decode('utf-8').replace(":","")[:-1]
-# logging.info(mac)
-#
-# if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
-#     print("Docker Setup Initiated")
-#     docker = True
-#     dockerSetup(dockerMAC)
-#     print("Docker Setup Complete")
-# elif os.getenv('MAC'):
-#     dockerMAC = os.getenv('MAC')
-#     mac = str(dockerMAC).replace(":","")
-#     print("Host MAC given as " + mac)
-# else:
-#     docker = False
-#
-# if args.ip_range:
-#     ranges = args.ip_range.split(',')
-#     if ranges[0] and int(ranges[0]) >= 0:
-#         ip_range_start = int(ranges[0])
-#     else:
-#         ip_range_start = 0
-#
-#     if ranges[1] and int(ranges[1]) > 0:
-#         ip_range_end = int(ranges[1])
-#     else:
-#         ip_range_end = 255
-# elif os.getenv('IP_RANGE'):
-#     ranges = os.getenv('IP_RANGE').split(',')
-#     if ranges[0] and int(ranges[0]) >= 0:
-#         ip_range_start = int(ranges[0])
-#     else:
-#         ip_range_start = 0
-#
-#     if ranges[1] and int(ranges[1]) > 0:
-#         ip_range_end = int(ranges[1])
-#     else:
-#         ip_range_end = 255
-# else:
-#     ip_range_start = os.getenv('IP_RANGE_START', 0)
-#     ip_range_end = os.getenv('IP_RANGE_END', 255)
-# logging.info("IP range for light discovery: "+str(ip_range_start)+"-"+str(ip_range_end))
-#
-# if args.deconz:
-#   deconz_ip = args.deconz
-#   print("Deconz IP given as " + deconz_ip)
-# elif os.getenv('DECONZ'):
-#   deconz_ip = os.getenv('DECONZ')
-#   print("Deconz IP given as " + deconz_ip)
-# else:
-#   deconz_ip = "127.0.0.1"
-# logging.info(deconz_ip)
-#
-# if args.disable_online_discover or ((os.getenv('disableonlinediscover') and (os.getenv('disableonlinediscover') == "true" or os.getenv('disableonlinediscover') == "True"))):
-#     disableOnlineDiscover = True
-#     logging.info("Online Discovery/Remote API Disabled!")
-# else:
-#     disableOnlineDiscover = False
-#     logging.info("Online Discovery/Remote API Enabled!")
-#
-#
-# cwd = os.path.split(os.path.abspath(__file__))[0]
-
+bridge_config = configManager.bridgeConfig.json_config
+dxState = configManager.runtimeConfig.dxState
+new_lights = configManager.runtimeConfig.newLights
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 def initialize():
-    # global bridge_config, new_lights, dxState
-    # # new_lights = {}
-    # dxState = {"sensors": {}, "lights": {}, "groups": {}}
-
-    # try:
-    #     path = cwd + '/config.json'
-    #     if os.path.exists(path):
-    #         bridge_config = load_config(path)
-    #         logging.info("Config loaded")
-    #     else:
-    #         logging.info("Config not found, creating new config from default settings")
-    #         bridge_config = load_config(cwd + '/default-config.json')
-    #         saveConfig()
-    # except Exception:
-    #     logging.exception("CRITICAL! Config file was not loaded")
-    #     sys.exit(1)
-    #
-    # ip_pices = HOST_IP.split(".")
-    # bridge_config["config"]["ipaddress"] = HOST_IP
-    # bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
-    # bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
-    # bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
     generateDxState()
-    # sanitizeBridgeScenes()
-    # ## generte security key for Hue Essentials remote access
-    # if "Hue Essentials key" not in bridge_config["config"]:
-    #     bridge_config["config"]["Hue Essentials key"] = str(uuid.uuid1()).replace('-', '')
-
-# def sanitizeBridgeScenes():
-#     for scene in list(bridge_config["scenes"]):
-#         if "type" in bridge_config["scenes"][scene] and bridge_config["scenes"][scene]["type"] == "GroupScene": # scene has "type" key and "type" is "GroupScene"
-#             if bridge_config["scenes"][scene]["group"] not in bridge_config["groups"]: # the group don't exist
-#                 del bridge_config["scenes"][scene] # delete the group
-#                 continue # avoid KeyError on next if statement
-#             else:
-#                 for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
-#                     if lightstate not in bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]: # if the light is no longer member in the group:
-#                         del bridge_config["scenes"][scene]["lightstates"][lightstate] # delete the lighstate of the missing light
-#         else: # must be a lightscene
-#             for lightstate in list(bridge_config["scenes"][scene]["lightstates"]):
-#                 if lightstate not in bridge_config["lights"]: # light is not present anymore on the bridge
-#                     del (bridge_config["scenes"][scene]["lightstates"][lightstate]) # delete invalid lightstate
-#
-#         if "lightstates" in bridge_config["scenes"][scene] and len(bridge_config["scenes"][scene]["lightstates"]) == 0: # empty scenes are useless
-#             del bridge_config["scenes"][scene]
 
 def getLightsVersions():
     lights = {}
@@ -229,136 +63,6 @@ def updateLight(light, filename):
     open('/tmp/' + filename, 'wb').write(firmware.content)
     file = {'update': open('/tmp/' + filename,'rb')}
     update = requests.post('http://' + bridge_config["lights_address"][light]["ip"] + '/update', files=file)
-
-# Make various updates to the config JSON structure to maintain backwards compatibility with old configs
-# def updateConfig():
-#
-#     #### bridge emulator config
-#
-#     if int(bridge_config["config"]["swversion"]) < 1938112040:
-#         bridge_config["config"]["swversion"] = "1938112040"
-#         bridge_config["config"]["apiversion"] = "1.35.0"
-#
-#     ### end bridge config
-#
-#     if "emulator" not in bridge_config:
-#         bridge_config["emulator"] = {"lights": {}, "sensors": {}}
-#
-#
-#     if "alarm" not in bridge_config["emulator"]:
-#         bridge_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
-#     if "alarm_config" in bridge_config:
-#         del bridge_config["alarm_config"]
-#
-#     if "mqtt" not in bridge_config["emulator"]:
-#         bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
-#
-#     if "Remote API enabled" not in bridge_config["config"]:
-#         bridge_config["config"]["Remote API enabled"] = False
-#
-#     # Update deCONZ sensors
-#     for sensor_id, sensor in bridge_config["deconz"]["sensors"].items():
-#         if "modelid" not in sensor:
-#             sensor["modelid"] = bridge_config["sensors"][sensor["bridgeid"]]["modelid"]
-#         if sensor["modelid"] == "TRADFRI motion sensor":
-#             if "lightsensor" not in sensor:
-#                 sensor["lightsensor"] = "internal"
-#
-#     # Update scenes
-#     for scene_id, scene in bridge_config["scenes"].items():
-#         if "type" not in scene:
-#             scene["type"] = "LightGroup"
-#
-#     # Update sensors
-#     for sensor_id, sensor in bridge_config["sensors"].items():
-#         if sensor["type"] == "CLIPGenericStatus":
-#             sensor["state"]["status"] = 0
-#         elif sensor["type"] == "ZLLTemperature" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
-#             sensor["capabilities"] = {"certified": True, "primary": False}
-#             sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
-#             sensor["swversion"] = "6.1.1.27575"
-#         elif sensor["type"] == "ZLLPresence" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
-#             sensor["capabilities"] = {"certified": True, "primary": True}
-#             sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
-#             sensor["swversion"] = "6.1.1.27575"
-#         elif sensor["type"] == "ZLLLightLevel" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
-#             sensor["capabilities"] = {"certified": True, "primary": False}
-#             sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
-#             sensor["swversion"] = "6.1.1.27575"
-#
-#     # Update lights
-#     for light_id, light_address in bridge_config["lights_address"].items():
-#         light = bridge_config["lights"][light_id]
-#
-#         if light_address["protocol"] == "native" and "mac" not in light_address:
-#             light_address["mac"] = light["uniqueid"][:17]
-#             light["uniqueid"] = generate_unique_id()
-#
-#         # Update deCONZ protocol lights
-#         if light_address["protocol"] == "deconz":
-#             # Delete old keys
-#             for key in list(light):
-#                 if key in ["hascolor", "ctmax", "ctmin", "etag"]:
-#                     del light[key]
-#
-#             if light["modelid"].startswith("TRADFRI"):
-#                 light.update({"manufacturername": "Philips", "swversion": "1.46.13_r26312"})
-#
-#                 light["uniqueid"] = generate_unique_id()
-#
-#                 if light["type"] == "Color temperature light":
-#                     light["modelid"] = "LTW001"
-#                 elif light["type"] == "Color light":
-#                     light["modelid"] = "LCT015"
-#                     light["type"] = "Extended color light"
-#                 elif light["type"] == "Dimmable light":
-#                     light["modelid"] = "LWB010"
-#
-#         # Update Philips lights firmware version
-#         if "manufacturername" in light and light["manufacturername"] == "Philips":
-#             swversion = "1.46.13_r26312"
-#             if light["modelid"] in ["LST002", "LCT015", "LTW001", "LWB010"]:
-#                 # Update archetype for various Philips models
-#                 if light["modelid"] in ["LTW001", "LWB010"]:
-#                     archetype = "classicbulb"
-#                     light["productname"] = "Hue white lamp"
-#                     light["productid"] = "Philips-LWB014-1-A19DLv3"
-#                     light["capabilities"] = {"certified": True,"control": {"ct": {"max": 500,"min": 153},"maxlumen": 840,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": False}}
-#                 elif light["modelid"] == "LCT015":
-#                     archetype = "sultanbulb"
-#                     light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": True,"renderer": True}}
-#                     light["productname"] = "Hue color lamp"
-#                 elif light["modelid"] == "LST002":
-#                     archetype = "huelightstrip"
-#                     swversion = "5.127.1.26581"
-#                     light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
-#                     light["productname"] = "Hue lightstrip plus"
-#
-#                 light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
-#
-#                 if "mode" in light["state"]:
-#                     light["state"]["mode"] = "homeautomation"
-#
-#                 # Update startup config
-#                 if "startup" not in light["config"]:
-#                     light["config"]["startup"] = {"mode": "safety", "configured": False}
-#
-#             # Finally, update the software version
-#             light["swversion"] = swversion
-#
-#     #set entertainment streaming to inactive on start/restart
-#     for group_id, group in bridge_config["groups"].items():
-#         if "type" in group and group["type"] == "Entertainment":
-#             if "stream" not in group:
-#                 group["stream"] = {}
-#             group["stream"].update({"active": False, "owner": None})
-#
-#         group["sensors"] = []
-#
-#     #fix timezones bug
-#     if "values" not in bridge_config["capabilities"]["timezones"]:
-#         timezones = bridge_config["capabilities"]["timezones"]
-#         bridge_config["capabilities"]["timezones"] = {"values": timezones}
 
 def addTradfriDimmer(sensor_id, group_id):
     rules = [{ "actions":[{"address": "/groups/" + group_id + "/action", "body":{ "on":True, "bri":1 }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "false" }], "name": "Remote " + sensor_id + " turn on" },{"actions":[{"address":"/groups/" + group_id + "/action", "body":{ "on": False}, "method":"PUT"}], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name":"Dimmer Switch " + sensor_id + " off"}, { "actions":[{ "address": "/groups/" + group_id + "/action", "body":{ "on":False }, "method": "PUT" }], "conditions":[{ "address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx" }, { "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002" }, { "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" }, { "address": "/groups/" + group_id + "/action/bri", "operator": "eq", "value": "1"}], "name": "Remote " + sensor_id + " turn off" }, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 32, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "2002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate right"}, { "actions": [{"address": "/groups/" + group_id + "/action", "body":{"bri_inc": 56, "transitiontime": 9}, "method": "PUT" }], "conditions": [{ "address": "/groups/" + group_id + "/state/any_on", "operator": "eq", "value": "true" },{ "address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "1002" }, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate fast right"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -32, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "3002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}, {"actions": [{"address": "/groups/" + group_id + "/action", "body": {"bri_inc": -56, "transitiontime": 9}, "method": "PUT"}], "conditions": [{ "address": "/groups/" + group_id + "/action/bri", "operator": "gt", "value": "1"},{"address": "/sensors/" + sensor_id + "/state/buttonevent", "operator": "eq", "value": "4002"}, {"address": "/sensors/" + sensor_id + "/state/lastupdated", "operator": "dx"}], "name": "Dimmer Switch " + sensor_id + " rotate left"}]
@@ -425,10 +129,6 @@ def addHueSwitch(uniqueid, sensorsType):
     bridge_config["sensors"][new_sensor_id] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if sensorsType == "ZLLSwitch" else "Tap Switch", "type": sensorsType, "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "", "uniqueid": uniqueid}
     return(new_sensor_id)
 
-# #load config files
-# def load_config(path):
-#     with open(path, 'r', encoding="utf-8") as fp:
-#         return json.load(fp)
 
 def resourceRecycle():
     sleep(5) #give time to application to delete all resources, then start the cleanup
@@ -444,11 +144,6 @@ def resourceRecycle():
                 logging.info("delete " + resource + " / " + key)
                 del bridge_config[resource][key]
 
-# def saveConfig(filename='config.json'):
-#     with open(cwd + '/' + filename, 'w', encoding="utf-8") as fp:
-#         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
-#     if docker:
-#         Popen(["cp", cwd + '/' + filename, cwd + '/' + 'export/'])
 
 def generateDxState():
     for sensor in bridge_config["sensors"]:
@@ -512,13 +207,10 @@ def schedulerProcessor():
                 logging.info("Exception while processing the schedule " + schedule + " | " + str(e))
 
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
-            saveConfig()
+            configManager.bridgeConfig.save_config()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                if docker:
-                    saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
-                else:
-                    saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                configManager.bridgeConfig.save_config(True)
         sleep(1)
 
 def switchScene(group, direction):
@@ -682,8 +374,13 @@ def scanHost(host, port):
     return result
 
 def iter_ips(port):
+    argsDict = configManager.runtimeConfig.arg
+    HOST_IP = argsDict["HOST_IP"]
+    scan_on_host_ip = argsDict["scanOnHostIP"]
+    ip_range_start = argsDict["IP_RANGE_START"]
+    ip_range_end = argsDict["IP_RANGE_END"]
     host = HOST_IP.split('.')
-    if args.scan_on_host_ip:
+    if scan_on_host_ip:
         yield ('127.0.0.1', port)
         return
     for addr in range(ip_range_start, ip_range_end + 1):
@@ -721,9 +418,6 @@ def generate_light_name(base_name, light_nr):
     suffix = ' %s' % light_nr
     return '%s%s' % (base_name[:32-len(suffix)], suffix)
 
-def generate_unique_id():
-    rand_bytes = [random.randrange(0, 256) for _ in range(3)]
-    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
 def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
@@ -815,6 +509,9 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     scanTradfri()
     saveConfig()
 
+def generate_unique_id():
+    rand_bytes = [random.randrange(0, 256) for _ in range(3)]
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
 def longPressButton(sensor, buttonevent):
     logging.info("long press detected")
@@ -996,6 +693,7 @@ def websocketClient():
         ws.close()
 
 def scanDeconz():
+    deconz_ip = configManager.runtimeConfig.arg["DECONZ"]
     if not bridge_config["deconz"]["enabled"]:
         if "username" not in bridge_config["deconz"]:
             try:
@@ -1255,7 +953,7 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         #Some older Philips Tv's sent non-standard HTTP GET requests with a Content-Lenght and a
         # body. The HTTP body needs to be consumed and ignored in order to request be handle correctly.
-        global bridge_config
+        cwd = configManager.bridgeConfig.projectDir
         self.read_http_request_body()
 
         if self.path == '/' or self.path == '/index.html':

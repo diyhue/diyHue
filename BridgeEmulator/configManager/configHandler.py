@@ -4,7 +4,6 @@ import datetime
 import os
 import json
 import logging
-import uuid
 
 
 def _open_json(path):
