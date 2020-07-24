@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from configManager import configInit
 import datetime
 import os
@@ -17,15 +16,18 @@ def _write_json(path, contents):
         json.dump(contents, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-@dataclass
 class Config:
-    json_config: dict = None
-    projectDir: str = '/opt/hue-emulator'  # cwd = os.path.split(os.path.abspath(__file__))[0]
-    configDir: str = projectDir + '/config'
+    json_config = None
+    projectDir = '/opt/hue-emulator'  # cwd = os.path.split(os.path.abspath(__file__))[0]
+    configDir = projectDir + '/config'
+
+    def __init__(self):
+        if not os.path.exists(self.configDir):
+            os.makedirs(self.configDir)
 
     def load_config(self):
         try:
-            if os.path.exists(self.configDir):
+            if os.path.exists(self.configDir + "/config.json"):
                 self.json_config = _open_json(self.configDir + "/config.json")
                 logging.info("Config loaded")
             else:
@@ -41,8 +43,6 @@ class Config:
             filename = "config--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%m-%S") + ".json"
         else:
             filename = "config.json"
-        if not os.path.exists(self.configDir):
-            os.makedirs(self.configDir)
         path = self.configDir + '/' + filename
         _write_json(path, self.json_config)
         return filename
