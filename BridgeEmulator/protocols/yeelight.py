@@ -1,11 +1,13 @@
 import json
-import logging
+import logManager
 import random
 import socket
 import sys
 
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+
+logging = logManager.logger.get_logger(__name__)
 
 Connections = {}
 

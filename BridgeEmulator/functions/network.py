@@ -1,6 +1,4 @@
-import logging
 import socket
-import sys
 
 def getIpAddress():
    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

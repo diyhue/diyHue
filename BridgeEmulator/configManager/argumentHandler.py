@@ -1,10 +1,10 @@
 import argparse
-import logging
+import logManager
 from os import getenv, path
 from functions.network import getIpAddress
-from functions.loggingConfig import set_log_level
 from subprocess import check_output, call
 
+logging = logManager.logger.get_logger(__name__)
 
 def get_environment_variable(var, boolean=False):
     value = getenv(var)
@@ -24,10 +24,8 @@ def generate_certificate(mac):
 
 def process_arguments(configDir, args):
     if args["DEBUG"]:
-        set_log_level("DEBUG")
+        logManager.logger.configure_logger("DEBUG")
         logging.info("Debug logging enabled")
-    else:
-        set_log_level("INFO")
     if not path.isfile(configDir + "/cert.pem"):
         generate_certificate(args["FULLMAC"])
 

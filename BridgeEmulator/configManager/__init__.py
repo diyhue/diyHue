@@ -5,13 +5,12 @@ from configManager import runtimeConfigHandler
 bridgeConfig = configHandler.Config()
 runtimeConfig = runtimeConfigHandler.Config()
 
-# Restore configuration
-bridgeConfig.load_config()
-runtimeConfig.populate()
-
 # Initialize runtime configuration
+runtimeConfig.populate()
 argumentHandler.process_arguments(bridgeConfig.configDir, runtimeConfig.arg)
 
+# Restore configuration
+bridgeConfig.load_config()
 
 # Initialize bridge config
 bridgeConfig.generate_security_key()

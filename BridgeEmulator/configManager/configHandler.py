@@ -3,8 +3,9 @@ from configManager import configInit
 import datetime
 import os
 import json
-import logging
+import logManager
 
+logging = logManager.logger.get_logger(__name__)
 
 def _open_json(path):
     with open(path, 'r', encoding="utf-8") as fp:

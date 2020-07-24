@@ -3,7 +3,7 @@ import argparse
 import base64
 import copy
 import json
-import logging
+import logManager
 import os
 import random
 import socket
@@ -34,6 +34,7 @@ from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 import configManager
 
+logging = logManager.logger.get_logger(__name__)
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
 protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
