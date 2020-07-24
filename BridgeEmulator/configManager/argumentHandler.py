@@ -23,9 +23,11 @@ def generate_certificate(mac):
 
 
 def process_arguments(configDir, args):
-    if args["DEBUG"]:
-        logManager.logger.configure_logger("DEBUG")
-        logging.info("Debug logging enabled")
+    if not args["DEBUG"]:
+        logManager.logger.configure_logger("INFO")
+        logging.info("Debug logging disabled!")
+    else:
+        logging.info("Debug logging enabled!")
     if not path.isfile(configDir + "/cert.pem"):
         generate_certificate(args["FULLMAC"])
 
