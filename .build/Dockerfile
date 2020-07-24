@@ -6,7 +6,7 @@ WORKDIR /opt/hue-emulator
 # Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
 ARG TARGETPLATFORM
 
-COPY BridgeEmulator Installers .build/select.sh ./
+COPY Installers .build/select.sh ./
 
 RUN chmod +x ./select.sh && \
     mkdir out && \
