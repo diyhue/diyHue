@@ -925,6 +925,24 @@ class S(BaseHTTPRequestHandler):
     server_version = 'nginx'
     sys_version = ''
 
+    logging = logManager.logger.get_logger("WebServer")
+
+    def log_message(self, format, *args) -> None:
+        try:
+            if not args[1] == str(200):
+                self.logging.warning("%s - %s" %
+                             (self.address_string(),
+                              format%args))
+            else:
+                self.logging.debug("%s - %s" %
+                                 (self.address_string(),
+                                  format%args))
+        except:
+            self.logging.warning("Could not get return code: %s - %s" %
+                               (self.address_string(),
+                                format % args))
+        return
+
     def _set_headers(self):
 
         self.send_response(200)
