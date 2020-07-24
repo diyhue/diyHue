@@ -1,4 +1,5 @@
 import requests
+from time import sleep
 
 def sendRequest(url, method, data, timeout=3, delay=0):
     if delay != 0:
