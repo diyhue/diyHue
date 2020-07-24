@@ -8,7 +8,7 @@ logging = logManager.logger.get_logger(__name__)
 
 def get_environment_variable(var, boolean=False):
     value = getenv(var)
-    if boolean:
+    if boolean and value:
         if value.lower() == "true":
             value = True
         else:
