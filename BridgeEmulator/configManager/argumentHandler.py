@@ -1,6 +1,5 @@
 import argparse
 import logging
-import configManager
 from os import getenv, path
 from functions.network import getIpAddress
 from functions.loggingConfig import set_log_level

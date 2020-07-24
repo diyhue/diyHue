@@ -1628,7 +1628,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem") # change to new cert location
+        ctx.load_cert_chain(certfile="/opt/hue-emulator/config/cert.pem") # change to new cert location
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
         ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE

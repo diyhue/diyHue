@@ -21,6 +21,7 @@ def generate_security_key(json_config):
     # generate security key for Hue Essentials remote access
     if not json_config["config"].get("Hue Essentials key"):
         json_config["config"]["Hue Essentials key"] = str(uuid.uuid1()).replace('-', '')
+    return json_config
 
 
 def sanitizeBridgeScenes(json_config):
@@ -44,6 +45,7 @@ def sanitizeBridgeScenes(json_config):
         if "lightstates" in json_config["scenes"][scene] and len(
                 json_config["scenes"][scene]["lightstates"]) == 0:  # empty scenes are useless
             del json_config["scenes"][scene]
+    return json_config
 
 
 def updateConfig(json_config):
@@ -174,3 +176,4 @@ def updateConfig(json_config):
     if "values" not in json_config["capabilities"]["timezones"]:
         timezones = json_config["capabilities"]["timezones"]
         json_config["capabilities"]["timezones"] = {"values": timezones}
+    return json_config
