@@ -10,7 +10,6 @@ import requests
 import uuid
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from protocols.hue.scheduler import generateDxState
 from socketserver import ThreadingMixIn
 from subprocess import Popen, check_output
 from threading import Thread
@@ -29,6 +28,8 @@ from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 from functions.json import pretty_json
 import configManager
+from protocols.hue.sensors import addHueSwitch, addHueMotionSensor, motionDetected
+from protocols.hue.scheduler import generateDxState, rulesProcessor
 
 logging = logManager.logger.get_logger(__name__)
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
