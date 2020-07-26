@@ -4,7 +4,8 @@ import configManager
 import logManager
 import json
 from time import sleep
-from HueEmulator3 import addHueMotionSensor, generateDxState, rulesProcessor, motionDetected
+from protocols.hue.sensors import addHueMotionSensor, motionDetected
+from protocols.hue.scheduler import generateDxState, rulesProcessor
 from functions.request import sendRequest
 from threading import Thread
 from functions import nextFreeId
