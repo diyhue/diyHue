@@ -173,7 +173,7 @@ const Room = ({
                         onChange={bri => setBrightness(selectedLight, bri)}
                       />
                     }
-                    secondary="Brghtness"
+                    secondary="Brightness"
                   />
                 </ListItem>
               )}

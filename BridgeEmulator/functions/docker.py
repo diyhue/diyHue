@@ -4,6 +4,8 @@ from shutil import copyfile
 import requests
 
 def dockerSetup(mac):
+    if not os.path.exists("/opt/hue-emulator/export"):
+        os.makedirs("/opt/hue-emulator/export")
     if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
         print("Restoring Certificate")
         copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
@@ -20,7 +22,7 @@ def dockerSetup(mac):
         print("Config restored")
     else:
         print("Downloading default config")
-        res = requests.get("https://raw.githubusercontent.com/mariusmotea/diyHue/master/BridgeEmulator/config.json", allow_redirects=True)
+        res = requests.get("https://raw.githubusercontent.com/diyHue/diyHue/master/BridgeEmulator/default-config.json", allow_redirects=True)
         open('/opt/hue-emulator/config.json', 'w+').write(res.text)
         copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
         print("Config downloaded")

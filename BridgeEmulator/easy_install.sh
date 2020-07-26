@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 arch=`uname -m`
 
@@ -6,21 +6,52 @@ cd /tmp
 
 ### installing dependencies
 echo -e "\033[36m Installing dependencies.\033[0m"
-apt install -y unzip nmap python3 python3-requests python3-ws4py python3-setuptools
+if type apt &> /dev/null; then
+	# Debian-based distro
+	apt-get install -y unzip nmap python3 python3-requests python3-setuptools
+elif type pacman &> /dev/null; then
+	# Arch linux
+	pacman -Syq --noconfirm || exit 1
+	pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
+else
+	# Or assume that packages are already installed (possibly with user confirmation)?
+	# Or check them?
+	echo -e "\033[31mUnable to detect package manager, aborting\033[0m"
+	exit 1
+fi
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
-wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
-unzip -q -o astral.zip
+curl -sL https://github.com/sffjunkie/astral/archive/master.zip -o astral.zip
+unzip -qo astral.zip
 cd astral-master/
 python3 setup.py install
 cd ../
 rm -rf astral.zip astral-master/
 
+
+### installing paho-mqtt library
+echo -e "\033[36m Installing Python MQTT.\033[0m"
+curl -sL https://files.pythonhosted.org/packages/59/11/1dd5c70f0f27a88a3a05772cd95f6087ac479fac66d9c7752ee5e16ddbbc/paho-mqtt-1.5.0.tar.gz -o paho-mqtt-1.5.0.tar.gz
+tar zxvf paho-mqtt-1.5.0.tar.gz
+cd paho-mqtt-1.5.0/
+python3 setup.py install
+cd ../
+rm -rf paho-mqtt-1.5.0.tar.gz paho-mqtt-1.5.0/
+
+### installing WebSocket for Python
+echo -e "\033[36m Installing WebSocket for Python.\033[0m"
+curl -sL https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.4.zip -o ws4py.zip
+unzip -qo ws4py.zip
+cd WebSocket-for-Python-0.3.4/
+python3 setup.py install
+cd ../
+rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
+
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
-unzip -q -o  diyHue.zip
+curl -sL https://github.com/diyhue/diyHue/archive/master.zip -o diyHue.zip
+unzip -qo diyHue.zip
 cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
@@ -71,7 +102,7 @@ else
                 exit 1
         fi
         mkdir /opt/hue-emulator
-        cp config.json /opt/hue-emulator/
+        cp default-config.json /opt/hue-emulator/
 
 	curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 	serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
@@ -92,20 +123,33 @@ else
 		rm private.key public.crt
 	fi
 fi
-cp -r web-ui functions protocols HueEmulator3.py check_updates.sh /opt/hue-emulator/
-if [ $(uname -m) = "x86_64" ]; then
-	cp entertainment-x86_64 /opt/hue-emulator/entertainment-srv
-	cp coap-client-x86_64 /opt/hue-emulator/coap-client-linux
-else
-	if [ $(uname -m) = "i686" ]; then
-		cp entertainment-x86 /opt/hue-emulator/entertainment-srv
-        cp coap-client-linux-x86 /opt/hue-emulator/coap-client-linux
-        else
-        cp entertainment-arm /opt/hue-emulator/entertainment-srv
+cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
+
+# Install correct binaries
+case $arch in
+    x86_64|i686|aarch64)
+        cp entertainment-$arch /opt/hue-emulator/entertain-srv
+        cp coap-client-$arch /opt/hue-emulator/coap-client-linux
+       ;;
+    arm64)
+        cp entertainment-aarch64 /opt/hue-emulator/entertain-srv
+        cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
+       ;;
+    armv*)
+        cp entertainment-arm /opt/hue-emulator/entertain-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
-	fi
-fi
-chmod +x /opt/hue-emulator/entertainment-srv
+       ;;
+    *)
+        echo -e "\033[0;31m-------------------------------------------------------------------------------"
+        echo -e "ERROR: Unsupported architecture $arch!"
+        echo -e "You will need to manually compile the entertain-srv binary, "
+        echo -e "and install your own coap-client\033[0m"
+        echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
+        echo -e "Once installed, open this script and manually run the last 10 lines."
+        exit 1
+esac
+
+chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/

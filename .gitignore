@@ -8,3 +8,13 @@ BridgeEmulator/config*
 Lights/*
 Devices/*
 Sensors/*
+
+# Virtual env stuff
+/pyvenv.cfg
+/bin/
+/lib/
+/share/
+
+# Ignore userdata
+BridgeEmulator/export/
+BridgeEmulator/cert.pem

@@ -1,15 +1,15 @@
-def description(ip, mac, name):
+def description(ip, port, mac, name):
     return """<?xml version="1.0" encoding="UTF-8" ?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">
 <specVersion>
 <major>1</major>
 <minor>0</minor>
 </specVersion>
-<URLBase>http://""" + ip + """:80/</URLBase>
+<URLBase>http://""" + ip + """:""" + str(port) + """/</URLBase>
 <device>
 <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
 <friendlyName>""" + name + """ (""" + ip + """)</friendlyName>
-<manufacturer>Royal Philips Electronics</manufacturer>
+<manufacturer>Signify</manufacturer>
 <manufacturerURL>http://www.philips.com</manufacturerURL>
 <modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
 <modelName>Philips hue bridge 2015</modelName>
@@ -163,7 +163,7 @@ def webformDeconz(bridge_config):
 <fieldset>
 <legend>Deconz Switches Setup</legend>\n"""
     for deconzSensor in bridge_config["deconz"]["sensors"].keys():
-        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer"]:
+        if bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["modelid"] in ["TRADFRI remote control", "TRADFRI wireless dimmer","TRADFRI on/off switch"]:
             content += "<div class=\"pure-control-group\">\n"
             content += "<label for=\"sensor-" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"sensor-" + deconzSensor + "\" name=\"" + bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"] + "\">\n"
@@ -202,3 +202,39 @@ def webformDeconz(bridge_config):
 </body>
 </html>"""
     return content
+
+
+def lightsHttp():
+    return """<!DOCTYPE html>
+<html style="height: 100%">
+
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://diyhue.org/cdn/bootstrap.min.css">
+  <script src="https://diyhue.org/cdn/jquery-3.3.1.min.js"></script>
+</head>
+
+<body>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Name</th>
+      <th scope="col">Current Version</th>
+      <th scope="col">Last Vesion</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+<script>
+jQuery.getJSON("/lights.json", function(data) {
+    for (var key in data) {
+    $('.table').append('<tr><th scope="row">#' + key +'</th><td>' + data[key]["name"] +'</td><td>' + data[key]["currentVersion"] +'</td><td>' + data[key]["lastVersion"] +'</td><td>' + ((data[key]["currentVersion"] < data[key]["lastVersion"]) ? '<a href="/lights?light=' + key + '&filename=' + data[key]["firmware"] +'">update</a>' : 'up to date') + '</td></tr>');
+    var value = data[key];
+    }
+});
+</script>
+</body>
+</html>"""
