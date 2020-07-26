@@ -53,17 +53,56 @@ def discover(bridge_config, new_lights):
                             "name"]
                         logging.debug("shelly: Add shelly: " + properties["id"])
                         modelid = "Shelly"
+                        #modelid = "LWB010"
                         new_light_id = nextFreeId(bridge_config, "lights")
                         bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"],
                                                                  "type": light_types[modelid]["type"],
                                                                  "name": light_name,
                                                                  "uniqueid": "4a:e0:ad:7f:cf:" + str(
                                                                      random.randrange(0, 99)) + "-1",
-                                                                 "modelid": modelid, "manufacturername": "Shelly",
+                                                                 "modelid": modelid, "manufacturername": "Philips",
                                                                  "swversion": light_types[modelid]["swversion"]}
                         new_lights.update({new_light_id: {"name": light_name}})
                         bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"],
-                                                                         "protocol": "shelly"}
+                                                                         "light_nr": "0", "protocol": "shelly"}
+                elif device_data["type"] == "SHSW-25":
+
+                    logging.debug("shelly: " + ip + " is a shelly device ")
+                    shelly_response = requests.get("http://" + ip + "/status", timeout=5)
+                    shelly_data = json.loads(shelly_response.text)
+                    logging.debug("shelly: ip: " + shelly_data["wifi_sta"]["ip"])
+                    logging.debug("shelly: Mac:      " + shelly_data["mac"])
+
+                    for relays in range(2):
+                        logging.debug("shelly: loop: " + str(relays))
+                        properties = {"ip": ip, "name": ip, "id": shelly_data["mac"], "mac": shelly_data["mac"], "relay_id": str(relays)}
+                        device_exist = False
+                        logging.debug("shelly: loop go")
+                        for light in bridge_config["lights_address"].keys():
+                            if bridge_config["lights_address"][light]["protocol"] == "shelly" and bridge_config["lights_address"][light]["id"] == properties["id"] and bridge_config["lights_address"][light]["light_nr"] == properties["relay_id"]:
+                                device_exist = True
+                                bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                                logging.debug("shelly: light id " + properties["id"] + " already exist, updating ip...")
+                                break
+                        logging.debug("shelly: loop done") 
+                        if "ison" not in json.loads(sendRequest("http://" + ip + "/relay/" + str(relays))):
+                            #is not releay - roller?
+                            device_exist = True
+                        if (not device_exist):
+                            logging.debug("shelly: new: " +  properties["id"] + " relay: " + properties["relay_id"] )
+                            light_name = "shelly id " + properties["id"][-8:] + " " + properties["relay_id"] if properties["name"] == "" else properties["name"] + " - " + properties["relay_id"]
+                            modelid = "Shelly"
+                            #modelid = "LWB010"
+                            new_light_id = nextFreeId(bridge_config, "lights")
+                            bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"],
+                                                                     "type": light_types[modelid]["type"],
+                                                                     "name": light_name,
+                                                                     "uniqueid": "4a:e0:ad:7f:cf:" + str(
+                                                                         random.randrange(0, 99)) + "-1",
+                                                                     "modelid": modelid, "manufacturername": "Philips",
+                                                                     "swversion": light_types[modelid]["swversion"]}
+                            new_lights.update({new_light_id: {"name": light_name}})
+                            bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "light_nr": properties["relay_id"], "protocol": "shelly"}
 
         except Exception as e:
             logging.debug("shelly: ip " + ip + " is unknow device, " + str(e))
@@ -75,17 +114,16 @@ def set_light(address, light, data):
     for key, value in data.items():
         if key == "on":
             if value:
-                sendRequest("http://" + address["ip"] + "/relay/0/?turn=on")
+                sendRequest("http://" + address["ip"] + "/relay/" + address["light_nr"] + "/?turn=on")
             else:
-                sendRequest("http://" + address["ip"] + "/relay/0/?turn=off")
-
+                sendRequest("http://" + address["ip"] + "/relay/" + address["light_nr"] + "/?turn=off")
 
 def get_light_state(address, light):
-    logging.debug("shelly: <get_light_state> invoked!")
-    data = sendRequest("http://" + address["ip"] + "/relay/0")
+    logging.debug("shelly:  <get_light_state> invoked!")
+    data = sendRequest("http://" + address["ip"] + "/relay/" + address["light_nr"])
     light_data = json.loads(data)
     state = {}
 
     if 'ison' in light_data:
-        state['on'] = True if light_data["ison"] == "true" else False
+        state['on'] = True if str(light_data["ison"]).lower() == "true" else False
     return state
