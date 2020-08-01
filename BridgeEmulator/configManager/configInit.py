@@ -52,8 +52,8 @@ def updateConfig(json_config):
 
     #### bridge emulator config
 
-    if int(json_config["config"]["swversion"]) < 1938112040:
-        json_config["config"]["swversion"] = "1938112040"
+    if int(json_config["config"]["swversion"]) < 1939070020:
+        json_config["config"]["swversion"] = "1939070020"
         json_config["config"]["apiversion"] = "1.35.0"
 
     ### end bridge config
