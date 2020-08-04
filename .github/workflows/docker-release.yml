@@ -14,7 +14,7 @@ jobs:
       - name: Set env vars
         run: |
           export DOCKER_TAG=$([[ $GITHUB_REF == *"master"* ]] && echo "latest" || echo $GITHUB_REF)
-          echo Will tag image as: $DOCKER_PUSH
+          echo Will tag image as: $DOCKER_TAG
           echo "::set-env name=DOCKER_TAG::$DOCKER_TAG"
       -
         name: Checkout
