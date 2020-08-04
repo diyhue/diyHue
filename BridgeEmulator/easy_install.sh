@@ -22,12 +22,12 @@ fi
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
-curl -sL https://github.com/sffjunkie/astral/archive/master.zip -o astral.zip
+curl -sL https://codeload.github.com/sffjunkie/astral/zip/2.2 -o astral.zip
 unzip -qo astral.zip
-cd astral-master/
+cd astral-2.2/
 python3 setup.py install
 cd ../
-rm -rf astral.zip astral-master/
+rm -rf astral.zip astral-2.2/
 
 
 ### installing paho-mqtt library
