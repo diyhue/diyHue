@@ -4,13 +4,18 @@ on:
   push:
     branches:
       - master
+      - beta
+      - develop
 
 jobs:
   Publish-to-docker:
     runs-on: ubuntu-latest
-    env:
-      DOCKER_TAG: latest
     steps:
+      - name: Set env vars
+        run: |
+          export DOCKER_TAG=$([[ $GITHUB_REF == *"master"* ]] && echo "latest" || echo $GITHUB_REF)
+          echo Will tag image as: $DOCKER_PUSH
+          echo "::set-env name=DOCKER_TAG::$DOCKER_TAG"
       -
         name: Checkout
         uses: actions/checkout@v1
