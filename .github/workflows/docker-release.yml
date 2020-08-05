@@ -1,97 +1,80 @@
-name: Build Docker Image
+name: Docker build and push
 
 on:
   push:
+    branches:
+      - master
+      - beta
+      - develop
 
 jobs:
-  build:
+  Publish-to-docker:
     runs-on: ubuntu-latest
-    name: Build and Publish
     steps:
-      - name: Set Docker Repository
+      - name: Set env vars
         run: |
-          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export REPO_NAME="diyhue/core"
-          else
-            export REPO_NAME=$GITHUB_REPOSITORY
-          fi
-          echo Repository set as: $REPO_NAME
-          echo "::set-env name=DOCKER_REPO::$REPO_NAME"
-
-      - name: Checkout
+          export DOCKER_TAG=$([[ $GITHUB_REF == *"master"* ]] && echo "latest" || echo $GITHUB_REF)
+          echo Will tag image as: $DOCKER_TAG
+          echo "::set-env name=DOCKER_TAG::$DOCKER_TAG"
+      -
+        name: Checkout
         uses: actions/checkout@v1
-
-      - name: Set up Docker Buildx
+      -
+        name: Set up Docker Buildx
         id: buildx
         uses: crazy-max/ghaction-docker-buildx@v1
-
-      - name: List available platforms
+        with:
+          version: latest
+      -
+        name: List available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
-
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+      -
+        name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run:
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build Image
+      -
+        name: Publish to docker as diyHue/core
+        if:  ${{ success() && startsWith(github.repository, 'diyhue/')}}
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm/v7,linux/arm64 \
-            -o "type=image,push=false" \
+            --push \
             -f ./.build/Dockerfile \
-            -t diyhue/core:CI \
+            -t diyhue/core:$DOCKER_TAG \
+            -t diyhue/core:master-$GITHUB_SHA \
+            .
+      -
+        name: Publish to docker as github_user/github_repo
+        if: ${{ success() && !startsWith(github.repository, 'diyhue/')}}
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm/v7,linux/arm64 \
+            --push \
+            -f ./.build/Dockerfile \
+            -t $GITHUB_REPOSITORY:$DOCKER_TAG \
+            -t $GITHUB_REPOSITORY:master-$GITHUB_SHA \
             .
 
-      - name: Deploy Commit ID
-        if: ${{ github.head_ref == '' && github.sha != '' }}
-        run: |
-          docker tag diyhue/core:CI $DOCKER_REPO:$GITHUB_SHA
-          docker push $DOCKER_REPO:$GITHUB_SHA
-          echo $DOCKER_REPO:$GITHUB_SHA published
-
-      - name: Deploy Run Number
-        if: ${{ github.head_ref == '' && github.sha != '' }}
-        run: |
-          docker tag diyhue/core:CI $DOCKER_REPO:$GITHUB_RUN_NUMBER
-          docker push $DOCKER_REPO:$GITHUB_RUN_NUMBER
-          echo $DOCKER_REPO:$GITHUB_RUN_NUMBER published
-
-      - name: Deploy Latest
-        if: ${{ github.head_ref == '' && github.ref == 'refs/heads/master' }}
-        run: |
-          docker tag diyhue/core:CI $DOCKER_REPO:latest
-          docker push $DOCKER_REPO:latest
-          echo $DOCKER_REPO:latest published
-
-      - name: Deploy Branch
-        if: ${{ github.head_ref == '' && startsWith(github.ref, 'refs/heads/') }}
-        run: |
-          docker tag diyhue/core:CI $DOCKER_REPO:${GITHUB_REF##*/}
-          docker push $DOCKER_REPO:${GITHUB_REF##*/}
-          echo $DOCKER_REPO:${GITHUB_REF##*/} published
-
-      - name: Deploy Tag
-        if: ${{ github.head_ref == '' && startsWith(github.ref, 'refs/tags/') }}
-        run: |
-          docker tag diyhue/core:CI $DOCKER_REPO:${GITHUB_REF##*/}
-          docker push $DOCKER_REPO:${GITHUB_REF##*/}
-          echo $DOCKER_REPO:${GITHUB_REF##*/} published
-
-  Test:
+  Run-tests:
     runs-on: ubuntu-latest
-    name: Test Image
     steps:
-      - name: Checkout
+      -
+        name: Checkout
         uses: actions/checkout@v1
-      - name: Build docker image
+      -
+        name: Build docker image
         run: |
           docker build -t diyhue/core:ci -f ./.build/Dockerfile --build-arg TARGETPLATFORM=linux/amd64 .
-      - name: Run docker image
+      -
+        name: Run docker image
         if: success()
         run: |
           docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' diyhue/core:ci
           sleep 15
           docker logs diyhue
-      - name: Cleanup
+      -
+        name: Cleanup
         run: |
           docker kill diyhue
           docker rm diyhue
+
