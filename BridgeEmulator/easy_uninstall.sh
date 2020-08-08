@@ -2,7 +2,11 @@
 cd /tmp
 
 echo -e "\033[36m Stopping diyHue.\033[0m"
-systemctl stop hue-emulator.service
+if [ -d "/run/systemd/system/" ]; then
+    systemctl stop hue-emulator.service
+else
+    service hue-emulator stop
+fi
 
 ### Uninstalling astral library for sunrise/sunset routines
 echo -e "\033[36m Uninstalling Python Astral.\033[0m"
@@ -20,9 +24,14 @@ echo -e "\033[36m Uninstalling Hue Emulator.\033[0m"
 
 rm -rf /opt/hue-emulator/
 
-systemctl disable hue-emulator.service
-rm /lib/systemd/system/hue-emulator.service
-systemctl daemon-reload
+if [ -d "/run/systemd/system/" ]; then
+    systemctl disable hue-emulator.service
+    rm /lib/systemd/system/hue-emulator.service
+    systemctl daemon-reload
+else
+    update-rc.d hue-emulator disable
+    rm /etc/init.d/hue-emulator
+fi
 
 ### Uninstalling dependencies
 echo -e "\033[36m Upon setup, diyHue installs some packages.\033[0m"

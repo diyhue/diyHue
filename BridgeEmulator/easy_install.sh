@@ -57,8 +57,13 @@ cd diyHue-master/BridgeEmulator/
 if [ -d "/opt/hue-emulator" ]; then
         if [ -f "/opt/hue-emulator/public.crt" ]; then
 		echo -e "\033[31m WARNING!! Nginx is not necessary anymore, it will be stopped.\033[0m"
-        	systemctl stop nginx
-		systemctl disable nginx
+    if [ -d "/run/systemd/system/" ]; then
+        systemctl stop nginx
+        systemctl disable nginx
+    else
+        service nginx stop
+        update-rc.d nginx disable
+    fi
 		cp /opt/hue-emulator/private.key /tmp/cert.pem
                 cat /opt/hue-emulator/public.crt >> /tmp/cert.pem
 	elif [ -f "/opt/hue-emulator/cert.pem" ]; then
@@ -84,7 +89,12 @@ if [ -d "/opt/hue-emulator" ]; then
 		fi
         fi
 
-	systemctl stop hue-emulator.service
+        if [ -d "/run/systemd/system/" ]; then
+          systemctl stop hue-emulator.service
+        else
+            service hue-emulator stop
+            update-rc.d nginx disable
+        fi
         echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
         cp /opt/hue-emulator/config.json /tmp
         rm -rf /opt/hue-emulator
