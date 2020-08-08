@@ -1,0 +1,57 @@
+#!/bin/bash
+
+start() {
+  if [ -z "$(ps aux | grep HueEmulator3.py | grep -v grep)" ]; then
+    echo "Starting Hue server..."
+    python3 /opt/hue-emulator/HueEmulator3.py &>>/opt/hue-emulator/log.txt &
+    echo "Hue server has been started!"
+    echo
+  else
+    echo "Already running!"
+  fi
+}
+
+status() {
+  if [ -z "$(ps aux | grep HueEmulator3.py | grep -v grep)" ]; then
+    echo "Not running"
+  else
+    echo "Running"
+  fi
+}
+
+stop() {
+  if [ -z "$(ps aux | grep HueEmulator3.py | grep -v grep)" ]; then
+    echo "It's not running!"
+  else
+    echo "Stopping Hue server..."
+    curl http://127.0.0.1/save
+    /bin/sleep 1
+    pkill -f "/opt/hue-emulator/HueEmulator3.py"
+    echo
+    echo
+    echo "Hue server has been stopped!"
+  fi
+}
+
+### main logic ###
+case "$1" in
+start)
+  start
+  ;;
+stop)
+  stop
+  ;;
+status)
+  status
+  ;;
+restart | reload | condrestart)
+  stop
+  start
+  ;;
+*)
+  echo $"Usage: $0 {start|stop|restart|reload|status}"
+  exit 1
+  ;;
+esac
+
+exit 0

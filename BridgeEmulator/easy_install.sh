@@ -152,12 +152,21 @@ esac
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
-cp hue-emulator.service /lib/systemd/system/
+
+if [ -d "/run/systemd/system/" ]; then
+    cp hue-emulator.service /lib/systemd/system/
+    chmod 644 /lib/systemd/system/hue-emulator.service
+    systemctl daemon-reload
+    systemctl enable hue-emulator.service
+    systemctl start hue-emulator.service
+else
+    cp hue-emulator.sysvinit /etc/init.d/hue-emulator
+    chmod 644 /etc/init.d/hue-emulator
+    update-rc.d hue-emulator defaults
+    service hue-emulator start
+fi
+
 cd ../../
 rm -rf diyHue.zip diyHue-master
-chmod 644 /lib/systemd/system/hue-emulator.service
-systemctl daemon-reload
-systemctl enable hue-emulator.service
-systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
