@@ -50,11 +50,11 @@ jobs:
         if: ${{ github.head_ref == '' && github.sha != '' }}
         run: |
           docker manifest create \
-            $DOCKER_REPO:$GITHUB_SHA \
+            $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA \
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
-          docker manifest push $DOCKER_REPO:$GITHUB_SHA
+          docker manifest push $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA
           echo $DOCKER_REPO:$GITHUB_SHA published
 
       - name: Deploy Run Number
