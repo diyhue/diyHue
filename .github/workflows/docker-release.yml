@@ -101,6 +101,14 @@ jobs:
           docker manifest push $DOCKER_REPO:${GITHUB_REF##*/}
           echo $DOCKER_REPO:${GITHUB_REF##*/} published
 
+      - name: Cleanup CI Images
+        run: |
+          TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d "{"username": ${{ secrets.DOCKER_USERNAME }}, "password": ${{ secrets.DOCKER_PASSWORD }}}" "https://hub.docker.com/v2/users/login/" | jq -r .token`
+
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+
   Test:
     runs-on: ubuntu-latest
     name: Test Image
