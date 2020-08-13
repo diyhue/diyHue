@@ -54,6 +54,9 @@ jobs:
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA diyhue/core:ci-amd64 --arch amd64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA diyhue/core:ci-arm --arch arm --variant v7
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA diyhue/core:ci-arm64 --arch arm64
           docker manifest push $DOCKER_REPO:${GITHUB_REF##*/}-$GITHUB_SHA
           echo $DOCKER_REPO:$GITHUB_SHA published
 
@@ -65,6 +68,9 @@ jobs:
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
+          docker manifest annotate $DOCKER_REPO:$GITHUB_RUN_NUMBER diyhue/core:ci-amd64 --arch amd64
+          docker manifest annotate $DOCKER_REPO:$GITHUB_RUN_NUMBER diyhue/core:ci-arm --arch arm --variant v7
+          docker manifest annotate $DOCKER_REPO:$GITHUB_RUN_NUMBER diyhue/core:ci-arm64 --arch arm64
           docker manifest push $DOCKER_REPO:$GITHUB_RUN_NUMBER
           echo $DOCKER_REPO:$GITHUB_RUN_NUMBER published
 
@@ -76,6 +82,9 @@ jobs:
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
+          docker manifest annotate $DOCKER_REPO:latest diyhue/core:ci-amd64 --arch amd64
+          docker manifest annotate $DOCKER_REPO:latest diyhue/core:ci-arm --arch arm --variant v7
+          docker manifest annotate $DOCKER_REPO:latest diyhue/core:ci-arm64 --arch arm64
           docker manifest push $DOCKER_REPO:latest
           echo $DOCKER_REPO:latest published
 
@@ -87,6 +96,9 @@ jobs:
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-amd64 --arch amd64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-arm --arch arm --variant v7
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-arm64 --arch arm64
           docker manifest push $DOCKER_REPO:${GITHUB_REF##*/}
           echo $DOCKER_REPO:${GITHUB_REF##*/} published
 
@@ -98,6 +110,9 @@ jobs:
             diyhue/core:ci-amd64 \
             diyhue/core:ci-arm \
             diyhue/core:ci-arm64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-amd64 --arch amd64
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-arm --arch arm --variant v7
+          docker manifest annotate $DOCKER_REPO:${GITHUB_REF##*/} diyhue/core:ci-arm64 --arch arm64
           docker manifest push $DOCKER_REPO:${GITHUB_REF##*/}
           echo $DOCKER_REPO:${GITHUB_REF##*/} published
 
