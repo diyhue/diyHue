@@ -11,11 +11,11 @@ jobs:
       matrix:
         include:
           - arch: linux/amd64
-            image: ci-amd64
+            image: ci-amd64-${{ github.run_number }}
           - arch: linux/arm/v7
-            image: ci-arm
+            image: ci-arm-${{ github.run_number }}
           - arch: linux/arm64
-            image: ci-arm64
+            image: ci-arm64-${{ github.run_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -63,7 +63,7 @@ jobs:
       - name: Run docker image
         if: success()
         run: |
-          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-amd64
+          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-amd64-${{ github.run_number }}
           sleep 15
           docker logs diyhue
 
@@ -101,9 +101,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
-            diyhue/core:ci-amd64 \
-            diyhue/core:ci-arm \
-            diyhue/core:ci-arm64
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
 
@@ -112,9 +112,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
-            diyhue/core:ci-amd64 \
-            diyhue/core:ci-arm \
-            diyhue/core:ci-arm64
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
 
@@ -123,9 +123,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:latest \
-            diyhue/core:ci-amd64 \
-            diyhue/core:ci-arm \
-            diyhue/core:ci-arm64
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
 
@@ -134,9 +134,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            diyhue/core:ci-amd64 \
-            diyhue/core:ci-arm \
-            diyhue/core:ci-arm64
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -145,9 +145,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            diyhue/core:ci-amd64 \
-            diyhue/core:ci-arm \
-            diyhue/core:ci-arm64
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -171,6 +171,6 @@ jobs:
         run: |
           export TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${{ secrets.DOCKER_USERNAME }}'", "password": "'${{ secrets.DOCKER_PASSWORD }}'"}' "https://hub.docker.com/v2/users/login/" | jq -r .token`
 
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64/" -X DELETE -H "Authorization: JWT ${TOKEN}"
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm/" -X DELETE -H "Authorization: JWT ${TOKEN}"
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
