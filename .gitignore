@@ -12,6 +12,7 @@ Sensors/*
 /pyvenv.cfg
 /bin/
 /lib/
+/lib64/
 /share/
 
 # Ignore userdata
