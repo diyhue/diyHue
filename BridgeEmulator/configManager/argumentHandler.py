@@ -120,7 +120,7 @@ def parse_arguments():
             ranges = args.ip_range
         else:
             ranges = get_environment_variable('IP_RANGE')
-        ranges = ranges.ip_range.split(',')
+        ranges = ranges.split(',')
         if ranges[0] and int(ranges[0]) >= 0:
             ip_range_start = int(ranges[0])
         else:

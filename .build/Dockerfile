@@ -33,6 +33,7 @@ COPY ./BridgeEmulator/ /opt/hue-emulator/
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/
+RUN echo workaround for https://github.com/moby/moby/issues/37965
 COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/
 
 ## Change Docker script permissions

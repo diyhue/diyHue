@@ -1,75 +1,176 @@
-name: Docker build and push
+name: diyHue CI Build
 
 on:
   push:
-    branches:
-      - master
 
 jobs:
-  Publish-to-docker:
+  build:
     runs-on: ubuntu-latest
-    env:
-      DOCKER_TAG: latest
+    name: Build Docker Image
+    strategy:
+      matrix:
+        include:
+          - arch: linux/amd64
+            image: ci-amd64-${{ github.run_number }}
+          - arch: linux/arm/v7
+            image: ci-arm-${{ github.run_number }}
+          - arch: linux/arm64
+            image: ci-arm64-${{ github.run_number }}
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v1
-      -
-        name: Set up Docker Buildx
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+
+      - name: Set up Docker Buildx
         id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          version: latest
-      -
-        name: List available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-      -
-        name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+        uses: crazy-max/ghaction-docker-buildx@v3
+
+      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run:
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-      -
-        name: Publish to docker as diyHue/core
-        if:  ${{ success() && startsWith(github.repository, 'diyhue/')}}
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm/v7,linux/arm64 \
-            --push \
-            -f ./.build/Dockerfile \
-            -t diyhue/core:$DOCKER_TAG \
-            -t diyhue/core:master-$GITHUB_SHA \
-            .
-      -
-        name: Publish to docker as github_user/github_repo
-        if: ${{ success() && !startsWith(github.repository, 'diyhue/')}}
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm/v7,linux/arm64 \
-            --push \
-            -f ./.build/Dockerfile \
-            -t $GITHUB_REPOSITORY:$DOCKER_TAG \
-            -t $GITHUB_REPOSITORY:master-$GITHUB_SHA \
-            .
 
-  Run-tests:
-    runs-on: ubuntu-latest
-    steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v1
-      -
-        name: Build docker image
+      - name: Build and push docker image
         run: |
-          docker build -t diyhue/core:ci -f ./.build/Dockerfile --build-arg TARGETPLATFORM=linux/amd64 .
-      -
-        name: Run docker image
+          docker buildx build -t ${DOCKER_REPO}:${{ matrix.image }} -f ./.build/Dockerfile --platform=${{ matrix.arch }} --push .
+
+  test:
+    needs: [build]
+    runs-on: ubuntu-latest
+    name: Test Image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+
+      - name: Run docker image
         if: success()
         run: |
-          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' diyhue/core:ci
+          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-amd64-${{ github.run_number }}
           sleep 15
           docker logs diyhue
-      -
-        name: Cleanup
+
+      - name: Cleanup
         run: |
           docker kill diyhue
           docker rm diyhue
 
+  tag_builds:
+    needs: [build, test]
+    name: Tag Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+
+      - name: Enable Experimental Docker Features
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL="enabled"
+          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+
+      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+        run:
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Deploy Commit ID
+        if: ${{ github.sha != '' }}
+        run: |
+          docker manifest create \
+            ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+          docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
+          echo ${DOCKER_REPO}:$GITHUB_SHA published
+
+      - name: Deploy Run Number
+        if: ${{ github.sha != '' }}
+        run: |
+          docker manifest create \
+            ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+          docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
+          echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
+
+      - name: Deploy Latest
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          docker manifest create \
+            ${DOCKER_REPO}:latest \
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+          docker manifest push ${DOCKER_REPO}:latest
+          echo ${DOCKER_REPO}:latest published
+
+      - name: Deploy Branch
+        if: ${{ startsWith(github.ref, 'refs/heads/') }}
+        run: |
+          docker manifest create \
+            ${DOCKER_REPO}:${GITHUB_REF##*/} \
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+          docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
+          echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
+
+      - name: Deploy Tag
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          docker manifest create \
+            ${DOCKER_REPO}:${GITHUB_REF##*/} \
+            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+          docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
+          echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
+
+  cleanup:
+    needs: [tag_builds, test]
+    if: always()
+    name: Cleanup CI Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+          
+      - name: Cleanup CI Images
+        run: |
+          export TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${{ secrets.DOCKER_USERNAME }}'", "password": "'${{ secrets.DOCKER_PASSWORD }}'"}' "https://hub.docker.com/v2/users/login/" | jq -r .token`
+
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"

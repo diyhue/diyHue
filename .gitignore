@@ -20,5 +20,7 @@ BridgeEmulator/export/
 BridgeEmulator/cert.pem
 BridgeEmulator/config.json
 
-# PyCharm
-.idea/
+#PyCharm
+.idea/*
+!.idea/docker/
+!.idea/runConfigurations/
