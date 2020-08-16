@@ -16,6 +16,8 @@ jobs:
             image: ci-arm-${{ github.run_number }}
           - arch: linux/arm64
             image: ci-arm64-${{ github.run_number }}
+          - arch: linux/arm/v6
+            image: ci-armv6-${{ github.run_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -103,7 +105,8 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
             ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
 
@@ -114,7 +117,8 @@ jobs:
             ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
             ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
 
@@ -125,7 +129,8 @@ jobs:
             ${DOCKER_REPO}:latest \
             ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
 
@@ -136,7 +141,8 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
             ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -147,7 +153,8 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
             ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }}
+            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -174,3 +181,4 @@ jobs:
           curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
           curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
           curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-armv6-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
