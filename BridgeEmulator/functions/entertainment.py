@@ -39,7 +39,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = [r, g, b]
-                                if proto == "esphome":
+                                elif proto == "esphome":
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
                                     bri = int(max(r,g,b))
@@ -85,7 +85,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                     if addresses[str(lightId)]["ip"] not in nativeLights:
                                         nativeLights[addresses[str(lightId)]["ip"]] = {}
                                     nativeLights[addresses[str(lightId)]["ip"]][addresses[str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
-                                if addresses[str(lightId)]["protocol"] == "esphome":
+                                elif addresses[str(lightId)]["protocol"] == "esphome":
                                     if addresses[str(lightId)]["ip"] not in esphomeLights:
                                         esphomeLights[addresses[str(lightId)]["ip"]] = {}
                                     r, g, b = convert_xy(x, y, bri)
