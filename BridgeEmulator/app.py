@@ -8,8 +8,12 @@ from datetime import datetime
 import ssl
 import uuid
 import settings
+from pprint import pprint
+import configManager
 
-settings.init()
+bridgeConfig = configManager.bridgeConfig.json_config
+dxState = configManager.runtimeConfig.dxState
+newLights = configManager.runtimeConfig.newLights
 
 app = Flask(__name__)
 api = Api(app)
@@ -21,19 +25,31 @@ login_manager.init_app(app)
 login_manager.login_view = "core.login"
 
 
+
+def authorize(username, resource, resourceid):
+    if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
+        return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+
+    if resourceid not in bridgeConfig[resource]:
+        return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid,"description":"resource, " + resource + "/" + resourceid + ", not available"}}]
+
+    return ["success"]
+
+
 class NewUser(Resource):
     def get(self):
         return [{"error":{"type":4,"address":"/","description":"method, GET, not available for resource, /"}}]
 
     def post(self):
         postDict = request.get_json(force=True)
+        pprint(postDict)
         if "devicetype" in postDict:
-            last_button_press = settings.bridgeConfig["emulator"]["linkbutton"]["lastlinkbuttonpushed"]
-            if last_button_press+30 >= datetime.now().timestamp() or settings.bridgeConfig["config"]["linkbutton"]:
+            last_button_press = bridgeConfig["emulator"]["linkbutton"]["lastlinkbuttonpushed"]
+            if last_button_press+30 >= datetime.now().timestamp() or bridgeConfig["config"]["linkbutton"]:
                 username = str(uuid.uuid1()).replace('-', '')
                 if postDict["devicetype"].startswith("Hue Essentials"):
                     username = "hueess" + username[-26:]
-                settings.bridgeConfig["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": postDict["devicetype"]}
+                bridgeConfig["config"]["whitelist"][username] = {"last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),"name": postDict["devicetype"]}
                 response = [{"success": {"username": username}}]
                 if "generateclientkey" in postDict and postDict["generateclientkey"]:
                     response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
@@ -45,55 +61,106 @@ class NewUser(Resource):
 
 class EntireConfig(Resource):
     def get(self,username):
-        if username in settings.bridgeConfig["config"]["whitelist"]:
-            return  settings.bridgeConfig
+        if username in bridgeConfig["config"]["whitelist"]:
+            return  bridgeConfig
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
 class ResourceElements(Resource):
     def get(self,username, resource):
-        if username in settings.bridgeConfig["config"]["whitelist"]:
-            return  settings.bridgeConfig[resource]
+        if username in bridgeConfig["config"]["whitelist"]:
+            return  bridgeConfig[resource]
         elif resource == "config":
-            config = settings.bridgeConfig["config"]
+            config = bridgeConfig["config"]
             return {"name":config["name"],"datastoreversion":"94","swversion":config["swversion"],"apiversion":config["apiversion"],"mac":config["mac"],"bridgeid":config["bridgeid"],"factorynew":False,"replacesbridgeid":None,"modelid":config["modelid"],"starterkitid":""}
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
-    def post(self, name):
-        return light
+    def post(self, username, resource):
+        if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
+            return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+        postDict = request.get_json(force=True)
+        pprint(postDict)
 
-    def delete(self,name):
-        return light
+class Element(Resource):
 
-class HueElement(Resource):
-    def get(self,username, resource, resourceid):
-        if username in settings.bridgeConfig["config"]["whitelist"]:
-            if resourceid in settings.bridgeConfig[resource]:
-                return settings.bridgeConfig[resource][resourceid]
-            else:
-                return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid,"description":"resource, " + resource + "/" + resourceid + ", not available"}}]
-        return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+    def get(self, username, resource, resourceid):
+        authorisation = authorize(username, resource, resourceid)
+        if "success" not in authorisation:
+            return authorisation
+        return bridgeConfig[resource][resourceid]
 
-        # If you request a puppy not yet in the puppies list
-        return {'name':None},404
+    def put(self, username, resource, resourceid):
+        authorisation = authorize(username, resource, resourceid)
+        if "success" not in authorisation:
+            return authorisation
 
-    def post(self, name):
-        return light
+        postDict = request.get_json(force=True)
+        pprint(postDict)
 
-    def delete(self,name):
-        return light
+        bridgeConfig[resource][resourceid].update(postDict)
+        return [{"success":{"/lights/2/name":"IKEA Color"}}]
+        responseLocation = "/" + resource + "/" + resourceid + "/"
+        responseList = []
+        for key, value in postDict.items():
+            responseList.append({"success":{responseLocation + key: value}})
+        pprint(responseList)
+        return responseList
 
-class HueElementParam(Resource):
+
+    def delete(self, username, resource, resourceid):
+        authorisation = authorize(username, resource, resourceid)
+        if "success" not in authorisation:
+            return authorisation
+        if resource == "resourcelinks":
+            Thread(target=resourceRecycle).start()
+        elif resource == "sensors":
+            ## delete also related sensors
+            for sensor in list(bridgeConfig["sensors"]):
+                if sensor != resourceid and "uniqueid" in bridgeConfig["sensors"][sensor] and bridgeConfig["sensors"][sensor]["uniqueid"].startswith(bridgeConfig["sensors"][resourceid]["uniqueid"][:26]):
+                    del Globals.bridge_config["sensors"][sensor]
+                    logging.info('Delete related sensor ' + sensor)
+            ### remove the sensor from emulator key
+            for sensor in list(bridgeConfig["emulator"]["sensors"]):
+                if bridgeConfig["emulator"]["sensors"][sensor]["bridgeId"] == resourceid:
+                    del bridgeConfig["emulator"]["sensors"][sensor]
+        elif resource == "lights":
+            # Remove this light from every group
+            for group_id, group in bridgeConfig["groups"].items():
+                if "lights" in group and resourceid in group["lights"]:
+                    group["lights"].remove(resourceid)
+        elif resource == "groups":
+            sanitizeBridgeScenes()
+        del bridgeConfig[resource][resourceid][param]
+        return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
+
+
+
+
+class ElementParam(Resource):
     def get(self,username, resource, resourceid, param):
-        if username in settings.bridgeConfig["config"]["whitelist"]:
-            return settings.bridgeConfig[resource][resourceid][param]
+        if username in bridgeConfig["config"]["whitelist"]:
+            return bridgeConfig[resource][resourceid][param]
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+
+    def put(self, username, resource, resourceid, param):
+        postDict = request.get_json(force=True)
+        pprint(postDict)
+
+    def delete(self, username, resource, resourceid, param):
+        authorisation = authorize(username, resource, resourceid)
+        if "success" not in authorisation:
+            return authorisation
+        if param not in bridgeConfig[resource][resourceid]:
+            return [{"error":{"type":4,"address":"/" + resource + "/" + resourceid, "description":"method, DELETE, not available for resource,  " + resource + "/" + resourceid}}]
+
+        del bridgeConfig[resource][resourceid][param]
+        return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
 
 
 api.add_resource(NewUser, '/api/', strict_slashes=False)
 api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
-api.add_resource(HueElement, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
-api.add_resource(HueElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
+api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
+api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
 
 def runHttps():
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -109,6 +176,6 @@ def runHttp():
     app.run(host="0.0.0.0", port=80, debug=True)
 
 if __name__ == '__main__':
-    Thread(target=runHttps).start()
-    sleep(0.5)
+    #Thread(target=runHttps).start()
+    #sleep(0.5)
     runHttp()

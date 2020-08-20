@@ -1,8 +1,15 @@
+import random
+
 def nextFreeId(bridge_config, element):
     i = 1
     while (str(i)) in bridge_config[element]:
         i += 1
     return str(i)
+
+
+def generate_unique_id():
+    rand_bytes = [random.randrange(0, 256) for _ in range(3)]
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
 # Define light defininitions for discovery features and adding device data to config
 light_types = {}
@@ -24,7 +31,7 @@ light_types["ESPHOME-Toggle"] = {"type": "On/Off plug-in unit", "swversion": "V1
 light_types["ESPHOME-Toggle"]["state"] = {"on": False, "alert": "none", "reachable": True}
 light_types["ESPHOME-Toggle"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
 
-light_types["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "modelid": "LCT001"}
+light_types["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.46.13_r26312"}
 light_types["LCT001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
 light_types["LCT001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "powerfail"}}
 light_types["LCT001"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}},

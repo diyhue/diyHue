@@ -3,13 +3,14 @@ import logging
 import random
 import socket
 import sys
+import Globals
 
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}
 
-def discover(bridge_config, new_lights):
+def discover():
     group = ("239.255.255.250", 1982)
     message = "\r\n".join([
         'M-SEARCH * HTTP/1.1',
@@ -40,10 +41,10 @@ def discover(bridge_config, new_lights):
                 elif line[:5] == "model":
                     properties["model"] = line.split(": ",1)[1]
             device_exist = False
-            for light in bridge_config["lights_address"].keys():
-                if bridge_config["lights_address"][light]["protocol"] == "yeelight" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
+            for light in Globals.bridge_config["lights_address"].keys():
+                if Globals.bridge_config["lights_address"][light]["protocol"] == "yeelight" and  Globals.bridge_config["lights_address"][light]["id"] == properties["id"]:
                     device_exist = True
-                    bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                    Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
                     logging.debug("light id " + properties["id"] + " already exist, updating ip...")
                     break
             if (not device_exist):
@@ -53,22 +54,14 @@ def discover(bridge_config, new_lights):
                 modelid = "LWB010"
                 if properties["model"] == "desklamp":
                     modelid = "LTW001"
-                elif properties["model"] in ["ceiling10", "ceiling20", "ceiling4"]: # append here models with backlight to add second light for backlight control
-                    modelid = "LCT015" # this light model has just color control (no CT)
-                    new_light_id = nextFreeId(bridge_config, "lights")
-                    bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name + ' background', "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-                    new_lights.update({new_light_id: {"name": light_name}})
-                    bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight", "backlight": True, "model": properties["model"]}
-                    modelid = "LWB010" # second light must be CT only
                 elif properties["rgb"]:
                     modelid = "LCT015"
                 elif properties["ct"]:
                     modelid = "LTW001"
-
-                new_light_id = nextFreeId(bridge_config, "lights")
-                bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-                new_lights.update({new_light_id: {"name": light_name}})
-                bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight", "backlight": False, "model": properties["model"]}
+                new_light_id = nextFreeId(Globals.bridge_config, "lights")
+                Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+                Globals.new_lights.update({new_light_id: {"name": light_name}})
+                Globals.bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
 
 
         except socket.timeout:
@@ -99,37 +92,34 @@ def set_light(address, light, data, rgb = None):
     method = 'TCP'
     payload = {}
     transitiontime = 400
-    cmdPrefix = ''
-    if "backlight" in address and address["backlight"]:
-        cmdPrefix = "bg_"
     if "transitiontime" in data:
         transitiontime = int(data["transitiontime"] * 100)
     for key, value in data.items():
         if key == "on":
             if value:
-                payload[cmdPrefix + "set_power"] = ["on", "smooth", transitiontime]
+                payload["set_power"] = ["on", "smooth", transitiontime]
             else:
-                payload[cmdPrefix + "set_power"] = ["off", "smooth", transitiontime]
+                payload["set_power"] = ["off", "smooth", transitiontime]
         elif key == "bri":
-            payload[cmdPrefix + "set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
+            payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
         elif key == "ct":
             #if ip[:-3] == "201" or ip[:-3] == "202":
             if light["name"].find("desklamp") > 0:
                 if value > 369: value = 369
-            payload[cmdPrefix + "set_ct_abx"] = [int((-4800/347) * value + 2989900/347), "smooth", transitiontime]
+            payload["set_ct_abx"] = [int((-4800/347) * value + 2989900/347), "smooth", transitiontime]
         elif key == "hue":
-            payload[cmdPrefix + "set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
+            payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
         elif key == "sat":
-            payload[cmdPrefix + "set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
+            payload["set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
             bri = light["state"]["bri"]
             if rgb:
                 color = rgbBrightness(rgb, bri)
             else:
                 color = convert_xy(value[0], value[1], bri)
-            payload[cmdPrefix + "set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
+            payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif key == "alert" and value != "none":
-            payload[cmdPrefix + "start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
+            payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]
 
     # yeelight uses different functions for each action, so it has to check for each function
     # see page 9 http://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf
