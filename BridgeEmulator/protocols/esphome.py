@@ -2,15 +2,17 @@ import json
 import logging
 import random
 import requests
-import Globals
 import socket
 import sys
-
+import configManager
 from time import sleep
 from subprocess import check_output
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightness
 from functions.network import getIpAddress
+
+bridgeConfig = configManager.bridgeConfig.json_config
+newLights = configManager.runtimeConfig.newLights
 
 def getRequest(address, request_data, timeout=3):
 
@@ -114,38 +116,38 @@ def discover():
                     modelid = "ESPHome-Toggle"
 
                 device_exist = False
-                for light in Globals.bridge_config["lights_address"].keys():
-                    if Globals.bridge_config["lights_address"][light]["protocol"] == "esphome" and  Globals.bridge_config["lights_address"][light]["id"].split('.')[0] == properties["id"].split('.')[0]:
+                for light in bridgeConfig["lights_address"].keys():
+                    if bridgeConfig["lights_address"][light]["protocol"] == "esphome" and  bridgeConfig["lights_address"][light]["id"].split('.')[0] == properties["id"].split('.')[0]:
                         device_exist = True
-                        Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
-                        Globals.bridge_config["lights_address"][light]["ct_boost"] = properties["ct_boost"]
-                        Globals.bridge_config["lights_address"][light]["rgb_boost"] = properties["rgb_boost"]
+                        bridgeConfig["lights_address"][light]["ip"] = properties["ip"]
+                        bridgeConfig["lights_address"][light]["ct_boost"] = properties["ct_boost"]
+                        bridgeConfig["lights_address"][light]["rgb_boost"] = properties["rgb_boost"]
                         logging.debug("ESPHome: light id " + properties["id"] + " already exists, updating device data...")
                         break
                 if (not device_exist):
                     light_name = "ESPHome id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
                     logging.debug("ESPHome: Adding ESPHome " + properties["id"])
-                    new_light_id = nextFreeId(Globals.bridge_config, "lights")
-                    Globals.bridge_config["lights"][new_light_id] = {}
-                    Globals.bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
-                    Globals.bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
-                    Globals.bridge_config["lights"][new_light_id]["name"] = light_name
-                    Globals.bridge_config["lights"][new_light_id]["modelid"] = modelid
-                    Globals.bridge_config["lights"][new_light_id]["manufacturername"] = light_types[modelid]["manufacturername"]
-                    Globals.bridge_config["lights"][new_light_id]["swversion"] = light_types[modelid]["swversion"]
-                    Globals.bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
-                    Globals.bridge_config["lights"][new_light_id]["uniqueid"] = mac
+                    new_light_id = nextFreeId(bridgeConfig, "lights")
+                    bridgeConfig["lights"][new_light_id] = {}
+                    bridgeConfig["lights"][new_light_id]["state"] = light_types[modelid]["state"]
+                    bridgeConfig["lights"][new_light_id]["type"] = light_types[modelid]["type"]
+                    bridgeConfig["lights"][new_light_id]["name"] = light_name
+                    bridgeConfig["lights"][new_light_id]["modelid"] = modelid
+                    bridgeConfig["lights"][new_light_id]["manufacturername"] = light_types[modelid]["manufacturername"]
+                    bridgeConfig["lights"][new_light_id]["swversion"] = light_types[modelid]["swversion"]
+                    bridgeConfig["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+                    bridgeConfig["lights"][new_light_id]["uniqueid"] = mac
                     if modelid == "LCT015":
-                        Globals.bridge_config["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
-                        Globals.bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
+                        bridgeConfig["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
+                        bridgeConfig["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
                     #new_lights.update({new_light_id: {"name": light_name}})
-                    Globals.bridge_config["lights_address"][new_light_id] = {}
-                    Globals.bridge_config["lights_address"][new_light_id]["ip"] = properties["ip"]
-                    Globals.bridge_config["lights_address"][new_light_id]["id"] = properties["id"]
-                    Globals.bridge_config["lights_address"][new_light_id]["protocol"] = "esphome"
-                    Globals.bridge_config["lights_address"][new_light_id]["rgb_boost"] = rgb_boost
-                    Globals.bridge_config["lights_address"][new_light_id]["ct_boost"] = ct_boost
-                    Globals.bridge_config["lights_address"][new_light_id]["esphome_model"] = esphome_model
+                    bridgeConfig["lights_address"][new_light_id] = {}
+                    bridgeConfig["lights_address"][new_light_id]["ip"] = properties["ip"]
+                    bridgeConfig["lights_address"][new_light_id]["id"] = properties["id"]
+                    bridgeConfig["lights_address"][new_light_id]["protocol"] = "esphome"
+                    bridgeConfig["lights_address"][new_light_id]["rgb_boost"] = rgb_boost
+                    bridgeConfig["lights_address"][new_light_id]["ct_boost"] = ct_boost
+                    bridgeConfig["lights_address"][new_light_id]["esphome_model"] = esphome_model
 
         except Exception as e:
             logging.debug("ESPHome: ip " + ip + " is unknown device, " + str(e))

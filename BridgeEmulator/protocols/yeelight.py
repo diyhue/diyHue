@@ -3,12 +3,14 @@ import logging
 import random
 import socket
 import sys
-import Globals
-
+import configManager
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}
+
+bridgeConfig = configManager.bridgeConfig.json_config
+newLights = configManager.runtimeConfig.newLights
 
 def discover():
     group = ("239.255.255.250", 1982)
@@ -41,10 +43,10 @@ def discover():
                 elif line[:5] == "model":
                     properties["model"] = line.split(": ",1)[1]
             device_exist = False
-            for light in Globals.bridge_config["lights_address"].keys():
-                if Globals.bridge_config["lights_address"][light]["protocol"] == "yeelight" and  Globals.bridge_config["lights_address"][light]["id"] == properties["id"]:
+            for light in bridgeConfig["lights_address"].keys():
+                if bridgeConfig["lights_address"][light]["protocol"] == "yeelight" and  bridgeConfig["lights_address"][light]["id"] == properties["id"]:
                     device_exist = True
-                    Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                    bridgeConfig["lights_address"][light]["ip"] = properties["ip"]
                     logging.debug("light id " + properties["id"] + " already exist, updating ip...")
                     break
             if (not device_exist):
@@ -58,10 +60,10 @@ def discover():
                     modelid = "LCT015"
                 elif properties["ct"]:
                     modelid = "LTW001"
-                new_light_id = nextFreeId(Globals.bridge_config, "lights")
-                Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-                Globals.new_lights.update({new_light_id: {"name": light_name}})
-                Globals.bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
+                new_light_id = nextFreeId(bridgeConfig, "lights")
+                bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
+                newlights.update({new_light_id: {"name": light_name}})
+                bridgeConfig["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
 
 
         except socket.timeout:

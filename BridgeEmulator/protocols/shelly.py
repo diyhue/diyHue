@@ -2,15 +2,17 @@ import json
 import logging
 import random
 import requests
-import Globals
 import socket
 import sys
-
+import configManager
 from time import sleep
 from subprocess import check_output
 from functions import light_types, nextFreeId
 from functions.network import getIpAddress
 
+
+bridgeConfig = configManager.bridgeConfig.json_config
+newLights = configManager.runtimeConfig.newLights
 
 def sendRequest(url, timeout=3):
     head = {"Content-type": "application/json"}
@@ -41,11 +43,11 @@ def discover():
 
                     properties = {"ip": ip, "name": ip, "id": shelly_data["mac"], "mac": shelly_data["mac"]}
                     device_exist = False
-                    for light in Globals.bridge_config["lights_address"].keys():
-                        if Globals.bridge_config["lights_address"][light]["protocol"] == "shelly" and \
-                                Globals.bridge_config["lights_address"][light]["id"] == properties["id"]:
+                    for light in bridgeConfig["lights_address"].keys():
+                        if bridgeConfig["lights_address"][light]["protocol"] == "shelly" and \
+                                bridgeConfig["lights_address"][light]["id"] == properties["id"]:
                             device_exist = True
-                            Globals.bridge_config["lights_address"][light]["ip"] = properties["ip"]
+                            bridgeConfig["lights_address"][light]["ip"] = properties["ip"]
                             logging.debug("shelly: light id " + properties["id"] + " already exist, updating ip...")
                             break
                     if (not device_exist):
@@ -53,16 +55,16 @@ def discover():
                             "name"]
                         logging.debug("shelly: Add shelly: " + properties["id"])
                         modelid = "Shelly"
-                        new_light_id = nextFreeId(Globals.bridge_config, "lights")
-                        Globals.bridge_config["lights"][new_light_id] = {"state": light_types[modelid]["state"],
+                        new_light_id = nextFreeId(bridgeConfig, "lights")
+                        bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"],
                                                                  "type": light_types[modelid]["type"],
                                                                  "name": light_name,
                                                                  "uniqueid": "4a:e0:ad:7f:cf:" + str(
                                                                      random.randrange(0, 99)) + "-1",
                                                                  "modelid": modelid, "manufacturername": "Shelly",
                                                                  "swversion": light_types[modelid]["swversion"]}
-                        Globals.new_lights.update({new_light_id: {"name": light_name}})
-                        Globals.bridge_config["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"],
+                        newLights.update({new_light_id: {"name": light_name}})
+                        bridgeConfig["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"],
                                                                          "protocol": "shelly"}
 
         except Exception as e:
