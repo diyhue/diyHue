@@ -22,6 +22,7 @@ from functions.rules import rulesProcessor
 
 bridgeConfig = configManager.bridgeConfig.json_config
 newLights = configManager.runtimeConfig.newLights
+dxState = configManager.runtimeConfig.dxState
 
 client = mqtt.Client()
 

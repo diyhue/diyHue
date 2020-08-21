@@ -1,7 +1,6 @@
 from flask import Flask, request
 from flask.json import jsonify
 from flask_restful import Resource, Api
-from flask_login import LoginManager
 from threading import Thread
 from time import sleep
 from datetime import datetime
@@ -10,9 +9,13 @@ import uuid
 import settings
 from pprint import pprint
 import configManager
+import flask_login
+from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.updateGroup import updateGroupStats
 from functions.lightRequest import sendLightRequest
 from functions import nextFreeId
+from functions.core import generateDxState, splitLightsToDevices, groupZero
+from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
 
 bridgeConfig = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
@@ -21,12 +24,44 @@ newLights = configManager.runtimeConfig.newLights
 app = Flask(__name__)
 api = Api(app)
 
-login_manager = LoginManager()
+app.config['SECRET_KEY'] = 'change_this_to_be_secure'
+
+login_manager = flask_login.LoginManager()
 # We can now pass in our app to the login manager
 login_manager.init_app(app)
 # Tell users what view to go to when they need to login.
 login_manager.login_view = "core.login"
 
+
+class User(flask_login.UserMixin):
+    pass
+
+
+@login_manager.user_loader
+def user_loader(email):
+    if email not in bridgeConfig["emulator"]["users"]:
+        return
+
+    user = User()
+    user.id = email
+    return user
+
+
+@login_manager.request_loader
+def request_loader(request):
+    email = request.form.get('email')
+    if email not in bridgeConfig["emulator"]["users"]:
+        return
+
+    user = User()
+    user.id = email
+
+    # DO NOT ever store passwords in plaintext and always compare password
+    # hashes using constant-time comparison!
+    print(email)
+    user.is_authenticated = request.form['password'] == bridgeConfig["emulator"]["users"][email]["password"]
+
+    return user
 
 
 def authorize(username, resource, resourceid):
@@ -37,6 +72,20 @@ def authorize(username, resource, resourceid):
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid,"description":"resource, " + resource + "/" + resourceid + ", not available"}}]
 
     return ["success"]
+
+def resourceRecycle():
+    sleep(5) #give time to application to delete all resources, then start the cleanup
+    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
+    for resourcelink in bridgeConfig["resourcelinks"].keys():
+        for link in bridgeConfig["resourcelinks"][resourcelink]["links"]:
+            link_parts = link.split("/")
+            resourcelinks[link_parts[1]].append(link_parts[2])
+
+    for resource in resourcelinks.keys():
+        for key in list(bridgeConfig[resource]):
+            if "recycle" in bridgeConfig[resource][key] and bridgeConfig[resource][key]["recycle"] and key not in resourcelinks[resource]:
+                logging.info("delete " + resource + " / " + key)
+                del bridgeConfig[resource][key]
 
 
 class NewUser(Resource):
@@ -124,19 +173,19 @@ class Element(Resource):
                             bridgeConfig["scenes"][resourceid]["lightstates"][light]["hue"] = bridgeConfig["lights"][light]["state"]["hue"]
                             bridgeConfig["scenes"][resourceid]["lightstates"][light]["sat"] = bridgeConfig["lights"][light]["state"]["sat"]
         elif resource == "sensors":
-            current_time = datetime.now()
+            currentTime = datetime.now()
             for key, value in putDict.items():
                 if key not in dxState["sensors"][resourceid]:
                     dxState["sensors"][resourceid][key] = {}
                 if type(value) is dict:
                     bridgeConfig["sensors"][resourceid][key].update(value)
                     for element in value.keys():
-                        dxState["sensors"][resourceid][key][element] = current_time
+                        dxState["sensors"][resourceid][key][element] = currentTime
                 else:
                     bridgeConfig["sensors"][resourceid][key] = value
-                    dxState["sensors"][resourceid][key] = current_time
-            dxState["sensors"][resourceid]["state"]["lastupdated"] = current_time
-            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
+                    dxState["sensors"][resourceid][key] = currentTime
+            dxState["sensors"][resourceid]["state"]["lastupdated"] = currentTime
+            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = currentTime.strftime("%Y-%m-%dT%H:%M:%S")
             if resourceid == "1" and bridgeConfig[resource][resourceid]["modelid"] == "PHDL00":
                 bridgeConfig["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
         elif resource == "groups" and "stream" in putDict:
@@ -224,6 +273,7 @@ class ElementParam(Resource):
         if param not in bridgeConfig[resource][resourceid]:
             return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid + "/" + param, "description":"/" + resource + "/" + resourceid + "/" + param + " , not available" }}]
         putDict = request.get_json(force=True)
+        currentTime = datetime.now()
         pprint(putDict)
         if resource == "groups": #state is applied to a group
             if param == "stream":
@@ -251,8 +301,8 @@ class ElementParam(Resource):
                 if "on" in putDict:
                     bridgeConfig["groups"][resourceid]["state"]["any_on"] = putDict["on"]
                     bridgeConfig["groups"][resourceid]["state"]["all_on"] = putDict["on"]
-                    dxState["groups"][resourceid]["state"]["any_on"] = current_time
-                    dxState["groups"][resourceid]["state"]["all_on"] = current_time
+                    dxState["groups"][resourceid]["state"]["any_on"] = currentTime
+                    dxState["groups"][resourceid]["state"]["all_on"] = currentTime
                 bridgeConfig["groups"][resourceid][param].update(putDict)
                 splitLightsToDevices(resourceid, putDict)
         elif resource == "lights": #state is applied to a light
@@ -269,11 +319,11 @@ class ElementParam(Resource):
                 for key in putDict.keys():
                     # track time of state changes in dxState
                     if not key in bridgeConfig["sensors"][resourceid]["state"] or bridgeConfig["sensors"][resourceid]["state"][key] != putDict[key]:
-                        dxState["sensors"][resourceid]["state"][key] = current_time
+                        dxState["sensors"][resourceid]["state"][key] = currentTime
             elif resourceid == "1":
                 bridgeConfig["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
-            dxState["sensors"][resourceid]["state"]["lastupdated"] = current_time
-            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = current_time.strftime("%Y-%m-%dT%H:%M:%S")
+            dxState["sensors"][resourceid]["state"]["lastupdated"] = currentTime
+            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = currentTime.strftime("%Y-%m-%dT%H:%M:%S")
         if  resourceid != "0" and "scene" not in putDict: #group 0 is virtual, must not be saved in bridge configuration, also the recall scene
             try:
                 bridgeConfig[resource][resourceid][param].update(putDict)
@@ -292,12 +342,17 @@ class ElementParam(Resource):
         del bridgeConfig[resource][resourceid][param]
         return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
 
-
+### HUE API
 api.add_resource(NewUser, '/api/', strict_slashes=False)
 api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
 api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
 api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
+
+### WEB INTERFACE
+from core.views import core
+app.register_blueprint(core)
+
 
 def runHttps():
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -313,6 +368,23 @@ def runHttp():
     app.run(host="0.0.0.0", port=80)
 
 if __name__ == '__main__':
+    ### variables initialization
+    generateDxState()
+    BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
+    HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
+    mac = configManager.runtimeConfig.arg["MAC"]
+    HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
+    ### config initialization
+    configManager.bridgeConfig.updateConfig()
+    configManager.bridgeConfig.save_config()
+    ### start services
+    if bridgeConfig["emulator"]["deconz"]["enabled"]:
+        Thread(target=deconz.scanDeconz).start()
+    if bridgeConfig["emulator"]["mqtt"]["enabled"]:
+        Thread(target=mqtt.mqttServer).start()
+    Thread(target=ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    Thread(target=ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    Thread(target=resourceRecycle).start()
     Thread(target=runHttps).start()
     sleep(0.5)
     runHttp()
