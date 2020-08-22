@@ -18,29 +18,28 @@
 
         <h3 class="fw-300 c-grey-900 mB-40">
           <a target="_blank" rel="noopener noreferrer" 
-             href="https://appseed.us/admin-dashboards/django-dashboard-adminator">Django Dashboard Adminator</a> - Login
+             href="https://diyhue.org">DiyHue</a> - Login
         </h3>
 
         {% if msg %}
             <h4 class="fw-300 c-grey-900 mB-40">{{ msg | safe }}</h4>
         {% else %}
             <p class="fw-300 c-grey-900 mB-40">
-              Use default credentials: <strong>test / ApS12_ZZs8</strong>
+              Use default credentials: <strong>user@diyhue.org / changeme</strong>
             </p>
         {% endif %}
-
         <form method="post" action="">
 
           {# This hidden_tag is a CSRF security feature. #}
           {{ form.hidden_tag() }}
           <div class="form-group">
             <label class="text-normal text-dark">Username</label>
-            {{ form.email }}
+            {{ form.email(class="form-control") }}
           </div>
 
           <div class="form-group">
             <label class="text-normal text-dark">Password</label>
-            {{ form.password }}
+            {{ form.password(class="form-control") }}
           </div>
 
           <div class="form-group">

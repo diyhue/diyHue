@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from flask import Flask, request
 from flask.json import jsonify
 from flask_restful import Resource, Api
@@ -16,6 +17,7 @@ from functions.lightRequest import sendLightRequest
 from functions import nextFreeId
 from functions.core import generateDxState, splitLightsToDevices, groupZero
 from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
+from core import User
 
 bridgeConfig = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
@@ -31,10 +33,6 @@ login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 # Tell users what view to go to when they need to login.
 login_manager.login_view = "core.login"
-
-
-class User(flask_login.UserMixin):
-    pass
 
 
 @login_manager.user_loader
@@ -351,7 +349,9 @@ api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string
 
 ### WEB INTERFACE
 from core.views import core
+from error_pages.handlers import error_pages
 app.register_blueprint(core)
+app.register_blueprint(error_pages)
 
 
 def runHttps():
