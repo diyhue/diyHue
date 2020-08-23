@@ -1,7 +1,6 @@
 import uuid
 import logManager
 from random import randrange
-from time import sleep
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -182,7 +181,6 @@ def updateConfig(json_config):
     return json_config
 
 def resourceRecycle(json_config):
-    sleep(5) #give time to application to delete all resources, then start the cleanup
     resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
     for resourcelink in json_config["resourcelinks"].keys():
         for link in json_config["resourcelinks"][resourcelink]["links"]:
@@ -194,5 +192,4 @@ def resourceRecycle(json_config):
             if "recycle" in json_config[resource][key] and json_config[resource][key]["recycle"] and key not in resourcelinks[resource]:
                 logging.info("delete " + resource + " / " + key)
                 del json_config[resource][key]
-
     return json_config

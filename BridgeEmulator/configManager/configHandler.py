@@ -69,5 +69,9 @@ class Config:
         self.json_config = configOperations.updateConfig(self.json_config)
 
     def resourceRecycle(self): # was originally in a new thread/not sure if necessary
-        self.json_config = configOperations.resourceRecycle(self.json_config)
-
+        recycled = configOperations.resourceRecycle(self.json_config)
+        def set_new():
+            self.json_config = recycled
+            logging.info("done recycling")
+        from threading import Timer
+        t = Timer(5.0, set_new).start() # give time to application to delete all resources, then start the cleanup
