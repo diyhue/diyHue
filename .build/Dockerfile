@@ -45,4 +45,4 @@ EXPOSE 80 443 1900/udp 1982/udp 2100/udp
 ## Debug
 ## RUN ls -la /opt/hue-emulator
 
-CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]
+CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py" ]

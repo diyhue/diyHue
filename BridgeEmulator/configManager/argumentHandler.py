@@ -40,7 +40,6 @@ def parse_arguments():
     # Arguements can also be passed as Environment Variables.
     ap.add_argument("--debug", action='store_true', help="Enables debug output")
     ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
-    ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
     ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
     ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
     ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
@@ -96,23 +95,18 @@ def parse_arguments():
     logging.info("Using Host %s:%s" % (host_ip, host_http_port))
 
     if args.mac:
-        dockerMAC = args.mac  # keeps : for cert generation
+        full_mac_string = args.mac  # keeps : for cert generation
         mac = str(args.mac).replace(":", "")
     elif get_environment_variable('MAC'):
-        dockerMAC = get_environment_variable('MAC')
-        mac = str(dockerMAC).replace(":", "")
+        full_mac_string = get_environment_variable('MAC')
+        mac = str(full_mac_string).replace(":", "")
     else:
-        dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % host_ip,
+        full_mac_string = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % host_ip,
                                  shell=True).decode('utf-8')[:-1]
-        mac = str(dockerMAC).replace(":", "")[:-1]
+        mac = str(full_mac_string).replace(":", "")[:-1]
 
-    if args.docker or get_environment_variable('DOCKER', True):
-        docker = True
-    else:
-        docker = False
-    argumentDict["FULLMAC"] = dockerMAC
+    argumentDict["FULLMAC"] = full_mac_string
     argumentDict["MAC"] = mac
-    argumentDict["DOCKER"] = docker
     logging.info("Host MAC given as " + mac)
 
     if args.ip_range or get_environment_variable('IP_RANGE'):
