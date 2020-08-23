@@ -16,6 +16,8 @@ def write_args(args, json_config):
     json_config["config"]["gateway"] = ip_pieces[0] + "." + ip_pieces[1] + "." + ip_pieces[2] + ".1"
     json_config["config"]["mac"] = args["FULLMAC"]
     json_config["config"]["bridgeid"] = (args["MAC"][:6] + 'FFFE' + args["MAC"][6:]).upper()
+    if args["DECONZ_Port"]:
+        json_config["deconz"]["port"] = args["DECONZ_Port"]
     return json_config
 
 

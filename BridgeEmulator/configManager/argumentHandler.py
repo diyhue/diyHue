@@ -34,7 +34,7 @@ def process_arguments(configDir, args):
 
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
-                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False, "noServeHttps": False}
+                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "DECONZ_Port": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False, "noServeHttps": False}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -148,6 +148,9 @@ def parse_arguments():
         deconz_ip = "127.0.0.1"
     argumentDict["DECONZ"] = deconz_ip
     logging.info("Deconz IP given as " + deconz_ip)
+
+    if get_environment_variable("DECONZ_Port"):
+        argumentDict["DECONZ_Port"] = get_environment_variable("DECONZ_Port")
 
     if args.disable_online_discover or get_environment_variable('disableonlinediscover'):
         disableOnlineDiscover = True
