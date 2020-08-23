@@ -48,10 +48,10 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     name: Test Image
+    strategy:
+      matrix:
+        arch: [amd64, arm, arm64, armv6]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
       - name: Set Docker Repository
         run: |
           if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
@@ -62,10 +62,14 @@ jobs:
           echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
           echo Repository set as: ${DOCKER_REPO}
 
+      - name: Enable qemu
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
       - name: Run docker image
         if: success()
         run: |
-          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-amd64-${{ github.run_number }}
+          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-${{ matrix.arch }}-${{ github.run_number }}
           sleep 15
           docker logs diyhue
 
