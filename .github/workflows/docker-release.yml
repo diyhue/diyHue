@@ -78,6 +78,11 @@ jobs:
           docker kill diyhue
           docker rm diyhue
 
+      - name: Upload Artifact
+        run: |
+          docker save --output ci-${{ matrix.arch }}-${{ github.run_number }}.tar ${DOCKER_REPO}:ci-${{ matrix.arch }}-${{ github.run_number }}
+
+
   tag_builds:
     needs: [build, test]
     name: Tag Images
