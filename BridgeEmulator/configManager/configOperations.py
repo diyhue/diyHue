@@ -1,6 +1,9 @@
 import uuid
+import logManager
 from random import randrange
+from time import sleep
 
+logging = logManager.logger.get_logger(__name__)
 
 def _generate_unique_id():
     rand_bytes = [randrange(0, 256) for _ in range(3)]
@@ -176,4 +179,20 @@ def updateConfig(json_config):
     if "values" not in json_config["capabilities"]["timezones"]:
         timezones = json_config["capabilities"]["timezones"]
         json_config["capabilities"]["timezones"] = {"values": timezones}
+    return json_config
+
+def resourceRecycle(json_config):
+    sleep(5) #give time to application to delete all resources, then start the cleanup
+    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
+    for resourcelink in json_config["resourcelinks"].keys():
+        for link in json_config["resourcelinks"][resourcelink]["links"]:
+            link_parts = link.split("/")
+            resourcelinks[link_parts[1]].append(link_parts[2])
+
+    for resource in resourcelinks.keys():
+        for key in list(json_config[resource]):
+            if "recycle" in json_config[resource][key] and json_config[resource][key]["recycle"] and key not in resourcelinks[resource]:
+                logging.info("delete " + resource + " / " + key)
+                del json_config[resource][key]
+
     return json_config

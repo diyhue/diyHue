@@ -1,4 +1,4 @@
-from configManager import configInit
+from configManager import configOperations
 import datetime
 import os
 import json
@@ -57,13 +57,17 @@ class Config:
         return backup
 
     def write_args(self, args):
-        self.json_config = configInit.write_args(args, self.json_config)
+        self.json_config = configOperations.write_args(args, self.json_config)
 
     def generate_security_key(self):
-        self.json_config = configInit.generate_security_key(self.json_config)
+        self.json_config = configOperations.generate_security_key(self.json_config)
 
     def sanitizeBridgeScenes(self):
-        self.json_config = configInit.sanitizeBridgeScenes(self.json_config)
+        self.json_config = configOperations.sanitizeBridgeScenes(self.json_config)
 
     def updateConfig(self):
-        self.json_config = configInit.updateConfig(self.json_config)
+        self.json_config = configOperations.updateConfig(self.json_config)
+
+    def resourceRecycle(self): # was originally in a new thread/not sure if necessary
+        self.json_config = configOperations.resourceRecycle(self.json_config)
+
