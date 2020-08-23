@@ -7,7 +7,6 @@ from time import sleep
 from datetime import datetime
 import ssl
 import uuid
-import settings
 from pprint import pprint
 import configManager
 import flask_login
