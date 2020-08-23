@@ -486,27 +486,27 @@ def schedulerProcessor():
                     if schedule_time.startswith("W"):
                         pices = schedule_time.split('/T')
                         if int(pices[0][1:]) & (1 << 6 - datetime.today().weekday()):
-                            if pices[1] == datetime.now().strftime("%H:%M:%S"):
+                            if pices[1] <= datetime.now().strftime("%H:%M:%S"):
                                 logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
                                 sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     elif schedule_time.startswith("PT"):
                         timmer = schedule_time[2:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
-                            logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
+                        if bridge_config["schedules"][schedule]["starttime"] <= (datetime.utcnow() - d).replace(microsecond=0).isoformat():
+                            logging.info("execute timer: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             bridge_config["schedules"][schedule]["status"] = "disabled"
                     elif schedule_time.startswith("R/PT"):
                         timmer = schedule_time[4:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        if bridge_config["schedules"][schedule]["starttime"] == (datetime.utcnow() - d).replace(microsecond=0).isoformat():
-                            logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
+                        if bridge_config["schedules"][schedule]["starttime"] <= (datetime.utcnow() - d).replace(microsecond=0).isoformat():
+                            logging.info("execute timer: " + schedule + " withe delay " + str(delay))
                             bridge_config["schedules"][schedule]["starttime"] = datetime.utcnow().replace(microsecond=0).isoformat()
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     else:
-                        if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
+                        if schedule_time <= datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
                             logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             if bridge_config["schedules"][schedule]["autodelete"]:
