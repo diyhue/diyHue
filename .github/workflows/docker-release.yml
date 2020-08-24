@@ -11,13 +11,13 @@ jobs:
       matrix:
         include:
           - arch: linux/amd64
-            image: ci-amd64-${{ github.run_number }}
+            arch_friendly: amd64
           - arch: linux/arm/v7
-            image: ci-arm-${{ github.run_number }}
+            arch_friendly: armv7
           - arch: linux/arm64
-            image: ci-arm64-${{ github.run_number }}
+            arch_friendly: arm64
           - arch: linux/arm/v6
-            image: ci-armv6-${{ github.run_number }}
+            arch_friendly: armv6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,22 +32,35 @@ jobs:
           echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
           echo Repository set as: ${DOCKER_REPO}
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v3
+      - name: Enable qemu
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run:
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push docker image
+      - name: Build docker image
         run: |
-          docker buildx build -t ${DOCKER_REPO}:${{ matrix.image }} -f ./.build/Dockerfile --platform=${{ matrix.arch }} --push .
+          docker build -t ${DOCKER_REPO}:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+
+      - name: Save tarball
+        run: |
+          docker save --output output.tar ${DOCKER_REPO}:ci
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ci-${{ matrix.arch_friendly }}-${{ github.run_number }}.tar
+          path: output.tar
 
   test:
     needs: [build]
     runs-on: ubuntu-latest
     name: Test Image
+    strategy:
+      matrix:
+        arch: [amd64, armv7, arm64, armv6]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -62,10 +75,23 @@ jobs:
           echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
           echo Repository set as: ${DOCKER_REPO}
 
+      - name: Enable qemu
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Download container artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
+
+      - name: Import image
+        run: |
+          docker load --input output.tar
+
       - name: Run docker image
         if: success()
         run: |
-          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' ${DOCKER_REPO}:ci-amd64-${{ github.run_number }}
+          docker run -d --name diyhue --network=host -v /mnt/hue-emulator/config:/opt/hue-emulator/config -e MAC=b8:27:eb:d4:dc:11 -e IP=192.168.1.123 -e DECONZ=192.168.1.111 -e IP_RANGE=5,6 -e DEBUG=true ${DOCKER_REPO}:ci
           sleep 15
           docker logs diyhue
 
@@ -74,9 +100,110 @@ jobs:
           docker kill diyhue
           docker rm diyhue
 
-  tag_builds:
+  publish:
     needs: [build, test]
+    name: Publish Image
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, armv7, arm64, armv6]
+    steps:
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+
+      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Download container artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
+
+      - name: Import image
+        run: |
+          docker load --input output.tar
+
+      - name: Push Image
+        run: |
+          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
+          docker push ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
+          echo ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }} published
+
+  tag_build:
+    needs: [build, test, publish]
     name: Tag Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, armv7, arm64, armv6]
+    steps:
+      - name: Set Docker Repository
+        run: |
+          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
+            export DOCKER_REPO="diyhue/core"
+          else
+            export DOCKER_REPO=$GITHUB_REPOSITORY
+          fi
+          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo Repository set as: ${DOCKER_REPO}
+
+      - name: Enable Experimental Docker Features
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL="enabled"
+          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+
+      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Download container artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
+
+      - name: Import image
+        run: |
+          docker load --input output.tar
+
+      - name: Deploy Commit ID
+        if: ${{ github.sha != '' }}
+        run: |
+          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA published
+
+      - name: Deploy Latest
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-latest
+          docker push ${DOCKER_REPO}:${{ matrix.arch }}-latest
+          echo ${DOCKER_REPO}:${{ matrix.arch }}-latest published
+
+      - name: Deploy Branch
+        if: ${{ startsWith(github.ref, 'refs/heads/') }}
+        run: |
+          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
+
+      - name: Deploy Tag
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
+
+  tag_build_manifest:
+    needs: [build, test, publish]
+    name: Tag Images (Manifest)
     runs-on: ubuntu-latest
     steps:
       - name: Set Docker Repository
@@ -103,10 +230,12 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
-            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
+            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv6-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
 
@@ -115,10 +244,12 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
-            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
+            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv6-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
 
@@ -127,10 +258,12 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:latest \
-            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
+            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv6-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
 
@@ -139,10 +272,12 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
+            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv6-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -151,18 +286,26 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            ${DOCKER_REPO}:ci-amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:ci-armv6-${{ github.run_number }}
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
+            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
+            ${DOCKER_REPO}:armv6-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
-  cleanup:
-    needs: [tag_builds, test]
-    if: always()
-    name: Cleanup CI Images
+  retag_arch:
+    needs: [build, test, publish, tag_build]
+    name: Tag images to correct architecture
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - version: v7
+            arch_friendly: armv7
+          - version: v6
+            arch_friendly: armv6
     steps:
       - name: Set Docker Repository
         run: |
@@ -173,12 +316,59 @@ jobs:
           fi
           echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
           echo Repository set as: ${DOCKER_REPO}
-          
-      - name: Cleanup CI Images
-        run: |
-          export TOKEN=`curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${{ secrets.DOCKER_USERNAME }}'", "password": "'${{ secrets.DOCKER_PASSWORD }}'"}' "https://hub.docker.com/v2/users/login/" | jq -r .token`
 
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-amd64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-arm64-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
-          curl "https://hub.docker.com/v2/repositories/${DOCKER_REPO}/tags/ci-armv6-${{ github.run_number }}/" -X DELETE -H "Authorization: JWT ${TOKEN}"
+      - name: Enable Experimental Docker Features
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL="enabled"
+          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+
+      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+        run:
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Commit ID
+        if: ${{ github.sha != '' }}
+        run: |
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA --arch arm --variant ${{ matrix.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
+
+      - name: Run ID
+        run: |
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} --arch arm --variant ${{ matrix.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
+
+      - name: Latest
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest --arch arm --variant ${{ matrix.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch }}-latest
+
+      - name: Branch
+        if: ${{ startsWith(github.ref, 'refs/heads/') }}
+        run: |
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
+
+      - name: Tag
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+
+  cleanup_failed:
+    needs: [build, test]
+    if: failure()
+    name: Delete failed artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, armv7, arm64, armv6]
+    steps:
+    - uses: geekyeggo/delete-artifact@v1
+      with:
+        name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar

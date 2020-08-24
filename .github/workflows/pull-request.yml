@@ -7,19 +7,28 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Test Image
+    strategy:
+      matrix:
+        arch: [linux/amd64, linux/arm/v7, linux/arm64, linux/arm/v6]
     steps:
       - name: Checkout
         uses: actions/checkout@v1
+
+      - name: Enable qemu
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
       - name: Build docker image
         run: |
-          docker build -t diyhue/core:ci -f ./.build/Dockerfile --build-arg TARGETPLATFORM=linux/amd64 .
+          docker build -t diyhue/core:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+
       - name: Run docker image
-        if: success()
         run: |
-          docker run -d --name "diyhue" --network="host" -v '/mnt/hue-emulator/export/':'/opt/hue-emulator/export/':'rw' -e 'MAC=b8:27:eb:d4:dc:11' -e 'IP=192.168.1.123' -e 'DECONZ=192.168.1.111' -e 'IP_RANGE=5,6' -e 'DEBUG=true' diyhue/core:ci
+          docker run -d --name diyHue --network=host -v /mnt/hue-emulator/export:/opt/hue-emulator/export -e MAC=b8:27:eb:d4:dc:11 -e IP=192.168.1.123 -e DECONZ=192.168.1.111 -e IP_RANGE=5,6 -e DEBUG=true diyhue/core:ci
           sleep 15
-          docker logs diyhue
+          docker logs diyHue
+
       - name: Cleanup
         run: |
-          docker kill diyhue
-          docker rm diyhue
+          docker kill diyHue
+          docker rm diyHue
