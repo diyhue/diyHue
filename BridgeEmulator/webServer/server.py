@@ -248,7 +248,8 @@ def splitLightsToDevices(group, state, scene={}):
         # if "transitiontime" in lightsData[light]:
         #     del lightsData[light]["transitiontime"]
         bridge_config["lights"][light]["state"].update(lightsData[light])
-    updateGroupStats(list(lightsData.keys())[0], bridge_config["lights"], bridge_config["groups"])
+    if lightsData:
+        updateGroupStats(list(lightsData.keys())[0], bridge_config["lights"], bridge_config["groups"])
 
 
 def groupZero(state):
@@ -730,7 +731,10 @@ class S(BaseHTTPRequestHandler):
                                 scenelist["scenes"][scene]["lights"] = bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(json.dumps(scenelist["scenes"][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                     else:
-                        self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]],separators=(',', ':'),ensure_ascii=False), "utf8"))
+                        if url_pices[4] in bridge_config[url_pices[3]]:
+                            self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]][url_pices[4]], separators=(',', ':'), ensure_ascii=False), "utf8"))
+                        else:
+                            self._set_end_headers(bytes())
             elif (len(url_pices) == 4 and url_pices[3] == "config") or (len(url_pices) == 3 and url_pices[2] == "config"): #used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"],"datastoreversion": 70, "swversion": bridge_config["config"]["swversion"], "apiversion": bridge_config["config"]["apiversion"], "mac": bridge_config["config"]["mac"], "bridgeid": bridge_config["config"]["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": bridge_config["config"]["modelid"],"starterkitid":""},separators=(',', ':'),ensure_ascii=False), "utf8"))
             else: #user is not in whitelist
