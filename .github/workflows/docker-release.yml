@@ -234,8 +234,8 @@ jobs:
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
             ${DOCKER_REPO}:arm64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
 
@@ -248,8 +248,8 @@ jobs:
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
             ${DOCKER_REPO}:arm64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
 
@@ -262,8 +262,8 @@ jobs:
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
             ${DOCKER_REPO}:arm64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
 
@@ -276,8 +276,8 @@ jobs:
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
             ${DOCKER_REPO}:arm64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -290,8 +290,8 @@ jobs:
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
             ${DOCKER_REPO}:arm64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
