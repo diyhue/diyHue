@@ -2,7 +2,6 @@
 __pycache__
 BridgeEmulator/web-ui/public/config.js
 node_modules
-BridgeEmulator/config/*
 ./exports
 Lights/*
 Devices/*
@@ -16,7 +15,7 @@ Sensors/*
 /share/
 
 # Ignore userdata
-BridgeEmulator/export/
+BridgeEmulator/config/
 BridgeEmulator/cert.pem
 BridgeEmulator/config.json
 
