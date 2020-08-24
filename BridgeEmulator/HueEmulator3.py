@@ -9,6 +9,7 @@ import ssl
 import uuid
 from pprint import pprint
 import configManager
+import logManager
 import flask_login
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.updateGroup import updateGroupStats
@@ -61,12 +62,15 @@ def request_loader(request):
     return user
 
 
-def authorize(username, resource, resourceid):
+def authorize(username, resource=None, resourceId=None, resourceParam=None):
     if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
-    if resourceid not in bridgeConfig[resource]:
-        return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid,"description":"resource, " + resource + "/" + resourceid + ", not available"}}]
+    if resourceId != "0" and resourceId != None and resourceId not in bridgeConfig[resource]:
+        return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId,"description":"resource, " + resource + "/" + resourceId + ", not available"}}]
+        
+    if resourceId != "0" and resourceParam != None and resourceParam not in bridgeConfig[resource][resourceId]:
+        return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId + "/" + resourceParam,"description":"resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
 
     return ["success"]
 
@@ -83,6 +87,13 @@ def resourceRecycle():
             if "recycle" in bridgeConfig[resource][key] and bridgeConfig[resource][key]["recycle"] and key not in resourcelinks[resource]:
                 logging.info("delete " + resource + " / " + key)
                 del bridgeConfig[resource][key]
+
+def scan_for_lights(): #scan for ESP8266 lights and strips
+    Thread(target=yeelight.discover).start()
+    Thread(target=tasmota.discover).start()
+    Thread(target=shelly.discover).start()
+    Thread(target=esphome.discover).start()
+    Thread(target=mqtt.discover).start()
 
 
 class NewUser(Resource):
@@ -112,9 +123,10 @@ class NewUser(Resource):
 
 class EntireConfig(Resource):
     def get(self,username):
-        if username in bridgeConfig["config"]["whitelist"]:
-            return  bridgeConfig
-        return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+        authorisation = authorize(username)
+        if "success" not in authorisation:
+            return authorisation
+        return  bridgeConfig
 
 class ResourceElements(Resource):
     def get(self,username, resource):
@@ -126,11 +138,86 @@ class ResourceElements(Resource):
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
     def post(self, username, resource):
-        if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
-            return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+        authorisation = authorize(username, resource)
+        if "success" not in authorisation:
+            return authorisation
+        print("ok")
+        if not request.json:
+            print("not json")
+            if resource == "lights" or resource == "sensors":
+                print("scan for light")
+                #if was a request to scan for lights of sensors
+                newLights.clear()
+                Thread(target=scan_for_lights).start()
+                sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
+                pprint([{"success": {"/" + resource: "Searching for new devices"}}])
+                return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
         pprint(postDict)
+        # find the first unused id for new object
+        new_object_id = nextFreeId(bridgeConfig, resource)
+        if resource == "scenes": # store scene
+            postDict.update({"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "owner" :username})
+            if "locked" not in postDict:
+                postDict["locked"] = False
+            if "picture" not in postDict:
+                postDict["picture"] = ""
+            if "type" not in postDict:
+                postDict["type"] = "LightScene"
+            if "lightstates" not in postDict or len(postDict["lightstates"]) == 0:
+                postDict["lightstates"] = {}
+                if "lights" in postDict:
+                    lights = postDict["lights"]
+                elif "group" in postDict:
+                    lights = bridgeConfig["groups"][postDict["group"]]["lights"]
+                for light in lights:
+                    postDict["lightstates"][light] = {"on": bridgeConfig["lights"][light]["state"]["on"]}
+                    if "bri" in bridgeConfig["lights"][light]["state"]:
+                        postDict["lightstates"][light]["bri"] = bridgeConfig["lights"][light]["state"]["bri"]
+                    if "colormode" in bridgeConfig["lights"][light]["state"]:
+                        if bridgeConfig["lights"][light]["state"]["colormode"] in ["ct", "xy"] and bridgeConfig["lights"][light]["state"]["colormode"] in bridgeConfig["lights"][light]["state"]:
+                            postDict["lightstates"][light][bridgeConfig["lights"][light]["state"]["colormode"]] = bridgeConfig["lights"][light]["state"][bridgeConfig["lights"][light]["state"]["colormode"]]
+                        elif bridgeConfig["lights"][light]["state"]["colormode"] == "hs":
+                            postDict["lightstates"][light]["hue"] = bridgeConfig["lights"][light]["state"]["hue"]
+                            postDict["lightstates"][light]["sat"] = bridgeConfig["lights"][light]["state"]["sat"]
+
+        elif resource == "groups":
+            if "type" not in postDict:
+                postDict["type"] = "LightGroup"
+            if postDict["type"] in ["Room", "Zone"] and "class" not in postDict:
+                postDict["class"] = "Other"
+            elif postDict["type"] == "Entertainment" and "stream" not in postDict:
+                postDict["stream"] = {"active": False, "owner": username, "proxymode": "auto", "proxynode": "/bridge"}
+            postDict.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
+        elif resource == "schedules":
+            try:
+                postDict.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": postDict["localtime"]})
+            except KeyError:
+                postDict.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "localtime": postDict["time"]})
+            if postDict["localtime"].startswith("PT") or postDict["localtime"].startswith("R/PT"):
+                postDict.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+            if not "status" in postDict:
+                postDict.update({"status": "enabled"})
+        elif resource == "rules":
+            postDict.update({"owner": username, "lasttriggered" : "none", "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "timestriggered": 0})
+            if not "status" in postDict:
+                postDict.update({"status": "enabled"})
+        elif resource == "sensors":
+            if "state" not in postDict:
+                postDict["state"] = {}
+            if "lastupdated" not in postDict["state"]:
+                postDict["state"]["lastupdated"] = "none"
+            if postDict["modelid"] == "PHWA01":
+                postDict["state"]["status"] = 0
+            elif postDict["modelid"] == "PHA_CTRL_START":
+                postDict.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}, "config": {"on": True,"reachable": True}})
+        elif resource == "resourcelinks":
+            postDict.update({"owner" :username})
+        generateDxState()
+        bridgeConfig[resource][new_object_id] = postDict
+        logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4, separators=(',', ': ')))
         configManager.bridgeConfig.save_config()
+        return [{"success": {"id": new_object_id}}]
 
 class Element(Resource):
 
@@ -139,6 +226,7 @@ class Element(Resource):
         if "success" not in authorisation:
             return authorisation
         return bridgeConfig[resource][resourceid]
+
 
     def put(self, username, resource, resourceid):
         authorisation = authorize(username, resource, resourceid)
@@ -191,9 +279,9 @@ class Element(Resource):
                     for light in bridgeConfig["groups"][resourceid]["lights"]:
                         bridgeConfig["lights"][light]["state"]["mode"] = "streaming"
                     logging.info("start hue entertainment")
-                    Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                    Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + username + ",321c0c2ebfa7361e55491095b2f5f9db"])
                     sleep(0.2)
-                    bridgeConfig["groups"][resourceid]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
+                    bridgeConfig["groups"][resourceid]["stream"].update({"active": True, "owner": username, "proxymode": "auto", "proxynode": "/bridge"})
                 else:
                     for light in bridgeConfig["groups"][resourceid]["lights"]:
                         bridgeConfig["lights"][light]["state"]["mode"] = "homeautomation"
@@ -259,16 +347,15 @@ class Element(Resource):
 
 class ElementParam(Resource):
     def get(self,username, resource, resourceid, param):
-        if username in bridgeConfig["config"]["whitelist"]:
-            return bridgeConfig[resource][resourceid][param]
-        return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
-
-    def put(self, username, resource, resourceid, param):
-        authorisation = authorize(username, resource, resourceid)
+        authorisation = authorize(username, resource, resourceid, param)
         if "success" not in authorisation:
             return authorisation
-        if param not in bridgeConfig[resource][resourceid]:
-            return [{"error":{"type":3,"address":"/" + resource + "/" + resourceid + "/" + param, "description":"/" + resource + "/" + resourceid + "/" + param + " , not available" }}]
+        return bridgeConfig[resource][resourceid][param]
+
+    def put(self, username, resource, resourceid, param):
+        authorisation = authorize(username, resource, resourceid, param)
+        if "success" not in authorisation:
+            return authorisation
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
         pprint(putDict)
@@ -277,9 +364,9 @@ class ElementParam(Resource):
                 if "active" in putDict:
                     if putDict["active"]:
                         logging.info("start hue entertainment")
-                        Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pices[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                        Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + username + ",321c0c2ebfa7361e55491095b2f5f9db"])
                         sleep(0.2)
-                        bridgeConfig["groups"][resourceid]["stream"].update({"active": True, "owner": url_pices[2], "proxymode": "auto", "proxynode": "/bridge"})
+                        bridgeConfig["groups"][resourceid]["stream"].update({"active": True, "owner": username, "proxymode": "auto", "proxynode": "/bridge"})
                     else:
                         Popen(["killall", "entertain-srv"])
                         bridgeConfig["groups"][resourceid]["stream"].update({"active": False, "owner": None})
