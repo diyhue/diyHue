@@ -341,7 +341,7 @@ jobs:
         run: |
           docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
           docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch }}-latest
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
 
       - name: Branch
         if: ${{ startsWith(github.ref, 'refs/heads/') }}
@@ -355,7 +355,7 @@ jobs:
         run: |
           docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
           docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
 
   cleanup_failed:
     needs: [build, test]
