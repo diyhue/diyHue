@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from configManager.argumentHandler import parse_arguments
 
 

@@ -1,16 +1,16 @@
-from configManager import configHandler
+from configManager import bridgeConfigHandler
 from configManager import argumentHandler
 from configManager import runtimeConfigHandler
+from configManager import configStorage
 
-bridgeConfig = configHandler.Config()
+coreConfig = configStorage.configStorage()
+
+bridgeConfig = bridgeConfigHandler.Config(coreConfig.bridge_config)
 runtimeConfig = runtimeConfigHandler.Config()
 
 # Initialize runtime configuration
 runtimeConfig.populate()
-argumentHandler.process_arguments(bridgeConfig.configDir, runtimeConfig.arg)
-
-# Restore configuration
-bridgeConfig.load_config()
+argumentHandler.process_arguments(runtimeConfig.arg)
 
 # Initialize bridge config
 bridgeConfig.generate_security_key()

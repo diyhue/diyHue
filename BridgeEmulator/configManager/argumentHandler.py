@@ -1,8 +1,9 @@
 import argparse
 import logManager
-from os import getenv, path
+import configManager
+from os import getenv
 from functions.network import getIpAddress
-from subprocess import check_output, call
+from subprocess import check_output
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -16,20 +17,13 @@ def get_environment_variable(var, boolean=False):
     return value
 
 
-def generate_certificate(mac):
-    logging.info("Generating certificate")
-    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", mac])
-    logging.info("Certificate created")
-
-
-def process_arguments(configDir, args):
+def process_arguments(args):
     if not args["DEBUG"]:
         logManager.logger.configure_logger("INFO")
         logging.info("Debug logging disabled!")
     else:
         logging.info("Debug logging enabled!")
-    if not path.isfile(configDir + "/cert.pem"):
-        generate_certificate(args["FULLMAC"])
+    configManager.coreConfig.initialize_certificate()
 
 
 def parse_arguments():
