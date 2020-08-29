@@ -14,7 +14,7 @@ import flask_login
 from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.updateGroup import updateGroupStats
 from functions.lightRequest import sendLightRequest
-from functions import nextFreeId
+from functions import light_types, nextFreeId, generate_unique_id
 from functions.core import generateDxState, splitLightsToDevices, groupZero
 from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt
 from core import User
@@ -22,9 +22,11 @@ from core import User
 bridgeConfig = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
 newLights = configManager.runtimeConfig.newLights
+logging = logManager.logger.get_logger(__name__)
 
 app = Flask(__name__)
 api = Api(app)
+
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
 
@@ -34,6 +36,9 @@ login_manager.init_app(app)
 # Tell users what view to go to when they need to login.
 login_manager.login_view = "core.login"
 
+
+def pretty_json(data):
+    return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
 @login_manager.user_loader
 def user_loader(email):
@@ -68,7 +73,7 @@ def authorize(username, resource=None, resourceId=None, resourceParam=None):
 
     if resourceId != "0" and resourceId != None and resourceId not in bridgeConfig[resource]:
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId,"description":"resource, " + resource + "/" + resourceId + ", not available"}}]
-        
+
     if resourceId != "0" and resourceParam != None and resourceParam not in bridgeConfig[resource][resourceId]:
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId + "/" + resourceParam,"description":"resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
 
@@ -87,13 +92,6 @@ def resourceRecycle():
             if "recycle" in bridgeConfig[resource][key] and bridgeConfig[resource][key]["recycle"] and key not in resourcelinks[resource]:
                 logging.info("delete " + resource + " / " + key)
                 del bridgeConfig[resource][key]
-
-def scan_for_lights(): #scan for ESP8266 lights and strips
-    Thread(target=yeelight.discover).start()
-    Thread(target=tasmota.discover).start()
-    Thread(target=shelly.discover).start()
-    Thread(target=esphome.discover).start()
-    Thread(target=mqtt.discover).start()
 
 
 class NewUser(Resource):
@@ -141,17 +139,13 @@ class ResourceElements(Resource):
         authorisation = authorize(username, resource)
         if "success" not in authorisation:
             return authorisation
-        print("ok")
-        if not request.json:
-            print("not json")
-            if resource == "lights" or resource == "sensors":
-                print("scan for light")
-                #if was a request to scan for lights of sensors
-                newLights.clear()
-                Thread(target=scan_for_lights).start()
-                sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
-                pprint([{"success": {"/" + resource: "Searching for new devices"}}])
-                return [{"success": {"/" + resource: "Searching for new devices"}}]
+        if (resource == "lights" or resource == "sensors") and request.get_data(as_text=True) == "":
+            print("scan for light")
+            #if was a request to scan for lights of sensors
+            newLights.clear()
+            Thread(target=scan_for_lights).start()
+            sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
+            return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
         pprint(postDict)
         # find the first unused id for new object
