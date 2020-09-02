@@ -83,7 +83,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 - Google Home (requires remote api)
 - Eneco Toon (very likely it uses cloud service detection)
   
-## Supported lights
+## Supported lights and devices
 
 - [WS2812B](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_WS2812_Strip) and [SK6812](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_SK6812_Strip) smart led strips
 - MiLight
@@ -91,16 +91,17 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 - LYT8266
 - Phillips Hue
 - Ikea Trådfri
-- Pwm RGB-CCT
-- Pwm RGBW
-- Pwm RGB
-- Pwm CCT
-- Pwm Dimming (up to 6 lights for every esp8266)
-- On/Off plugs/lights (up to 6 lights for every esp8266)
-- On/Off 433Mhz devices (multiple devices for every esp8266)
+- [Pwm RGB-CCT](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_RGB_CCT_Light)
+- [Pwm RGBW](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_RGBW_Light)
+- [Pwm RGB](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_RGB_Light)
+- [Pwm CCT](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_CCT_Light)
+- [Pwm Dimming](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_Dimmable_Light) (up to 6 lights for every esp8266)
+- [On/Off plugs/lights](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_ON_OFF_device) (up to 6 lights for every esp8266)
+- [On/Off 433Mhz devices](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_ON_OFF_device_433Mhz) (multiple devices for every esp8266)
 - MQTT lights [see mqtt](https://diyhue.readthedocs.io/en/latest/lights/mqtt.html)
 - [Hyperion.ng](https://github.com/hyperion-project/hyperion.ng)
-  
+- [SONSOFF TX T3](https://sonoff.tech/product/wifi-smart-wall-swithes/tx-series) [US 1/2/3C](https://github.com/diyhue/Lights/tree/master/Arduino/Sonoff_TX_T3) (1 to 3 buttons)
+
 ## To Do
 
 - esp8266 alarm horn (+schematic)
