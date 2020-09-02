@@ -85,7 +85,7 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
   
 ## Supported lights
 
-- WS2812B and SK6812 smart led strips
+- [WS2812B](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_WS2812_Strip) and [SK6812](https://github.com/diyhue/Lights/tree/master/Arduino/Generic_SK6812_Strip) smart led strips
 - MiLight
 - Yeelight
 - LYT8266
