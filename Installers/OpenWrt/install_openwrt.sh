@@ -24,8 +24,7 @@ wait
 echo -e "\033[32m Copying files to directories.\033[0m"
 cd /opt/tmp/diyHue/BridgeEmulator
 cp HueEmulator3.py ssl_server2_diyhue.c default-config.json updater /opt/hue-emulator/
-cp -r web-ui /opt/hue-emulator/
-cp -r debug functions protocols web-ui /opt/hue-emulator/
+cp -r configManager debug devices functions logManager protocols responseBuilder web-ui webServer /opt/hue-emulator/
 cp -r default-config.json /opt/hue-emulator/config.json
 echo -e "\033[32m Detecting processor architecture.\033[0m"
 wait
@@ -33,22 +32,12 @@ arch=`uname -m`
 wait
 echo -e "\033[32m Architecture detected: $arch\033[0m"
 echo -e "\033[32m Copying binary $arch for Openwrt.\033[0m"
-cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
+cp ../Installers/OpenWrt/entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
 echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
 rm -Rf /opt/hue-emulator/functions/network.py
-mv /opt/tmp/diyHue/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
+mv ../Installers/OpenWrt/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
-cp hueemulatorWrt-service /etc/init.d/
-echo -e "\033[32m Downloading astral.\033[0m"
-wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
-wait
-unzip -q -o astral.zip
-wait
-cd astral-master/
-python3 setup.py install
-wait
-cd ../
-rm -rf astral.zip astral-master/
+cp ../Installers/OpenWrt/hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Download mbedtls to compile binary entertainment.\033[0m"
 wait
 cd /opt/hue-emulator
@@ -86,10 +75,14 @@ echo -e "\033[32m Changing permissions.\033[0m"
 chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
+chmod +x /opt/hue-emulator/devics
+chmod +x /opt/hue-emulator/functions
+chmod +x /opt/hue-emulator/logManager
 chmod +x /opt/hue-emulator/protocols
+chmod +x /opt/hue-emulator/responseBuilder
+chmod +x /opt/hue-emulator/webServer
 chmod +x /opt/hue-emulator/updater
 chmod +x /opt/hue-emulator/web-ui
-chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertain-srv
