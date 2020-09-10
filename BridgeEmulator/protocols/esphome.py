@@ -196,7 +196,7 @@ def set_light(address, light, data, rgb = None):
                 request_data = addRequest(request_data, "brightness", brightness)
             if address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB", "ESPHome-CT"]:
                 if ("xy" in data) and (address["esphome_model"] in ["ESPHome-RGBW", "ESPHome-RGB"]):
-                     if rgb:
+                    if rgb:
                         color = rgbBrightness(rgb, light["state"]["bri"])
                     else:
                         color = convert_xy(data['xy'][0], data['xy'][1], light["state"]["bri"])
