@@ -60,7 +60,7 @@ def getLightType(light, address, data):
 def discover(bridge_config, new_lights):
     logging.debug("ESPHome: <discover> invoked!")
 
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
+    device_ips = check_output("nmap  " + bridge_config["config"]["ipaddress"] + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
     del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
@@ -115,7 +115,7 @@ def discover(bridge_config, new_lights):
 
                 device_exist = False
                 for light in bridge_config["lights_address"].keys():
-                    if bridge_config["lights_address"][light]["protocol"] == "esphome" and  bridge_config["lights_address"][light]["id"].split('.')[0] == properties["id"].split('.')[0]:
+                    if bridge_config["lights_address"][light]["protocol"] == "esphome" and  bridge_config["lights_address"][light]["id"] == properties["id"]:
                         device_exist = True
                         bridge_config["lights_address"][light]["ip"] = properties["ip"]
                         bridge_config["lights_address"][light]["ct_boost"] = properties["ct_boost"]
@@ -137,7 +137,7 @@ def discover(bridge_config, new_lights):
                     bridge_config["lights"][new_light_id]["uniqueid"] = mac
                     if modelid == "LCT015":
                         bridge_config["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
-                        bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
+                        #bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
                     #new_lights.update({new_light_id: {"name": light_name}})
                     bridge_config["lights_address"][new_light_id] = {}
                     bridge_config["lights_address"][new_light_id]["ip"] = properties["ip"]
