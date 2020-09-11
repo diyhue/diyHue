@@ -1,9 +1,7 @@
 .DS_Store
 __pycache__
 BridgeEmulator/web-ui/public/config.js
-BridgeEmulator/web-ui/public/config.js
 node_modules
-BridgeEmulator/config*
 ./exports
 Lights/*
 Devices/*
@@ -13,8 +11,15 @@ Sensors/*
 /pyvenv.cfg
 /bin/
 /lib/
+/lib64
 /share/
 
 # Ignore userdata
-BridgeEmulator/export/
+BridgeEmulator/config/
 BridgeEmulator/cert.pem
+BridgeEmulator/config.json
+
+#PyCharm
+.idea/*
+!.idea/docker/
+!.idea/runConfigurations/

@@ -1,7 +1,9 @@
-import socket, logging
+import socket, logManager
 from subprocess import Popen
 from functions.colors import convert_rgb_xy, convert_xy
 from functions.lightRequest import sendLightRequest
+
+logging = logManager.logger.get_logger(__name__)
 
 def entertainmentService(lights, addresses, groups, host_ip):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

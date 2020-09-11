@@ -293,7 +293,7 @@ jobs:
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
   retag_arch:
-    needs: [build, test, publish, tag_build]
+    needs: [build, test, publish, tag_build, tag_build_manifest]
     name: Tag images to correct architecture
     runs-on: ubuntu-latest
     strategy:

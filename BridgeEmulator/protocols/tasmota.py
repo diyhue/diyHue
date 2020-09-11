@@ -1,5 +1,5 @@
 import json
-import logging
+import logManager
 import random
 import requests
 
@@ -12,6 +12,7 @@ from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from functions.network import getIpAddress
 
+logging = logManager.logger.get_logger(__name__)
 
 def sendRequest(url, timeout=3):
 

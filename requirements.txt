@@ -1,4 +1,4 @@
-astral==1.6.1
+astral==2.2
 ws4py==0.5.1
 requests==2.20.0
 paho-mqtt==1.5.0

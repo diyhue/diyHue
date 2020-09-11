@@ -1,9 +1,10 @@
-import logging
+import logManager
 import random
 import socket
 import struct
 from time import sleep
 
+logging = logManager.logger.get_logger(__name__)
 
 def ssdpSearch(ip, port, mac):
     SSDP_ADDR = '239.255.255.250'

@@ -40,32 +40,35 @@ cp HueEmulator3.py updater /opt/hue-emulator/
 cp /tmp/diyHue-config/config.json.bak /opt/hue-emulator/config.json
 cp /tmp/diyHue-config/cert.pem.bak /opt/hue-emulator/cert.pem
 cp default-config.json /opt/hue-emulator/default-config.json
-cp -r functions protocols debug web-ui /opt/hue-emulator/
+cp -r configManager debug devices functions logManager protocols responseBuilder web-ui webServer /opt/hue-emulator/
 echo -e "\033[32m Detecting processor architecture.\033[0m"
-wait
 arch=`uname -m`
-wait
 echo -e "\033[32m Architecture detected: $arch\033[0m"
 echo -e "\033[32m Copying binary $arch for Openwrt.\033[0m"
-cp entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
+cp ../Installers/OpenWrt/entertainment-openwrt-$arch /opt/hue-emulator/entertain-srv
 echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
 rm -Rf /opt/hue-emulator/functions/network.py
-mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
+mv ../Installers/OpenWrt/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 echo -e "\033[32m Copying startup service.\033[0m"
-cp /opt/tmp/diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
+cp /opt/tmp/diyHue-master/Installers/OpenWrt/hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Changing permissions.\033[0m"
 chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
+chmod +x /opt/hue-emulator/devics
+chmod +x /opt/hue-emulator/functions
+chmod +x /opt/hue-emulator/logManager
 chmod +x /opt/hue-emulator/protocols
+chmod +x /opt/hue-emulator/responseBuilder
+chmod +x /opt/hue-emulator/webServer
 chmod +x /opt/hue-emulator/updater
 chmod +x /opt/hue-emulator/web-ui
-chmod +x /opt/hue-emulator/functions
 chmod +x /opt/hue-emulator/config.json
 chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
+chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable
 wait

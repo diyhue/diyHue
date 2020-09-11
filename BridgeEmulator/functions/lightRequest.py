@@ -1,4 +1,4 @@
-import logging, json
+import logManager, json
 from functions.request import sendRequest
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness 
 from subprocess import check_output
@@ -6,6 +6,8 @@ from protocols import protocols
 from datetime import datetime, timedelta
 from time import sleep
 from functions.updateGroup import updateGroupStats
+
+logging = logManager.logger.get_logger(__name__)
 
 def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHostIP = None):
     payload = {}

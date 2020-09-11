@@ -1,5 +1,5 @@
 import json
-import logging
+import logManager
 import random
 
 # External libraries
@@ -8,6 +8,8 @@ import paho.mqtt.client as mqtt
 # internal functions
 from functions import light_types, nextFreeId
 from functions.colors import hsv_to_rgb
+
+logging = logManager.logger.get_logger(__name__)
 
 # Mqtt client creation
 # You will need to keep this around, because it will manage all the pushed messages
