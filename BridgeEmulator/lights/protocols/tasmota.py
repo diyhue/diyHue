@@ -7,7 +7,7 @@ import sys
 import configManager
 from time import sleep
 from subprocess import check_output
-from functions import light_types, nextFreeId
+import lights
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from functions.network import getIpAddress
 
@@ -21,11 +21,8 @@ def sendRequest(url, timeout=3):
     return response.text
 
 
-def discover():
+def discover(device_ips):
     logging.debug("tasmota: <discover> invoked!")
-
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
-    del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
             logging.debug ( "tasmota: probing ip " + ip)

@@ -7,7 +7,7 @@ import sys
 import configManager
 from time import sleep
 from subprocess import check_output
-from functions import light_types, nextFreeId
+import lights
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightness
 from functions.network import getIpAddress
 
@@ -56,14 +56,11 @@ def getLightType(light, address, data):
         request_data = request_data + "/light/dimmable_led"
     elif address["esphome_model"] == "ESPHome-Toggle":
         request_data = request_data + "/light/toggle_led"
-    
+
     return request_data
 
-def discover():
+def discover(device_ips):
     logging.debug("ESPHome: <discover> invoked!")
-
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
-    del device_ips[-1] #delete last empty element in list
     for ip in device_ips:
         try:
             logging.debug ( "ESPHome: probing ip " + ip)

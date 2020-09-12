@@ -4,7 +4,7 @@ import random
 import socket
 import sys
 import configManager
-from functions import light_types, nextFreeId
+import lights
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}
@@ -135,7 +135,7 @@ def set_light(address, light, data, rgb = None):
             raise e
     if not c._music and c._connected:
         c.disconnect()
-        
+
 def hex_to_rgb(value):
     value = value.lstrip('#')
     lv = len(value)
@@ -275,7 +275,7 @@ class YeelightConnection(object):
             except Exception as e:
                 tempSock.close()
                 raise ConnectionError("Yeelight with IP {} doesn't want to connect in music mode: {}".format(self._ip, e))
-        
+
         logging.info("Yeelight device with IP %s is now in music mode", self._ip)
 
     def disableMusic(self):
