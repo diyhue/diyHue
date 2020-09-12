@@ -21,7 +21,7 @@ def sendRequest(url, timeout=3):
 def discover(bridge_config, new_lights):
     logging.debug("shelly: <discover> invoked!")
 
-    device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5",
+    device_ips = check_output("nmap  " + bridge_config["config"]["ipaddress"] + "/24 -p80 --open -n | grep report | cut -d ' ' -f5",
                               shell=True).decode('utf-8').rstrip("\n").split("\n")
     del device_ips[-1]  # delete last empty element in list
     for ip in device_ips:
