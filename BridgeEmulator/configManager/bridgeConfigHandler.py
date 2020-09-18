@@ -56,3 +56,6 @@ class Config:
 
         from threading import Timer
         t = Timer(5.0, set_new).start()  # give time to application to delete all resources, then start the cleanup
+
+    def update_swversion(self):
+        self.json_config = configOperations.update_swversion(self.json_config)

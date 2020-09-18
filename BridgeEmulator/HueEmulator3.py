@@ -127,7 +127,6 @@ def daylightSensor():
 
 if __name__ == "__main__":
     generateDxState()
-    configManager.bridgeConfig.updateConfig()
     configManager.bridgeConfig.save_config()
     configManager.bridgeConfig.resourceRecycle()
     if bridge_config["deconz"]["enabled"]:

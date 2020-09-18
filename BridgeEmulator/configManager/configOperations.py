@@ -1,12 +1,17 @@
+import re
 import uuid
-import logManager
 from random import randrange
+
+import requests
+
+import logManager
 
 logging = logManager.logger.get_logger(__name__)
 
+
 def _generate_unique_id():
     rand_bytes = [randrange(0, 256) for _ in range(3)]
-    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
+    return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0], rand_bytes[1], rand_bytes[2])
 
 
 def write_args(args, json_config):
@@ -53,18 +58,14 @@ def sanitizeBridgeScenes(json_config):
 
 
 def updateConfig(json_config):
-
     #### bridge emulator config
 
-    if int(json_config["config"]["swversion"]) < 1939070020:
-        json_config["config"]["swversion"] = "1939070020"
-        json_config["config"]["apiversion"] = "1.35.0"
+    json_config = update_swversion(json_config)
 
     ### end bridge config
 
     if "emulator" not in json_config:
         json_config["emulator"] = {"lights": {}, "sensors": {}}
-
 
     if "alarm" not in json_config["emulator"]:
         json_config["emulator"]["alarm"] = {"on": False, "email": "", "lasttriggered": 100000}
@@ -72,7 +73,8 @@ def updateConfig(json_config):
         del json_config["alarm_config"]
 
     if "mqtt" not in json_config["emulator"]:
-        json_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
+        json_config["emulator"]["mqtt"] = {"discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "",
+                                           "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
 
     if "Remote API enabled" not in json_config["config"]:
         json_config["config"]["Remote API enabled"] = False
@@ -94,17 +96,20 @@ def updateConfig(json_config):
     for sensor_id, sensor in json_config["sensors"].items():
         if sensor["type"] == "CLIPGenericStatus":
             sensor["state"]["status"] = 0
-        elif sensor["type"] == "ZLLTemperature" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+        elif sensor["type"] == "ZLLTemperature" and sensor["modelid"] == "SML001" and sensor[
+            "manufacturername"] == "Philips":
             sensor["capabilities"] = {"certified": True, "primary": False}
-            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21", "state": "noupdates"}
             sensor["swversion"] = "6.1.1.27575"
-        elif sensor["type"] == "ZLLPresence" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+        elif sensor["type"] == "ZLLPresence" and sensor["modelid"] == "SML001" and sensor[
+            "manufacturername"] == "Philips":
             sensor["capabilities"] = {"certified": True, "primary": True}
-            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21", "state": "noupdates"}
             sensor["swversion"] = "6.1.1.27575"
-        elif sensor["type"] == "ZLLLightLevel" and sensor["modelid"] == "SML001" and sensor["manufacturername"] == "Philips":
+        elif sensor["type"] == "ZLLLightLevel" and sensor["modelid"] == "SML001" and sensor[
+            "manufacturername"] == "Philips":
             sensor["capabilities"] = {"certified": True, "primary": False}
-            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21","state": "noupdates"}
+            sensor["swupdate"] = {"lastinstall": "2019-03-16T21:16:21", "state": "noupdates"}
             sensor["swversion"] = "6.1.1.27575"
 
     # Update lights
@@ -144,15 +149,23 @@ def updateConfig(json_config):
                     archetype = "classicbulb"
                     light["productname"] = "Hue white lamp"
                     light["productid"] = "Philips-LWB014-1-A19DLv3"
-                    light["capabilities"] = {"certified": True,"control": {"ct": {"max": 500,"min": 153},"maxlumen": 840,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": False}}
+                    light["capabilities"] = {"certified": True,
+                                             "control": {"ct": {"max": 500, "min": 153}, "maxlumen": 840,
+                                                         "mindimlevel": 5000},
+                                             "streaming": {"proxy": False, "renderer": False}}
                 elif light["modelid"] == "LCT015":
                     archetype = "sultanbulb"
-                    light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": True,"renderer": True}}
+                    light["capabilities"] = {"certified": True, "control": {
+                        "colorgamut": [[0.6915, 0.3083], [0.17, 0.7], [0.1532, 0.0475]], "colorgamuttype": "C",
+                        "ct": {"max": 500, "min": 153}, "maxlumen": 800, "mindimlevel": 1000},
+                                             "streaming": {"proxy": True, "renderer": True}}
                     light["productname"] = "Hue color lamp"
                 elif light["modelid"] == "LST002":
                     archetype = "huelightstrip"
                     swversion = "5.127.1.26581"
-                    light["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
+                    light["capabilities"] = {"certified": True, "control": {
+                        "colorgamut": [[0.704, 0.296], [0.2151, 0.7106], [0.138, 0.08]], "colorgamuttype": "A",
+                        "maxlumen": 200, "mindimlevel": 10000}, "streaming": {"proxy": False, "renderer": True}}
                     light["productname"] = "Hue lightstrip plus"
 
                 light["config"] = {"archetype": archetype, "function": "mixed", "direction": "omnidirectional"}
@@ -167,7 +180,7 @@ def updateConfig(json_config):
             # Finally, update the software version
             light["swversion"] = swversion
 
-    #set entertainment streaming to inactive on start/restart
+    # set entertainment streaming to inactive on start/restart
     for group_id, group in json_config["groups"].items():
         if "type" in group and group["type"] == "Entertainment":
             if "stream" not in group:
@@ -176,14 +189,16 @@ def updateConfig(json_config):
 
         group["sensors"] = []
 
-    #fix timezones bug
+    # fix timezones bug
     if "values" not in json_config["capabilities"]["timezones"]:
         timezones = json_config["capabilities"]["timezones"]
         json_config["capabilities"]["timezones"] = {"values": timezones}
     return json_config
 
+
 def resourceRecycle(json_config):
-    resourcelinks = {"groups": [],"lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [], "resourcelinks": []}
+    resourcelinks = {"groups": [], "lights": [], "sensors": [], "rules": [], "scenes": [], "schedules": [],
+                     "resourcelinks": []}
     for resourcelink in json_config["resourcelinks"].keys():
         for link in json_config["resourcelinks"][resourcelink]["links"]:
             link_parts = link.split("/")
@@ -191,7 +206,29 @@ def resourceRecycle(json_config):
 
     for resource in resourcelinks.keys():
         for key in list(json_config[resource]):
-            if "recycle" in json_config[resource][key] and json_config[resource][key]["recycle"] and key not in resourcelinks[resource]:
+            if "recycle" in json_config[resource][key] and json_config[resource][key]["recycle"] and key not in \
+                    resourcelinks[resource]:
                 logging.info("delete " + resource + " / " + key)
                 del json_config[resource][key]
+    return json_config
+
+
+def update_swversion(json_config):
+    def get_latest_version():
+        def extract_version(line):
+            match = re.search(r'Firmware ([0-9]*) \(Bridge V2\)', line, re.I)
+            if match:
+                return int(match.group(1))
+
+        url = 'https://www.philips-hue.com/en-us/support/release-notes/bridge'
+        response = requests.get(url)
+        webpage_lines = [x for x in response.content.decode('utf-8').splitlines() if x]
+        versions = list(filter(None.__ne__, map(extract_version, webpage_lines)))
+        return str(max(versions))
+
+    latest_version = get_latest_version()
+
+    if json_config["config"]["swversion"] != latest_version:
+        json_config["config"]["swversion"] = latest_version
+        json_config["config"]["apiversion"] = "1.35.0"
     return json_config

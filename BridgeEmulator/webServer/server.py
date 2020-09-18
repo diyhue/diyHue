@@ -751,11 +751,7 @@ class S(BaseHTTPRequestHandler):
         self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
-            update_data = json.loads(sendRequest("https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
-            for category in update_data.keys():
-                for key in update_data[category].keys():
-                    logging.info("patch " + category + " -> " + key )
-                    bridge_config[category][key] = update_data[category][key]
+            configManager.bridgeConfig.update_swversion()
             self._set_end_headers(bytes(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}],separators=(',', ':'),ensure_ascii=False), "utf8"))
         else:
             raw_json = self.data_string.decode('utf8')
