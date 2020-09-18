@@ -2,9 +2,7 @@ import json
 import logging
 import random
 import socket
-import sys
 import configManager
-import lights
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 
 Connections = {}

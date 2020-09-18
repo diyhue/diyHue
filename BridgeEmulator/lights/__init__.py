@@ -9,6 +9,7 @@ from lights import protocols
 from time import sleep
 from lights.updateGroup import updateGroupStats
 from functions.core import nextFreeId
+from services.deconz import scanDeconz
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -129,13 +130,13 @@ def scanForLights(): #scan for ESP8266 lights and strips
     Thread(target=mqtt.discover).start()
     Thread(target=yeelight.discover).start()
     Thread(target=native_multi.discover, args=[device_ips]).start() # native_multi probe all esp8266 lights with firmware from diyhue repo
-    sleep(0.5) # wait half second to not send http requsts in the same time for the same device during multple protocols probe.
+    sleep(0.2) # wait half second to not send http requsts in the same time for the same device during multple protocols probe.
     Thread(target=tasmota.discover, args=[device_ips]).start()
-    sleep(0.5)
+    sleep(0.2)
     Thread(target=shelly.discover, args=[device_ips]).start()
-    sleep(0.5)
+    sleep(0.2)
     Thread(target=esphome.discover, args=[device_ips]).start()
-    deconz.scanDeconz()
+    scanDeconz()
     tradfri.scanTradfri()
     saveConfig()
 
