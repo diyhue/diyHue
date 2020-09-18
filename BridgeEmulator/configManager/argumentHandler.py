@@ -97,7 +97,7 @@ def parse_arguments():
     else:
         full_mac_string = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % host_ip,
                                  shell=True).decode('utf-8')[:-1]
-        mac = str(full_mac_string).replace(":", "")[:-1]
+        mac = str(full_mac_string).replace(":", "")
 
     argumentDict["FULLMAC"] = full_mac_string
     argumentDict["MAC"] = mac
