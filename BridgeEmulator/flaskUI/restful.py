@@ -2,12 +2,12 @@ import configManager
 import logManager
 import uuid
 import json
+import requests
 from threading import Thread
 from time import sleep
 from datetime import datetime
-from lights.updateGroup import updateGroupStats
-from lights.lightRequest import sendLightRequest
-from lights import splitLightsToDevices, groupZero, scanForLights
+from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest
+from lights.discover import scanForLights
 from functions.core import generateDxState, nextFreeId
 from flask_restful import Resource
 from flask import request
@@ -25,7 +25,7 @@ def authorize(username, resource=None, resourceId=None, resourceParam=None):
     if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
-    if resourceId != "0" and resourceId != None and resourceId not in bridgeConfig[resource]:
+    if resourceId not in ["0", "new"] and resourceId != None and resourceId not in bridgeConfig[resource]:
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId,"description":"resource, " + resource + "/" + resourceId + ", not available"}}]
 
     if resourceId != "0" and resourceParam != None and resourceParam not in bridgeConfig[resource][resourceId]:
@@ -96,7 +96,6 @@ class ResourceElements(Resource):
         if (resource == "lights" or resource == "sensors") and request.get_data(as_text=True) == "":
             print("scan for light")
             #if was a request to scan for lights of sensors
-            newLights.clear()
             Thread(target=scanForLights).start()
             sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
             return [{"success": {"/" + resource: "Searching for new devices"}}]
@@ -167,12 +166,18 @@ class ResourceElements(Resource):
         configManager.bridgeConfig.save_config()
         return [{"success": {"id": new_object_id}}]
 
+
 class Element(Resource):
 
     def get(self, username, resource, resourceid):
         authorisation = authorize(username, resource, resourceid)
         if "success" not in authorisation:
             return authorisation
+
+        if resource in ["lights", "sensors"] and resourceid == "new":
+            response = newLights.copy()
+            newLights.clear()
+            return response
         return bridgeConfig[resource][resourceid]
 
 
@@ -242,15 +247,14 @@ class Element(Resource):
             bridgeConfig["lights"][resourceid]["config"].update(putDict["config"])
             if "startup" in putDict["config"] and bridgeConfig["emulator"]["lights"][resourceid]["protocol"] == "native":
                 if putDict["config"]["startup"]["mode"] == "safety":
-                    sendRequest("http://" + bridgeConfig["emulator"]["lights"][resourceid]["ip"] + "/", "POST", {"startup": 1})
+                    requests.post("http://" + bridgeConfig["emulator"]["lights"][resourceid]["ip"] + "/", json={"startup": 1})
                 elif putDict["config"]["startup"]["mode"] == "powerfail":
-                    sendRequest("http://" + bridgeConfig["emulator"]["lights"][resourceid]["ip"] + "/", "POST", {"startup": 0})
+                    requests.post("http://" + bridgeConfig["emulator"]["lights"][resourceid]["ip"] + "/", json={"startup": 0})
 
                 #add exception on json output as this dictionary has tree levels
                 response_dictionary = {"success":{"/lights/" + resourceid + "/config/startup": {"mode": putDict["config"]["startup"]["mode"]}}}
-                self._set_end_headers(bytes(json.dumps(response_dictionary,separators=(',', ':'),ensure_ascii=False), "utf8"))
                 logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
-                return
+                return response_dictionary
         else:
             bridgeConfig[resource][resourceid].update(putDict)
             if resource == "groups" and "lights" in putDict: #need to update scene lightstates
@@ -263,6 +267,11 @@ class Element(Resource):
                                 new_state = next(iter(bridgeConfig["scenes"][scene]["lightstates"]))
                                 new_state = bridgeConfig["scenes"][scene]["lightstates"][new_state]
                                 bridgeConfig["scenes"][scene]["lightstates"][light] = new_state
+            responseDictionary = []
+            response_location = "/" + resource + "/" + resourceid + "/"
+            for key, value in putDict.items():
+                    responseDictionary.append({"success":{response_location + key: value}})
+            return responseDictionary
 
 
 
@@ -287,10 +296,12 @@ class Element(Resource):
             for group_id, group in bridgeConfig["groups"].items():
                 if "lights" in group and resourceid in group["lights"]:
                     group["lights"].remove(resourceid)
+            del bridgeConfig["emulator"]["lights"][resourceid]
         elif resource == "groups":
             configManager.bridgeConfig.sanitizeBridgeScenes()
-        del bridgeConfig[resource][resourceid][param]
-        return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
+        del bridgeConfig[resource][resourceid]
+        return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
+        configManager.bridgeConfig.save_config()
 
 
 class ElementParam(Resource):
@@ -361,7 +372,11 @@ class ElementParam(Resource):
                 bridgeConfig[resource][resourceid][param].update(putDict)
             except KeyError:
                 bridgeConfig[resource][resourceid][param] = putDict
-        response_location = "/" + resource + "/" + resourceid + "/" + param + "/"
+        responseDictionary = []
+        responseLocation = "/" + resource + "/" + resourceid + "/" + param + "/"
+        for key, value in putDict.items():
+                responseDictionary.append({"success":{responseLocation + key: value}})
+        return responseDictionary
 
 
     def delete(self, username, resource, resourceid, param):
@@ -373,3 +388,4 @@ class ElementParam(Resource):
 
         del bridgeConfig[resource][resourceid][param]
         return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
+        configManager.bridgeConfig.save_config()

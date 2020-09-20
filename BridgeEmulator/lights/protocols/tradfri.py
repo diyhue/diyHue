@@ -68,7 +68,8 @@ def get_light_state(address, light):
     else:
         state["ct"] = 470
     state["reachable"] = True
-    
+
     return state
 
 def discover():
+    return

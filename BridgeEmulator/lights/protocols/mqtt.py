@@ -81,50 +81,9 @@ def get_light_state(address, light):
     return state
 
 def discover():
-    logging.info("MQTT discovery called")
-    auth = None
-    if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridgeConfig["emulator"]["mqtt"]["mqttPassword"] != "":
-        auth = {'username':bridgeConfig["emulator"]["mqtt"]["mqttUser"], 'password':bridgeConfig["emulator"]["mqtt"]["mqttPassword"]}
-    publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=bridgeConfig["emulator"]["mqtt"]["mqttServer"], port=bridgeConfig["emulator"]["mqtt"]["mqttPort"], auth=auth)
-
-
-    for key, data in discoveredDevices.items():
-        device_new = True
-        for lightkey in bridgeConfig["emulator"]["lights"].keys():
-            if bridgeConfig["emulator"]["lights"][lightkey]["protocol"] == "mqtt" and bridgeConfig["emulator"]["lights"][lightkey]["uid"] == key:
-                device_new = False
-                bridgeConfig["emulator"]["lights"][lightkey]["command_topic"] = data["command_topic"]
-                bridgeConfig["emulator"]["lights"][lightkey]["state_topic"] = data["state_topic"]
-                break
-
-        if device_new:
-            light_name = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
-            logging.debug("MQTT: Adding light " + light_name)
-            new_light_id = nextFreeId(bridgeConfig, "lights")
-
-            # Device capabilities
-            keys = data.keys()
-            light_color = "xy" in keys and data["xy"] == True
-            light_brightness = "brightness" in keys and data["brightness"] == True
-            light_ct = "ct" in keys and data["ct"] == True
-
-            modelid = None
-            if light_color and light_ct:
-                modelid = "LCT015"
-            elif light_color: # Every light as LCT001? Or also support other lights
-                modelid = "LCT001"
-            elif light_brightness:
-                modelid = "LWB010"
-            elif light_ct:
-                modelid = "LTW001"
-            else:
-                modelid = "Plug 01"
-
-            bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": generate_unique_id(), "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-            newLights.update({new_light_id: {"name": light_name}})
-
-            # Add the lights to new lights, so it shows up in the search screen
-            newLights.update({new_light_id: {"name": light_name}})
-
-            # Save the mqtt parameters
-            bridgeConfig["emulator"]["lights"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"mqtt", "state_topic": data["state_topic"], "command_topic": data["command_topic"]}
+    if bridgeConfig["emulator"]["mqtt"]["enabled"]:
+        logging.info("MQTT discovery called")
+        auth = None
+        if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridgeConfig["emulator"]["mqtt"]["mqttPassword"] != "":
+            auth = {'username':bridgeConfig["emulator"]["mqtt"]["mqttUser"], 'password':bridgeConfig["emulator"]["mqtt"]["mqttPassword"]}
+        publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=bridgeConfig["emulator"]["mqtt"]["mqttServer"], port=bridgeConfig["emulator"]["mqtt"]["mqttPort"], auth=auth)

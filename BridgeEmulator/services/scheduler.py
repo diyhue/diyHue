@@ -53,5 +53,5 @@ def runScheduler():
             saveConfig()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                configManager.bridgeConfig.save_config(backup=True)
         sleep(1)

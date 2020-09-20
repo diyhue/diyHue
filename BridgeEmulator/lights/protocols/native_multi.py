@@ -1,7 +1,12 @@
 import json
-import logging
+import logManager
 import requests
+import configManager
+from lights.discover import addNewLight
 
+
+bridgeConfig = configManager.bridgeConfig.json_config
+logging = logManager.logger.get_logger(__name__)
 
 def set_light(address, light, data):
     state = requests.put("http://"+address["ip"]+"/state", json={address["light_nr"]: data}, timeout=3)
@@ -17,14 +22,23 @@ def generate_light_name(base_name, light_nr):
     suffix = ' %s' % light_nr
     return '%s%s' % (base_name[:32-len(suffix)], suffix)
 
+def find_light_in_config_from_mac_and_nr(mac_address, light_nr):
+    for light_id, light_address in bridgeConfig["emulator"]["lights"].items():
+        if (light_address["protocol"] in ["native", "native_single",  "native_multi"]
+                and light_address["mac"] == mac_address
+                and ('light_nr' not in light_address or
+                    light_address['light_nr'] == light_nr)):
+            return light_id
+    return None
+
 def discover(device_ips):
-    logging.debug("tasmota: <discover> invoked!")
+    logging.debug("native: <discover> invoked!")
     for ip in device_ips:
         try:
             response = requests.get("http://" + ip + "/detect", timeout=3)
             if response.status_code == 200:
                 device_data = json.loads(response.text)
-                logging.info(pretty_json(device_data))
+                logging.info(json.dumps(device_data))
 
                 if "modelid" in device_data:
                     logging.info(ip + " is " + device_data['name'])
@@ -34,18 +48,19 @@ def discover(device_ips):
                         protocol = "native"
 
                     # Get number of lights
-                    lights = 1
+                    light = 1
                     if "lights" in device_data:
-                        lights = device_data["lights"]
+                        light = device_data["lights"]
 
                     # Add each light to config
                     logging.info("Add new light: " + device_data["name"])
-                    for x in range(1, lights + 1):
+                    for x in range(1, light + 1):
                         light = find_light_in_config_from_mac_and_nr(device_data['mac'], x)
+                        lightName = generate_light_name(device_data['name'], x)
 
                         # Try to find light in existing config
                         if light:
-                            logging.info("Updating old light: " + device_data["name"])
+                            logging.info("Updating old light: " + lightName)
                             # Light found, update config
                             bridgeConfig["emulator"]["lights"][light].update({"ip": ip, "protocol": protocol})
                             if "version" in device_data:
@@ -56,15 +71,13 @@ def discover(device_ips):
                                 })
                             continue
 
-                        lightName = generate_light_name(device_data['name'], x)
-
                         emulatorLightConfig = {
                             "ip": ip,
                             "light_nr": x,
                             "protocol": protocol,
                             "mac": device_data["mac"]
                             }
-
+    
                         addNewLight(device_data["modelid"], lightName, emulatorLightConfig)
 
 
