@@ -7,11 +7,9 @@
 
 {% block content %}
 
-    {% for group, values in groups.items() %}
-    {{ group }}.
-    {{ values.name }}
-    bri: {{ values.action.bri }}
-    on: {{ values.action.on }}<br>
+    <!-- (Almost) A blank page -->
+    {% for device, values in sensors.items() %}
+      {{ device }} {{ values.name }} {{ values.modelid }} <br>
     {% endfor %}
 
 {% endblock content %}

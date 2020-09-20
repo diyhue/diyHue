@@ -16,16 +16,16 @@ def sendLightRequest(light, data, rgb = None, entertainmentHostIP = None):
         protocol_name = bridgeConfig["emulator"]["lights"][light]["protocol"]
         for protocol in protocols:
             if "lights.protocols." + protocol_name == protocol.__name__:
-                try:
-                    if entertainmentHostIP and protocol_name == "yeelight":
-                        protocol.enableMusic(bridgeConfig["emulator"]["lights"][light]["ip"], entertainmentHostIP)
-                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
-                        protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data, rgb)
-                    else:
-                        protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data)
-                except Exception as e:
-                    bridgeConfig["lights"][light]["state"]["reachable"] = False
-                    logging.warning(bridgeConfig["lights"][light]["name"] + " light not reachable: %s", e)
+                #try:
+                if entertainmentHostIP and protocol_name == "yeelight":
+                    protocol.enableMusic(bridgeConfig["emulator"]["lights"][light]["ip"], entertainmentHostIP)
+                if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
+                    protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data, rgb)
+                else:
+                    protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data)
+                #except Exception as e:
+                #    bridgeConfig["lights"][light]["state"]["reachable"] = False
+                #    logging.warning(bridgeConfig["lights"][light]["name"] + " light not reachable: %s", e)
                 return
 
 def manageDeviceLights(lights_state):
@@ -45,7 +45,7 @@ def manageDeviceLights(lights_state):
     if protocol == "native_multi": # bipass sendLightRequest function and send all light data in one request
         requests.put("http://"+bridgeConfig["emulator"]["lights"][list(lights_state.keys())[0]]["ip"]+"/state", json=payload, timeout=3)
     elif protocol == "mqtt":
-        sendLightRequest("1", {"lights": payload, "mqtt": bridgeConfig["emulator"]["mqtt"]}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
+        sendLightRequest("1", {"lights": payload}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
 
 
 

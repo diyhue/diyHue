@@ -1,7 +1,6 @@
-from flask import render_template,request,Blueprint, redirect, url_for, make_response
+from flask import render_template, request, Blueprint, redirect, url_for, make_response
 from werkzeug.security import generate_password_hash,check_password_hash
 from flaskUI.core.forms import LoginForm
-from flask import request
 import flask_login
 import configManager
 from flaskUI.core import User
@@ -13,7 +12,12 @@ core = Blueprint('core',__name__)
 @core.route('/')
 @flask_login.login_required
 def index():
-    return render_template('index.html')
+    return render_template('index.html', groups=bridgeConfig["groups"], lights=bridgeConfig["lights"])
+
+@core.route('/config')
+@flask_login.login_required
+def config():
+    return render_template('config.html', config=bridgeConfig["config"])
 
 
 @core.route('/login', methods=['GET', 'POST'])
@@ -22,6 +26,8 @@ def login():
     if request.method == 'GET':
         return render_template('accounts/login.html', form=form)
     email = form.email.data
+    if email not in bridgeConfig["emulator"]["users"]:
+        return 'User don\'t exist'
     if check_password_hash(bridgeConfig["emulator"]["users"][email]['password'],form.password.data):
         user = User()
         user.id = email

@@ -1,12 +1,15 @@
-import json
-import logging
-import random
-from time import sleep
+import logManager
 import configManager
+import json
+import random
 import paho.mqtt.client as mqtt
+from time import sleep
+from datetime import datetime
+from functions.core import nextFreeId
+from functions.devicesRules import addHueMotionSensor
+from functions.core import addNewLight
 
-
-
+logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
 newLights = configManager.runtimeConfig.newLights
 dxState = configManager.runtimeConfig.dxState
@@ -51,8 +54,8 @@ def on_autodiscovery_light(msg):
                 break
 
         if device_new:
-            light_name = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
-            logging.debug("MQTT: Adding light " + light_name)
+            lightName = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
+            logging.debug("MQTT: Adding light " + lightName)
             new_light_id = nextFreeId(bridgeConfig, "lights")
 
             # Device capabilities
@@ -73,14 +76,13 @@ def on_autodiscovery_light(msg):
             else:
                 modelid = "Plug 01"
 
-            bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": generate_unique_id(), "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-            newLights.update({new_light_id: {"name": light_name}})
+            emulatorLightConfig = { "protocol": "mqtt",
+                                    "uid": data["unique_id"],
+                                    "ip":"mqtt",
+                                    "state_topic": data["state_topic"],
+                                    "command_topic": data["command_topic"]}
 
-            # Add the lights to new lights, so it shows up in the search screen
-            newLights.update({new_light_id: {"name": light_name}})
-
-            # Save the mqtt parameters
-            bridgeConfig["emulator"]["lights"][new_light_id] = { "protocol": "mqtt", "uid": data["unique_id"], "ip":"mqtt", "state_topic": data["state_topic"], "command_topic": data["command_topic"]}
+            addNewLight(modelid, lightName, emulatorLightConfig)
 
 
 
@@ -96,13 +98,14 @@ def on_message(client, userdata, msg):
         current_time =  datetime.now()
         logging.debug("MQTT: got state message on " + msg.topic)
         data = json.loads(msg.payload)
+        print(msg.payload)
         if msg.topic.startswith(discoveryPrefix + "/light/"):
             on_autodiscovery_light(msg)
         elif msg.topic == "zigbee2mqtt/bridge/config/devices":
             for key in data:
                 if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
                     if key["friendly_name"] not in bridgeConfig["emulator"]["sensors"]: ## Add the new sensor
-                        print("Add new mqtt sensor" + key["modelID"])
+                        logging.info("MQTT: Add new mqtt sensor" + key["modelID"])
                         newSensorId = nextFreeId(bridgeConfig, "sensors")
                         if "modelID" in key:
                             if key["modelID"] in standardSensorsData and "structure" in standardSensorsData[key["modelID"]]:
@@ -195,6 +198,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("zigbee2mqtt/bridge/config/devices")
 
 def mqttServer():
+    logging.info("Strting MQTT service...")
     # ================= MQTT CLIENT Connection========================
     # Set user/password on client if supplied
     if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridge_config["emulator"]["mqtt"]["mqttPassword"] != "":
@@ -202,13 +206,11 @@ def mqttServer():
 
     if bridgeConfig["emulator"]["mqtt"]['discoveryPrefix'] is not None:
         discoveryPrefix = bridgeConfig["emulator"]["mqtt"]['discoveryPrefix']
-
     # Setup handlers
     client.on_connect = on_connect
     client.on_message = on_message
     # Connect to the server
     client.connect(bridgeConfig["emulator"]["mqtt"]["mqttServer"], bridgeConfig["emulator"]["mqtt"]["mqttPort"])
-
 
     # start the loop to keep receiving data
     client.loop_forever()

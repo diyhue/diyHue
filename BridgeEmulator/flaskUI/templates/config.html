@@ -7,12 +7,13 @@
 
 {% block content %}
 
-    {% for group, values in groups.items() %}
-    {{ group }}.
-    {{ values.name }}
-    bri: {{ values.action.bri }}
-    on: {{ values.action.on }}<br>
-    {% endfor %}
+    <!-- (Almost) A blank page -->
+    Name: {{ config.name}} <br>
+    API : {{ config.apiversion}} <br>
+    IP: {{ config.ipaddress}} <br>
+    MAC: {{ config.mac}} <br>
+    SwVersion: {{ config.swversion}}
+
 
 {% endblock content %}
 

@@ -17,12 +17,10 @@ dxState = configManager.runtimeConfig.dxState
 newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
 
-app = Flask(__name__, template_folder='flaskUI/templates')
+app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
 api = Api(app)
 
-
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
-app.config['STATIC_FOLDER'] = '/flaskUI/static'
 
 
 login_manager = flask_login.LoginManager()
@@ -68,8 +66,10 @@ api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
+from flaskUI.devices.views import devices
 from flaskUI.error_pages.handlers import error_pages
 app.register_blueprint(core)
+app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 
 

@@ -2,7 +2,7 @@ import json
 import logManager
 import requests
 import configManager
-from lights.discover import addNewLight
+from functions.core import addNewLight
 
 
 bridgeConfig = configManager.bridgeConfig.json_config
@@ -77,7 +77,8 @@ def discover(device_ips):
                             "protocol": protocol,
                             "mac": device_data["mac"]
                             }
-    
+
+                        print(lightName)
                         addNewLight(device_data["modelid"], lightName, emulatorLightConfig)
 
 

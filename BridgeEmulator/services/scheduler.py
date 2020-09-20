@@ -1,11 +1,13 @@
+import logManager
+import configManager
 from time import sleep
 from threading import Thread
 from datetime import datetime, timedelta
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
-import configManager
 
 bridgeConfig = configManager.bridgeConfig.json_config
+logging = logManager.logger.get_logger(__name__)
 
 def runScheduler():
     while True:
@@ -50,7 +52,7 @@ def runScheduler():
                 logging.info("Exception while processing the schedule " + schedule + " | " + str(e))
 
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
-            saveConfig()
+            configManager.bridgeConfig.save_config()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
                 configManager.bridgeConfig.save_config(backup=True)
