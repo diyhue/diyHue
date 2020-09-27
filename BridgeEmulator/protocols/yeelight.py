@@ -186,7 +186,7 @@ def get_light_state(address, light):
             tcp_socket.send(msg_rgb.encode())
             data = tcp_socket.recv(16 * 1024)
             hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-            hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+            hex_rgb = "%06x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
             rgb=hex_to_rgb(hex_rgb)
             state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
             state["colormode"] = "xy"
