@@ -1,6 +1,6 @@
 import logging, json
 from functions.request import sendRequest
-from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness 
+from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness, hsv_to_rgb
 from subprocess import check_output
 from protocols import protocols
 from datetime import datetime, timedelta
