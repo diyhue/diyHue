@@ -9,7 +9,7 @@ from functions.ssdp import ssdpBroadcast, ssdpSearch
 from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
-from protocols import yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt, hyperion, deconz, tradfri
+from protocols import mqtt, deconz
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 import configManager
@@ -19,7 +19,7 @@ from protocols.hue.scheduler import generateDxState, rulesProcessor
 logging = logManager.logger.get_logger(__name__)
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
+# protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion] idk why this was here in the first place
 bridge_config = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
 new_lights = configManager.runtimeConfig.newLights

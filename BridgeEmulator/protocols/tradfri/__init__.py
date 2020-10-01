@@ -1,1 +1,1 @@
-from protocols.tradfri import discover, sensors
+from ..tradfri import discover, sensors

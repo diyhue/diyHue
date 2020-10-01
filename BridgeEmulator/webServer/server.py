@@ -16,8 +16,7 @@ import requests
 
 import configManager
 import logManager
-from devices.light.discover import scan_for_lights  # temp stuff
-from devices.light.scene import switchScene  # temp stuff
+from devices import lightManager  # temp stuff
 from functions import nextFreeId
 from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri, lightsHttp)
@@ -25,8 +24,7 @@ from functions.json import pretty_json
 from functions.lightRequest import sendLightRequest
 from functions.request import sendRequest
 from functions.updateGroup import updateGroupStats
-from protocols import deconz
-from protocols import tradfri
+from protocols import deconz, tradfri, native
 from protocols.hue.scheduler import generateDxState, rulesProcessor
 from protocols.hue.sensors import addHueSwitch, addHueMotionSensor, motionDetected
 
@@ -59,117 +57,6 @@ def getLightsVersions():
                                  "lastVersion": githubCatalog[currentData["type"]]["version"],
                                  "firmware": githubCatalog[currentData["type"]]["filename"]}
     return lights
-
-
-def manageDeviceLights(lights_state):
-    protocol = bridge_config["lights_address"][list(lights_state.keys())[0]]["protocol"]
-    payload = {}
-    for light in lights_state.keys():
-        if protocol == "native_multi":
-            payload[bridge_config["lights_address"][light]["light_nr"]] = lights_state[light]
-        elif protocol in ["native", "native_single", "milight"]:
-            sendLightRequest(light, lights_state[light], bridge_config["lights"], bridge_config["lights_address"])
-            if protocol == "milight":  # hotfix to avoid milight hub overload
-                sleep(0.05)
-        else:
-            Thread(target=sendLightRequest,
-                   args=[light, lights_state[light], bridge_config["lights"], bridge_config["lights_address"]]).start()
-            sleep(0.1)
-    if protocol == "native_multi":
-        requests.put("http://" + bridge_config["lights_address"][list(lights_state.keys())[0]]["ip"] + "/state",
-                     json=payload, timeout=3)
-
-
-def updateLight(light, filename):
-    firmware = requests.get('https://github.com/diyhue/Lights/raw/master/Arduino/bin/' + filename, allow_redirects=True)
-    open('/tmp/' + filename, 'wb').write(firmware.content)
-    file = {'update': open('/tmp/' + filename, 'rb')}
-    update = requests.post('http://' + bridge_config["lights_address"][light]["ip"] + '/update', files=file)
-
-
-def splitLightsToDevices(group, state, scene={}):
-    groups = []
-    if group == "0":
-        for grp in bridge_config["groups"].keys():
-            groups.append(grp)
-    else:
-        groups.append(group)
-
-    lightsData = {}
-    if len(scene) == 0:
-        for grp in groups:
-            if "bri_inc" in state:
-                bridge_config["groups"][grp]["action"]["bri"] += int(state["bri_inc"])
-                if bridge_config["groups"][grp]["action"]["bri"] > 254:
-                    bridge_config["groups"][grp]["action"]["bri"] = 254
-                elif bridge_config["groups"][grp]["action"]["bri"] < 1:
-                    bridge_config["groups"][grp]["action"]["bri"] = 1
-                del state["bri_inc"]
-                state.update({"bri": bridge_config["groups"][grp]["action"]["bri"]})
-            elif "ct_inc" in state:
-                bridge_config["groups"][grp]["action"]["ct"] += int(state["ct_inc"])
-                if bridge_config["groups"][grp]["action"]["ct"] > 500:
-                    bridge_config["groups"][grp]["action"]["ct"] = 500
-                elif bridge_config["groups"][grp]["action"]["ct"] < 153:
-                    bridge_config["groups"][grp]["action"]["ct"] = 153
-                del state["ct_inc"]
-                state.update({"ct": bridge_config["groups"][grp]["action"]["ct"]})
-            elif "hue_inc" in state:
-                bridge_config["groups"][grp]["action"]["hue"] += int(state["hue_inc"])
-                if bridge_config["groups"][grp]["action"]["hue"] > 65535:
-                    bridge_config["groups"][grp]["action"]["hue"] -= 65535
-                elif bridge_config["groups"][grp]["action"]["hue"] < 0:
-                    bridge_config["groups"][grp]["action"]["hue"] += 65535
-                del state["hue_inc"]
-                state.update({"hue": bridge_config["groups"][grp]["action"]["hue"]})
-            for light in bridge_config["groups"][grp]["lights"]:
-                lightsData[light] = state
-    else:
-        lightsData = scene
-    
-    # Make sure any lights haven't been deleted
-    lightsData = {k: v for k, v in lightsData.items() if k in bridge_config["lights_address"]}
-
-    deviceIp = {}
-    if group != "0":  # only set light state if light is part of group
-        lightdel = []
-        for light in lightsData.keys():
-            if light not in bridge_config["groups"][group]["lights"]:
-                lightdel.append(light)
-        for light in lightdel:
-            del lightsData[light]
-
-    for light in lightsData.keys():
-        if bridge_config["lights_address"][light]["ip"] not in deviceIp:
-            deviceIp[bridge_config["lights_address"][light]["ip"]] = {}
-        deviceIp[bridge_config["lights_address"][light]["ip"]][light] = lightsData[light]
-    for ip in deviceIp:
-        Thread(target=manageDeviceLights, args=[deviceIp[ip]]).start()
-    ### update light details
-    for light in lightsData.keys():
-        if "xy" in lightsData[light]:
-            bridge_config["lights"][light]["state"]["colormode"] = "xy"
-        elif "ct" in lightsData[light]:
-            bridge_config["lights"][light]["state"]["colormode"] = "ct"
-        elif "hue" in lightsData[light]:
-            bridge_config["lights"][light]["state"]["colormode"] = "hs"
-        # if "transitiontime" in lightsData[light]:
-        #     del lightsData[light]["transitiontime"]
-        bridge_config["lights"][light]["state"].update(lightsData[light])
-    if lightsData:
-        updateGroupStats(list(lightsData.keys())[0], bridge_config["lights"], bridge_config["groups"])
-
-
-def groupZero(state):
-    lightsData = {}
-    for light in bridge_config["lights"].keys():
-        lightsData[light] = state
-    Thread(target=splitLightsToDevices, args=["0", {}, lightsData]).start()
-    for group in bridge_config["groups"].keys():
-        bridge_config["groups"][group]["action"].update(state)
-        if "on" in state:
-            bridge_config["groups"][group]["state"]["any_on"] = state["on"]
-            bridge_config["groups"][group]["state"]["all_on"] = state["on"]
 
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -278,7 +165,7 @@ class S(BaseHTTPRequestHandler):
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "light" in get_parameters:
-                updateLight(get_parameters["light"][0], get_parameters["filename"][0])
+                native.updater.updateLight(get_parameters["light"][0], get_parameters["filename"][0])
             self._set_end_headers(bytes(lightsHttp(), "utf8"))
 
         elif self.path == '/save':
@@ -542,10 +429,10 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(bytes("done", "utf8"))
         elif self.path.startswith("/scan"):  # rescan
             self._set_headers()
-            scan_for_lights()
+            lightManager.discover.scan_for_lights()
             self._set_end_headers(bytes("done", "utf8"))
         else:
-            url_pices = self.path.rstrip('/').split('/')
+            url_pices = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go
             if len(url_pices) < 3:
                 # self._set_headers_error()
                 self.send_error(404, 'not found')
@@ -681,9 +568,8 @@ class S(BaseHTTPRequestHandler):
                 if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                     # if was a request to scan for lights of sensors
                     new_lights.clear()
-                    Thread(target=scan_for_lights).start()
-                    sleep(
-                        7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
+                    Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
+                    sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                     self._set_end_headers(bytes(
                         json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
                                    separators=(',', ':'), ensure_ascii=False), "utf8"))
@@ -691,7 +577,8 @@ class S(BaseHTTPRequestHandler):
                     self._set_end_headers(bytes(
                         json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],
                                    separators=(',', ':'), ensure_ascii=False), "utf8"))
-                else:  # create object
+                else:  # create object, appears to be saving resource information e.g. scenes, groups, schedules, rules, sensors, resourcelinks
+                    #this is also terrible
                     # find the first unused id for new object
                     new_object_id = nextFreeId(bridge_config, url_pices[3])
                     if url_pices[3] == "scenes":  # store scene
@@ -814,13 +701,12 @@ class S(BaseHTTPRequestHandler):
         url_pices = self.path.rstrip('/').split('/')
         logging.info(self.path)
         logging.info(self.data_string)
-        if url_pices[2] in bridge_config["config"]["whitelist"] or (
-                url_pices[2] == "0" and self.client_address[0] == "127.0.0.1"):
+        if url_pices[2] in bridge_config["config"]["whitelist"] or (url_pices[2] == "0" and self.client_address[0] == "127.0.0.1"):
             current_time = datetime.now()
             if len(url_pices) == 4:
                 bridge_config[url_pices[3]].update(put_dictionary)
                 response_location = "/" + url_pices[3] + "/"
-            if len(url_pices) == 5:
+            if len(url_pices) == 5: #again appears to be storing lots of random data coming in
                 if url_pices[3] == "schedules":
                     if "status" in put_dictionary and put_dictionary["status"] == "enabled" and (
                             bridge_config["schedules"][url_pices[4]]["localtime"].startswith("PT") or
@@ -945,17 +831,17 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["groups"][url_pices[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary:  # scene applied to group
                         if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
-                            splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
+                            lightManager.control.splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
                                                  bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                         else:
-                            splitLightsToDevices(url_pices[4], {},
+                            lightManager.control.splitLightsToDevices(url_pices[4], {},
                                                  bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary or "hue_inc" in put_dictionary:
-                        splitLightsToDevices(url_pices[4], put_dictionary)
+                        lightManager.control.splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:
-                        switchScene(url_pices[4], put_dictionary["scene_inc"])
+                        lightManager.scene.switchScene(url_pices[4], put_dictionary["scene_inc"])
                     elif url_pices[4] == "0":  # if group is 0 the scene applied to all lights
-                        groupZero(put_dictionary)
+                        lightManager.control.groupZero(put_dictionary)
                     else:  # the state is applied to particular group (url_pices[4])
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pices[4]]["state"]["any_on"] = put_dictionary["on"]
@@ -963,7 +849,7 @@ class S(BaseHTTPRequestHandler):
                             dxState["groups"][url_pices[4]]["state"]["any_on"] = current_time
                             dxState["groups"][url_pices[4]]["state"]["all_on"] = current_time
                         bridge_config["groups"][url_pices[4]][url_pices[5]].update(put_dictionary)
-                        splitLightsToDevices(url_pices[4], put_dictionary)
+                        lightManager.control.splitLightsToDevices(url_pices[4], put_dictionary)
                 elif url_pices[3] == "lights":  # state is applied to a light
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]:  # colormode must be set by bridge

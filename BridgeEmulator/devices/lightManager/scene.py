@@ -1,8 +1,12 @@
 import configManager
+import logManager
+from functions.lightRequest import sendLightRequest
+from functions.updateGroup import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config #all super temp stuff while moving/very jank
+logging = logManager.logger.get_logger(__name__)
 
-def switchScene(group, direction):
+def switchScene(group, direction): # no clue how this differs from splitlightstodevices...
     group_scenes = []
     current_position = -1
     possible_current_position = -1 # used in case the brigtness was changes and will be no perfect match (scene lightstates vs light states)
