@@ -1,0 +1,2 @@
+git update-index --assume-unchanged docker-compose.yml
+git update-index --no-assume-unchanged docker-compose.yml
