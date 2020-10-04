@@ -8,7 +8,7 @@ from time import sleep
 from datetime import datetime
 from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest
 from lights.discover import scanForLights
-from functions.core import generateDxState, nextFreeId
+from functions.core import generateDxState, nextFreeId, capabilities
 from flask_restful import Resource
 from flask import request
 from pprint import pprint
@@ -83,7 +83,10 @@ class EntireConfig(Resource):
 class ResourceElements(Resource):
     def get(self,username, resource):
         if username in bridgeConfig["config"]["whitelist"]:
-            return  bridgeConfig[resource]
+            if resource == "capabilities":
+                return capabilities()
+            else:
+                return  bridgeConfig[resource]
         elif resource == "config":
             config = bridgeConfig["config"]
             return {"name":config["name"],"datastoreversion":"94","swversion":config["swversion"],"apiversion":config["apiversion"],"mac":config["mac"],"bridgeid":config["bridgeid"],"factorynew":False,"replacesbridgeid":None,"modelid":config["modelid"],"starterkitid":""}
