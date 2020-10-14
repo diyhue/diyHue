@@ -29,7 +29,7 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable qemu
@@ -69,7 +69,7 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable qemu
@@ -112,7 +112,7 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
@@ -149,13 +149,13 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
       - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run: |
@@ -210,13 +210,13 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
       - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run:
@@ -311,13 +311,13 @@ jobs:
           else
             export DOCKER_REPO=$GITHUB_REPOSITORY
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
       - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
         run:
