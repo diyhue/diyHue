@@ -114,3 +114,10 @@ def groupZero(state):
         if "on" in state:
             bridge_config["groups"][group]["state"]["any_on"] = state["on"]
             bridge_config["groups"][group]["state"]["all_on"] = state["on"]
+
+
+def find_light_in_config_from_uid(bridge_config, unique_id):
+    for light in bridge_config["lights"].keys():
+        if bridge_config["lights"][light]["uniqueid"] == unique_id:
+            return light
+    return None

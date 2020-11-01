@@ -18,13 +18,11 @@ import configManager
 import logManager
 from devices import lightManager  # temp stuff
 from functions import nextFreeId
-from functions.html import (description, webform_hue, webform_linkbutton,
-                            webform_milight, webformDeconz, webformTradfri, lightsHttp)
 from functions.json import pretty_json
 from functions.lightRequest import sendLightRequest
 from functions.request import sendRequest
 from functions.updateGroup import updateGroupStats
-from protocols import deconz, tradfri, native
+from protocols import deconz, tradfri, native, milight, hue
 from protocols.hue.scheduler import generateDxState, rulesProcessor
 from protocols.hue.sensors import addHueSwitch, addHueMotionSensor, motionDetected
 
@@ -33,30 +31,6 @@ logging = logManager.logger.get_logger(__name__)
 new_lights = configManager.runtimeConfig.newLights
 dxState = configManager.runtimeConfig.dxState
 HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
-
-
-# random functions here are only used in the webserver class
-
-def find_light_in_config_from_uid(bridge_config, unique_id):
-    for light in bridge_config["lights"].keys():
-        if bridge_config["lights"][light]["uniqueid"] == unique_id:
-            return light
-    return None
-
-
-def getLightsVersions():
-    lights = {}
-    githubCatalog = json.loads(requests.get('https://raw.githubusercontent.com/diyhue/Lights/master/catalog.json').text)
-    for light in bridge_config["lights_address"].keys():
-        if bridge_config["lights_address"][light]["protocol"] in ["native_single", "native_multi"]:
-            if "light_nr" not in bridge_config["lights_address"][light] or bridge_config["lights_address"][light][
-                "light_nr"] == 1:
-                currentData = json.loads(
-                    requests.get('http://' + bridge_config["lights_address"][light]["ip"] + '/detect', timeout=3).text)
-                lights[light] = {"name": currentData["name"], "currentVersion": currentData["version"],
-                                 "lastVersion": githubCatalog[currentData["type"]]["version"],
-                                 "firmware": githubCatalog[currentData["type"]]["filename"]}
-    return lights
 
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -140,6 +114,7 @@ class S(BaseHTTPRequestHandler):
         elif self.path == '/config.js':
             self._set_headers()
             # create a new user key in case none is available
+            # TODO: make more secure...
             if len(bridge_config["config"]["whitelist"]) == 0:
                 bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {
                     "create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
@@ -147,6 +122,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(
                 bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
         elif self.path.endswith((".css", ".map", ".png", ".js", ".webmanifest")):
+            # TODO: make web ui under /web to avoid this mess
             self._set_headers()
             f = open(cwd + '/web-ui' + self.path, 'rb')
             self._set_end_headers(f.read())
@@ -155,18 +131,18 @@ class S(BaseHTTPRequestHandler):
             HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
             mac = configManager.runtimeConfig.arg["MAC"]
             self._set_end_headers(bytes(
-                description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
+                lightManager.html.description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
                 "utf8"))
         elif self.path == "/lights.json":
             self._set_headers()
             self._set_end_headers(
-                bytes(json.dumps(getLightsVersions(), separators=(',', ':'), ensure_ascii=False), "utf8"))
+                bytes(json.dumps(native.updater.getLightsVersions(), separators=(',', ':'), ensure_ascii=False), "utf8"))
         elif self.path.startswith("/lights"):
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "light" in get_parameters:
                 native.updater.updateLight(get_parameters["light"][0], get_parameters["filename"][0])
-            self._set_end_headers(bytes(lightsHttp(), "utf8"))
+            self._set_end_headers(bytes(lightManager.html.lightsHttp(), "utf8"))
 
         elif self.path == '/save':
             self._set_headers()
@@ -175,6 +151,7 @@ class S(BaseHTTPRequestHandler):
                 json.dumps([{"success": {"configuration": "saved", "filename": "/opt/hue-emulator/config.json"}}],
                            separators=(',', ':'), ensure_ascii=False), "utf8"))
         elif self.path.startswith("/tradfri"):  # setup Tradfri gateway
+            # TODO: purge tradfri, milight, hue, deconz, and switch... very messy
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
@@ -188,12 +165,12 @@ class S(BaseHTTPRequestHandler):
                                             "identity": new_identity}
                 lights_found = tradfri.discover.scanTradfri()
                 if lights_found == 0:
-                    self._set_end_headers(bytes(webformTradfri() + "<br> No lights where found", "utf8"))
+                    self._set_end_headers(bytes(tradfri.html.webformTradfri() + "<br> No lights where found", "utf8"))
                 else:
                     self._set_end_headers(
-                        bytes(webformTradfri() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+                        bytes(tradfri.html.webformTradfri() + "<br> " + str(lights_found) + " lights where found", "utf8"))
             else:
-                self._set_end_headers(bytes(webformTradfri(), "utf8"))
+                self._set_end_headers(bytes(tradfri.html.webformTradfri(), "utf8"))
         elif self.path.startswith("/milight"):  # setup milight bulb
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -212,9 +189,9 @@ class S(BaseHTTPRequestHandler):
                                                                  "mode": get_parameters["mode"][0],
                                                                  "group": int(get_parameters["group"][0]),
                                                                  "ip": get_parameters["ip"][0], "protocol": "milight"}
-                self._set_end_headers(bytes(webform_milight() + "<br> Light added", "utf8"))
+                self._set_end_headers(bytes(milight.html.webform_milight() + "<br> Light added", "utf8"))
             else:
-                self._set_end_headers(bytes(webform_milight(), "utf8"))
+                self._set_end_headers(bytes(milight.html.webform_milight(), "utf8"))
         elif self.path.startswith("/hue"):  # setup hue bridge
             if "linkbutton" in self.path:  # Hub button emulated
                 if self.headers['Authorization'] == None:
@@ -229,7 +206,7 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["lastlinkbuttonpushed"] = str(int(datetime.now().timestamp()))
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(
-                            bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
+                            bytes(lightManager.html.webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
                         self._set_AUTHHEAD()
                         self._set_end_headers(bytes('You are succesfully disconnected', "utf8"))
@@ -241,11 +218,11 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["linkbutton_auth"] = tmp_password[1]
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(bytes(
-                            webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
+                            lightManager.html.webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
                             "utf8"))
                     else:
                         self._set_headers()
-                        self._set_end_headers(bytes(webform_linkbutton(), "utf8"))
+                        self._set_end_headers(bytes(lightManager.html.webform_linkbutton(), "utf8"))
                     pass
                 else:
                     self._set_AUTHHEAD()
@@ -267,7 +244,7 @@ class S(BaseHTTPRequestHandler):
                         # Look through all lights in the response, and check if we've seen them before
                         lights_found = 0
                         for light_nr, data in hue_lights.items():
-                            light_id = find_light_in_config_from_uid(bridge_config, data['uniqueid'])
+                            light_id = lightManager.control.find_light_in_config_from_uid(bridge_config, data['uniqueid'])
                             if light_id is None:
                                 light_id = nextFreeId(bridge_config, "lights")
                                 logging.info('Found new light: %s %s', light_id, data)
@@ -283,15 +260,15 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][light_id] = data
 
                         if lights_found == 0:
-                            self._set_end_headers(bytes(webform_hue() + "<br> No lights where found", "utf8"))
+                            self._set_end_headers(bytes(hue.html.webform_hue() + "<br> No lights where found", "utf8"))
                         else:
                             configManager.bridgeConfig.save_config()
                             self._set_end_headers(
-                                bytes(webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
+                                bytes(hue.html.webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
                     else:
-                        self._set_end_headers(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
+                        self._set_end_headers(bytes(hue.html.webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
                 else:
-                    self._set_end_headers(bytes(webform_hue(), "utf8"))
+                    self._set_end_headers(bytes(hue.html.webform_hue(), "utf8"))
         elif self.path.startswith("/deconz"):  # setup imported deconz sensors
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -343,8 +320,8 @@ class S(BaseHTTPRequestHandler):
                                             get_parameters["mode_" + key][0]
 
             else:
-                Thread(target=deconz.scanDeconz).start()
-            self._set_end_headers(bytes(webformDeconz(
+                Thread(target=deconz.deconz.scanDeconz).start()
+            self._set_end_headers(bytes(deconz.html.webformDeconz(
                 {"deconz": bridge_config["deconz"], "sensors": bridge_config["sensors"],
                  "groups": bridge_config["groups"]}), "utf8"))
         elif self.path.startswith("/switch"):  # request from an ESP8266 switch or sensor

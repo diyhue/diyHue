@@ -1,1 +1,1 @@
-from ..tradfri import discover, sensors
+from ..tradfri import discover, sensors, html
