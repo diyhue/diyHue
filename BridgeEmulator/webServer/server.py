@@ -98,12 +98,12 @@ class S(BaseHTTPRequestHandler):
 
         if self.path == '/' or self.path == '/index.html':
             self._set_headers()
-            f = open(cwd + '/web-ui/index.html')
-            self._set_end_headers(bytes(f.read(), "utf8"))
+            with open(cwd + '/web-ui/index.html') as f:
+                self._set_end_headers(bytes(f.read(), "utf8"))
         elif self.path == "/debug/clip.html":
             self._set_headers()
-            f = open(cwd + '/debug/clip.html', 'rb')
-            self._set_end_headers(f.read())
+            with open(cwd + '/debug/clip.html', 'rb') as f:
+                self._set_end_headers(f.read())
         elif self.path == "/factory-reset":
             self._set_headers()
             previous = configManager.bridgeConfig.reset_config()
@@ -124,8 +124,8 @@ class S(BaseHTTPRequestHandler):
         elif self.path.endswith((".css", ".map", ".png", ".js", ".webmanifest")):
             # TODO: make web ui under /web to avoid this mess
             self._set_headers()
-            f = open(cwd + '/web-ui' + self.path, 'rb')
-            self._set_end_headers(f.read())
+            with open(cwd + '/web-ui' + self.path, 'rb') as f:
+                self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
             HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
@@ -409,21 +409,21 @@ class S(BaseHTTPRequestHandler):
             lightManager.discover.scan_for_lights()
             self._set_end_headers(bytes("done", "utf8"))
         else:
-            url_pices = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go
-            if len(url_pices) < 3:
+            url_pieces = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go
+            if len(url_pieces) < 3:
                 # self._set_headers_error()
                 self.send_error(404, 'not found')
                 return
             else:
                 self._set_headers()
-            if url_pices[2] in bridge_config["config"]["whitelist"]:  # if username is in whitelist
+            if url_pieces[2] in bridge_config["config"]["whitelist"]:  # if username is in whitelist
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime(
+                bridge_config["config"]["whitelist"][url_pieces[2]]["last use date"] = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["linkbutton"] = int(
                     bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().timestamp())
-                if len(url_pices) == 3:  # print entire config
+                if len(url_pieces) == 3:  # print entire config
                     # trim off lightstates as per hue api
                     scenelist = {}
                     scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
@@ -442,8 +442,8 @@ class S(BaseHTTPRequestHandler):
                          "schedules": bridge_config["schedules"], "rules": bridge_config["rules"],
                          "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},
                         separators=(',', ':'), ensure_ascii=False), "utf8"))
-                elif len(url_pices) == 4:  # print specified object config
-                    if "scenes" == url_pices[3]:  # trim lightstates for scenes
+                elif len(url_pieces) == 4:  # print specified object config
+                    if "scenes" == url_pieces[3]:  # trim lightstates for scenes
                         scenelist = {}
                         scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
                         for scene in list(scenelist["scenes"]):
@@ -458,14 +458,14 @@ class S(BaseHTTPRequestHandler):
                             bytes(json.dumps(scenelist["scenes"], separators=(',', ':'), ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(
-                            bytes(json.dumps(bridge_config[url_pices[3]], separators=(',', ':'), ensure_ascii=False),
+                            bytes(json.dumps(bridge_config[url_pieces[3]], separators=(',', ':'), ensure_ascii=False),
                                   "utf8"))
-                elif (len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == 'state')):
-                    if url_pices[4] == "new":  # return new lights and sensors only
+                elif (len(url_pieces) == 5 or (len(url_pieces) == 6 and url_pieces[5] == 'state')):
+                    if url_pieces[4] == "new":  # return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self._set_end_headers(
                             bytes(json.dumps(new_lights, separators=(',', ':'), ensure_ascii=False), "utf8"))
-                    elif url_pices[3] == "groups" and url_pices[4] == "0":
+                    elif url_pieces[3] == "groups" and url_pieces[4] == "0":
                         any_on = False
                         all_on = True
                         for group_state in bridge_config["groups"].keys():
@@ -479,11 +479,11 @@ class S(BaseHTTPRequestHandler):
                              "state": {"all_on": all_on, "any_on": any_on}, "recycle": False,
                              "action": {"on": False, "alert": "none"}}, separators=(',', ':'), ensure_ascii=False),
                             "utf8"))
-                    elif url_pices[3] == "info" and url_pices[4] == "timezones":
+                    elif url_pieces[3] == "info" and url_pieces[4] == "timezones":
                         self._set_end_headers(bytes(
-                            json.dumps(bridge_config["capabilities"][url_pices[4]]["values"], separators=(',', ':'),
+                            json.dumps(bridge_config["capabilities"][url_pieces[4]]["values"], separators=(',', ':'),
                                        ensure_ascii=False), "utf8"))
-                    elif "scenes" == url_pices[3]:  # trim lightstates for scenes
+                    elif "scenes" == url_pieces[3]:  # trim lightstates for scenes
                         scenelist = {}
                         scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
                         for scene in list(scenelist["scenes"]):
@@ -493,17 +493,17 @@ class S(BaseHTTPRequestHandler):
                                 scenelist["scenes"][scene]["lights"] = \
                                     bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(
-                            json.dumps(scenelist["scenes"][url_pices[4]], separators=(',', ':'), ensure_ascii=False),
+                            json.dumps(scenelist["scenes"][url_pieces[4]], separators=(',', ':'), ensure_ascii=False),
                             "utf8"))
                     else:
-                        if url_pices[4] in bridge_config[url_pices[3]]:
+                        if url_pieces[4] in bridge_config[url_pieces[3]]:
                             self._set_end_headers(bytes(
-                                json.dumps(bridge_config[url_pices[3]][url_pices[4]], separators=(',', ':'),
+                                json.dumps(bridge_config[url_pieces[3]][url_pieces[4]], separators=(',', ':'),
                                            ensure_ascii=False), "utf8"))
                         else:
                             self._set_end_headers(bytes())
-            elif (len(url_pices) == 4 and url_pices[3] == "config") or (
-                    len(url_pices) == 3 and url_pices[2] == "config"):  # used by applications to discover the bridge
+            elif (len(url_pieces) == 4 and url_pieces[3] == "config") or (
+                    len(url_pieces) == 3 and url_pieces[2] == "config"):  # used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"], "datastoreversion": 70,
                                                         "swversion": bridge_config["config"]["swversion"],
                                                         "apiversion": bridge_config["config"]["apiversion"],
