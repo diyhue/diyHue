@@ -529,6 +529,7 @@ class S(BaseHTTPRequestHandler):
         self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
+            # we no longer update diyhue, only the version number to appear updated, updates are to be done on the container only
             configManager.bridgeConfig.update_swversion()
             self._set_end_headers(bytes(
                 json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}], separators=(',', ':'),
@@ -539,136 +540,136 @@ class S(BaseHTTPRequestHandler):
             raw_json = raw_json.replace("\n", "")
             post_dictionary = json.loads(raw_json)
             logging.info(self.data_string)
-        url_pices = self.path.rstrip('/').split('/')
-        if len(url_pices) == 4:  # data was posted to a location
-            if url_pices[2] in bridge_config["config"]["whitelist"]:  # check to make sure request is authorized
-                if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
-                    # if was a request to scan for lights of sensors
-                    new_lights.clear()
-                    Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
-                    sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
-                    self._set_end_headers(bytes(
-                        json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
-                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
-                elif url_pices[3] == "":
-                    self._set_end_headers(bytes(
-                        json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],
-                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
-                else:  # create object, appears to be saving resource information e.g. scenes, groups, schedules, rules, sensors, resourcelinks
-                    #this is also terrible
-                    # find the first unused id for new object
-                    new_object_id = nextFreeId(bridge_config, url_pices[3])
-                    if url_pices[3] == "scenes":  # store scene
-                        post_dictionary.update(
-                            {"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                             "owner": url_pices[2]})
-                        if "locked" not in post_dictionary:
-                            post_dictionary["locked"] = False
-                        if "picture" not in post_dictionary:
-                            post_dictionary["picture"] = ""
-                        if "type" not in post_dictionary:
-                            post_dictionary["type"] = "LightScene"
-                        if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
-                            post_dictionary["lightstates"] = {}
-                            if "lights" in post_dictionary:
-                                lights = post_dictionary["lights"]
-                            elif "group" in post_dictionary:
-                                lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
-                            for light in lights:
-                                post_dictionary["lightstates"][light] = {
-                                    "on": bridge_config["lights"][light]["state"]["on"]}
-                                if "bri" in bridge_config["lights"][light]["state"]:
-                                    post_dictionary["lightstates"][light]["bri"] = \
-                                        bridge_config["lights"][light]["state"]["bri"]
-                                if "colormode" in bridge_config["lights"][light]["state"]:
-                                    if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and \
-                                            bridge_config["lights"][light]["state"]["colormode"] in \
-                                            bridge_config["lights"][light]["state"]:
-                                        post_dictionary["lightstates"][light][
-                                            bridge_config["lights"][light]["state"]["colormode"]] = \
-                                            bridge_config["lights"][light]["state"][
-                                                bridge_config["lights"][light]["state"]["colormode"]]
-                                    elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
-                                        post_dictionary["lightstates"][light]["hue"] = \
-                                            bridge_config["lights"][light]["state"]["hue"]
-                                        post_dictionary["lightstates"][light]["sat"] = \
-                                            bridge_config["lights"][light]["state"]["sat"]
+            url_pices = self.path.rstrip('/').split('/')
+            if len(url_pices) == 4:  # data was posted to a location
+                if url_pices[2] in bridge_config["config"]["whitelist"]:  # check to make sure request is authorized
+                    if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
+                        # if was a request to scan for lights of sensors
+                        new_lights.clear()
+                        Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
+                        sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
+                                       separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    elif url_pices[3] == "":
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],
+                                       separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    else:  # create object, appears to be saving resource information e.g. scenes, groups, schedules, rules, sensors, resourcelinks
+                        #this is also terrible
+                        # find the first unused id for new object
+                        new_object_id = nextFreeId(bridge_config, url_pices[3])
+                        if url_pices[3] == "scenes":  # store scene
+                            post_dictionary.update(
+                                {"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                 "owner": url_pices[2]})
+                            if "locked" not in post_dictionary:
+                                post_dictionary["locked"] = False
+                            if "picture" not in post_dictionary:
+                                post_dictionary["picture"] = ""
+                            if "type" not in post_dictionary:
+                                post_dictionary["type"] = "LightScene"
+                            if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
+                                post_dictionary["lightstates"] = {}
+                                if "lights" in post_dictionary:
+                                    lights = post_dictionary["lights"]
+                                elif "group" in post_dictionary:
+                                    lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                                for light in lights:
+                                    post_dictionary["lightstates"][light] = {
+                                        "on": bridge_config["lights"][light]["state"]["on"]}
+                                    if "bri" in bridge_config["lights"][light]["state"]:
+                                        post_dictionary["lightstates"][light]["bri"] = \
+                                            bridge_config["lights"][light]["state"]["bri"]
+                                    if "colormode" in bridge_config["lights"][light]["state"]:
+                                        if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and \
+                                                bridge_config["lights"][light]["state"]["colormode"] in \
+                                                bridge_config["lights"][light]["state"]:
+                                            post_dictionary["lightstates"][light][
+                                                bridge_config["lights"][light]["state"]["colormode"]] = \
+                                                bridge_config["lights"][light]["state"][
+                                                    bridge_config["lights"][light]["state"]["colormode"]]
+                                        elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                            post_dictionary["lightstates"][light]["hue"] = \
+                                                bridge_config["lights"][light]["state"]["hue"]
+                                            post_dictionary["lightstates"][light]["sat"] = \
+                                                bridge_config["lights"][light]["state"]["sat"]
 
-                    elif url_pices[3] == "groups":
-                        if "type" not in post_dictionary:
-                            post_dictionary["type"] = "LightGroup"
-                        if post_dictionary["type"] in ["Room", "Zone"] and "class" not in post_dictionary:
-                            post_dictionary["class"] = "Other"
-                        elif post_dictionary["type"] == "Entertainment" and "stream" not in post_dictionary:
-                            post_dictionary["stream"] = {"active": False, "owner": url_pices[2], "proxymode": "auto",
-                                                         "proxynode": "/bridge"}
-                        post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
-                    elif url_pices[3] == "schedules":
-                        try:
-                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                    "time": post_dictionary["localtime"]})
-                        except KeyError:
-                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                    "localtime": post_dictionary["time"]})
-                        if post_dictionary["localtime"].startswith("PT") or post_dictionary["localtime"].startswith(
-                                "R/PT"):
-                            post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                        if not "status" in post_dictionary:
-                            post_dictionary.update({"status": "enabled"})
-                    elif url_pices[3] == "rules":
-                        post_dictionary.update({"owner": url_pices[2], "lasttriggered": "none",
-                                                "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                "timestriggered": 0})
-                        if not "status" in post_dictionary:
-                            post_dictionary.update({"status": "enabled"})
-                    elif url_pices[3] == "sensors":
-                        if "state" not in post_dictionary:
-                            post_dictionary["state"] = {}
-                        if "lastupdated" not in post_dictionary["state"]:
-                            post_dictionary["state"]["lastupdated"] = "none"
-                        if post_dictionary["modelid"] == "PHWA01":
-                            post_dictionary["state"]["status"] = 0
-                        elif post_dictionary["modelid"] == "PHA_CTRL_START":
-                            post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime(
-                                "%Y-%m-%dT%H:%M:%S")}, "config": {"on": True, "reachable": True}})
-                    elif url_pices[3] == "resourcelinks":
-                        post_dictionary.update({"owner": url_pices[2]})
-                    generateDxState()
-                    bridge_config[url_pices[3]][new_object_id] = post_dictionary
-                    logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4,
-                                            separators=(',', ': ')))
+                        elif url_pices[3] == "groups":
+                            if "type" not in post_dictionary:
+                                post_dictionary["type"] = "LightGroup"
+                            if post_dictionary["type"] in ["Room", "Zone"] and "class" not in post_dictionary:
+                                post_dictionary["class"] = "Other"
+                            elif post_dictionary["type"] == "Entertainment" and "stream" not in post_dictionary:
+                                post_dictionary["stream"] = {"active": False, "owner": url_pices[2], "proxymode": "auto",
+                                                             "proxynode": "/bridge"}
+                            post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
+                        elif url_pices[3] == "schedules":
+                            try:
+                                post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                        "time": post_dictionary["localtime"]})
+                            except KeyError:
+                                post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                        "localtime": post_dictionary["time"]})
+                            if post_dictionary["localtime"].startswith("PT") or post_dictionary["localtime"].startswith(
+                                    "R/PT"):
+                                post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                            if not "status" in post_dictionary:
+                                post_dictionary.update({"status": "enabled"})
+                        elif url_pices[3] == "rules":
+                            post_dictionary.update({"owner": url_pices[2], "lasttriggered": "none",
+                                                    "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                    "timestriggered": 0})
+                            if not "status" in post_dictionary:
+                                post_dictionary.update({"status": "enabled"})
+                        elif url_pices[3] == "sensors":
+                            if "state" not in post_dictionary:
+                                post_dictionary["state"] = {}
+                            if "lastupdated" not in post_dictionary["state"]:
+                                post_dictionary["state"]["lastupdated"] = "none"
+                            if post_dictionary["modelid"] == "PHWA01":
+                                post_dictionary["state"]["status"] = 0
+                            elif post_dictionary["modelid"] == "PHA_CTRL_START":
+                                post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime(
+                                    "%Y-%m-%dT%H:%M:%S")}, "config": {"on": True, "reachable": True}})
+                        elif url_pices[3] == "resourcelinks":
+                            post_dictionary.update({"owner": url_pices[2]})
+                        generateDxState()
+                        bridge_config[url_pices[3]][new_object_id] = post_dictionary
+                        logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4,
+                                                separators=(',', ': ')))
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':'), ensure_ascii=False),
+                            "utf8"))
+                else:
                     self._set_end_headers(bytes(
-                        json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':'), ensure_ascii=False),
-                        "utf8"))
-            else:
-                self._set_end_headers(bytes(
-                    json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
-                               separators=(',', ':'), ensure_ascii=False), "utf8"))
-                logging.info(
-                    json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
-                               sort_keys=True, indent=4, separators=(',', ': ')))
-        elif self.path.startswith("/api") and "devicetype" in post_dictionary:  # new registration by linkbutton
-            last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
-            if (configManager.runtimeConfig.arg["noLinkButton"] or last_button_press + 30 >= int(
-                    datetime.now().timestamp()) or
-                    bridge_config["config"]["linkbutton"]):
-                username = str(uuid.uuid1()).replace('-', '')
-                if post_dictionary["devicetype"].startswith("Hue Essentials"):
-                    username = "hueess" + username[-26:]
-                bridge_config["config"]["whitelist"][username] = {
-                    "last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                    "create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                    "name": post_dictionary["devicetype"]}
-                response = [{"success": {"username": username}}]
-                if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
-                    response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
-                self._set_end_headers(bytes(json.dumps(response, separators=(',', ':'), ensure_ascii=False), "utf8"))
-                logging.info(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
-            else:
-                self._set_end_headers(bytes(json.dumps(
-                    [{"error": {"type": 101, "address": self.path, "description": "link button not pressed"}}],
-                    separators=(',', ':'), ensure_ascii=False), "utf8"))
-        configManager.bridgeConfig.save_config()
+                        json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
+                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    logging.info(
+                        json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
+                                   sort_keys=True, indent=4, separators=(',', ': ')))
+            elif self.path.startswith("/api") and "devicetype" in post_dictionary:  # new registration by linkbutton
+                last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
+                if (configManager.runtimeConfig.arg["noLinkButton"] or last_button_press + 30 >= int(
+                        datetime.now().timestamp()) or
+                        bridge_config["config"]["linkbutton"]):
+                    username = str(uuid.uuid1()).replace('-', '')
+                    if post_dictionary["devicetype"].startswith("Hue Essentials"):
+                        username = "hueess" + username[-26:]
+                    bridge_config["config"]["whitelist"][username] = {
+                        "last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                        "create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                        "name": post_dictionary["devicetype"]}
+                    response = [{"success": {"username": username}}]
+                    if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
+                        response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
+                    self._set_end_headers(bytes(json.dumps(response, separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    logging.info(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+                else:
+                    self._set_end_headers(bytes(json.dumps(
+                        [{"error": {"type": 101, "address": self.path, "description": "link button not pressed"}}],
+                        separators=(',', ':'), ensure_ascii=False), "utf8"))
+            configManager.bridgeConfig.save_config()
 
     def do_PUT(self):
         self._set_headers()

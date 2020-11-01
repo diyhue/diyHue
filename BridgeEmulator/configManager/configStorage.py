@@ -7,6 +7,7 @@ from subprocess import call
 
 logging = logManager.logger.get_logger(__name__)
 
+# TODO: add empty file to config dir and check for it, if found, notify user to mount the config dir to ensure config is not lost
 
 def _generate_certificate(mac):
     logging.info("Generating certificate")
