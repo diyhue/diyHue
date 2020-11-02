@@ -1,6 +1,6 @@
 from functions.core import nextFreeId
 import configManager
-
+from datetime import datetime
 bridgeConfig = configManager.bridgeConfig.json_config
 
 def addTradfriDimmer(sensor_id, group_id):
