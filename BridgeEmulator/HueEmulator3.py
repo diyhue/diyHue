@@ -6,12 +6,11 @@ from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep
 from functions.ssdp import ssdpBroadcast, ssdpSearch
-from functions.entertainment import entertainmentService
+from lightManager.core.entertainment import entertainmentService
 from functions.request import sendRequest
-from functions.lightRequest import sendLightRequest, syncWithLights
+from lightManager.core.lightRequest import sendLightRequest, syncWithLights
 from protocols import mqtt, deconz
-from functions.remoteApi import remoteApi
-from functions.remoteDiscover import remoteDiscover
+import api
 import configManager
 import webServer # needs lots of work...
 from protocols.hue.scheduler import generateDxState, rulesProcessor
@@ -25,7 +24,7 @@ dxState = configManager.runtimeConfig.dxState
 new_lights = configManager.runtimeConfig.newLights
 
 
-def schedulerProcessor():
+def scheduleProcessor():
     while True:
         for schedule in bridge_config["schedules"].keys():
             try:
@@ -76,7 +75,7 @@ def schedulerProcessor():
 
 
 def updateAllLights():
-    ## apply last state on startup to all bulbs, usefull if there was a power outage
+    ## apply last state on startup to all bulbs, useful if there was a power outage
     if bridge_config["deconz"]["enabled"]:
         sleep(60) #give 1 minute for deconz to have ZigBee network ready
     for light in bridge_config["lights_address"]:
@@ -142,16 +141,16 @@ if __name__ == "__main__":
             Thread(target=updateAllLights).start()
         Thread(target=ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
         Thread(target=ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-        Thread(target=schedulerProcessor).start()
+        Thread(target=scheduleProcessor).start()
         Thread(target=syncWithLights, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["config"]["whitelist"], bridge_config["groups"], off_if_unreachable]).start()
         Thread(target=entertainmentService, args=[bridge_config["lights"], bridge_config["lights_address"], bridge_config["groups"], HOST_IP]).start()
         Thread(target=webServer.server.run, args=[False]).start()
         if not configManager.runtimeConfig.arg["noServeHttps"]:
             Thread(target=webServer.server.run, args=[True]).start()
         Thread(target=daylightSensor).start()
-        Thread(target=remoteApi, args=[BIND_IP, bridge_config["config"]]).start()
+        Thread(target=api.remote.remoteApi, args=[BIND_IP, bridge_config["config"]]).start()
         if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
-            Thread(target=remoteDiscover, args=[bridge_config["config"]]).start()
+            Thread(target=api.remote.remoteDiscover, args=[bridge_config["config"]]).start()
 
         while True:
             sleep(10)

@@ -16,12 +16,12 @@ import requests
 
 import configManager
 import logManager
-from devices import lightManager  # temp stuff
+import lightManager
 from functions import nextFreeId
 from functions.json import pretty_json
-from functions.lightRequest import sendLightRequest
+from lightManager.core.lightRequest import sendLightRequest
 from functions.request import sendRequest
-from functions.updateGroup import updateGroupStats
+from lightManager.core.updateGroup import updateGroupStats
 from protocols import deconz, tradfri, native, milight, hue
 from protocols.hue.scheduler import generateDxState, rulesProcessor
 from protocols.hue.sensors import addHueSwitch, addHueMotionSensor, motionDetected
@@ -131,7 +131,7 @@ class S(BaseHTTPRequestHandler):
             HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
             mac = configManager.runtimeConfig.arg["MAC"]
             self._set_end_headers(bytes(
-                lightManager.html.description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
+                lightManager.core.html.description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
                 "utf8"))
         elif self.path == "/lights.json":
             self._set_headers()
@@ -142,7 +142,7 @@ class S(BaseHTTPRequestHandler):
             get_parameters = parse_qs(urlparse(self.path).query)
             if "light" in get_parameters:
                 native.updater.updateLight(get_parameters["light"][0], get_parameters["filename"][0])
-            self._set_end_headers(bytes(lightManager.html.lightsHttp(), "utf8"))
+            self._set_end_headers(bytes(lightManager.core.html.lightsHttp(), "utf8"))
 
         elif self.path == '/save':
             self._set_headers()
@@ -206,7 +206,8 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["lastlinkbuttonpushed"] = str(int(datetime.now().timestamp()))
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(
-                            bytes(lightManager.html.webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
+                            bytes(
+                                lightManager.core.html.webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
                         self._set_AUTHHEAD()
                         self._set_end_headers(bytes('You are succesfully disconnected', "utf8"))
@@ -218,11 +219,11 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["linkbutton_auth"] = tmp_password[1]
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(bytes(
-                            lightManager.html.webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
+                            lightManager.core.html.webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
                             "utf8"))
                     else:
                         self._set_headers()
-                        self._set_end_headers(bytes(lightManager.html.webform_linkbutton(), "utf8"))
+                        self._set_end_headers(bytes(lightManager.core.html.webform_linkbutton(), "utf8"))
                     pass
                 else:
                     self._set_AUTHHEAD()
@@ -811,10 +812,10 @@ class S(BaseHTTPRequestHandler):
                     elif "scene" in put_dictionary:  # scene applied to group
                         if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
                             lightManager.control.splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
-                                                 bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                                                                      bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                         else:
                             lightManager.control.splitLightsToDevices(url_pices[4], {},
-                                                 bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                                                                      bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary or "hue_inc" in put_dictionary:
                         lightManager.control.splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:

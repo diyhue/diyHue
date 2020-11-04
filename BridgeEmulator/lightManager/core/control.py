@@ -4,8 +4,8 @@ from time import sleep
 import requests
 
 import configManager
-from functions.lightRequest import sendLightRequest
-from functions.updateGroup import updateGroupStats
+from lightManager.core.lightRequest import sendLightRequest
+from lightManager.core.updateGroup import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config
 

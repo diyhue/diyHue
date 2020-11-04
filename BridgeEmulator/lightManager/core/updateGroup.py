@@ -1,3 +1,4 @@
+# should be done as part of object instead of being randomly called
 def updateGroupStats(light, lights, groups): #set group stats based on lights status in that group
     for group in groups:
         if "lights" in groups[group] and light in groups[group]["lights"]:

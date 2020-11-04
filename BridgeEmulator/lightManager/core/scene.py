@@ -1,7 +1,7 @@
 import configManager
 import logManager
-from functions.lightRequest import sendLightRequest
-from functions.updateGroup import updateGroupStats
+from lightManager.core.lightRequest import sendLightRequest
+from lightManager.core.updateGroup import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config #all super temp stuff while moving/very jank
 logging = logManager.logger.get_logger(__name__)

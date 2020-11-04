@@ -9,7 +9,7 @@ from protocols.hue.scheduler import generateDxState, rulesProcessor
 from functions.request import sendRequest
 from threading import Thread
 from functions import nextFreeId
-from functions.updateGroup import updateGroupStats
+from lightManager.core.updateGroup import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config
 logging = logManager.logger.get_logger(__name__)

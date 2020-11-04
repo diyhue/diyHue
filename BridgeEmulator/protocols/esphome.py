@@ -9,6 +9,25 @@ from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightne
 
 logging = logManager.logger.get_logger(__name__)
 
+def _get_rgb():
+    light_type = {"type": "Extended color light", "swversion": "1.46.13_r26312", "manufacturername": "ESPHome"}
+    light_type.state = {"on": False, "bri": 254, "hue": 0, "sat": 0, "xy": [0.0, 0.0],
+                        "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}
+    light_types.config = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
+    return light_type
+
+def _get_dimmable():
+    light_type = {"type": "Dimmable light", "swversion": "1.46.13_r26312", "manufacturername": "ESPHome"}
+    light_type.state = {"on": False, "bri": 254, "alert": "none", "reachable": True}
+    light_type.config = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
+    return light_type
+
+def _get_toggle():
+    light_type = {"type": "On/Off plug-in unit", "swversion": "V1.04.12", "manufacturername": "ESPHome"}
+    light_type.state = {"on": False, "alert": "none", "reachable": True}
+    light_type.config = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
+    return light_type
+
 def getRequest(address, request_data, timeout=3):
 
     head = {"Content-type": "application/json"}
@@ -83,26 +102,34 @@ def discover(bridge_config, new_lights):
                     properties = {"rgb": True, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     esphome_model = "ESPHome-RGBW"
                     modelid = "LCT015"
+                    light_properties = light_types[modelid]
                 elif (white_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a CT ESPHome device")
                     properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     esphome_model = "ESPHome-CT"
                     modelid = "LWB010"
+                    light_properties = light_types[modelid]
                 elif (color_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a RGB ESPHome device")
                     properties = {"rgb": True, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     esphome_model = "ESPHome-RGB"
-                    modelid = "ESPHome-RGB"
+                    modelid = esphome_model
+                    light_properties = _get_rgb()
                 elif (dim_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Dimmable ESPHome device")
                     properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     esphome_model = "ESPHome-Dimmable"
-                    modelid = "ESPHome-Dimmable"
+                    modelid = esphome_model
+                    light_properties = _get_dimmable()
                 elif (toggle_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Toggle ESPHome device")
                     properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
                     esphome_model = "ESPHome-Toggle"
-                    modelid = "ESPHome-Toggle"
+                    modelid = esphome_model
+                    light_properties = _get_toggle()
+                else:
+                    logging.debug("ESPHome: ip " + ip + " is unknown device")
+                    raise
 
                 device_exist = False
                 for light in bridge_config["lights_address"].keys():
@@ -118,18 +145,16 @@ def discover(bridge_config, new_lights):
                     logging.debug("ESPHome: Adding ESPHome " + properties["id"])
                     new_light_id = nextFreeId(bridge_config, "lights")
                     bridge_config["lights"][new_light_id] = {}
-                    bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
-                    bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
+                    bridge_config["lights"][new_light_id]["state"] = light_properties["state"]
+                    bridge_config["lights"][new_light_id]["type"] = light_properties["type"]
                     bridge_config["lights"][new_light_id]["name"] = light_name
                     bridge_config["lights"][new_light_id]["modelid"] = modelid
-                    bridge_config["lights"][new_light_id]["manufacturername"] = light_types[modelid]["manufacturername"]
-                    bridge_config["lights"][new_light_id]["swversion"] = light_types[modelid]["swversion"]
-                    bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+                    bridge_config["lights"][new_light_id]["manufacturername"] = light_properties["manufacturername"]
+                    bridge_config["lights"][new_light_id]["swversion"] = light_properties["swversion"]
+                    bridge_config["lights"][new_light_id]["config"] = light_properties["config"]
                     bridge_config["lights"][new_light_id]["uniqueid"] = mac
                     if modelid == "LCT015":
                         bridge_config["lights"][new_light_id]["capabilities"] = light_types[modelid]["capabilities"]
-                        #bridge_config["lights"][new_light_id]["streaming"] = light_types[modelid]["streaming"]
-                    #new_lights.update({new_light_id: {"name": light_name}})
                     bridge_config["lights_address"][new_light_id] = {}
                     bridge_config["lights_address"][new_light_id]["ip"] = properties["ip"]
                     bridge_config["lights_address"][new_light_id]["id"] = properties["id"]

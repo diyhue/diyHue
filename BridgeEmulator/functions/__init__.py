@@ -12,18 +12,6 @@ light_types["Tasmota"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, 
 light_types["Shelly"] = {"type": "shelly1", "swversion": "1.46.13_r26312"}
 light_types["Shelly"]["state"] = {"on": False, "alert": "none", "reachable": True}
 
-light_types["ESPHome-RGB"] = {"type": "Extended color light", "swversion": "1.46.13_r26312", "manufacturername": "ESPHome"}
-light_types["ESPHome-RGB"]["state"] = {"on": False, "bri": 254, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "alert": "none", "effect": "none", "colormode": "xy", "reachable": True}
-light_types["ESPHome-RGB"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
-
-light_types["ESPHome-Dimmable"] = {"type": "Dimmable light", "swversion": "1.46.13_r26312", "manufacturername": "ESPHome"}
-light_types["ESPHome-Dimmable"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
-light_types["ESPHome-Dimmable"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
-
-light_types["ESPHOME-Toggle"] = {"type": "On/Off plug-in unit", "swversion": "V1.04.12", "manufacturername": "ESPHome"}
-light_types["ESPHOME-Toggle"]["state"] = {"on": False, "alert": "none", "reachable": True}
-light_types["ESPHOME-Toggle"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
-
 light_types["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "modelid": "LCT001"}
 light_types["LCT001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
 light_types["LCT001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "powerfail"}}

@@ -1,11 +1,15 @@
 import argparse
 from os import getenv
 from subprocess import check_output
-
 import logManager
-from functions.network import getIpAddress
+import socket
 
 logging = logManager.logger.get_logger(__name__)
+
+def _getIpAddress():
+   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+   s.connect(("8.8.8.8", 80))
+   return s.getsockname()[0]
 
 def get_environment_variable(var, boolean=False):
     value = getenv(var)
@@ -73,7 +77,7 @@ def parse_arguments():
     elif bind_ip:
         host_ip = bind_ip
     else:
-        host_ip = getIpAddress()
+        host_ip = _getIpAddress()
     argumentDict["HOST_IP"] = host_ip
 
     if args.http_port:  # should be depreciated
