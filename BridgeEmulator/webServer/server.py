@@ -417,6 +417,7 @@ class S(BaseHTTPRequestHandler):
             else:
                 self._set_headers()
             if url_pieces[2] in bridge_config["config"]["whitelist"]:  # if username is in whitelist
+                # TODO: instead of storing time in a config file, dynamically generate return output (think django templates)
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["whitelist"][url_pieces[2]]["last use date"] = datetime.now().strftime(
