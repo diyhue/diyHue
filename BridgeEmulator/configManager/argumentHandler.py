@@ -23,7 +23,6 @@ def process_arguments(args):
         logging.info("Debug logging disabled!")
     else:
         logging.info("Debug logging enabled!")
-    configManager.coreConfig.initialize_certificate()
 
 
 def parse_arguments():
