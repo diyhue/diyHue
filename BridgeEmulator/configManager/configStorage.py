@@ -36,7 +36,6 @@ class configStorage:
         if not os.path.exists(self.configDir):
             os.makedirs(self.configDir)
         self.load_core()
-        self.initialize_certificate()
 
     def _generate_new_config(self):
         self.bridge_config = {}

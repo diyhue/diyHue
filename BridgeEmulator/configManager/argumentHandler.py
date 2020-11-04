@@ -1,9 +1,9 @@
 import argparse
-import logManager
-import configManager
 from os import getenv
-from functions.network import getIpAddress
 from subprocess import check_output
+
+import logManager
+from functions.network import getIpAddress
 
 logging = logManager.logger.get_logger(__name__)
 

@@ -11,6 +11,7 @@ runtimeConfig = runtimeConfigHandler.Config()
 # Initialize runtime configuration
 runtimeConfig.populate()
 argumentHandler.process_arguments(runtimeConfig.arg)
+coreConfig.initialize_certificate()
 
 # Initialize bridge config
 bridgeConfig.generate_security_key()
