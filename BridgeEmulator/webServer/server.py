@@ -407,7 +407,7 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(bytes("done", "utf8"))
         elif self.path.startswith("/scan"):  # rescan
             self._set_headers()
-            lightManager.discover.scan_for_lights()
+            lightManager.core.discover.scan_for_lights()
             self._set_end_headers(bytes("done", "utf8"))
         else:
             url_pieces = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go

@@ -9,8 +9,7 @@ import configManager
 import logManager
 from functions import light_types, nextFreeId
 from functions.json import pretty_json
-from protocols import tradfri
-from protocols import yeelight, tasmota, shelly, esphome, mqtt, hyperion, deconz
+from protocols import tradfri, yeelight, tasmota, shelly, esphome, mqtt, hyperion, deconz
 
 bridge_config = configManager.bridgeConfig.json_config
 logging = logManager.logger.get_logger(__name__)
@@ -73,7 +72,7 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
     Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
     Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     Thread(target=hyperion.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=deconz.scanDeconz).start()
+    Thread(target=deconz.deconz.scanDeconz).start()
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
