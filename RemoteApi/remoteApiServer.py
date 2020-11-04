@@ -1,24 +1,20 @@
 #!/usr/bin/python3
-import argparse
+import base64
 import json
 import logging
-import os
 import ssl
-import sys
-import base64
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from threading import Thread
-from datetime import datetime, timedelta
-from urllib.parse import parse_qs, urlparse
-from pprint import pprint
 from time import sleep
+from urllib.parse import parse_qs, urlparse
 
 bridges = {}
 clients = []
 discovery = {}
 
-
+# TODO: make new repo for remote api, replace with docker container, allow for self-hosting, automate letsencrypt with nginx...
 class S(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     server_version = 'nginx'

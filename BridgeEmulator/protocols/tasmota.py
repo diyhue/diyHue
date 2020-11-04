@@ -1,16 +1,12 @@
 import json
-import logManager
 import random
+from subprocess import check_output
+
 import requests
 
-import socket
-import sys
-
-from time import sleep
-from subprocess import check_output
+import logManager
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
-from functions.network import getIpAddress
 
 logging = logManager.logger.get_logger(__name__)
 

@@ -1,9 +1,8 @@
 import json
-import logManager
 import random
 import socket
-import sys
 
+import logManager
 from functions import light_types, nextFreeId
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 

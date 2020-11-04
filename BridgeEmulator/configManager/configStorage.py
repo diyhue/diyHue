@@ -7,6 +7,7 @@ from subprocess import call
 
 logging = logManager.logger.get_logger(__name__)
 
+# TODO: add empty file to config dir and check for it, if found, notify user to mount the config dir to ensure config is not lost
 
 def _generate_certificate(mac):
     logging.info("Generating certificate")
@@ -82,7 +83,7 @@ class configStorage:
 
     def initialize_certificate(self, reset=False):  # resetting of certificates is never used currently, maybe add to reset core?
         if reset:
-            filename = "cert--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%m-%S") + ".pem"
+            filename = "cert--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f") + ".pem"
             os.rename(self.configDir + "/cert.pem", self.configDir + "/" + filename)
         if not os.path.isfile(self.configDir + "/cert.pem"):
             _generate_certificate(configManager.runtimeConfig.arg["FULLMAC"])

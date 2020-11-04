@@ -1,7 +1,7 @@
 import configManager
-from configManager import configOperations
 import json
 import logManager
+from configManager import configOperations
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -21,7 +21,7 @@ class Config:
     def load_config(self):
         if not self.json_config:
             logging.info("Bridge config was empty, creating new default config")
-            self.save_config(True)
+            self.save_config(True) # TODO: convert json to dynamically generated default config
             self.json_config = _open_json(configManager.coreConfig.projectDir + '/default-config.json')
             self.save_config()
 

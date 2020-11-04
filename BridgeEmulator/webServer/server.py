@@ -16,15 +16,13 @@ import requests
 
 import configManager
 import logManager
-from devices import lightManager  # temp stuff
+import lightManager
 from functions import nextFreeId
-from functions.html import (description, webform_hue, webform_linkbutton,
-                            webform_milight, webformDeconz, webformTradfri, lightsHttp)
 from functions.json import pretty_json
-from functions.lightRequest import sendLightRequest
+from lightManager.core.lightRequest import sendLightRequest
 from functions.request import sendRequest
-from functions.updateGroup import updateGroupStats
-from protocols import deconz, tradfri, native
+from lightManager.core.updateGroup import updateGroupStats
+from protocols import deconz, tradfri, native, milight, hue
 from protocols.hue.scheduler import generateDxState, rulesProcessor
 from protocols.hue.sensors import addHueSwitch, addHueMotionSensor, motionDetected
 
@@ -33,30 +31,6 @@ logging = logManager.logger.get_logger(__name__)
 new_lights = configManager.runtimeConfig.newLights
 dxState = configManager.runtimeConfig.dxState
 HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
-
-
-# random functions here are only used in the webserver class
-
-def find_light_in_config_from_uid(bridge_config, unique_id):
-    for light in bridge_config["lights"].keys():
-        if bridge_config["lights"][light]["uniqueid"] == unique_id:
-            return light
-    return None
-
-
-def getLightsVersions():
-    lights = {}
-    githubCatalog = json.loads(requests.get('https://raw.githubusercontent.com/diyhue/Lights/master/catalog.json').text)
-    for light in bridge_config["lights_address"].keys():
-        if bridge_config["lights_address"][light]["protocol"] in ["native_single", "native_multi"]:
-            if "light_nr" not in bridge_config["lights_address"][light] or bridge_config["lights_address"][light][
-                "light_nr"] == 1:
-                currentData = json.loads(
-                    requests.get('http://' + bridge_config["lights_address"][light]["ip"] + '/detect', timeout=3).text)
-                lights[light] = {"name": currentData["name"], "currentVersion": currentData["version"],
-                                 "lastVersion": githubCatalog[currentData["type"]]["version"],
-                                 "firmware": githubCatalog[currentData["type"]]["filename"]}
-    return lights
 
 
 class ThreadingSimpleServer(ThreadingMixIn, HTTPServer):
@@ -124,12 +98,12 @@ class S(BaseHTTPRequestHandler):
 
         if self.path == '/' or self.path == '/index.html':
             self._set_headers()
-            f = open(cwd + '/web-ui/index.html')
-            self._set_end_headers(bytes(f.read(), "utf8"))
+            with open(cwd + '/web-ui/index.html') as f:
+                self._set_end_headers(bytes(f.read(), "utf8"))
         elif self.path == "/debug/clip.html":
             self._set_headers()
-            f = open(cwd + '/debug/clip.html', 'rb')
-            self._set_end_headers(f.read())
+            with open(cwd + '/debug/clip.html', 'rb') as f:
+                self._set_end_headers(f.read())
         elif self.path == "/factory-reset":
             self._set_headers()
             previous = configManager.bridgeConfig.reset_config()
@@ -140,6 +114,7 @@ class S(BaseHTTPRequestHandler):
         elif self.path == '/config.js':
             self._set_headers()
             # create a new user key in case none is available
+            # TODO: make more secure...
             if len(bridge_config["config"]["whitelist"]) == 0:
                 bridge_config["config"]["whitelist"]["web-ui-" + str(random.randrange(0, 99999))] = {
                     "create date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
@@ -147,26 +122,27 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(
                 bytes('window.config = { API_KEY: "' + list(bridge_config["config"]["whitelist"])[0] + '",};', "utf8"))
         elif self.path.endswith((".css", ".map", ".png", ".js", ".webmanifest")):
+            # TODO: make web ui under /web to avoid this mess
             self._set_headers()
-            f = open(cwd + '/web-ui' + self.path, 'rb')
-            self._set_end_headers(f.read())
+            with open(cwd + '/web-ui' + self.path, 'rb') as f:
+                self._set_end_headers(f.read())
         elif self.path == '/description.xml':
             self._set_headers()
             HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
             mac = configManager.runtimeConfig.arg["MAC"]
             self._set_end_headers(bytes(
-                description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
+                lightManager.core.html.description(bridge_config["config"]["ipaddress"], HOST_HTTP_PORT, mac, bridge_config["config"]["name"]),
                 "utf8"))
         elif self.path == "/lights.json":
             self._set_headers()
             self._set_end_headers(
-                bytes(json.dumps(getLightsVersions(), separators=(',', ':'), ensure_ascii=False), "utf8"))
+                bytes(json.dumps(native.updater.getLightsVersions(), separators=(',', ':'), ensure_ascii=False), "utf8"))
         elif self.path.startswith("/lights"):
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "light" in get_parameters:
                 native.updater.updateLight(get_parameters["light"][0], get_parameters["filename"][0])
-            self._set_end_headers(bytes(lightsHttp(), "utf8"))
+            self._set_end_headers(bytes(lightManager.core.html.lightsHttp(), "utf8"))
 
         elif self.path == '/save':
             self._set_headers()
@@ -175,6 +151,7 @@ class S(BaseHTTPRequestHandler):
                 json.dumps([{"success": {"configuration": "saved", "filename": "/opt/hue-emulator/config.json"}}],
                            separators=(',', ':'), ensure_ascii=False), "utf8"))
         elif self.path.startswith("/tradfri"):  # setup Tradfri gateway
+            # TODO: purge tradfri, milight, hue, deconz, and switch... very messy
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
             if "code" in get_parameters:
@@ -188,12 +165,12 @@ class S(BaseHTTPRequestHandler):
                                             "identity": new_identity}
                 lights_found = tradfri.discover.scanTradfri()
                 if lights_found == 0:
-                    self._set_end_headers(bytes(webformTradfri() + "<br> No lights where found", "utf8"))
+                    self._set_end_headers(bytes(tradfri.html.webformTradfri() + "<br> No lights where found", "utf8"))
                 else:
                     self._set_end_headers(
-                        bytes(webformTradfri() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+                        bytes(tradfri.html.webformTradfri() + "<br> " + str(lights_found) + " lights where found", "utf8"))
             else:
-                self._set_end_headers(bytes(webformTradfri(), "utf8"))
+                self._set_end_headers(bytes(tradfri.html.webformTradfri(), "utf8"))
         elif self.path.startswith("/milight"):  # setup milight bulb
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -212,9 +189,9 @@ class S(BaseHTTPRequestHandler):
                                                                  "mode": get_parameters["mode"][0],
                                                                  "group": int(get_parameters["group"][0]),
                                                                  "ip": get_parameters["ip"][0], "protocol": "milight"}
-                self._set_end_headers(bytes(webform_milight() + "<br> Light added", "utf8"))
+                self._set_end_headers(bytes(milight.html.webform_milight() + "<br> Light added", "utf8"))
             else:
-                self._set_end_headers(bytes(webform_milight(), "utf8"))
+                self._set_end_headers(bytes(milight.html.webform_milight(), "utf8"))
         elif self.path.startswith("/hue"):  # setup hue bridge
             if "linkbutton" in self.path:  # Hub button emulated
                 if self.headers['Authorization'] == None:
@@ -229,7 +206,8 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["lastlinkbuttonpushed"] = str(int(datetime.now().timestamp()))
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(
-                            bytes(webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
+                            bytes(
+                                lightManager.core.html.webform_linkbutton() + "<br> You have 30 sec to connect your device", "utf8"))
                     elif "action=Exit" in self.path:
                         self._set_AUTHHEAD()
                         self._set_end_headers(bytes('You are succesfully disconnected', "utf8"))
@@ -241,11 +219,11 @@ class S(BaseHTTPRequestHandler):
                         bridge_config["linkbutton"]["linkbutton_auth"] = tmp_password[1]
                         configManager.bridgeConfig.save_config()
                         self._set_end_headers(bytes(
-                            webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
+                            lightManager.core.html.webform_linkbutton() + '<br> Your credentials are succesfully change. Please logout then login again',
                             "utf8"))
                     else:
                         self._set_headers()
-                        self._set_end_headers(bytes(webform_linkbutton(), "utf8"))
+                        self._set_end_headers(bytes(lightManager.core.html.webform_linkbutton(), "utf8"))
                     pass
                 else:
                     self._set_AUTHHEAD()
@@ -267,7 +245,7 @@ class S(BaseHTTPRequestHandler):
                         # Look through all lights in the response, and check if we've seen them before
                         lights_found = 0
                         for light_nr, data in hue_lights.items():
-                            light_id = find_light_in_config_from_uid(bridge_config, data['uniqueid'])
+                            light_id = lightManager.control.find_light_in_config_from_uid(bridge_config, data['uniqueid'])
                             if light_id is None:
                                 light_id = nextFreeId(bridge_config, "lights")
                                 logging.info('Found new light: %s %s', light_id, data)
@@ -283,15 +261,15 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][light_id] = data
 
                         if lights_found == 0:
-                            self._set_end_headers(bytes(webform_hue() + "<br> No lights where found", "utf8"))
+                            self._set_end_headers(bytes(hue.html.webform_hue() + "<br> No lights where found", "utf8"))
                         else:
                             configManager.bridgeConfig.save_config()
                             self._set_end_headers(
-                                bytes(webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
+                                bytes(hue.html.webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
                     else:
-                        self._set_end_headers(bytes(webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
+                        self._set_end_headers(bytes(hue.html.webform_hue() + "<br> unable to connect to hue bridge", "utf8"))
                 else:
-                    self._set_end_headers(bytes(webform_hue(), "utf8"))
+                    self._set_end_headers(bytes(hue.html.webform_hue(), "utf8"))
         elif self.path.startswith("/deconz"):  # setup imported deconz sensors
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -343,8 +321,8 @@ class S(BaseHTTPRequestHandler):
                                             get_parameters["mode_" + key][0]
 
             else:
-                Thread(target=deconz.scanDeconz).start()
-            self._set_end_headers(bytes(webformDeconz(
+                Thread(target=deconz.deconz.scanDeconz).start()
+            self._set_end_headers(bytes(deconz.html.webformDeconz(
                 {"deconz": bridge_config["deconz"], "sensors": bridge_config["sensors"],
                  "groups": bridge_config["groups"]}), "utf8"))
         elif self.path.startswith("/switch"):  # request from an ESP8266 switch or sensor
@@ -429,24 +407,25 @@ class S(BaseHTTPRequestHandler):
             self._set_end_headers(bytes("done", "utf8"))
         elif self.path.startswith("/scan"):  # rescan
             self._set_headers()
-            lightManager.discover.scan_for_lights()
+            lightManager.core.discover.scan_for_lights()
             self._set_end_headers(bytes("done", "utf8"))
         else:
-            url_pices = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go
-            if len(url_pices) < 3:
+            url_pieces = self.path.rstrip('/').split('/') # last response for getting the config this totally needs to go
+            if len(url_pieces) < 3:
                 # self._set_headers_error()
                 self.send_error(404, 'not found')
                 return
             else:
                 self._set_headers()
-            if url_pices[2] in bridge_config["config"]["whitelist"]:  # if username is in whitelist
+            if url_pieces[2] in bridge_config["config"]["whitelist"]:  # if username is in whitelist
+                # TODO: instead of storing time in a config file, dynamically generate return output (think django templates)
                 bridge_config["config"]["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-                bridge_config["config"]["whitelist"][url_pices[2]]["last use date"] = datetime.now().strftime(
+                bridge_config["config"]["whitelist"][url_pieces[2]]["last use date"] = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%S")
                 bridge_config["config"]["linkbutton"] = int(
                     bridge_config["linkbutton"]["lastlinkbuttonpushed"]) + 30 >= int(datetime.now().timestamp())
-                if len(url_pices) == 3:  # print entire config
+                if len(url_pieces) == 3:  # print entire config
                     # trim off lightstates as per hue api
                     scenelist = {}
                     scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
@@ -465,8 +444,8 @@ class S(BaseHTTPRequestHandler):
                          "schedules": bridge_config["schedules"], "rules": bridge_config["rules"],
                          "sensors": bridge_config["sensors"], "resourcelinks": bridge_config["resourcelinks"]},
                         separators=(',', ':'), ensure_ascii=False), "utf8"))
-                elif len(url_pices) == 4:  # print specified object config
-                    if "scenes" == url_pices[3]:  # trim lightstates for scenes
+                elif len(url_pieces) == 4:  # print specified object config
+                    if "scenes" == url_pieces[3]:  # trim lightstates for scenes
                         scenelist = {}
                         scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
                         for scene in list(scenelist["scenes"]):
@@ -481,14 +460,14 @@ class S(BaseHTTPRequestHandler):
                             bytes(json.dumps(scenelist["scenes"], separators=(',', ':'), ensure_ascii=False), "utf8"))
                     else:
                         self._set_end_headers(
-                            bytes(json.dumps(bridge_config[url_pices[3]], separators=(',', ':'), ensure_ascii=False),
+                            bytes(json.dumps(bridge_config[url_pieces[3]], separators=(',', ':'), ensure_ascii=False),
                                   "utf8"))
-                elif (len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == 'state')):
-                    if url_pices[4] == "new":  # return new lights and sensors only
+                elif (len(url_pieces) == 5 or (len(url_pieces) == 6 and url_pieces[5] == 'state')):
+                    if url_pieces[4] == "new":  # return new lights and sensors only
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                         self._set_end_headers(
                             bytes(json.dumps(new_lights, separators=(',', ':'), ensure_ascii=False), "utf8"))
-                    elif url_pices[3] == "groups" and url_pices[4] == "0":
+                    elif url_pieces[3] == "groups" and url_pieces[4] == "0":
                         any_on = False
                         all_on = True
                         for group_state in bridge_config["groups"].keys():
@@ -502,11 +481,11 @@ class S(BaseHTTPRequestHandler):
                              "state": {"all_on": all_on, "any_on": any_on}, "recycle": False,
                              "action": {"on": False, "alert": "none"}}, separators=(',', ':'), ensure_ascii=False),
                             "utf8"))
-                    elif url_pices[3] == "info" and url_pices[4] == "timezones":
+                    elif url_pieces[3] == "info" and url_pieces[4] == "timezones":
                         self._set_end_headers(bytes(
-                            json.dumps(bridge_config["capabilities"][url_pices[4]]["values"], separators=(',', ':'),
+                            json.dumps(bridge_config["capabilities"][url_pieces[4]]["values"], separators=(',', ':'),
                                        ensure_ascii=False), "utf8"))
-                    elif "scenes" == url_pices[3]:  # trim lightstates for scenes
+                    elif "scenes" == url_pieces[3]:  # trim lightstates for scenes
                         scenelist = {}
                         scenelist["scenes"] = copy.deepcopy(bridge_config["scenes"])
                         for scene in list(scenelist["scenes"]):
@@ -516,17 +495,17 @@ class S(BaseHTTPRequestHandler):
                                 scenelist["scenes"][scene]["lights"] = \
                                     bridge_config["groups"][bridge_config["scenes"][scene]["group"]]["lights"]
                         self._set_end_headers(bytes(
-                            json.dumps(scenelist["scenes"][url_pices[4]], separators=(',', ':'), ensure_ascii=False),
+                            json.dumps(scenelist["scenes"][url_pieces[4]], separators=(',', ':'), ensure_ascii=False),
                             "utf8"))
                     else:
-                        if url_pices[4] in bridge_config[url_pices[3]]:
+                        if url_pieces[4] in bridge_config[url_pieces[3]]:
                             self._set_end_headers(bytes(
-                                json.dumps(bridge_config[url_pices[3]][url_pices[4]], separators=(',', ':'),
+                                json.dumps(bridge_config[url_pieces[3]][url_pieces[4]], separators=(',', ':'),
                                            ensure_ascii=False), "utf8"))
                         else:
                             self._set_end_headers(bytes())
-            elif (len(url_pices) == 4 and url_pices[3] == "config") or (
-                    len(url_pices) == 3 and url_pices[2] == "config"):  # used by applications to discover the bridge
+            elif (len(url_pieces) == 4 and url_pieces[3] == "config") or (
+                    len(url_pieces) == 3 and url_pieces[2] == "config"):  # used by applications to discover the bridge
                 self._set_end_headers(bytes(json.dumps({"name": bridge_config["config"]["name"], "datastoreversion": 70,
                                                         "swversion": bridge_config["config"]["swversion"],
                                                         "apiversion": bridge_config["config"]["apiversion"],
@@ -552,6 +531,7 @@ class S(BaseHTTPRequestHandler):
         self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
+            # we no longer update diyhue, only the version number to appear updated, updates are to be done on the container only
             configManager.bridgeConfig.update_swversion()
             self._set_end_headers(bytes(
                 json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}], separators=(',', ':'),
@@ -562,136 +542,136 @@ class S(BaseHTTPRequestHandler):
             raw_json = raw_json.replace("\n", "")
             post_dictionary = json.loads(raw_json)
             logging.info(self.data_string)
-        url_pices = self.path.rstrip('/').split('/')
-        if len(url_pices) == 4:  # data was posted to a location
-            if url_pices[2] in bridge_config["config"]["whitelist"]:  # check to make sure request is authorized
-                if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
-                    # if was a request to scan for lights of sensors
-                    new_lights.clear()
-                    Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
-                    sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
-                    self._set_end_headers(bytes(
-                        json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
-                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
-                elif url_pices[3] == "":
-                    self._set_end_headers(bytes(
-                        json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],
-                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
-                else:  # create object, appears to be saving resource information e.g. scenes, groups, schedules, rules, sensors, resourcelinks
-                    #this is also terrible
-                    # find the first unused id for new object
-                    new_object_id = nextFreeId(bridge_config, url_pices[3])
-                    if url_pices[3] == "scenes":  # store scene
-                        post_dictionary.update(
-                            {"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                             "owner": url_pices[2]})
-                        if "locked" not in post_dictionary:
-                            post_dictionary["locked"] = False
-                        if "picture" not in post_dictionary:
-                            post_dictionary["picture"] = ""
-                        if "type" not in post_dictionary:
-                            post_dictionary["type"] = "LightScene"
-                        if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
-                            post_dictionary["lightstates"] = {}
-                            if "lights" in post_dictionary:
-                                lights = post_dictionary["lights"]
-                            elif "group" in post_dictionary:
-                                lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
-                            for light in lights:
-                                post_dictionary["lightstates"][light] = {
-                                    "on": bridge_config["lights"][light]["state"]["on"]}
-                                if "bri" in bridge_config["lights"][light]["state"]:
-                                    post_dictionary["lightstates"][light]["bri"] = \
-                                        bridge_config["lights"][light]["state"]["bri"]
-                                if "colormode" in bridge_config["lights"][light]["state"]:
-                                    if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and \
-                                            bridge_config["lights"][light]["state"]["colormode"] in \
-                                            bridge_config["lights"][light]["state"]:
-                                        post_dictionary["lightstates"][light][
-                                            bridge_config["lights"][light]["state"]["colormode"]] = \
-                                            bridge_config["lights"][light]["state"][
-                                                bridge_config["lights"][light]["state"]["colormode"]]
-                                    elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
-                                        post_dictionary["lightstates"][light]["hue"] = \
-                                            bridge_config["lights"][light]["state"]["hue"]
-                                        post_dictionary["lightstates"][light]["sat"] = \
-                                            bridge_config["lights"][light]["state"]["sat"]
+            url_pices = self.path.rstrip('/').split('/')
+            if len(url_pices) == 4:  # data was posted to a location
+                if url_pices[2] in bridge_config["config"]["whitelist"]:  # check to make sure request is authorized
+                    if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
+                        # if was a request to scan for lights of sensors
+                        new_lights.clear()
+                        Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
+                        sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
+                                       separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    elif url_pices[3] == "":
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"clientkey": "321c0c2ebfa7361e55491095b2f5f9db"}}],
+                                       separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    else:  # create object, appears to be saving resource information e.g. scenes, groups, schedules, rules, sensors, resourcelinks
+                        #this is also terrible
+                        # find the first unused id for new object
+                        new_object_id = nextFreeId(bridge_config, url_pices[3])
+                        if url_pices[3] == "scenes":  # store scene
+                            post_dictionary.update(
+                                {"version": 2, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                 "owner": url_pices[2]})
+                            if "locked" not in post_dictionary:
+                                post_dictionary["locked"] = False
+                            if "picture" not in post_dictionary:
+                                post_dictionary["picture"] = ""
+                            if "type" not in post_dictionary:
+                                post_dictionary["type"] = "LightScene"
+                            if "lightstates" not in post_dictionary or len(post_dictionary["lightstates"]) == 0:
+                                post_dictionary["lightstates"] = {}
+                                if "lights" in post_dictionary:
+                                    lights = post_dictionary["lights"]
+                                elif "group" in post_dictionary:
+                                    lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
+                                for light in lights:
+                                    post_dictionary["lightstates"][light] = {
+                                        "on": bridge_config["lights"][light]["state"]["on"]}
+                                    if "bri" in bridge_config["lights"][light]["state"]:
+                                        post_dictionary["lightstates"][light]["bri"] = \
+                                            bridge_config["lights"][light]["state"]["bri"]
+                                    if "colormode" in bridge_config["lights"][light]["state"]:
+                                        if bridge_config["lights"][light]["state"]["colormode"] in ["ct", "xy"] and \
+                                                bridge_config["lights"][light]["state"]["colormode"] in \
+                                                bridge_config["lights"][light]["state"]:
+                                            post_dictionary["lightstates"][light][
+                                                bridge_config["lights"][light]["state"]["colormode"]] = \
+                                                bridge_config["lights"][light]["state"][
+                                                    bridge_config["lights"][light]["state"]["colormode"]]
+                                        elif bridge_config["lights"][light]["state"]["colormode"] == "hs":
+                                            post_dictionary["lightstates"][light]["hue"] = \
+                                                bridge_config["lights"][light]["state"]["hue"]
+                                            post_dictionary["lightstates"][light]["sat"] = \
+                                                bridge_config["lights"][light]["state"]["sat"]
 
-                    elif url_pices[3] == "groups":
-                        if "type" not in post_dictionary:
-                            post_dictionary["type"] = "LightGroup"
-                        if post_dictionary["type"] in ["Room", "Zone"] and "class" not in post_dictionary:
-                            post_dictionary["class"] = "Other"
-                        elif post_dictionary["type"] == "Entertainment" and "stream" not in post_dictionary:
-                            post_dictionary["stream"] = {"active": False, "owner": url_pices[2], "proxymode": "auto",
-                                                         "proxynode": "/bridge"}
-                        post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
-                    elif url_pices[3] == "schedules":
-                        try:
-                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                    "time": post_dictionary["localtime"]})
-                        except KeyError:
-                            post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                    "localtime": post_dictionary["time"]})
-                        if post_dictionary["localtime"].startswith("PT") or post_dictionary["localtime"].startswith(
-                                "R/PT"):
-                            post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
-                        if not "status" in post_dictionary:
-                            post_dictionary.update({"status": "enabled"})
-                    elif url_pices[3] == "rules":
-                        post_dictionary.update({"owner": url_pices[2], "lasttriggered": "none",
-                                                "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                                                "timestriggered": 0})
-                        if not "status" in post_dictionary:
-                            post_dictionary.update({"status": "enabled"})
-                    elif url_pices[3] == "sensors":
-                        if "state" not in post_dictionary:
-                            post_dictionary["state"] = {}
-                        if "lastupdated" not in post_dictionary["state"]:
-                            post_dictionary["state"]["lastupdated"] = "none"
-                        if post_dictionary["modelid"] == "PHWA01":
-                            post_dictionary["state"]["status"] = 0
-                        elif post_dictionary["modelid"] == "PHA_CTRL_START":
-                            post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime(
-                                "%Y-%m-%dT%H:%M:%S")}, "config": {"on": True, "reachable": True}})
-                    elif url_pices[3] == "resourcelinks":
-                        post_dictionary.update({"owner": url_pices[2]})
-                    generateDxState()
-                    bridge_config[url_pices[3]][new_object_id] = post_dictionary
-                    logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4,
-                                            separators=(',', ': ')))
+                        elif url_pices[3] == "groups":
+                            if "type" not in post_dictionary:
+                                post_dictionary["type"] = "LightGroup"
+                            if post_dictionary["type"] in ["Room", "Zone"] and "class" not in post_dictionary:
+                                post_dictionary["class"] = "Other"
+                            elif post_dictionary["type"] == "Entertainment" and "stream" not in post_dictionary:
+                                post_dictionary["stream"] = {"active": False, "owner": url_pices[2], "proxymode": "auto",
+                                                             "proxynode": "/bridge"}
+                            post_dictionary.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
+                        elif url_pices[3] == "schedules":
+                            try:
+                                post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                        "time": post_dictionary["localtime"]})
+                            except KeyError:
+                                post_dictionary.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                        "localtime": post_dictionary["time"]})
+                            if post_dictionary["localtime"].startswith("PT") or post_dictionary["localtime"].startswith(
+                                    "R/PT"):
+                                post_dictionary.update({"starttime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")})
+                            if not "status" in post_dictionary:
+                                post_dictionary.update({"status": "enabled"})
+                        elif url_pices[3] == "rules":
+                            post_dictionary.update({"owner": url_pices[2], "lasttriggered": "none",
+                                                    "created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                                                    "timestriggered": 0})
+                            if not "status" in post_dictionary:
+                                post_dictionary.update({"status": "enabled"})
+                        elif url_pices[3] == "sensors":
+                            if "state" not in post_dictionary:
+                                post_dictionary["state"] = {}
+                            if "lastupdated" not in post_dictionary["state"]:
+                                post_dictionary["state"]["lastupdated"] = "none"
+                            if post_dictionary["modelid"] == "PHWA01":
+                                post_dictionary["state"]["status"] = 0
+                            elif post_dictionary["modelid"] == "PHA_CTRL_START":
+                                post_dictionary.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime(
+                                    "%Y-%m-%dT%H:%M:%S")}, "config": {"on": True, "reachable": True}})
+                        elif url_pices[3] == "resourcelinks":
+                            post_dictionary.update({"owner": url_pices[2]})
+                        generateDxState()
+                        bridge_config[url_pices[3]][new_object_id] = post_dictionary
+                        logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4,
+                                                separators=(',', ': ')))
+                        self._set_end_headers(bytes(
+                            json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':'), ensure_ascii=False),
+                            "utf8"))
+                else:
                     self._set_end_headers(bytes(
-                        json.dumps([{"success": {"id": new_object_id}}], separators=(',', ':'), ensure_ascii=False),
-                        "utf8"))
-            else:
-                self._set_end_headers(bytes(
-                    json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
-                               separators=(',', ':'), ensure_ascii=False), "utf8"))
-                logging.info(
-                    json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
-                               sort_keys=True, indent=4, separators=(',', ': ')))
-        elif self.path.startswith("/api") and "devicetype" in post_dictionary:  # new registration by linkbutton
-            last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
-            if (configManager.runtimeConfig.arg["noLinkButton"] or last_button_press + 30 >= int(
-                    datetime.now().timestamp()) or
-                    bridge_config["config"]["linkbutton"]):
-                username = str(uuid.uuid1()).replace('-', '')
-                if post_dictionary["devicetype"].startswith("Hue Essentials"):
-                    username = "hueess" + username[-26:]
-                bridge_config["config"]["whitelist"][username] = {
-                    "last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                    "create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-                    "name": post_dictionary["devicetype"]}
-                response = [{"success": {"username": username}}]
-                if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
-                    response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
-                self._set_end_headers(bytes(json.dumps(response, separators=(',', ':'), ensure_ascii=False), "utf8"))
-                logging.info(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
-            else:
-                self._set_end_headers(bytes(json.dumps(
-                    [{"error": {"type": 101, "address": self.path, "description": "link button not pressed"}}],
-                    separators=(',', ':'), ensure_ascii=False), "utf8"))
-        configManager.bridgeConfig.save_config()
+                        json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
+                                   separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    logging.info(
+                        json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user"}}],
+                                   sort_keys=True, indent=4, separators=(',', ': ')))
+            elif self.path.startswith("/api") and "devicetype" in post_dictionary:  # new registration by linkbutton
+                last_button_press = int(bridge_config["linkbutton"]["lastlinkbuttonpushed"])
+                if (configManager.runtimeConfig.arg["noLinkButton"] or last_button_press + 30 >= int(
+                        datetime.now().timestamp()) or
+                        bridge_config["config"]["linkbutton"]):
+                    username = str(uuid.uuid1()).replace('-', '')
+                    if post_dictionary["devicetype"].startswith("Hue Essentials"):
+                        username = "hueess" + username[-26:]
+                    bridge_config["config"]["whitelist"][username] = {
+                        "last use date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                        "create date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+                        "name": post_dictionary["devicetype"]}
+                    response = [{"success": {"username": username}}]
+                    if "generateclientkey" in post_dictionary and post_dictionary["generateclientkey"]:
+                        response[0]["success"]["clientkey"] = "321c0c2ebfa7361e55491095b2f5f9db"
+                    self._set_end_headers(bytes(json.dumps(response, separators=(',', ':'), ensure_ascii=False), "utf8"))
+                    logging.info(json.dumps(response, sort_keys=True, indent=4, separators=(',', ': ')))
+                else:
+                    self._set_end_headers(bytes(json.dumps(
+                        [{"error": {"type": 101, "address": self.path, "description": "link button not pressed"}}],
+                        separators=(',', ':'), ensure_ascii=False), "utf8"))
+            configManager.bridgeConfig.save_config()
 
     def do_PUT(self):
         self._set_headers()
@@ -832,10 +812,10 @@ class S(BaseHTTPRequestHandler):
                     elif "scene" in put_dictionary:  # scene applied to group
                         if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
                             lightManager.control.splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
-                                                 bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                                                                      bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                         else:
                             lightManager.control.splitLightsToDevices(url_pices[4], {},
-                                                 bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
+                                                                      bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary or "hue_inc" in put_dictionary:
                         lightManager.control.splitLightsToDevices(url_pices[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:

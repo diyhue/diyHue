@@ -1,5 +1,9 @@
-import logManager, binascii, socket, colorsys, time
-from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+import binascii
+import colorsys
+import logManager
+import socket
+import time
+from functions.colors import convert_xy, rgbBrightness
 
 logging = logManager.logger.get_logger(__name__)
 

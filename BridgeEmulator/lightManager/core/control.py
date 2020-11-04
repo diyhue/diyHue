@@ -4,8 +4,8 @@ from time import sleep
 import requests
 
 import configManager
-from functions.lightRequest import sendLightRequest
-from functions.updateGroup import updateGroupStats
+from lightManager.core.lightRequest import sendLightRequest
+from lightManager.core.updateGroup import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config
 
@@ -114,3 +114,10 @@ def groupZero(state):
         if "on" in state:
             bridge_config["groups"][group]["state"]["any_on"] = state["on"]
             bridge_config["groups"][group]["state"]["all_on"] = state["on"]
+
+
+def find_light_in_config_from_uid(bridge_config, unique_id):
+    for light in bridge_config["lights"].keys():
+        if bridge_config["lights"][light]["uniqueid"] == unique_id:
+            return light
+    return None

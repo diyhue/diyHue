@@ -1,9 +1,10 @@
-import logging
-import requests
 import base64
-import urllib.parse
 import json
+import logging
 from time import sleep
+
+import requests
+
 
 def remoteApi(BIND_IP, config):
     ip = "localhost"

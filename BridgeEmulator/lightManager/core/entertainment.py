@@ -1,7 +1,7 @@
 import socket, logManager
 from subprocess import Popen
 from functions.colors import convert_rgb_xy, convert_xy
-from functions.lightRequest import sendLightRequest
+from lightManager.core.lightRequest import sendLightRequest
 
 logging = logManager.logger.get_logger(__name__)
 

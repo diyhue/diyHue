@@ -1,11 +1,15 @@
 import argparse
-import logManager
-import configManager
 from os import getenv
-from functions.network import getIpAddress
 from subprocess import check_output
+import logManager
+import socket
 
 logging = logManager.logger.get_logger(__name__)
+
+def _getIpAddress():
+   s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+   s.connect(("8.8.8.8", 80))
+   return s.getsockname()[0]
 
 def get_environment_variable(var, boolean=False):
     value = getenv(var)
@@ -23,7 +27,6 @@ def process_arguments(args):
         logging.info("Debug logging disabled!")
     else:
         logging.info("Debug logging enabled!")
-    configManager.coreConfig.initialize_certificate()
 
 
 def parse_arguments():
@@ -74,7 +77,7 @@ def parse_arguments():
     elif bind_ip:
         host_ip = bind_ip
     else:
-        host_ip = getIpAddress()
+        host_ip = _getIpAddress()
     argumentDict["HOST_IP"] = host_ip
 
     if args.http_port:  # should be depreciated

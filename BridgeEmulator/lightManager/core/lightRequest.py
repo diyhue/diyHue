@@ -5,7 +5,7 @@ from subprocess import check_output
 from protocols import protocols
 from datetime import datetime, timedelta
 from time import sleep
-from functions.updateGroup import updateGroupStats
+from lightManager.core.updateGroup import updateGroupStats
 
 logging = logManager.logger.get_logger(__name__)
 

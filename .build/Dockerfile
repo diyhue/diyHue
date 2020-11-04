@@ -13,7 +13,7 @@ RUN chmod +x ./select.sh && \
     ./select.sh
 
 # ============================ Actual image from here ====================
-FROM debian:stable-slim as prod
+FROM debian:stable-slim
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
