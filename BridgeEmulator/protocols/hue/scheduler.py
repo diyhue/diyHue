@@ -57,27 +57,27 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
     ddx_sensor = []
     for condition in bridge_config["rules"][rule]["conditions"]:
         try:
-            url_pices = condition["address"].split('/')
-            if url_pices[1] == device[0] and url_pices[2] == device[1]:
+            url_pieces = condition["address"].split('/')
+            if url_pieces[1] == device[0] and url_pieces[2] == device[1]:
                 device_found = True
             if condition["operator"] == "eq":
                 if condition["value"] == "true":
-                    if not bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                    if not bridge_config[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]]:
                         return [False, 0]
                 elif condition["value"] == "false":
-                    if bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]:
+                    if bridge_config[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]]:
                         return [False, 0]
                 else:
-                    if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) == int(condition["value"]):
+                    if not int(bridge_config[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]]) == int(condition["value"]):
                         return [False, 0]
             elif condition["operator"] == "gt":
-                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) > int(condition["value"]):
+                if not int(bridge_config[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]]) > int(condition["value"]):
                     return [False, 0]
             elif condition["operator"] == "lt":
-                if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
+                if not int(bridge_config[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]]) < int(condition["value"]):
                     return [False, 0]
             elif condition["operator"] == "dx":
-                if not dxState[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+                if not dxState[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]] == current_time:
                     return [False, 0]
             elif condition["operator"] == "in":
                 periods = condition["value"].split('/')
@@ -92,11 +92,11 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
                         if not (timeStart <= now_time or now_time <= timeEnd):
                             return [False, 0]
             elif condition["operator"] == "ddx" and ignore_ddx is False:
-                if not dxState[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+                if not dxState[url_pieces[1]][url_pieces[2]][url_pieces[3]][url_pieces[4]] == current_time:
                         return [False, 0]
                 else:
                     ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
-                    ddx_sensor = url_pices
+                    ddx_sensor = url_pieces
         except Exception as e:
             logging.info("rule " + rule + " failed, reason:" + str(e))
 
