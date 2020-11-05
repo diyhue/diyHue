@@ -548,7 +548,7 @@ class S(BaseHTTPRequestHandler):
                     if ((url_pices[3] == "lights" or url_pices[3] == "sensors") and not bool(post_dictionary)):
                         # if was a request to scan for lights of sensors
                         new_lights.clear()
-                        Thread(target=lightManager.discover.scan_for_lights).start() #this needs to be fixed for issue #418
+                        Thread(target=lightManager.core.discover.scan_for_lights).start() #this needs to be fixed for issue #418
                         sleep(7)  # give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
                         self._set_end_headers(bytes(
                             json.dumps([{"success": {"/" + url_pices[3]: "Searching for new devices"}}],
