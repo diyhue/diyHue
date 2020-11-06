@@ -18,3 +18,4 @@ Sensors/*
 # Ignore userdata
 BridgeEmulator/export/
 BridgeEmulator/cert.pem
+BridgeEmulator/.vscode/launch.json

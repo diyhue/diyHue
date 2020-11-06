@@ -1,4 +1,4 @@
-import logging, json
+import logging, json, socket, colorsys
 from functions.request import sendRequest
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness 
 from subprocess import check_output
@@ -7,23 +7,38 @@ from datetime import datetime, timedelta
 from time import sleep
 from functions.updateGroup import updateGroupStats
 
+protoList = {}
+
+def getProtocol(protocol_name):
+    global protoList
+
+    if(len(protoList) == 0 ):
+         for protocol in protocols:
+             protoList[protocol.__name__] = protocol
+    try: 
+        return protoList["protocols." + protocol_name]
+    except: 
+        return
+     
+
 def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHostIP = None):
     payload = {}
     if light in addresses:
         protocol_name = addresses[light]["protocol"]
-        for protocol in protocols:
-            if "protocols." + protocol_name == protocol.__name__:
-                try:
-                    if entertainmentHostIP and protocol_name == "yeelight":
-                        protocol.enableMusic(addresses[light]["ip"], entertainmentHostIP)
-                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
-                        protocol.set_light(addresses[light], lights[light], data, rgb)
-                    else:
-                        protocol.set_light(addresses[light], lights[light], data)
-                except Exception as e:
-                    lights[light]["state"]["reachable"] = False
-                    logging.warning(lights[light]["name"] + " light not reachable: %s", e)
-                return
+        protocol = getProtocol(protocol_name)
+        
+        if(protocol):
+            try:
+                if entertainmentHostIP and protocol_name == "yeelight":
+                    protocol.enableMusic(addresses[light]["ip"], entertainmentHostIP)
+                if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
+                    protocol.set_light(addresses[light], lights[light], data, rgb)
+                else:
+                    protocol.set_light(addresses[light], lights[light], data)
+            except Exception as e:
+                lights[light]["state"]["reachable"] = False
+                logging.warning(lights[light]["name"] + " light not reachable: %s", e)
+            return
 
         if addresses[light]["protocol"] == "native": #ESP8266 light or strip
             url = "http://" + addresses[light]["ip"] + "/set?light=" + str(addresses[light]["light_nr"])
@@ -158,7 +173,7 @@ def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHo
                     bri = data["bri"]
                 else:
                     bri = lights[light]["state"]["bri"]
-                rgbValue = hsv_to_rgb(hue, sat, bri)
+                rgbValue = colorsys.hsv_to_rgb(hue, sat, bri)
                 xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
                 payload["5709"] = int(xyValue[0] * 65535)
                 payload["5710"] = int(xyValue[1] * 65535)
@@ -179,7 +194,7 @@ def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHo
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                 sock.sendto(msg, (addresses[light]["ip"], 48899))
             if ("bri" in data and lights[light]["state"]["colormode"] == "xy") or "xy" in data:
-                logging.info(pretty_json(data))
+                logging.info(data) 
                 bri = data["bri"] if "bri" in data else lights[light]["state"]["bri"]
                 xy = data["xy"] if "xy" in data else lights[light]["state"]["xy"]
                 if rgb:
