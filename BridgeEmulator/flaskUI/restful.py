@@ -6,7 +6,7 @@ import requests
 from threading import Thread
 from time import sleep
 from datetime import datetime
-from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest
+from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest, switchScene
 from lights.discover import scanForLights
 from functions.core import generateDxState, nextFreeId, capabilities
 from flask_restful import Resource

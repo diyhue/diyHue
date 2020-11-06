@@ -1,11 +1,12 @@
+import logManager
+import configManager
 import json
 from datetime import datetime, timedelta
 from threading import Thread
 from time import sleep, strftime
-import logging
 import requests
-import configManager
 
+logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
 

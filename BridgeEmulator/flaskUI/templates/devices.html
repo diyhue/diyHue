@@ -13,26 +13,39 @@
       <form method="POST">
         {# This hidden_tag is a CSRF security feature. #}
         {{ form.hidden_tag() }}
-        {% for device in devices %}
-        <div class="form-group row"><label for="inputDevice{{ device.id }}" class="col-sm-2 col-form-label">{{ device.name }}</label>
-          <div class="col-sm-4"><select class="form-control" id="inputDevice{{ device.id }}">
+        {% for device in devicesConfig %}
+        <div class="form-group row"><label for="device-{{ device.id }}" class="col-sm-2 col-form-label">{{ device.name }}</label>
+          <div class="col-sm-4"><select class="form-control" id="device-{{ device.id }}" name="device-{{ device.id }}">
             <option selected="selected">Choose Group...</option>
             {% for group in groups %}
-            <option value="{{ group.id }}">{{ group.name }}</option>
+            <option value="{{ group.id }}" {% if device.configured.room == group.id %}selected="selected" {% endif %}>{{ group.name }}</option>
             {% endfor %}
            </select>
           </div>
           {% if device.modelid == "TRADFRI remote control" %}
-          <div class="col-sm-3"><select class="form-control" id="inputConfig{{ device.id }}">
+          <div class="col-sm-3"><select class="form-control" id="inputConfig{{ device.id }}" name="config-{{ device.id }}">
             <option selected="selected">Choose Mode ...</option>
-            <option>Color Temp Switch</option>
-            <option>Scene Switch Switch</option>
+            <option {% if device.configured.option == "Color Temp Switch" %} selected="selected" {% endif %}>Color Temp Switch</option>
+            <option{% if device.configured.option == "Scene Switch" %} selected="selected" {% endif %}>Scene Switch</option>
             <option>Hue Remote Emulation</option>
            </select>
           </div>
           {% endif %}
         </div>
         {% endfor %}
+
+
+        {% for motionSensor in motionSensors %}
+        <div class="form-group row"><label for="motion-{{ motionSensor.id }}" class="col-sm-2 col-form-label">{{ motionSensor.name }}</label>
+          <div class="col-sm-4"><select class="form-control" id="motione-{{ motionSensor.id }}" name="motion-{{ motionSensor.id }}">
+            <option selected="selected">Choose Mode...</option>
+            <option value="no"{% if motionSensor.lightSensor == "no" %} selected="selected" {% endif %}>Always Dark</option>
+            <option value="yes" {% if motionSensor.lightSensor == "yes" %} selected="selected" {% endif %}>Daylight Sensor</option>
+           </select>
+          </div>
+        </div>
+        {% endfor %}
+
         <fieldset class="form-group">
         </fieldset>
         <div class="form-group row">

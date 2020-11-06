@@ -1,10 +1,13 @@
-from datetime import datetime
+import logManager
 import configManager
 import random
+from time import sleep
+from datetime import datetime
+from functions.rules import rulesProcessor
 
+logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
 newLights = configManager.runtimeConfig.newLights
-
 dxState = configManager.runtimeConfig.dxState
 
 
@@ -63,6 +66,18 @@ def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
     return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
+def longPressButton(sensor, buttonevent):
+    print("running.....")
+    logging.info("long press detected")
+    sleep(1)
+    while bridgeConfig["sensors"][sensor]["state"]["buttonevent"] == buttonevent:
+        logging.info("still pressed")
+        current_time =  datetime.now()
+        dxState["sensors"][sensor]["state"]["lastupdated"] = current_time
+        rulesProcessor(["sensors",sensor], current_time)
+        sleep(0.5)
+    return
+
 def addNewLight(modelid, name, emulatorLightConfig):
     newLightID = nextFreeId(bridgeConfig, "lights")
     if modelid in lightTypes:
@@ -119,6 +134,7 @@ def generateDxState():
             for key in bridgeConfig["lights"][light]["state"].keys():
                 if key in ["on", "bri", "colormode", "reachable"]:
                     dxState["lights"][light]["state"].update({key: datetime.now()})
+
 
 def capabilities():
     return  {"groups":{
