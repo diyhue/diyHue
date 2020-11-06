@@ -29,9 +29,12 @@ RUN apt update && apt install --no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue
-COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
+COPY ./BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
 COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
-COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
+COPY ./BridgeEmulator/lights/ /opt/hue-emulator/lights/
+COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
+COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
+COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
 
 ## Copy correct (compiled) C file from previous image
