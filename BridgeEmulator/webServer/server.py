@@ -245,7 +245,7 @@ class S(BaseHTTPRequestHandler):
                         # Look through all lights in the response, and check if we've seen them before
                         lights_found = 0
                         for light_nr, data in hue_lights.items():
-                            light_id = lightManager.control.find_light_in_config_from_uid(bridge_config, data['uniqueid'])
+                            light_id = lightManager.core.control.find_light_in_config_from_uid(bridge_config, data['uniqueid'])
                             if light_id is None:
                                 light_id = nextFreeId(bridge_config, "lights")
                                 logging.info('Found new light: %s %s', light_id, data)
@@ -811,17 +811,17 @@ class S(BaseHTTPRequestHandler):
                                 bridge_config["groups"][url_pieces[4]]["stream"].update({"active": False, "owner": None})
                     elif "scene" in put_dictionary:  # scene applied to group
                         if bridge_config["scenes"][put_dictionary["scene"]]["type"] == "GroupScene":
-                            lightManager.control.splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
+                            lightManager.core.control.splitLightsToDevices(bridge_config["scenes"][put_dictionary["scene"]]["group"], {},
                                                                       bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                         else:
-                            lightManager.control.splitLightsToDevices(url_pieces[4], {},
+                            lightManager.core.control.splitLightsToDevices(url_pieces[4], {},
                                                                       bridge_config["scenes"][put_dictionary["scene"]]["lightstates"])
                     elif "bri_inc" in put_dictionary or "ct_inc" in put_dictionary or "hue_inc" in put_dictionary:
-                        lightManager.control.splitLightsToDevices(url_pieces[4], put_dictionary)
+                        lightManager.core.control.splitLightsToDevices(url_pieces[4], put_dictionary)
                     elif "scene_inc" in put_dictionary:
-                        lightManager.scene.switchScene(url_pieces[4], put_dictionary["scene_inc"])
+                        lightManager.core.scene.switchScene(url_pieces[4], put_dictionary["scene_inc"])
                     elif url_pieces[4] == "0":  # if group is 0 the scene applied to all lights
-                        lightManager.control.groupZero(put_dictionary)
+                        lightManager.core.control.groupZero(put_dictionary)
                     else:  # the state is applied to particular group (url_pieces[4])
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pieces[4]]["state"]["any_on"] = put_dictionary["on"]
@@ -829,7 +829,7 @@ class S(BaseHTTPRequestHandler):
                             dxState["groups"][url_pieces[4]]["state"]["any_on"] = current_time
                             dxState["groups"][url_pieces[4]]["state"]["all_on"] = current_time
                         bridge_config["groups"][url_pieces[4]][url_pieces[5]].update(put_dictionary)
-                        lightManager.control.splitLightsToDevices(url_pieces[4], put_dictionary)
+                        lightManager.core.control.splitLightsToDevices(url_pieces[4], put_dictionary)
                 elif url_pieces[3] == "lights":  # state is applied to a light
                     for key in put_dictionary.keys():
                         if key in ["ct", "xy"]:  # colormode must be set by bridge
