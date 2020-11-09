@@ -29,20 +29,23 @@ RUN apt update && apt install --no-install-recommends -y \
     && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue
-COPY ./BridgeEmulator/ /opt/hue-emulator/
+COPY ./src/core/ /diyhue/
 
 ## Copy correct (compiled) C file from previous image
-COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/
+COPY ./src/core/genCert.sh ./src/core/openssl.conf /diyhue/
 RUN echo workaround for https://github.com/moby/moby/issues/37965
-COPY --from=binselector /opt/hue-emulator/out /opt/hue-emulator/
+COPY --from=binselector /opt/hue-emulator/out /diyhue/
 
 ## Change Docker script permissions
-RUN chmod +x /opt/hue-emulator/genCert.sh
+RUN chmod +x /diyhue/genCert.sh
 
-## Expose ports
+## Document ports
 EXPOSE 80 443 1900/udp 1982/udp 2100/udp
+
+## Document volume
+VOLUME ["/config"]
 
 ## Debug
 ## RUN ls -la /opt/hue-emulator
 
-CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py" ]
+CMD [ "python3", "-u", "/diyhue/main.py" ]

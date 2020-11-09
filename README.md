@@ -21,6 +21,14 @@ This project emulates a Philips Hue Bridge that is able to control ZigBee lights
 
 ![diyHue ecosystem](https://raw.githubusercontent.com/diyhue/diyhue.github.io/master/assets/images/hue-map.png)
 
+## Master-Refactor Details
+
+This is the newest version of diyHue and has numerous changes compares to the old version. Understand that using this version can result in things breaking! As breaking changes are made here, they will be listed below. If something does break and it is not listed below, please make an issue with debug logs so we can look into it!
+
+1. Config is incompatible with the master branch (can be migrated by comparing the old and new config manually)
+2. Config is now stored under `/config` so please use that when mounting the config directory in Docker.
+3. All other installation methods besides Docker are unsupported. Docker is available on most platforms including Raspberry Pi.
+
 ## Getting Started
 
 All documentation and instructions can be found over at [diyhue.readthedocs.io](https://diyhue.readthedocs.io/)

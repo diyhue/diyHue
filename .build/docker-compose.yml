@@ -13,7 +13,7 @@ services:
       IP: 192.168.1.2
       MAC: 12:34:56:78:90
     volumes:
-      - /mnt/hue-emulator/export:/opt/hue-emulator/export
+      - /mnt/hue-emulator:/config
     ports:
       - '80:80'
       - '443:443'

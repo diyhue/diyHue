@@ -13,7 +13,8 @@ services:
       - MAC=00:00:00:00:00:00
       - IP=192.168.1.1
     volumes:
-      - ../../BridgeEmulator:/opt/hue-emulator
+      - ../../src/core:/diyhue
+      - ../../config:/config
     ports:
       - '80:80'
       - '443:443'

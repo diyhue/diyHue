@@ -146,9 +146,9 @@ class S(BaseHTTPRequestHandler):
 
         elif self.path == '/save':
             self._set_headers()
-            configManager.bridgeConfig.save_config()
+            filename = configManager.bridgeConfig.save_config()
             self._set_end_headers(bytes(
-                json.dumps([{"success": {"configuration": "saved", "filename": "/opt/hue-emulator/config.json"}}],
+                json.dumps([{"success": {"configuration": "saved", "filename": filename}}],
                            separators=(',', ':'), ensure_ascii=False), "utf8"))
         elif self.path.startswith("/tradfri"):  # setup Tradfri gateway
             # TODO: purge tradfri, milight, hue, deconz, and switch... very messy
@@ -743,7 +743,7 @@ class S(BaseHTTPRequestHandler):
                             for light in bridge_config["groups"][url_pieces[4]]["lights"]:
                                 bridge_config["lights"][light]["state"]["mode"] = "streaming"
                             logging.info("start hue entertainment")
-                            Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1",
+                            Popen([configManager.coreConfig.get_path("entertain-srv", project=True), "server_port=2100", "dtls=1",
                                    "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
                             bridge_config["groups"][url_pieces[4]]["stream"].update(
@@ -800,7 +800,7 @@ class S(BaseHTTPRequestHandler):
                         if "active" in put_dictionary:
                             if put_dictionary["active"]:
                                 logging.info("start hue entertainment")
-                                Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1",
+                                Popen([configManager.coreConfig.get_path("entertain-srv", project=True), "server_port=2100", "dtls=1",
                                        "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                                 sleep(0.2)
                                 bridge_config["groups"][url_pieces[4]]["stream"].update(
@@ -959,7 +959,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile="/opt/hue-emulator/config/cert.pem")  # change to new cert location
+        ctx.load_cert_chain(certfile=configManager.coreConfig.get_path("cert.pem", config=True))  # change to new cert location
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
         ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE

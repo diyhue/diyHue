@@ -1,6 +1,6 @@
 .DS_Store
 __pycache__
-BridgeEmulator/web-ui/public/config.js
+src/core/web-ui/public/config.js
 node_modules
 ./exports
 Lights/*
@@ -15,9 +15,7 @@ Sensors/*
 /share/
 
 # Ignore userdata
-BridgeEmulator/config/
-BridgeEmulator/cert.pem
-BridgeEmulator/config.json
+config
 
 #PyCharm
 .idea/*
