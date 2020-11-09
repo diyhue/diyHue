@@ -312,9 +312,9 @@ jobs:
       matrix:
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
         include:
-          - version: v7
+          - version: v7l
             arch_friendly: armv7
-          - version: v6
+          - version: v6l
             arch_friendly: armv6
     steps:
       - name: Set Docker Repository
