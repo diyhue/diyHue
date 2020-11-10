@@ -14,7 +14,7 @@ RUN chmod +x ./select.sh && \
 
 # ============================ Actual image from here ====================
 FROM debian:stable-slim
-WORKDIR /opt/hue-emulator
+WORKDIR /diyhue
 ARG TARGETPLATFORM
 
 COPY requirements.txt ./

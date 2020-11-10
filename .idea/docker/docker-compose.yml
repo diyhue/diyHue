@@ -11,7 +11,7 @@ services:
       - disableonlinediscover=true
       - DEBUG=true
       - MAC=00:00:00:00:00:00
-      - IP=192.168.1.1
+      - IP=192.168.1.106
     volumes:
       - ../../src/core:/diyhue
       - ../../config:/config

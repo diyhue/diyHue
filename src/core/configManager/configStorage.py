@@ -39,9 +39,9 @@ class configStorage:
 
     def get_path(self, file, project=False, config=False): #defaulting to config for now...
         if project:
-            return Path(self.projectDir, file)
+            return Path(self.projectDir, file).as_posix()
         else:
-            return Path(self.configDir, file)
+            return Path(self.configDir, file).as_posix()
 
     def _generate_new_config(self):
         self.bridge_config = {}

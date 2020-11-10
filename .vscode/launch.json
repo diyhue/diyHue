@@ -8,7 +8,7 @@
             "name": "Launch diyHue",
             "type": "python",
             "request": "launch",
-            "program": "/opt/hue-emulator/HueEmulator3.py",
+            "program": "/diyhue/main.py",
             "args" : [],
             "pythonPath": "/usr/bin/python3",
             "console": "integratedTerminal"

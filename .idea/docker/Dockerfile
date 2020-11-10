@@ -1,5 +1,5 @@
 FROM debian:stable-slim as prod
-WORKDIR /opt/hue-emulator
+WORKDIR /diyhue
 
 COPY requirements.txt /tmp/pip-tmp/
 
