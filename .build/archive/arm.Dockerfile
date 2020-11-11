@@ -5,7 +5,7 @@ RUN [ "cross-build-start" ]
 
 ## Install requirments
 RUN apt update && apt install -y openssl nmap psmisc iproute2 tzdata \
-    && pip install pytz astral==1.6.1 ws4py==0.5.1 requests==2.20.0 paho-mqtt==1.5.0 --no-cache-dir \
+    && pip install pytz astral==2.2 ws4py==0.5.1 requests==2.20.0 paho-mqtt==1.5.0 --no-cache-dir \
     && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue

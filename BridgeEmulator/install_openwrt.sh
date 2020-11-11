@@ -40,15 +40,15 @@ mv /opt/tmp/diyHue/functions/network_OpenWrt.py /opt/hue-emulator/functions/netw
 wait
 cp hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Downloading astral.\033[0m"
-wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
+wget -q https://github.com/sffjunkie/astral/archive/2.2.zip -O astral.zip
 wait
 unzip -q -o astral.zip
 wait
-cd astral-master/
+cd astral-2.2/
 python3 setup.py install
 wait
 cd ../
-rm -rf astral.zip astral-master/
+rm -rf astral.zip astral-2.2/
 echo -e "\033[32m Download mbedtls to compile binary entertainment.\033[0m"
 wait
 cd /opt/hue-emulator

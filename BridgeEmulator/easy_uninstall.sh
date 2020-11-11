@@ -6,14 +6,14 @@ systemctl stop hue-emulator.service
 
 ### Uninstalling astral library for sunrise/sunset routines
 echo -e "\033[36m Uninstalling Python Astral.\033[0m"
-wget -q https://github.com/sffjunkie/astral/archive/master.zip -O astral.zip
+wget -q https://github.com/sffjunkie/astral/archive/2.2.zip -O astral.zip
 unzip -q -o astral.zip
-cd astral-master/
+cd astral-2.2/
 python3 setup.py install --record files.txt
 # inspect files.txt to make sure it looks ok. Then:
 tr '\n' '\0' < files.txt | xargs -0 sudo rm -f --
 cd ../
-rm -rf astral.zip astral-master/
+rm -rf astral.zip astral-2.2/
 
 ### Uninstalling hue emulator
 echo -e "\033[36m Uninstalling Hue Emulator.\033[0m"

@@ -22,7 +22,7 @@ fi
 
 ### installing astral library for sunrise/sunset routines
 echo -e "\033[36m Installing Python Astral.\033[0m"
-curl -sL https://codeload.github.com/sffjunkie/astral/zip/2.2 -o astral.zip
+curl -sL https://github.com/sffjunkie/astral/archive/2.2.zip -o astral.zip
 unzip -qo astral.zip
 cd astral-2.2/
 python3 setup.py install
