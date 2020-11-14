@@ -1,12 +1,14 @@
 import json
 import os
 import logManager
+import subprocess
 import configManager
 from datetime import datetime
-from subprocess import call
 from pathlib import Path
 
 logging = logManager.logger.get_logger(__name__)
+
+
 # TODO: add empty file to config dir and check for it, if found, notify user to mount the config dir to ensure config is not lost
 
 class configStorage:
@@ -22,12 +24,6 @@ class configStorage:
         self.load_core()
 
     @staticmethod
-    def _generate_certificate(mac):
-        logging.info("Generating certificate")
-        call(["/bin/bash", "/diyhue/genCert.sh", mac])
-        logging.info("Certificate created")
-
-    @staticmethod
     def _open_json(path):
         with open(path, 'r', encoding="utf-8") as fp:
             return json.load(fp)
@@ -37,7 +33,7 @@ class configStorage:
         with open(path, 'w', encoding="utf-8") as fp:
             json.dump(contents, fp, sort_keys=True, indent=4, separators=(',', ': '))
 
-    def get_path(self, file, project=False, config=False): #defaulting to config for now...
+    def get_path(self, file, project=False, config=False):  # defaulting to config for now...
         if project:
             return Path(self.projectDir, file).as_posix()
         else:
@@ -48,17 +44,11 @@ class configStorage:
         # self.runtime_config = {}
 
     def _update_core_config(self):  # prepares core config for saving
-        self.core_config = {}
-        self.core_config["bridge_config"] = self.bridge_config
+        self.core_config = {"bridge_config": self.bridge_config}
         # self.core_config["runtime_config"] = self.runtime_config
 
-    def _save_core(self, backup=False):  # saves core config as is, use caution
-        if backup:
-            filename = "config--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f") + ".json"
-        else:
-            filename = "config.json"
-        self._write_json(self.get_path(filename, config=True), self.core_config)
-        return filename
+    def _save_core(self):  # saves core config as is, use caution
+        self._write_json(self.get_path("config.json", config=True), self.core_config)
 
     def load_core(self):
         if os.path.exists(self.get_path("config.json", config=True)):
@@ -77,18 +67,122 @@ class configStorage:
 
     def save_latest_core(self, backup=False):
         self._update_core_config()
-        return self._save_core(backup)
+        self._save_core()
+        if backup:
+            return self._backup_data("config.json")
+        else:
+            return "config.json"
 
     def reset_core(self):
-        self._save_core(True) #first make a backup of what was read from the disk
-        filename = self.save_latest_core(True) #then make a backup of the in-memory config
+        self._backup_data("config.json")  # first make a backup of what was read from the disk
+        filename = self.save_latest_core(True)  # then make a backup of the in-memory config
         self._generate_new_config()
         self.save_latest_core()
         return filename
 
-    def initialize_certificate(self, reset=False):  # resetting of certificates is never used currently, maybe add to reset core?
+    def initialize_certificate(self,
+                               reset=False):  # resetting of certificates is never used currently, maybe add to reset core?
         if reset:
-            filename = "cert--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f") + ".pem"
-            os.rename(self.get_path("cert.pem", config=True), self.get_path(filename, config=True))
+            self._backup_data("cert.pem")
         if not os.path.isfile(self.get_path("cert.pem", config=True)):
-            self._generate_certificate(configManager.runtimeConfig.arg["FULLMAC"])
+            self._generate_certificate(configManager.runtimeConfig.arg["MAC"])
+        else:
+            if not self._validate_certificate(configManager.runtimeConfig.arg["MAC"]):
+                logging.warning("Detected need to recreate the certificate. Backing up certificate.")
+                self._backup_data("cert.pem")
+                self._generate_certificate(configManager.runtimeConfig.arg["MAC"])
+
+    def _backup_data(self, orig_filename):
+        """
+        Backup file from config dir. Will additionally prune old backups with maximum from args.
+        :param filename: Full filename including extension
+        :return:
+        """
+        file_ext = orig_filename.split(".")[1]
+        filename = orig_filename.split(".")[0]
+        self.__prune_backups(filename, file_ext)
+        backup_name = filename + "--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f") + "." + file_ext
+        os.rename(self.get_path(orig_filename, config=True), self.get_path(backup_name, config=True))
+        return backup_name
+
+    def __prune_backups(self, filename, file_ext):
+        backup_list = []
+        for file in os.listdir(self.configDir):
+            if file.startswith(filename + "--") and file.endswith(file_ext):
+                backup_list.append(file)
+        backup_list.sort()
+        if len(backup_list) > configManager.runtimeConfig.arg[filename.upper() + "_BACKUPS"]:
+            for backup in backup_list:
+                if len(backup_list) > configManager.runtimeConfig.arg[filename.upper() + "_BACKUPS"]:
+                    os.remove(self.get_path(backup, config=True))
+                else:
+                    break
+
+    def _validate_certificate(self, mac):
+        """
+        Ensures the certificate within the config directory matches the MAC that we were provided during startup.
+        If there is a mismatch, return False.
+        :param mac: MAC address without ':'. Letters and numbers only.
+        :return: boolean
+        """
+        opnssl_process = subprocess.check_output(["openssl",
+                                                  "x509",
+                                                  "-in", self.get_path("cert.pem", config=True),
+                                                  "-serial",
+                                                  "-noout"]
+                                                 )
+        try:
+            output = opnssl_process.decode('utf-8').rstrip().split("=")[1]
+            if mac == output:
+                return True
+            else:
+                try:  # If somehow the mac does not match up, check using integer validation
+                    mac = int(mac, 16)
+                    output = int(output)
+                    return mac == output
+                except Exception as e:
+                    logging.debug("Couldn't parse secondary MAC serial check", e)
+        except Exception as e:
+            logging.warning(
+                "We failed to detect the certificate serial, so we will recreate the certificate just in case.", e)
+            return False
+
+    def _generate_certificate(self, mac):
+        """
+        Generates cert, key combo in the config directory
+        :param mac: Host MAC address without ':'. Letters and numbers only.
+        :return:
+        """
+        logging.info("Generating certificate")
+        try:
+            # generate certificate using openssl
+            subprocess.run(["openssl", "req",
+                                     "-new",
+                                     "-days", "3650",
+                                     "-config", "/diyhue/openssl.conf",
+                                     "-nodes",
+                                     "-x509",
+                                     "-newkey", "ec",
+                                     "-pkeyopt", "ec_paramgen_curve:P-256",
+                                     "-pkeyopt", "ec_param_enc:named_curve",
+                                     "-subj", "/C=NL/O=Philips Hue/CN=" + mac,
+                                     "-keyout", "/tmp/private.key",
+                                     "-out", "/tmp/public.crt",
+                                     "-set_serial", str(int(mac, 16))],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.STDOUT
+                            )
+            tmp_files = ["/tmp/private.key", "/tmp/public.crt"]
+            # concatenate certificate and private key
+            with open(self.get_path("cert.pem", config=True), 'w') as outfile:
+                for file in tmp_files:
+                    with open(Path(file).as_posix(), 'r') as readfile:
+                        for line in readfile:
+                            outfile.write(line)
+            # remove temporary key
+            for file in tmp_files:
+                os.remove(file)
+            logging.info("Certificate created")
+        except Exception as e:
+            logging.critical("Failed creating certificate!", e)
+            raise
