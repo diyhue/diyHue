@@ -67,34 +67,40 @@ class configStorage:
 
     def save_latest_core(self, backup=False):
         self._update_core_config()
-        self._save_core()
-        if backup:
-            return self._backup_data("config.json")
+        if backup: # first backup
+            filename = self.backup_data("config.json")
         else:
-            return "config.json"
+            filename = "config.json"
+        self._save_core() # then save what we have in memory
+        return filename
 
     def reset_core(self):
-        self._backup_data("config.json")  # first make a backup of what was read from the disk
-        filename = self.save_latest_core(True)  # then make a backup of the in-memory config
+        """
+        Creates 2 backups. Backup 1: original file from disk. Backup 2: config from memory.
+        Saves new config generated from default config.
+        :return:
+        """
+        self.save_latest_core(True)  # Make a backup of config on disk, save in-memory config
+        filename = self.backup_data("config.json") # Renames in-memory to backup
         self._generate_new_config()
         self.save_latest_core()
         return filename
 
-    def initialize_certificate(self,
-                               reset=False):  # resetting of certificates is never used currently, maybe add to reset core?
+    def initialize_certificate(self, reset=False):
+        # resetting of certificates is never used currently, maybe add to reset core?
         if reset:
-            self._backup_data("cert.pem")
+            self.backup_data("cert.pem")
         if not os.path.isfile(self.get_path("cert.pem", config=True)):
             self._generate_certificate(configManager.runtimeConfig.arg["MAC"])
         else:
             if not self._validate_certificate(configManager.runtimeConfig.arg["MAC"]):
                 logging.warning("Detected need to recreate the certificate. Backing up certificate.")
-                self._backup_data("cert.pem")
+                self.backup_data("cert.pem")
                 self._generate_certificate(configManager.runtimeConfig.arg["MAC"])
 
-    def _backup_data(self, orig_filename):
+    def backup_data(self, orig_filename):
         """
-        Backup file from config dir. Will additionally prune old backups with maximum from args.
+        Rename main file from config dir to backup file. Will additionally prune old backups with maximum from args.
         :param filename: Full filename including extension
         :return:
         """
