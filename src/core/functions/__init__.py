@@ -1,3 +1,4 @@
+# TODO: replace with generator
 def nextFreeId(bridge_config, element):
     i = 1
     while (str(i)) in bridge_config[element]:
