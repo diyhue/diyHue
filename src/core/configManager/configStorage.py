@@ -15,10 +15,10 @@ class configStorage:
     core_config = None
     bridge_config = None
     # runtime_config = None # left here for the future as we dont actually want to save the runtime config for now
-    projectDir = '/diyhue'  # cwd = os.path.split(os.path.abspath(__file__))[0]
-    configDir = '/config'
 
     def __init__(self):
+        self.projectDir = configManager.runtimeConfig.arg["INSTALL_LOCATION"]  # cwd = os.path.split(os.path.abspath(__file__))[0]
+        self.configDir = configManager.runtimeConfig.arg["CONFIG_LOCATION"]
         if not os.path.exists(self.configDir):
             os.makedirs(self.configDir)
         self.load_core()

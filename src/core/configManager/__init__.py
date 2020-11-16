@@ -3,12 +3,12 @@ from configManager import argumentHandler
 from configManager import runtimeConfigHandler
 from configManager import configStorage
 
-coreConfig = configStorage.configStorage()
-
 # Initialize runtime configuration
 runtimeConfig = runtimeConfigHandler.Config()
-runtimeConfig.populate()
-argumentHandler.process_arguments(runtimeConfig.arg)
+runtimeConfig.populate()  # gathers arguments all arguments to dictionary
+argumentHandler.process_arguments(runtimeConfig.arg)  # for now, only toggles debug logging
+
+coreConfig = configStorage.configStorage()
 coreConfig.initialize_certificate()
 
 # Initialize bridge config
@@ -19,4 +19,3 @@ bridgeConfig.write_args(runtimeConfig.arg)
 # Clean and update config
 bridgeConfig.sanitizeBridgeScenes()
 bridgeConfig.updateConfig()
-

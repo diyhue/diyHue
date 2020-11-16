@@ -65,6 +65,8 @@ def parse_arguments():
     ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
     ap.add_argument("--config-max-backups", help="Maximum config backups to be stored")
     ap.add_argument("--certificate-max-backups", help="Maximum certificate backups to be stored")
+    ap.add_argument("--config-location", help="Location where config files are stored")
+    ap.add_argument("--install-location", help="Installation location of diyHue")
 
     args = ap.parse_args()
 
@@ -104,5 +106,8 @@ def parse_arguments():
 
     argumentDict["CONFIG_BACKUPS"] = int(get_argument("CONFIG_BACKUPS", args=args.config_max_backups, default=25))
     argumentDict["CERT_BACKUPS"] = int(get_argument("CERT_BACKUPS", args=args.certificate_max_backups, default=25))
+
+    argumentDict["CONFIG_LOCATION"] = get_argument("CONFIG_LOCATION", args=args.config_location, default="/config")
+    argumentDict["INSTALL_LOCATION"] = get_argument("INSTALL_LOCATION", args=args.install_location, default="/diyhue")
 
     return argumentDict
