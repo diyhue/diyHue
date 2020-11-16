@@ -12,11 +12,24 @@ def _open_json(path):
 
 
 class Config:
-    json_config = None
+    _json_config = None
 
     def __init__(self, bridge_config):
         self.json_config = bridge_config
         self.load_config()
+
+    @property
+    def json_config(self):
+        return self._json_config
+
+    @json_config.setter
+    def json_config(self, value):
+        self._json_config = value
+        self.save_config()
+
+    @json_config.deleter
+    def json_config(self):
+        del self._json_config
 
     def load_config(self):
         if not self.json_config:
@@ -26,6 +39,7 @@ class Config:
             self.save_config()
 
     def save_config(self, backup=False):
+        logging.debug("Saving config!")
         configManager.coreConfig.bridge_config = self.json_config
         return configManager.coreConfig.save_latest_core(backup)
 

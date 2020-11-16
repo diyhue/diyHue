@@ -8,7 +8,10 @@ class Light(ToggleableDevice):
 
     def __init__(self, protocol):
         super().__init__(protocol)
-        self.protocol = cast(LightProtocol, protocol)
+        if issubclass(LightProtocol, protocol):
+            self.protocol = cast(LightProtocol, protocol)
+        else:
+            raise TypeError("Protocol must inherit LightProtocol!")
 
     def set_brightness(self, bri) -> None:
         self.protocol.set_brightness(bri)

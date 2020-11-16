@@ -6,7 +6,10 @@ class ToggleableDevice:
     is_on = False
 
     def __init__(self, protocol):
-        self.protocol = cast(BaseDeviceProtocol, protocol)
+        if issubclass(BaseDeviceProtocol, protocol):
+            self.protocol = cast(BaseDeviceProtocol, protocol)
+        else:
+            raise TypeError("Protocol must inherit BaseDeviceProtocol!")
 
     def turn_on(self, bri=None, kelvin=None, red=None, green=None, blue=None) -> None:
         self.protocol.turn_on(bri, kelvin, red, green, blue)

@@ -10,7 +10,10 @@ class rgbLight(Light):
 
     def __init__(self, protocol):
         super().__init__(protocol)
-        self.protocol = cast(rgbLightProtocol, protocol)
+        if issubclass(rgbLightProtocol, protocol):
+            self.protocol = cast(rgbLightProtocol, protocol)
+        else:
+            raise TypeError("Protocol must inherit rgbLightProtocol!")
 
     def set_color(self, red, green, blue) -> None:
         self.protocol.set_color(red, green, blue)
