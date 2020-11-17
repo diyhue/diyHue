@@ -32,7 +32,6 @@ RUN apt update && apt install --no-install-recommends -y \
 COPY ./src/core/ /diyhue/
 
 ## Copy correct (compiled) C file from previous image
-RUN echo workaround for https://github.com/moby/moby/issues/37965
 COPY --from=binselector /workdir/out /diyhue/
 
 ## Document ports
