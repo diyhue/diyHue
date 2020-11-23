@@ -1,5 +1,5 @@
 ---
-name: Help Request
+name: Help request
 about: Ask for help using the project
 
 ---
