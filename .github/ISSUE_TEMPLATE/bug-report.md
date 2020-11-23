@@ -1,8 +1,10 @@
 ---
 name: Bug report
 about: Create a report to help us improve this project
+labels: 'Bug Report'
 
 ---
+
 <!--
 DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE!
 If any part is removed or improperly completed,

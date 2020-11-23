@@ -1,8 +1,10 @@
 ---
 name: Help request
 about: Ask for help using the project
+labels: 'Help Request'
 
 ---
+
 <!--
 DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE!
 If any part is removed or improperly completed,

@@ -1,8 +1,10 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
+labels: 'Feature Request'
 
 ---
+
 <!--
 DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE!
 If any part is removed or improperly completed,
