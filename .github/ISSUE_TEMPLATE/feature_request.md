@@ -16,10 +16,8 @@ the necessary information to understand the problem.
 1. Please be sure to fill in the issue template completely
 and to the best of your ability so that we may understand your feature request.
 
-2. Do not open issues here for user error/help/support questions. 
-This is for bugs/enhancements/feature requests. For help using the program,
-use either the Discourse or the Slack that can be found in the readme.
-https://github.com/diyhue/diyHue#support
+2. Do NOT use this template for user error/help/support questions. If
+this is for a help request, please go back and select the proper template.
 
 Basic GitHub Comment Tutorial:
 1. Logs
@@ -33,7 +31,7 @@ Logs here.
 - [x] This is a checked box.
 
 3. Comments
-A block of test beginning with < !-- and ending with -- > is a comment.
+A block of text beginning with < !-- and ending with -- > is a comment.
 You will see these throughout the issue template. Make sure you do not type your comments
 between these characters or we will not be able to see what you wrote!
 
@@ -62,4 +60,5 @@ To create a hyperlink, type the [text you want to link](followed by the url in p
 <!-- Add any other context or screenshots about the feature request here. -->
 
 
+<!-- DO NOT REMOVE: issue_labeler_regex_version=1 -->
 <!-- DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY. -->

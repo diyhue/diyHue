@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve this project
+name: Help Request
+about: Ask for help using the project
 
 ---
 <!--
@@ -8,20 +8,22 @@ DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE!
 If any part is removed or improperly completed,
 the issue will be closed automatically.
 
-Thank you for taking the time to submit a BUG REPORT for this project.
+Thank you for taking the time to submit a HELP REQUEST for this project.
 To ensure we have all the information necessary, please be sure to
 carefully read all the primers below. This will ensure that we have
 the necessary information to understand the problem.
 
 1. Please be sure to fill in the issue template completely
-and to the best of your ability so that we may reproduce
-the issue. Issues that are not reproducible CANNOT be fixed.
+and to the best of your ability so that we may best understand your issue.
 
 2. Support for installation methods other than Docker have been depreciated so
 ensure you are using Docker so that we may be able to best help you.
 
-3. Do NOT use this template for user error/help/support questions. If
-this is for a help request, please go back and select the proper template.
+3. For live and more targeted support, use either the Discourse or the Slack
+that can be found in the readme. https://github.com/diyhue/diyHue#support
+
+4. If we were able to help you through this issue, please consider submitting
+a pull request to our documentation to help other! https://github.com/diyhue/ReadTheDocs
 
 Basic GitHub Comment Tutorial:
 1. Logs
@@ -43,13 +45,13 @@ between these characters or we will not be able to see what you wrote!
 To create a hyperlink, type the [text you want to link](followed by the url in parenthesis)
 -->
 
-**Describe the bug**
-<!-- A clear and concise description of what the bug is. -->
+**Describe the issue**
+<!-- A clear and concise description of what the issue is. -->
 
 
-**Steps to Reproduce**
+**Steps you tried**
 <!--
-Steps to reproduce the behavior:
+Steps you tried:
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
@@ -57,8 +59,9 @@ Steps to reproduce the behavior:
 -->
 
 
-**Expected behavior**
-<!-- A clear and concise description of what you expected to happen. -->
+**How we can help**
+<!-- What information can we provide to help your setup experience? -->
+
 
 **Logs**
 <!-- If applicable, provide output logs. These can be obtained via running `docker logs diyHue` -->
@@ -71,7 +74,7 @@ Steps to reproduce the behavior:
  - Hardware (Ex: PC, Raspberry Pi 1/2/3/Zero): 
 
 **Checklist**
-- [ ] I confirm that this is a bug report
+- [ ] I confirm that this is a help request
 - [ ] I confirm that I have completed this template to the best of my ability
 
 **Additional context**
