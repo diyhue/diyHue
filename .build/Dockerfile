@@ -6,30 +6,31 @@ WORKDIR /workdir
 # Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
 ARG TARGETPLATFORM
 
-COPY Installers .build/select.sh ./
+COPY binaries .build/select.sh ./
 
 RUN chmod +x ./select.sh && \
     mkdir out && \
     ./select.sh
 
 # ============================ Actual image from here ====================
-FROM debian:stable-slim
+FROM python:3.9-slim-buster
 WORKDIR /diyhue
 ARG TARGETPLATFORM
 
-COPY requirements.txt ./
+COPY requirements.txt .
 
 ## Install requirements  
 RUN apt update && apt install --no-install-recommends -y \
-    python3-minimal python3-pip python3-setuptools \
-    openssl nmap psmisc iproute2 \
-    && pip3 install -r requirements.txt --no-cache-dir \
-    && apt purge -y python3-pip python3-setuptools \
+        openssl \
+        nmap \
+        psmisc \
+        iproute2 \
+    && pip3 install --no-cache-dir -r requirements.txt \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue
-COPY ./src/core/ /diyhue/
+COPY ./src/core/ .
 
 ## Copy correct (compiled) C file from previous image
 COPY --from=binselector /workdir/out /diyhue/

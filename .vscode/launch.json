@@ -9,8 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "/diyhue/main.py",
-            "args" : [],
-            "pythonPath": "/usr/bin/python3",
+            "args": [],
+            "python": "/usr/local/bin/python3",
             "console": "integratedTerminal"
         }
     ]

@@ -19,5 +19,4 @@ config
 
 #PyCharm
 .idea/*
-!.idea/docker/
 !.idea/runConfigurations/

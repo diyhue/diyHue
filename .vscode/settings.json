@@ -1,3 +1,6 @@
 {
-    "python.autoComplete.extraPaths": ["./BridgeEmulator"]
+    "python.autoComplete.extraPaths": [
+        "./src/core",
+        "./src/RemoteApi"
+    ]
 }

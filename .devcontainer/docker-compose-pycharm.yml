@@ -3,8 +3,9 @@ version: '3'
 services:
   diyhue:
     build:
-      context: ../../
-      dockerfile: ./.idea/docker/Dockerfile
+      context: ../
+      dockerfile: ./.devcontainer/Dockerfile
+      target: dev_pycharm
     restart: always
     stop_grace_period: 0s
     environment:
@@ -15,8 +16,8 @@ services:
       - CONFIG_BACKUPS=1
       - CERT_BACKUPS=1
     volumes:
-      - ../../src/core:/diyhue
-      - ../../config:/config
+      - ../src/core:/diyhue
+      - ../config:/config
     ports:
       - '80:80'
       - '443:443'

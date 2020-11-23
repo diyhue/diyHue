@@ -96,14 +96,14 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                         sendLightRequest(str(lightId), {"xy": [x,y]}, lights, addresses, None, host_ip)
                                         frameID = 0
                         i = i + 9
-            if len(nativeLights) is not 0:
+            if len(nativeLights) != 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
                     for light in nativeLights[ip].keys():
                         udpmsg += bytes([light]) + bytes([nativeLights[ip][light][0]]) + bytes([nativeLights[ip][light][1]]) + bytes([nativeLights[ip][light][2]])
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
-            if len(esphomeLights) is not 0:
+            if len(esphomeLights) != 0:
                 for ip in esphomeLights.keys():
                     udpmsg = bytearray()
                     udpmsg += bytes([0]) + bytes([esphomeLights[ip]["color"][0]]) + bytes([esphomeLights[ip]["color"][1]]) + bytes([esphomeLights[ip]["color"][2]]) + bytes([esphomeLights[ip]["color"][3]])
