@@ -78,5 +78,4 @@ Steps to reproduce the behavior:
 <!-- Add any other context about the problem here. -->
 
 
-<!-- DO NOT REMOVE: issue_labeler_regex_version=1 -->
 <!-- DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY. -->

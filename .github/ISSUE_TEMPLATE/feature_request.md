@@ -60,5 +60,4 @@ To create a hyperlink, type the [text you want to link](followed by the url in p
 <!-- Add any other context or screenshots about the feature request here. -->
 
 
-<!-- DO NOT REMOVE: issue_labeler_regex_version=1 -->
 <!-- DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY. -->
