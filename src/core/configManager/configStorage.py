@@ -159,11 +159,11 @@ class configStorage:
                 except Exception as e:
                     logging.debug("Couldn't parse secondary MAC CN check", e)
             logging.warning(
-                "We failed to validate the certificate CN, so we will recreate the certificate just in case.")
+                "We failed to validate the certificate, so we will recreate the certificate just in case.")
             return False
         except Exception as e:
             logging.warning(
-                "We failed to detect the certificate CN, so we will recreate the certificate just in case.", e)
+                "We failed to detect the certificate, so we will recreate the certificate just in case.", e)
             return False
 
     def _generate_certificate(self, mac):
