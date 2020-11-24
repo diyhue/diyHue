@@ -144,7 +144,15 @@ class configStorage:
             if mac_generate == output:
                 return True
             else:
-                try:  # If somehow the mac does not match up, check using integer validation
+                try:  # If somehow the mac does not match up, check using integer validation on serial
+                    opnssl_process = subprocess.check_output(["openssl",
+                                                              "x509",
+                                                              "-in", self.get_path("cert.pem", config=True),
+                                                              "-serial",
+                                                              "-noout"]
+                                                             )
+                    output = opnssl_process.decode('utf-8')
+                    output = output.rstrip().split("=")[1]  # parse out the serial of the certificate
                     mac_generate = int(mac_generate, 16)
                     output = int(output, 16)
                     return mac_generate == output
