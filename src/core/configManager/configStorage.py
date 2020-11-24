@@ -131,26 +131,31 @@ class configStorage:
         :param mac: MAC address without ':'. Letters and numbers only.
         :return: boolean
         """
+        mac_generate = mac[:6] + 'fffe' + mac[6:]
         opnssl_process = subprocess.check_output(["openssl",
                                                   "x509",
                                                   "-in", self.get_path("cert.pem", config=True),
-                                                  "-serial",
+                                                  "-subject",
                                                   "-noout"]
                                                  )
         try:
-            output = opnssl_process.decode('utf-8').rstrip().split("=")[1]
-            if mac == output:
+            output = opnssl_process.decode('utf-8')
+            output = output.rstrip().split("=")[4].strip()  # parse out the CN of the certificate
+            if mac_generate == output:
                 return True
             else:
                 try:  # If somehow the mac does not match up, check using integer validation
-                    mac = int(mac, 16)
-                    output = int(output)
-                    return mac == output
+                    mac_generate = int(mac_generate, 16)
+                    output = int(output, 16)
+                    return mac_generate == output
                 except Exception as e:
-                    logging.debug("Couldn't parse secondary MAC serial check", e)
+                    logging.debug("Couldn't parse secondary MAC CN check", e)
+            logging.warning(
+                "We failed to validate the certificate CN, so we will recreate the certificate just in case.")
+            return False
         except Exception as e:
             logging.warning(
-                "We failed to detect the certificate serial, so we will recreate the certificate just in case.", e)
+                "We failed to detect the certificate CN, so we will recreate the certificate just in case.", e)
             return False
 
     def _generate_certificate(self, mac):
@@ -161,6 +166,7 @@ class configStorage:
         """
         logging.info("Generating certificate")
         try:
+            mac_generate = mac[:6] + 'fffe' + mac[6:]
             # generate certificate using openssl
             subprocess.run(["openssl", "req",
                                      "-new",
@@ -171,10 +177,10 @@ class configStorage:
                                      "-newkey", "ec",
                                      "-pkeyopt", "ec_paramgen_curve:P-256",
                                      "-pkeyopt", "ec_param_enc:named_curve",
-                                     "-subj", "/C=NL/O=Philips Hue/CN=" + mac,
+                                     "-subj", "/C=NL/O=Philips Hue/CN=" + mac_generate,
                                      "-keyout", "/tmp/private.key",
                                      "-out", "/tmp/public.crt",
-                                     "-set_serial", str(int(mac, 16))],
+                                     "-set_serial", str(int(mac_generate, 16))],
                             stdout=subprocess.DEVNULL,
                             stderr=subprocess.STDOUT
                             )
