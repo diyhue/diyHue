@@ -1,8 +1,7 @@
-import configManager
 import json
 import logManager
-from configManager import configOperations
-
+import configManager
+configOperations = configManager.configOperations
 logging = logManager.logger.get_logger(__name__)
 
 
