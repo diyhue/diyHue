@@ -1,6 +1,5 @@
 import json
 import logManager
-import configManager
 configOperations = configManager.configOperations
 logging = logManager.logger.get_logger(__name__)
 
