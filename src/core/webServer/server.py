@@ -575,7 +575,7 @@ class S(BaseHTTPRequestHandler):
                                 post_dictionary["lightstates"] = {}
                                 if "lights" in post_dictionary:
                                     lights = post_dictionary["lights"]
-                                elif "group" in post_dictionary:
+                                elif "group" in post_dictionary and post_dictionary["group"] != "0":
                                     lights = bridge_config["groups"][post_dictionary["group"]]["lights"]
                                 for light in lights:
                                     post_dictionary["lightstates"][light] = {
