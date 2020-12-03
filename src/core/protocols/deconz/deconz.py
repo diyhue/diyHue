@@ -1,15 +1,17 @@
-import datetime
+import json
+from datetime import datetime
+from threading import Thread
+from time import sleep
+
 import requests
+
 import configManager
 import logManager
-import json
-from time import sleep
-from protocols.hue.sensors import addHueMotionSensor, motionDetected
-from protocols.hue.scheduler import generateDxState, rulesProcessor
-from functions.request import sendRequest
-from threading import Thread
 from functions import nextFreeId
+from functions.request import sendRequest
 from lightManager.core.updateGroup import updateGroupStats
+from protocols.hue.scheduler import generateDxState, rulesProcessor
+from protocols.hue.sensors import addHueMotionSensor, motionDetected
 
 bridge_config = configManager.bridgeConfig.json_config
 logging = logManager.logger.get_logger(__name__)
