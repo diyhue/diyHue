@@ -42,7 +42,7 @@ def scheduleProcessor():
                     if schedule_time.startswith("W"):
                         pieces = schedule_time.split('/T')
                         if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()):
-                            if pieces[1] >= (current_time.strftime("%H:%M:%S")) & pieces[1] <= (current_time + timedelta(seconds=2)).strftime("%H:%M:%S"):
+                            if pieces[1] >= (current_time.strftime("%H:%M:%S")) and pieces[1] <= (current_time + timedelta(seconds=2)).strftime("%H:%M:%S"):
                                 logging.info(
                                     "execute schedule: " + schedule + " withe delay " + str(delay))
                                 sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(
@@ -71,7 +71,7 @@ def scheduleProcessor():
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(
                                 bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     else:
-                        if schedule_time >= (current_time.strftime("%Y-%m-%dT%H:%M:%S")) & schedule_time <= (current_time + timedelta(seconds=2)).strftime("%Y-%m-%dT%H:%M:%S"):
+                        if schedule_time >= (current_time.strftime("%Y-%m-%dT%H:%M:%S")) and schedule_time <= (current_time + timedelta(seconds=2)).strftime("%Y-%m-%dT%H:%M:%S"):
                             logging.info("execute schedule: " +
                                          schedule + " withe delay " + str(delay))
                             sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(
