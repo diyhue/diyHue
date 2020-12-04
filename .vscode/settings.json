@@ -2,5 +2,9 @@
     "python.autoComplete.extraPaths": [
         "./src/core",
         "./src/RemoteApi"
-    ]
+],
+"python.analysis.extraPaths": [
+	"./src/core",
+	"./src/RemoteApi"
+]
 }
