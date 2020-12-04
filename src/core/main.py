@@ -26,6 +26,7 @@ new_lights = configManager.runtimeConfig.newLights
 
 
 def scheduleProcessor():
+    recurring_schedules = dict()
     while True:
         for schedule in bridge_config["schedules"].keys():
             current_time = datetime.now()
@@ -40,11 +41,15 @@ def scheduleProcessor():
                         schedule_time = bridge_config["schedules"][schedule]["localtime"]
 
                     if schedule_time.startswith("W"):
+                        if schedule not in recurring_schedules:
+                            recurring_schedules[schedule] = "enabled"
+
                         pieces = schedule_time.split('/T')
-                        if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()):
+                        if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()) & recurring_schedules[schedule]:
                             if pieces[1] >= (current_time.strftime("%H:%M:%S")) and pieces[1] <= (current_time + timedelta(seconds=2)).strftime("%H:%M:%S"):
                                 logging.info(
                                     "execute schedule: " + schedule + " withe delay " + str(delay))
+                                recurring_schedules[schedule] = "disabled"
                                 sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(
                                     bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     elif schedule_time.startswith("PT"):
@@ -83,6 +88,7 @@ def scheduleProcessor():
                     "Exception while processing the schedule " + schedule + " | " + str(e))
 
         if (datetime.now().strftime("%M:%S") == "00:10"):  # auto save configuration every hour
+            recurring_schedules = dict.fromkeys(recurring_schedules, "enabled")
             configManager.bridgeConfig.save_config()
             Thread(target=daylightSensor).start()
             # backup config every Sunday at 23:00:10
