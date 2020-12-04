@@ -45,7 +45,7 @@ def scheduleProcessor():
                             recurring_schedules[schedule] = "enabled"
 
                         pieces = schedule_time.split('/T')
-                        if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()) & recurring_schedules[schedule]:
+                        if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()) and recurring_schedules[schedule] == "enabled":
                             if pieces[1] >= (current_time.strftime("%H:%M:%S")) and pieces[1] <= (current_time + timedelta(seconds=2)).strftime("%H:%M:%S"):
                                 logging.info(
                                     "execute schedule: " + schedule + " withe delay " + str(delay))
