@@ -83,7 +83,7 @@ def scheduleProcessor():
                                 bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                             if bridge_config["schedules"][schedule]["autodelete"]:
                                 del bridge_config["schedules"][schedule]
-                             else:
+                            else:
                                 bridge_config["schedules"][schedule]["status"] = "disabled"
             except Exception as e:
                 logging.info(
