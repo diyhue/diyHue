@@ -9,7 +9,7 @@ exemptLabels:
 staleLabel: stale
 # Comment to post when marking an issue as stale. Set to `false` to disable
 markComment: >
-  This issue has been automatically marked as stale because it has not has not been verified. 
+  This issue has been automatically marked as stale because it has not been verified. 
   If this is still an issue, please provide the more information so that we are able to understand the issue.
   It will be closed in 7 days if no further activity occurs. Thank you for your contributions.
 # Comment to post when closing a stale issue. Set to `false` to disable
