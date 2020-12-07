@@ -22,31 +22,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set Docker Repository
-        run: |
-          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
-          else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
-          fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
-          echo Repository set as: ${DOCKER_REPO}
-
       - name: Enable qemu
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
-        run:
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - uses: satackey/action-docker-layer-caching@v0.0.8
+        continue-on-error: true
+        with:
+          key: diyhue-cache-ci-${{ matrix.arch }}-{hash}
+          restore-keys: |
+            diyhue-cache-ci-${{ matrix.arch }}-
 
       - name: Build docker image
         run: |
-          docker build -t ${DOCKER_REPO}:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+          docker build -t diyhue/diyhue:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
 
       - name: Save tarball
         run: |
-          docker save --output output.tar ${DOCKER_REPO}:ci
+          docker save --output output.tar diyhue/diyhue:ci
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
@@ -62,16 +55,6 @@ jobs:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
     steps:
-      - name: Set Docker Repository
-        run: |
-          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
-          else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
-          fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
-          echo Repository set as: ${DOCKER_REPO}
-
       - name: Enable qemu
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -104,20 +87,29 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
+        registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
         run: |
           if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="diyhue/core"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
+            fi
           else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
+            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+      - name: Docker login
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          else
+            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
+          fi
 
       - name: Download container artifact
         uses: actions/download-artifact@v2
@@ -130,7 +122,7 @@ jobs:
 
       - name: Push Image
         run: |
-          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
+          docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }} published
 
@@ -141,25 +133,34 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
+        registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
         run: |
           if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="diyhue/core"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
+            fi
           else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
+            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
+      - name: Docker login
         run: |
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          else
+            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
+          fi
 
       - name: Download container artifact
         uses: actions/download-artifact@v2
@@ -173,28 +174,28 @@ jobs:
       - name: Deploy Commit ID
         if: ${{ github.sha != '' }}
         run: |
-          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA published
 
       - name: Deploy Latest
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-latest
+          docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-latest
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-latest
           echo ${DOCKER_REPO}:${{ matrix.arch }}-latest published
 
       - name: Deploy Branch
         if: ${{ startsWith(github.ref, 'refs/heads/') }}
         run: |
-          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
 
       - name: Deploy Tag
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          docker tag ${DOCKER_REPO}:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
+          docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
 
@@ -202,25 +203,36 @@ jobs:
     needs: [build, test, publish]
     name: Tag Images (Manifest)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
         run: |
           if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="diyhue/core"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
+            fi
           else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
+            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
-        run:
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Docker login
+        run: |
+          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          else
+            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
+          fi
 
       - name: Deploy Commit ID
         if: ${{ github.sha != '' }}
@@ -293,35 +305,44 @@ jobs:
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
   retag_arch:
-    needs: [build, test, publish, tag_build]
+    needs: [build, test, publish, tag_build, tag_build_manifest]
     name: Tag images to correct architecture
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        registry: [registry.hub.docker.com, ghcr.io/diyhue]
         include:
-          - version: v7
+          - version: v7l
             arch_friendly: armv7
-          - version: v6
+          - version: v6l
             arch_friendly: armv6
     steps:
       - name: Set Docker Repository
         run: |
           if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            export DOCKER_REPO="diyhue/core"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="diyhue/core"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
+            fi
           else
-            export DOCKER_REPO=$GITHUB_REPOSITORY
+            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
           fi
-          echo "::set-env name=DOCKER_REPO::${DOCKER_REPO}"
+          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
 
       - name: Enable Experimental Docker Features
         run: |
           export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "::set-env name=DOCKER_CLI_EXPERIMENTAL::$DOCKER_CLI_EXPERIMENTAL"
+          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
 
-      - name: Docker login (needs DOCKER_USERNAME and DOCKER_PASSWORD secrets)
-        run:
-          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Docker login
+        run: |
+          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          else
+            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
+          fi
 
       - name: Commit ID
         if: ${{ github.sha != '' }}
