@@ -1,0 +1,30 @@
+comment: >-
+  This issue was automatically closed because the issue template was not filled out or because
+  you have not confirmed you have read all parts of the checklist.
+  To ensure we are able to properly support you, please make sure
+  that you are posting in the right place and to fill out the issue template
+  so that a bunch of standard questions don't need to be asked again each time.
+  Thank you for taking the time to report a bug/feature/help request, hopefully it can be resolved soon.
+  This issue will not be reviewed, so if you need further assistance, please create a new issue, following the template.
+issueConfigs:
+# Bug report
+- content:
+  - "DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE"
+  - "- [x] I confirm that this is a bug report"
+  - "- [x] I confirm that I have completed this template to the best of my ability"
+  - "DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY"
+# Feature request
+- content:
+  - "DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE"
+  - "- [x] I confirm that this is a feature request"
+  - "- [x] I confirm that I have completed this template to the best of my ability"
+  - "DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY"
+# Help request
+- content:
+  - "DO NOT DELETE ANY PART OF THIS ISSUE TEMPLATE"
+  - "- [x] I confirm that this is a help request"
+  - "- [x] I confirm that I have completed this template to the best of my ability"
+  - "DO NOT REMOVE THIS LINE OR THE ISSUE WILL BE CLOSED AUTOMATICALLY"
+
+caseInsensitive: true
+label: "missing-template"
