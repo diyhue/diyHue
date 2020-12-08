@@ -30,13 +30,13 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, shelly, native_single, native_multi, esphome, mqtt, hyperion
+from protocols import protocols, yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, mqtt, hyperion
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
+protocols = [yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, hyperion]
 
 ap = argparse.ArgumentParser()
 
@@ -255,6 +255,22 @@ def updateConfig():
 
     if "mqtt" not in bridge_config["emulator"]:
         bridge_config["emulator"]["mqtt"] = { "discoveryPrefix": "homeassistant", "enabled": False, "mqttPassword": "", "mqttPort": 1883, "mqttServer": "mqtt", "mqttUser": ""}
+
+    if "homeassistant" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["homeassistant"] = { "enabled": False, "homeAssistantIp": "127.0.0.1", "homeAssistantPort": 8123, "homeAssistantToken": "", "homeAssistantIncludeByDefault": False}
+
+    if "yeelight" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["yeelight"] = { "enabled": True}
+    if "tasmota" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["tasmota"] = { "enabled": True}
+    if "shelly" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["shelly"] = { "enabled": True}
+    if "esphome" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["esphome"] = { "enabled": True}
+    if "hyperion" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["hyperion"] = { "enabled": True}
+    if "network_scan" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["network_scan"] = { "enabled": True}
 
     if "Remote API enabled" not in bridge_config["config"]:
         bridge_config["config"]["Remote API enabled"] = False
@@ -731,91 +747,100 @@ def generate_unique_id():
     return "00:17:88:01:00:%02x:%02x:%02x-0b" % (rand_bytes[0],rand_bytes[1],rand_bytes[2])
 
 def scan_for_lights(): #scan for ESP8266 lights and strips
-    Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=shelly.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
-    Thread(target=hyperion.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["yeelight"]["enabled"]:
+        Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["tasmota"]["enabled"]:
+        Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["shelly"]["enabled"]:
+        Thread(target=shelly.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["homeassistant"]["enabled"]:
+        Thread(target=scanHomeAssistant, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["esphome"]["enabled"]:
+        Thread(target=esphome.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["mqtt"]["enabled"]:
+        Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["hyperion"]["enabled"]:
+        Thread(target=hyperion.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
-    device_ips = find_hosts(80)
-    logging.info(pretty_json(device_ips))
-    #logging.debug('devs', device_ips)
-    for ip in device_ips:
-        try:
-            response = requests.get("http://" + ip + "/detect", timeout=3)
-            if response.status_code == 200:
-                # XXX JSON validation
-                try:
-                    device_data = json.loads(response.text)
-                    logging.info(pretty_json(device_data))
-                    if "modelid" in device_data:
-                        logging.info(ip + " is " + device_data['name'])
-                        if "protocol" in device_data:
-                            protocol = device_data["protocol"]
-                        else:
-                            protocol = "native"
+    if bridge_config["emulator"]["network_scan"]["enabled"]:
+        device_ips = find_hosts(80)
+        logging.info(pretty_json(device_ips))
+        #logging.debug('devs', device_ips)
+        for ip in device_ips:
+            try:
+                response = requests.get("http://" + ip + "/detect", timeout=3)
+                if response.status_code == 200:
+                    # XXX JSON validation
+                    try:
+                        device_data = json.loads(response.text)
+                        logging.info(pretty_json(device_data))
+                        if "modelid" in device_data:
+                            logging.info(ip + " is " + device_data['name'])
+                            if "protocol" in device_data:
+                                protocol = device_data["protocol"]
+                            else:
+                                protocol = "native"
 
-                        # Get number of lights
-                        lights = 1
-                        if "lights" in device_data:
-                            lights = device_data["lights"]
+                            # Get number of lights
+                            lights = 1
+                            if "lights" in device_data:
+                                lights = device_data["lights"]
 
-                        # Add each light to config
-                        logging.info("Add new light: " + device_data["name"])
-                        for x in range(1, lights + 1):
-                            light = find_light_in_config_from_mac_and_nr(bridge_config,
-                                    device_data['mac'], x)
+                            # Add each light to config
+                            logging.info("Add new light: " + device_data["name"])
+                            for x in range(1, lights + 1):
+                                light = find_light_in_config_from_mac_and_nr(bridge_config,
+                                        device_data['mac'], x)
 
-                            # Try to find light in existing config
-                            if light:
-                                logging.info("Updating old light: " + device_data["name"])
-                                # Light found, update config
-                                light_address = bridge_config["lights_address"][light]
-                                light_address["ip"] = ip
-                                light_address["protocol"] = protocol
-                                if "version" in device_data:
-                                    light_address.update({
-                                        "version": device_data["version"],
-                                        "type": device_data["type"],
-                                        "name": device_data["name"]
-                                    })
-                                continue
+                                # Try to find light in existing config
+                                if light:
+                                    logging.info("Updating old light: " + device_data["name"])
+                                    # Light found, update config
+                                    light_address = bridge_config["lights_address"][light]
+                                    light_address["ip"] = ip
+                                    light_address["protocol"] = protocol
+                                    if "version" in device_data:
+                                        light_address.update({
+                                            "version": device_data["version"],
+                                            "type": device_data["type"],
+                                            "name": device_data["name"]
+                                        })
+                                    continue
 
-                            new_light_id = nextFreeId(bridge_config, "lights")
+                                new_light_id = nextFreeId(bridge_config, "lights")
 
-                            light_name = generate_light_name(device_data['name'], x)
+                                light_name = generate_light_name(device_data['name'], x)
 
-                            # Construct the configuration for this light from a few sources, in order of precedence
-                            # (later sources override earlier ones).
-                            # Global defaults
-                            new_light = {
-                                "manufacturername": "Philips",
-                                "uniqueid": generate_unique_id(),
-                            }
-                            # Defaults for this specific modelid
-                            if device_data["modelid"] in light_types:
-                                new_light.update(light_types[device_data["modelid"]])
-                                # Make sure to make a copy of the state dictionary so we don't share the dictionary
-                                new_light['state'] = light_types[device_data["modelid"]]['state'].copy()
-                            # Overrides from the response JSON
-                            new_light["modelid"] = device_data["modelid"]
-                            new_light["name"] = light_name
+                                # Construct the configuration for this light from a few sources, in order of precedence
+                                # (later sources override earlier ones).
+                                # Global defaults
+                                new_light = {
+                                    "manufacturername": "Philips",
+                                    "uniqueid": generate_unique_id(),
+                                }
+                                # Defaults for this specific modelid
+                                if device_data["modelid"] in light_types:
+                                    new_light.update(light_types[device_data["modelid"]])
+                                    # Make sure to make a copy of the state dictionary so we don't share the dictionary
+                                    new_light['state'] = light_types[device_data["modelid"]]['state'].copy()
+                                # Overrides from the response JSON
+                                new_light["modelid"] = device_data["modelid"]
+                                new_light["name"] = light_name
 
-                            # Add the light to new lights, and to bridge_config (in two places)
-                            new_lights[new_light_id] = {"name": light_name}
-                            bridge_config["lights"][new_light_id] = new_light
-                            bridge_config["lights_address"][new_light_id] = {
-                                "ip": ip,
-                                "light_nr": x,
-                                "protocol": protocol,
-                                "mac": device_data["mac"]
-                            }
-                except ValueError:
-                    logging.info('Decoding JSON from %s has failed', ip)
-        except Exception as e:
-            logging.info("ip %s is unknown device: %s", ip, e)
-            #raise
+                                # Add the light to new lights, and to bridge_config (in two places)
+                                new_lights[new_light_id] = {"name": light_name}
+                                bridge_config["lights"][new_light_id] = new_light
+                                bridge_config["lights_address"][new_light_id] = {
+                                    "ip": ip,
+                                    "light_nr": x,
+                                    "protocol": protocol,
+                                    "mac": device_data["mac"]
+                                }
+                    except ValueError:
+                        logging.info('Decoding JSON from %s has failed', ip)
+            except Exception as e:
+                logging.info("ip %s is unknown device: %s", ip, e)
+                #raise
     scanDeconz()
     scanTradfri()
     saveConfig()
@@ -846,6 +871,10 @@ def motionDetected(sensor):
     logging.info("set motion sensor " + sensor + " to motion = False")
     return
 
+def scanHomeAssistant(bridge_config, new_lights):
+    homeassistant_ws.discover(bridge_config, new_lights)
+    # We have to regenerate the DX state as we may have added groups (/rooms/zones)
+    generateDxState()
 
 def scanTradfri():
     if "tradfri" in bridge_config:
@@ -1547,8 +1576,12 @@ class S(BaseHTTPRequestHandler):
                         self._set_end_headers(bytes(json.dumps(bridge_config[url_pices[3]],separators=(',', ':'),ensure_ascii=False), "utf8"))
                 elif (len(url_pices) == 5 or (len(url_pices) == 6 and url_pices[5] == 'state')):
                     if url_pices[4] == "new": #return new lights and sensors only
-                        new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
-                        self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+                        if url_pices[3] == 'lights':
+                            new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
+                            self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+                        elif url_pices[3] == 'sensors':
+                            # Temporarilty return nothing
+                            self._set_end_headers(bytes(json.dumps({} ,separators=(',', ':'),ensure_ascii=False), "utf8"))
                     elif url_pices[3] == "groups" and url_pices[4] == "0":
                         any_on = False
                         all_on = True
@@ -1956,6 +1989,9 @@ if __name__ == "__main__":
         scanDeconz()
     if "emulator" in bridge_config and "mqtt" in bridge_config["emulator"] and bridge_config["emulator"]["mqtt"]["enabled"]:
         mqtt.mqttServer(bridge_config["emulator"]["mqtt"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
+    if "emulator" in bridge_config and "homeassistant" in bridge_config["emulator"] and bridge_config["emulator"]["homeassistant"]["enabled"]:
+        homeassistant_ws.create_ws_client(bridge_config["emulator"]["homeassistant"], bridge_config["lights"], bridge_config["lights_address"], bridge_config["sensors"])
+
     try:
         if update_lights_on_startup:
             Thread(target=updateAllLights).start()
