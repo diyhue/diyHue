@@ -216,15 +216,16 @@ def resourceRecycle(json_config):
 def update_swversion(json_config):
     def get_latest_version():
         def extract_version(line):
-            match = re.search(r'Firmware ([0-9]*) \(Bridge V2\)', line, re.I)
-            if match:
-                return int(match.group(1))
+            if match := re.search(r'(firmware)(.+)([0-9]+)(.+)(bridge v2)', line):
+                partial = match.group(2) + match.group(3)
+                if match := re.search(r'([0-9]+)', partial).group():
+                    return int(match)
 
         url = 'https://www.philips-hue.com/en-us/support/release-notes/bridge'
         response = requests.get(url)
-        webpage_lines = [x for x in response.content.decode('utf-8').splitlines() if x]
+        webpage_lines = [x.lower() for x in response.content.decode('utf-8').splitlines() if x]
         versions = list(filter(None.__ne__, map(extract_version, webpage_lines)))
-        return str(max(versions))
+        return str(versions[0]) # assume versions are in listed in order from newest to oldest. Next best alternative to saving all dates
 
     latest_version = get_latest_version()
 
