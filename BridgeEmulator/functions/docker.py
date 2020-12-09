@@ -12,7 +12,8 @@ def dockerSetup(mac):
         print("Certificate Restored")
     else:
         print("Generating certificate")
-        call(["/opt/hue-emulator/genCert.sh", mac])
+        serial = mac[:6] + "fffe" + mac[-6:]
+        call(["/opt/hue-emulator/genCert.sh", serial])
         copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
         print("Certificate created")
 
