@@ -107,7 +107,7 @@ logging.info(mac)
 if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
     print("Docker Setup Initiated")
     docker = True
-    dockerSetup(dockerMAC)
+    dockerSetup(mac)
     print("Docker Setup Complete")
 elif os.getenv('MAC'):
     dockerMAC = os.getenv('MAC')
