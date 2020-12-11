@@ -1,62 +1,5 @@
 #!/usr/bin/env bash
-
-generate_certificate () {
-  ### Build interfaces array
-  interfaces=($(ls -A /sys/class/net))
-
-  ### Remove loopback interface
-  temp_array=()
-  for value in "${interfaces[@]}"
-  do
-    [[ $value != lo ]] && [[ $value != docker0 ]] && temp_array+=($value)
-  done
-  interfaces=("${temp_array[@]}")
-  unset temp_array
-
-  ### check if number of interfaces is more than 1
-  if [ "${#interfaces[@]}" -gt "1" ]; then
-    echo -e "\033[33mWARNING!\033[0m  "${#interfaces[@]}" network interfaces detected. A certificate will be generated based on the interface MAC address you select."
-    echo -e "If you don't know what to choose then you can try the default interface\033[36m $(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')\033[0m."
-
-    PS3='Please choose the interface that will communicate with the Hue apps: '
-
-    select answer in "${interfaces[@]}"; do
-      for item in "${interfaces[@]}"; do
-        if [[ $item == $answer ]]; then
-          break 2
-        fi
-      done
-    done
-    echo "$answer"
-
-    mac=`cat /sys/class/net/$answer/address`
-  else
-    mac=`cat /sys/class/net/$interfaces[0]/address`
-  fi
-
-  echo "Generating certificat for MAC $mac"
-  echo -e "\033[33mIf this is a diyhue reinstallation process then you will need to reinstall official Hue apps from PC and phone in order to wipe old certificate.\033[0m"
-  curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
-  serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
-  dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
-  openssl req -new -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial -days 3650
-  if [ $? -ne 0 ] ; then
-    echo -e "\033[31m ERROR!! Local certificate generation failed! Attempting remote server generation\033[0m"
-    ### test is server for certificate generation is reachable
-    if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
-      echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
-      exit 1
-    fi
-    curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
-  else
-    touch /opt/hue-emulator/cert.pem
-    cat private.key > /opt/hue-emulator/cert.pem
-    cat public.crt >> /opt/hue-emulator/cert.pem
-    rm private.key public.crt
-  fi
-
-}
-
+mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 arch=`uname -m`
 
 cd /tmp
@@ -64,17 +7,17 @@ cd /tmp
 ### installing dependencies
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
-  # Debian-based distro
-  apt-get install -y unzip nmap python3 python3-requests python3-setuptools
+	# Debian-based distro
+	apt-get install -y unzip nmap python3 python3-requests python3-setuptools
 elif type pacman &> /dev/null; then
-  # Arch linux
-  pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
+	# Arch linux
+	pacman -Syq --noconfirm || exit 1
+	pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
 else
-  # Or assume that packages are already installed (possibly with user confirmation)?
-  # Or check them?
-  echo -e "\033[31mUnable to detect package manager, aborting\033[0m"
-  exit 1
+	# Or assume that packages are already installed (possibly with user confirmation)?
+	# Or check them?
+	echo -e "\033[31mUnable to detect package manager, aborting\033[0m"
+	exit 1
 fi
 
 ### installing astral library for sunrise/sunset routines
@@ -112,33 +55,73 @@ unzip -qo diyHue.zip
 cd diyHue-master/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
-  if [ -f "/opt/hue-emulator/cert.pem" ]; then
-    cp /opt/hue-emulator/cert.pem /tmp/cert.pem
-  else
-    generate_certificate
-  fi
+        if [ -f "/opt/hue-emulator/public.crt" ]; then
+		echo -e "\033[31m WARNING!! Nginx is not necessary anymore, it will be stopped.\033[0m"
+        	systemctl stop nginx
+		systemctl disable nginx
+		cp /opt/hue-emulator/private.key /tmp/cert.pem
+                cat /opt/hue-emulator/public.crt >> /tmp/cert.pem
+	elif [ -f "/opt/hue-emulator/cert.pem" ]; then
+		cp /opt/hue-emulator/cert.pem /tmp/cert.pem
+        else
+		curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
+		serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
+		dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
+		openssl req -new -days 3650 -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial
+		if [ $? -ne 0 ] ; then
+			echo -e "\033[31m ERROR!! Local certificate generation failed! Attempting remote server generation\033[0m"
+			### test is server for certificate generation is reachable
+			if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
+				echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
+				exit 1
+			fi
+			curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /tmp/cert.pem
+		else
+			touch /tmp/cert.pem
+			cat private.key > /tmp/cert.pem
+			cat public.crt >> /tmp/cert.pem
+			rm private.key public.crt
+		fi
+        fi
 
-  systemctl stop hue-emulator.service
-  echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
-  cp /opt/hue-emulator/config.json /tmp
-  rm -rf /opt/hue-emulator
-  mkdir /opt/hue-emulator
-  mv /tmp/config.json /opt/hue-emulator
-  mv /tmp/cert.pem /opt/hue-emulator
+	systemctl stop hue-emulator.service
+        echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
+        cp /opt/hue-emulator/config.json /tmp
+        rm -rf /opt/hue-emulator
+        mkdir /opt/hue-emulator
+        mv /tmp/config.json /opt/hue-emulator
+        mv /tmp/cert.pem /opt/hue-emulator
 
 else
-  if cat /proc/net/tcp | grep -c "00000000:0050" > /dev/null; then
-      echo -e "\033[31m ERROR!! Port 80 already in use. Close the application that use this port and try again.\033[0m"
-      exit 1
-  fi
-  if cat /proc/net/tcp | grep -c "00000000:01BB" > /dev/null; then
-      echo -e "\033[31m ERROR!! Port 443 already in use. Close the application that use this port and try again.\033[0m"
-      exit 1
-  fi
-  mkdir /opt/hue-emulator
-  cp default-config.json /opt/hue-emulator/
+        if nc -z 127.0.0.1 80 2>/dev/null; then
+                echo -e "\033[31m ERROR!! Port 80 already in use. Close the application that use this port and try again.\033[0m"
+                exit 1
+        fi
+        if nc -z 127.0.0.1 443 2>/dev/null; then
+                echo -e "\033[31m ERROR!! Port 443 already in use. Close the application that use this port and try again.\033[0m"
+                exit 1
+        fi
+        mkdir /opt/hue-emulator
+        cp default-config.json /opt/hue-emulator/
 
-  generate_certificate
+	curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
+	serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
+	dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
+	openssl req -new -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial -days 3650
+	if [ $? -ne 0 ] ; then
+		echo -e "\033[31m ERROR!! Local certificate generation failed! Attempting remote server generation\033[0m"
+		### test is server for certificate generation is reachable
+		if ! nc -z mariusmotea.go.ro 9002 2>/dev/null; then
+			echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
+			exit 1
+		fi
+		curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
+	else
+		touch /opt/hue-emulator/cert.pem
+		cat private.key > /opt/hue-emulator/cert.pem
+		cat public.crt >> /opt/hue-emulator/cert.pem
+		rm private.key public.crt
+	fi
 fi
 cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
 
@@ -178,4 +161,3 @@ systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
-
