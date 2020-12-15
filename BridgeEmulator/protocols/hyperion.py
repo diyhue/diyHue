@@ -53,7 +53,9 @@ def discover(bridge_config, new_lights):
             if (not device_exist and "name" in properties):
                 light_name = properties["name"]
                 logging.debug("Add Hyperion: " + properties["id"])
-                modelid = "LCT001"
+                modelid = "LCT015"
+                manufacturername = "Philips"
+                swversion = "1.46.13_r26312"
 
                 new_light_id = nextFreeId(bridge_config, "lights")
 
@@ -61,7 +63,9 @@ def discover(bridge_config, new_lights):
                 # Create the light with data from auto discovery
                 bridge_config["lights"][new_light_id] = { "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1" }
                 bridge_config["lights"][new_light_id]["modelid"] = modelid
-                bridge_config["lights"][new_light_id]["swversion"] = properties["version"]
+                #bridge_config["lights"][new_light_id]["swversion"] = properties["version"]
+                bridge_config["lights"][new_light_id]["manufacturername"] = manufacturername
+                bridge_config["lights"][new_light_id]["swversion"] = swversion
                 
                 # Set the type, a default state and possibly a light config
                 bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
