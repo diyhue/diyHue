@@ -29,7 +29,7 @@ def discover(bridge_config, new_lights):
     logging.debug('wled discovery started')
     ip_version = IPVersion.V4Only
     zeroconf = Zeroconf(ip_version=ip_version)
-    services = ["_http._tcp.local."]
+    services = ["_wled._tcp.local."]
     browser = ServiceBrowser(zeroconf, services, handlers=[on_mdns_discover])
     sleep(2)
     for device in mdns:
