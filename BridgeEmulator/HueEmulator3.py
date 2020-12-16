@@ -36,7 +36,7 @@ from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion]
+protocols = [yeelight, tasmota, shelly, native_single, native_multi, esphome, hyperion, wled]
 
 ap = argparse.ArgumentParser()
 
