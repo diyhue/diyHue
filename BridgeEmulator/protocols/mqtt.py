@@ -20,7 +20,7 @@ discoveredDevices = {}
 
 # on_connect handler (linked to client below)
 def on_connect(client, userdata, flags, rc):
-    logging.debug("Connected with result code "+str(rc))
+    logging.debug("MQTT: Connected with result code "+str(rc))
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
@@ -38,7 +38,7 @@ def on_message(client, userdata, msg):
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):
     data = json.loads(msg.payload)
-    logging.info("Auto discovery message on: " + msg.topic)
+    logging.info("MQTT: Auto discovery message on: " + msg.topic)
     logging.debug(json.dumps(data, indent=4))
     client.subscribe(data['state_topic'])
     discoveredDevices[data['unique_id']] = data;
@@ -73,7 +73,7 @@ def set_light(address, light, data):
         state['color'] = { 'r': color[0], 'g': color[1], 'b': color[2] }
 
     message = json.dumps(state);
-    logging.debug("MQTT publish to " + address['command_topic'] + " " + message)
+    logging.debug("MQTT: publish to " + address['command_topic'] + " " + message)
     client.publish(address['command_topic'], message)
 
 def get_light_state(address, light):
@@ -96,7 +96,7 @@ def get_light_state(address, light):
     return state
 
 def discover(bridge_config, new_lights):
-    logging.info("MQTT discovery called")
+    logging.info("MQTT: discovery called")
     for key, data in discoveredDevices.items():
         device_new = True
         for lightkey in bridge_config["lights_address"].keys():
