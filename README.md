@@ -153,7 +153,7 @@ Starting in Dec. 2020 we will introduce one Master and one Dev Branch. The Maste
 
 If you want to tinker and experiment you can try the dev Branch. Active development will take place here.
 
-You want to get the latest features? Try the master-refactor Branch. Note: this is experimental!
+You want to get the latest features? Try the experimental Branch. Use at own Risk!
 
 
 
