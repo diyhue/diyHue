@@ -583,6 +583,31 @@
         "mqttPort": 1883,
         "mqttServer": "mqtt",
         "mqttUser": ""
+    },
+    "homeassistant": {
+      "enabled": false,
+      "homeAssistantIp": "127.0.0.1", 
+      "homeAssistantPort": 8123, 
+      "homeAssistantToken": "",
+      "homeAssistantIncludeByDefault": true
+    },
+    "yeelight": {
+      "enabled": true
+    },
+    "tasmota": {
+      "enabled": true
+    },
+    "shelly": {
+      "enabled": true
+    },
+    "esphome": {
+      "enabled": true
+    },
+    "hyperion": {
+      "enabled": true
+    },
+    "network_scan": {
+      "enabled": true
     }
    },
    "groups":{
