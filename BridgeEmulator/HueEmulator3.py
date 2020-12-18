@@ -30,13 +30,13 @@ from functions.entertainment import entertainmentService
 from functions.request import sendRequest
 from functions.lightRequest import sendLightRequest, syncWithLights
 from functions.updateGroup import updateGroupStats
-from protocols import protocols, yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, mqtt, hyperion
+from protocols import protocols, yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, mqtt, hyperion, wled
 from functions.remoteApi import remoteApi
 from functions.remoteDiscover import remoteDiscover
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
 off_if_unreachable = False # If set to true all lights that unreachable are marked as off.
-protocols = [yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, hyperion]
+protocols = [yeelight, tasmota, shelly, homeassistant_ws, native_single, native_multi, esphome, hyperion, wled]
 
 ap = argparse.ArgumentParser()
 
@@ -269,6 +269,8 @@ def updateConfig():
         bridge_config["emulator"]["esphome"] = { "enabled": True}
     if "hyperion" not in bridge_config["emulator"]:
         bridge_config["emulator"]["hyperion"] = { "enabled": True}
+    if "wled" not in bridge_config["emulator"]:
+        bridge_config["emulator"]["wled"] = { "enabled": True}
     if "network_scan" not in bridge_config["emulator"]:
         bridge_config["emulator"]["network_scan"] = { "enabled": True}
 
@@ -761,6 +763,8 @@ def scan_for_lights(): #scan for ESP8266 lights and strips
         Thread(target=mqtt.discover, args=[bridge_config, new_lights]).start()
     if bridge_config["emulator"]["hyperion"]["enabled"]:
         Thread(target=hyperion.discover, args=[bridge_config, new_lights]).start()
+    if bridge_config["emulator"]["wled"]["enabled"]:
+        Thread(target=wled.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     if bridge_config["emulator"]["network_scan"]["enabled"]:
         device_ips = find_hosts(80)
