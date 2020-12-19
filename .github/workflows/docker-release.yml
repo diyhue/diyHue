@@ -311,11 +311,15 @@ jobs:
     strategy:
       matrix:
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
-        include:
-          - version: v7l
-            arch_friendly: armv7
-          - version: v6l
-            arch_friendly: armv6
+        arch:
+          - {
+              version: v7l,
+              arch_friendly: armv7
+            }
+          - {
+              version: v6l,
+              arch_friendly: armv6
+            }
     steps:
       - name: Set Docker Repository
         run: |
@@ -347,36 +351,36 @@ jobs:
       - name: Commit ID
         if: ${{ github.sha != '' }}
         run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA --arch arm --variant ${{ matrix.arch.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
 
       - name: Run ID
         run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${{ github.run_number }}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${{ github.run_number }} --arch arm --variant ${{ matrix.arch.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${{ github.run_number }}
 
       - name: Latest
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-latest
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-latest --arch arm --variant ${{ matrix.arch.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-latest
 
       - name: Branch
         if: ${{ startsWith(github.ref, 'refs/heads/') }}
         run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.arch.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}
 
       - name: Tag
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest create ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}
+          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.arch.version }}
+          docker manifest push ${DOCKER_REPO}:${{ matrix.arch.arch_friendly }}-${GITHUB_REF##*/}
 
   cleanup_failed:
     needs: [build, test]
