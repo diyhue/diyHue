@@ -214,8 +214,8 @@ def resourceRecycle(json_config):
 
 
 def update_swversion(json_config):
-    def get_latest_version():
-        def extract_version(line):
+    def get_latest_version() -> int:
+        def extract_version(line) -> int:
             if match := re.search(r'(firmware)(.+)([0-9]+)(.+)(bridge v2)', line):
                 partial = match.group(2) + match.group(3)
                 if match := re.search(r'([0-9]+)', partial).group():
@@ -225,11 +225,17 @@ def update_swversion(json_config):
         response = requests.get(url)
         webpage_lines = [x.lower() for x in response.content.decode('utf-8').splitlines() if x]
         versions = list(filter(None.__ne__, map(extract_version, webpage_lines)))
-        return str(versions[0]) # assume versions are in listed in order from newest to oldest. Next best alternative to saving all dates
+        return versions[0] # assume versions are in listed in order from newest to oldest. Next best alternative to saving all dates
 
     latest_version = get_latest_version()
 
-    if json_config["config"]["swversion"] != latest_version:
+    if latest_version <= 1941132080:  # temporary adjustment while releases are missing
+        latest_version = 1941132080
+
+    should_update_swversion = int(json_config["config"]["swversion"]) <= latest_version
+
+    if should_update_swversion:
+        logging.info(f"Updating current swversion to {latest_version}")
         json_config["config"]["swversion"] = latest_version
         json_config["config"]["apiversion"] = "1.35.0"
     return json_config
