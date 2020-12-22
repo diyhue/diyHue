@@ -464,10 +464,10 @@ class S(BaseHTTPRequestHandler):
                                   "utf8"))
                 elif (len(url_pieces) == 5 or (len(url_pieces) == 6 and url_pieces[5] == 'state')):
                     if url_pieces[4] == "new":  # return new lights and sensors only
-                        if url_pices[3] == 'lights':
+                        if url_pieces[3] == 'lights':
                             new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                             self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
-                        elif url_pices[3] == 'sensors':
+                        elif url_pieces[3] == 'sensors':
                             # Return nothing - how should we implement this?
                             self._set_end_headers(bytes(json.dumps({} ,separators=(',', ':'),ensure_ascii=False), "utf8"))
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
