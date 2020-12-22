@@ -20,7 +20,7 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install ws4py
+python3 -m pip install ws4py zeroconf
 wait
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
@@ -46,13 +46,13 @@ rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 echo -e "\033[32m Copying startup service.\033[0m"
-cp hueemulatorWrt-service /etc/init.d/
+cp diyHueWrt-service /etc/init.d/
 echo -e "\033[32m Generating certificate.\033[0m"
 #mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 mac=`cat /sys/class/net/br-lan/address`
 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
 echo -e "\033[32m Changing permissions.\033[0m"
-chmod +x /etc/init.d/hueemulatorWrt-service
+chmod +x /etc/init.d/diyHueWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
 chmod +x /opt/hue-emulator/protocols
@@ -65,7 +65,7 @@ chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
 chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
-/etc/init.d/hueemulatorWrt-service enable
+/etc/init.d/diyHueWrt-service enable
 wait
 echo -e "\033[32m modify http port 80 to 82: list listen_http 0.0.0.0:82, list listen_http [::]: 82 and server.port = 82.\033[0m"
 echo -e "\033[32m To save the changes you've made, press CTRL + O. To exit nano, press CTRL + X.\033[0m"
