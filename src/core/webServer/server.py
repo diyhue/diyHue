@@ -280,12 +280,12 @@ class S(BaseHTTPRequestHandler):
                     if bridge_config["resourcelinks"][resourcelink]["classid"] == 15555:
                         emulator_resourcelinkes.append(resourcelink)
                         for link in bridge_config["resourcelinks"][resourcelink]["links"]:
-                            pices = link.split('/')
-                            if pices[1] == "rules":
+                            pieces = link.split('/')
+                            if pieces[1] == "rules":
                                 try:
-                                    del bridge_config["rules"][pices[2]]
+                                    del bridge_config["rules"][pieces[2]]
                                 except:
-                                    logging.info("unable to delete the rule " + pices[2])
+                                    logging.info("unable to delete the rule " + pieces[2])
                 for resourcelink in emulator_resourcelinkes:
                     del bridge_config["resourcelinks"][resourcelink]
                 for key in get_parameters.keys():
@@ -464,10 +464,10 @@ class S(BaseHTTPRequestHandler):
                                   "utf8"))
                 elif (len(url_pieces) == 5 or (len(url_pieces) == 6 and url_pieces[5] == 'state')):
                     if url_pieces[4] == "new":  # return new lights and sensors only
-                        if url_pices[3] == 'lights':
+                        if url_pieces[3] == 'lights':
                             new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
                             self._set_end_headers(bytes(json.dumps(new_lights ,separators=(',', ':'),ensure_ascii=False), "utf8"))
-                        elif url_pices[3] == 'sensors':
+                        elif url_pieces[3] == 'sensors':
                             # Return nothing - how should we implement this?
                             self._set_end_headers(bytes(json.dumps({} ,separators=(',', ':'),ensure_ascii=False), "utf8"))
                         new_lights.update({"lastscan": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
