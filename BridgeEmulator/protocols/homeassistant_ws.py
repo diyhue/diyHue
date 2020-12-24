@@ -135,7 +135,7 @@ class HomeAssistantClient(WebSocketClient):
                 else:
                     payload["service"] = "turn_off"
             if key == "alert":
-                service_data['alert'] = value
+                service_data['flash'] = "long"
             if key == "transitiontime":
                 service_data['transition'] = value / 10
 
