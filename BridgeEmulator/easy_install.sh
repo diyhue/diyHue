@@ -58,9 +58,9 @@ rm -rf zeroconf.zip python-zeroconf-0.28.6/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-curl -sL https://github.com/diyhue/diyHue/archive/master.zip -o diyHue.zip
+curl -sL https://github.com/diyhue/diyHue/archive/dev.zip -o diyHue.zip
 unzip -qo diyHue.zip
-cd diyHue-master/BridgeEmulator/
+cd diyHue-dev/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
         if [ -f "/opt/hue-emulator/public.crt" ]; then
@@ -162,7 +162,7 @@ chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
-rm -rf diyHue.zip diyHue-master
+rm -rf diyHue.zip diyHue-dev
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
 systemctl enable hue-emulator.service
