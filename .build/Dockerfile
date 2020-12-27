@@ -12,8 +12,8 @@ RUN chmod +x ./select.sh && \
     mkdir out && \
     ./select.sh
 
-# ============================ Actual image from here ====================
-FROM debian:stable-slim as prod
+# ============================ Actual image from here ==================== # try buster instead of stable
+FROM debian:buster-slim as prod 
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
