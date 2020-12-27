@@ -24,6 +24,7 @@ RUN apt update && apt install --no-install-recommends -y \
     python3-minimal python3-pip python3-setuptools \
     openssl nmap psmisc iproute2 \
     && pip3 install -r requirements.txt --no-cache-dir \
+    && dpkg --add-architecture i386 && apt-get update \
     && apt purge -y python3-pip python3-setuptools \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
