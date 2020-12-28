@@ -3,27 +3,27 @@ from subprocess import call
 from shutil import copyfile
 import requests
 
-def dockerSetup(mac):
-    if not os.path.exists("/opt/hue-emulator/export"):
-        os.makedirs("/opt/hue-emulator/export")
-    if os.path.isfile("/opt/hue-emulator/export/cert.pem"):
+def dockerSetup(mac, configPath):
+    if not os.path.exists(configPath + "/export"):
+        os.makedirs(configPath + "/export")
+    if os.path.isfile(configPath + "/export/cert.pem"):
         print("Restoring Certificate")
-        copyfile("/opt/hue-emulator/export/cert.pem", "/opt/hue-emulator/cert.pem")
+        copyfile(configPath + "/export/cert.pem", configPath + "/cert.pem")
         print("Certificate Restored")
     else:
         print("Generating certificate")
         serial = mac[:6] + "fffe" + mac[-6:]
-        call(["/opt/hue-emulator/genCert.sh", serial])
-        copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
+        call(["/opt/hue-emulato/genCert.sh", serial])
+        copyfile("/opt/hue-emulator/cert.pem", configPath + "/export/cert.pem")
         print("Certificate created")
 
-    if os.path.isfile("/opt/hue-emulator/export/config.json"):
+    if os.path.isfile(configPath + "/export/config.json"):
         print("Restoring config")
-        copyfile("/opt/hue-emulator/export/config.json", "/opt/hue-emulator/config.json")
+        copyfile(configPath + "/export/config.json", configPath + "/config.json")
         print("Config restored")
     else:
         print("Downloading default config")
         res = requests.get("https://raw.githubusercontent.com/diyHue/diyHue/master/BridgeEmulator/default-config.json", allow_redirects=True)
-        open('/opt/hue-emulator/config.json', 'w+').write(res.text)
-        copyfile("/opt/hue-emulator/config.json", "/opt/hue-emulator/export/config.json")
+        open(configPath + '/config.json', 'w+').write(res.text)
+        copyfile(configPath + "/config.json", configPath + "/export/config.json")
         print("Config downloaded")

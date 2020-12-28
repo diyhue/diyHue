@@ -64,7 +64,7 @@ if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.get
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     root.addHandler(ch)
-    
+
 if args.bind_ip:
     BIND_IP = args.bind_ip
 elif os.getenv('BIND_IP'):
@@ -89,6 +89,14 @@ else:
     HOST_HTTP_PORT = 80
 HOST_HTTPS_PORT = 443 # Hardcoded for now
 
+
+if args.config_path:
+    CONFIG_PATH = args.config_path
+elif os.getenv('CONFIG_PATH'):
+    CONFIG_PATH = os.getenv('CONFIG_PATH')
+else:
+    CONFIG_PATH = '/opt/hue-emulator'
+
 logging.info("Using Host %s:%s" % (HOST_IP, HOST_HTTP_PORT))
 
 if args.mac:
@@ -107,7 +115,7 @@ logging.info(mac)
 if args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
     print("Docker Setup Initiated")
     docker = True
-    dockerSetup(mac)
+    dockerSetup(mac, CONFIG_PATH)
     print("Docker Setup Complete")
 elif os.getenv('MAC'):
     dockerMAC = os.getenv('MAC')
@@ -1309,7 +1317,7 @@ class S(BaseHTTPRequestHandler):
             saveConfig('before-reset.json')
             bridge_config = load_config(cwd + '/default-config.json')
             saveConfig()
-            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename":"/opt/hue-emulator/before-reset.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"reset","backup-filename": CONFIG_PATH + "/before-reset.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
         elif self.path == '/config.js':
             self._set_headers()
             #create a new user key in case none is available
@@ -1336,7 +1344,7 @@ class S(BaseHTTPRequestHandler):
         elif self.path == '/save':
             self._set_headers()
             saveConfig()
-            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"saved","filename":"/opt/hue-emulator/config.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
+            self._set_end_headers(bytes(json.dumps([{"success":{"configuration":"saved","filename": CONFIG_PATH + "/config.json"}}] ,separators=(',', ':'),ensure_ascii=False), "utf8"))
         elif self.path.startswith("/tradfri"): #setup Tradfri gateway
             self._set_headers()
             get_parameters = parse_qs(urlparse(self.path).query)
@@ -1968,7 +1976,7 @@ def run(https, server_class=ThreadingSimpleServer, handler_class=S):
         server_address = (BIND_IP, HOST_HTTPS_PORT)
         httpd = server_class(server_address, handler_class)
         ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ctx.load_cert_chain(certfile="/opt/hue-emulator/cert.pem")
+        ctx.load_cert_chain(certfile=CONFIG_PATH + "/cert.pem")
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
         ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
