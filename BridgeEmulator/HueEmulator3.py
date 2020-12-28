@@ -57,6 +57,8 @@ ap.add_argument("--disable-online-discover", help="Disable Online and Remote API
 
 args = ap.parse_args()
 
+cwd = os.path.split(os.path.abspath(__file__))[0]
+
 if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.getenv('DEBUG') == "True")):
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -96,7 +98,7 @@ if args.config_path:
 elif os.getenv('CONFIG_PATH'):
     CONFIG_PATH = os.getenv('CONFIG_PATH')
 else:
-    CONFIG_PATH = '/opt/hue-emulator'
+    CONFIG_PATH = cwd
 
 logging.info("Using Host %s:%s" % (HOST_IP, HOST_HTTP_PORT))
 
@@ -170,9 +172,6 @@ else:
     logging.info("Online Discovery/Remote API Enabled!")
 
 
-cwd = os.path.split(os.path.abspath(__file__))[0]
-
-
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
@@ -185,13 +184,13 @@ def initialize():
     dxState = {"sensors": {}, "lights": {}, "groups": {}}
 
     try:
-        path = cwd + '/config.json'
+        path = CONFIG_PATH + '/config.json'
         if os.path.exists(path):
             bridge_config = load_config(path)
             logging.info("Config loaded")
         else:
             logging.info("Config not found, creating new config from default settings")
-            bridge_config = load_config(cwd + '/default-config.json')
+            bridge_config = load_config(CONFIG_PATH + '/default-config.json')
             saveConfig()
     except Exception:
         logging.exception("CRITICAL! Config file was not loaded")
@@ -475,10 +474,10 @@ def resourceRecycle():
                 del bridge_config[resource][key]
 
 def saveConfig(filename='config.json'):
-    with open(cwd + '/' + filename, 'w', encoding="utf-8") as fp:
+    with open(CONFIG_PATH + '/' + filename, 'w', encoding="utf-8") as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
     if docker:
-        Popen(["cp", cwd + '/' + filename, cwd + '/' + 'export/'])
+        Popen(["cp", CONFIG_PATH + '/' + filename, CONFIG_PATH + '/export/'])
 
 def generateDxState():
     for sensor in bridge_config["sensors"]:
