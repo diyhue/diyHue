@@ -188,9 +188,9 @@ def initialize():
         logging.exception("CRITICAL! Config file was not loaded")
         sys.exit(1)
 
-    ip_pices = HOST_IP.split(".")
+    ip_pieces = HOST_IP.split(".")
     bridge_config["config"]["ipaddress"] = HOST_IP
-    bridge_config["config"]["gateway"] = ip_pices[0] + "." +  ip_pices[1] + "." + ip_pices[2] + ".1"
+    bridge_config["config"]["gateway"] = ip_pieces[0] + "." +  ip_pieces[1] + "." + ip_pieces[2] + ".1"
     bridge_config["config"]["mac"] = mac[0] + mac[1] + ":" + mac[2] + mac[3] + ":" + mac[4] + mac[5] + ":" + mac[6] + mac[7] + ":" + mac[8] + mac[9] + ":" + mac[10] + mac[11]
     bridge_config["config"]["bridgeid"] = (mac[:6] + 'FFFE' + mac[6:]).upper()
     generateDxState()
@@ -502,9 +502,9 @@ def schedulerProcessor():
                     else:
                         schedule_time = bridge_config["schedules"][schedule]["localtime"]
                     if schedule_time.startswith("W"):
-                        pices = schedule_time.split('/T')
-                        if int(pices[0][1:]) & (1 << 6 - datetime.today().weekday()):
-                            if pices[1] == datetime.now().strftime("%H:%M:%S"):
+                        pieces = schedule_time.split('/T')
+                        if int(pieces[0][1:]) & (1 << 6 - datetime.today().weekday()):
+                            if pieces[1] == datetime.now().strftime("%H:%M:%S"):
                                 logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
                                 sendRequest(bridge_config["schedules"][schedule]["command"]["address"], bridge_config["schedules"][schedule]["command"]["method"], json.dumps(bridge_config["schedules"][schedule]["command"]["body"]), 1, delay)
                     elif schedule_time.startswith("PT"):
@@ -1443,12 +1443,12 @@ class S(BaseHTTPRequestHandler):
                     if bridge_config["resourcelinks"][resourcelink]["classid"] == 15555:
                         emulator_resourcelinkes.append(resourcelink)
                         for link in bridge_config["resourcelinks"][resourcelink]["links"]:
-                            pices = link.split('/')
-                            if pices[1] == "rules":
+                            pieces = link.split('/')
+                            if pieces[1] == "rules":
                                 try:
-                                    del bridge_config["rules"][pices[2]]
+                                    del bridge_config["rules"][pieces[2]]
                                 except:
-                                    logging.info("unable to delete the rule " + pices[2])
+                                    logging.info("unable to delete the rule " + pieces[2])
                 for resourcelink in emulator_resourcelinkes:
                     del bridge_config["resourcelinks"][resourcelink]
                 for key in get_parameters.keys():
