@@ -248,7 +248,7 @@ def updateConfig():
 
     if int(bridge_config["config"]["swversion"]) < 1941132080:
         bridge_config["config"]["swversion"] = "1941132080"
-        bridge_config["config"]["apiversion"] = "1.35.0"
+        bridge_config["config"]["apiversion"] = "1.39.0"
 
     ### end bridge config
 
