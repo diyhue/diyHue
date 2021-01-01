@@ -1861,8 +1861,8 @@ class S(BaseHTTPRequestHandler):
                         if "on" in put_dictionary:
                             bridge_config["groups"][url_pieces[4]]["state"]["any_on"] = put_dictionary["on"]
                             bridge_config["groups"][url_pieces[4]]["state"]["all_on"] = put_dictionary["on"]
-                            dxState["groups"][url_pieces[4]]["state"]["any_on"] = current_time
-                            dxState["groups"][url_pieces[4]]["state"]["all_on"] = current_time
+                            dxState["groups"][url_pieces[4]]["state"]["any_on"] = datetime.now()
+                            dxState["groups"][url_pieces[4]]["state"]["all_on"] = datetime.now()
                         bridge_config["groups"][url_pieces[4]][url_pieces[5]].update(put_dictionary)
                         splitLightsToDevices(url_pieces[4], put_dictionary)
                 elif url_pieces[3] == "lights": #state is applied to a light
