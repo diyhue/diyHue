@@ -61,6 +61,32 @@ arch=`uname -m`
 
 cd /tmp
 
+### Choose Branch for Install
+echo -e "\033[36mPlease choose a Branch to install\033[0m"
+echo -e "\033[33mSelect Branch by entering the corresponding Number: [Default: Master]\033[0m  "
+echo -e "[1] Master Branch - most stable Release "
+echo -e "[2] Developer Branch - test latest features and fixes - Work in Progress!"
+echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
+echo -n "I go with Nr.: "
+
+
+branchSelection=""
+read userSelection
+case $userSelection in
+        1)
+        branchSelection="master"
+        echo -e "Master selected"
+        ;;
+        2)
+        branchSelection="dev"
+        echo -e "Dev selected"
+        ;;
+				*)
+        branchSelection="master"
+        echo -e "Master selected"
+        ;;
+esac
+
 ### installing dependencies
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
@@ -107,9 +133,9 @@ rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-curl -sL https://github.com/diyhue/diyHue/archive/master.zip -o diyHue.zip
+curl -sL https://github.com/diyhue/diyHue/archive/$branchSelection.zip -o diyHue.zip
 unzip -qo diyHue.zip
-cd diyHue-master/BridgeEmulator/
+cd diyHue-$branchSelection/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
   if [ -f "/opt/hue-emulator/cert.pem" ]; then
@@ -171,11 +197,10 @@ chmod +x /opt/hue-emulator/coap-client-linux
 chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
-rm -rf diyHue.zip diyHue-master
+rm -rf diyHue.zip diyHue-$branchSelection
 chmod 644 /lib/systemd/system/hue-emulator.service
 systemctl daemon-reload
 systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
-
