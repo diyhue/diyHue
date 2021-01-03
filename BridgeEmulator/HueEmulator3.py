@@ -87,7 +87,7 @@ else:
 if args.http_port:
     HOST_HTTP_PORT = args.http_port
 elif os.getenv('HTTP_PORT'):
-    HOST_HTTP_PORT = os.getenv('HTTP_PORT')
+    HOST_HTTP_PORT = int(os.getenv('HTTP_PORT'))
 else:
     HOST_HTTP_PORT = 80
 HOST_HTTPS_PORT = 443 # Hardcoded for now
