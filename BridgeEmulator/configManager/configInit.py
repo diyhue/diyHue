@@ -73,13 +73,6 @@ def updateConfig(json_config):
     if "Remote API enabled" not in json_config["config"]:
         json_config["config"]["Remote API enabled"] = False
 
-    # Update deCONZ sensors
-    for sensor_id, sensor in json_config["deconz"]["sensors"].items():
-        if "modelid" not in sensor:
-            sensor["modelid"] = json_config["sensors"][sensor["bridgeid"]]["modelid"]
-        if sensor["modelid"] == "TRADFRI motion sensor":
-            if "lightsensor" not in sensor:
-                sensor["lightsensor"] = "internal"
 
     # Update scenes
     for scene_id, scene in json_config["scenes"].items():
