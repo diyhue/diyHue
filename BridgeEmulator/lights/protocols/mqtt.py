@@ -5,7 +5,7 @@ import random
 import requests
 from datetime import datetime
 from time import strftime
-from functions.devicesRules import addHueMotionSensor, addHueSwitch
+from functions.core import addHueMotionSensor, addHueSwitch
 from threading import Thread
 import traceback
 

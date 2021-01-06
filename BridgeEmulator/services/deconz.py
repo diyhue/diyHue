@@ -4,12 +4,11 @@ import configManager
 import logManager
 import json
 from threading import Thread
-from functions.devicesRules import addHueMotionSensor
-from functions.core import generateDxState, nextFreeId
+from functions.core import generateDxState, nextFreeId, addHueMotionSensor
 from functions.rules import rulesProcessor
 from functions.request import sendRequest
 from ws4py.client.threadedclient import WebSocketClient
-from functions.updateGroup import updateGroupStats
+from lights.manage import updateGroupStats
 
 bridge_config = configManager.bridgeConfig.json_config
 logging = logManager.logger.get_logger(__name__)

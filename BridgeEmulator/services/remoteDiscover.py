@@ -4,6 +4,7 @@ import json
 from time import sleep
 
 def runRemoteDiscover(config):
+    print("Starting remote discovery")
     url = 'https://discovery.diyhue.org'
     while True:
         try:

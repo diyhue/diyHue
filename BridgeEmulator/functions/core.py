@@ -1,6 +1,7 @@
 import logManager
 import configManager
 import random
+import uuid
 from time import sleep
 from datetime import datetime
 from functions.rules import rulesProcessor
@@ -33,28 +34,71 @@ lightTypes["ESPHOME-Toggle"]["config"] = {"archetype": "classicbulb", "function"
 
 lightTypes["LCT001"] = {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.46.13_r26312"}
 lightTypes["LCT001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
+lightTypes["LCT001"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LCT001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "powerfail"}}
-lightTypes["LCT001"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}},
+lightTypes["LCT001"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}}
 
 lightTypes["LCT015"] = {"type": "Extended color light", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
 lightTypes["LCT015"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
+lightTypes["LCT015"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
 lightTypes["LCT015"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": False,"renderer": True}}
 
 lightTypes["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581"}
 lightTypes["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
+lightTypes["LST002"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LST002"]["config"] = {"archetype": "huelightstrip",	"function": "mixed", "direction": "omnidirectional", "startup": {"mode": "powerfail", "configured": False}}
 lightTypes["LST002"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
 
 lightTypes["LWB010"] = {"type": "Dimmable light", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
 lightTypes["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
+lightTypes["LWB010"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LWB010"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional"}
 
 lightTypes["LTW001"] = {"type": "Color temperature light", "swversion": "1.46.13_r26312"}
 lightTypes["LTW001"]["state"] = {"on": False, "colormode": "ct", "alert": "none", "mode": "homeautomation", "reachable": True, "bri": 254, "ct": 230}
+lightTypes["LTW001"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LTW001"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 1000,"maxlumen": 806,"ct": {"min": 153,"max": 454}},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LTW001"]["config"] = {"archetype": "classicbulb","function": "functional","direction": "omnidirectional"}
 
 lightTypes["Plug 01"] = {"type": "On/Off plug-in unit", "swversion": "V1.04.12"}
 lightTypes["Plug 01"]["state"] = {"on": False, "alert": "none", "reachable": True}
+
+lightTypes["LOM01"] = {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.65.9_hB3217DF","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}
+lightTypes["LOM01"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
+lightTypes["LOM01"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LOM01"]["capabilities"] = {"certified": True,"control": {},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LOM01"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
+
+def generateIds():
+    if "links" not in bridgeConfig["emulator"]:
+        bridgeConfig["emulator"]["links"] = {"v1": {
+            "lights": {},
+            "groupedLights": {str(uuid.uuid4()): {"id_v1": "0"}},
+            "scenes": {},
+            "groups": {},
+            "sensors": {}},
+        "v2": {
+            "light": {},
+            "groupedLights": {},
+            "scene": {},
+            "room": {},
+            "device": {},
+            "motion": {},
+            "entertainment": {},
+            "entertainment_configuration": {},
+            "bridge_home": {},
+            "zigbee_connectivity": {},
+            "bridge": {"uuid": str(uuid.uuid4()), "id_v1": ""}
+        }}
+        bridgeeZigBeeUuid = str(uuid.uuid4())
+        bridgeeEntertainmentUuid = str(uuid.uuid4())
+        bridgeeDeviceUuid = str(uuid.uuid4())
+        bridgeConfig["emulator"]["links"]["v2"]["bridge"]["zigbee_connectivity"] = bridgeeZigBeeUuid
+        bridgeConfig["emulator"]["links"]["v2"]["zigbee_connectivity"][bridgeeZigBeeUuid] = {"resource": "", "id_v1": ""}
+        bridgeConfig["emulator"]["links"]["v2"]["bridge"]["entertainment"] = bridgeeEntertainmentUuid
+        bridgeConfig["emulator"]["links"]["v2"]["entertainment"][bridgeeEntertainmentUuid] = {"id_v1": ""}
+        bridgeConfig["emulator"]["links"]["v2"]["device"][bridgeeDeviceUuid] = {"id_v1": ""}
 
 def nextFreeId(bridgeConfig, element):
     i = 1
@@ -88,6 +132,19 @@ def addNewLight(modelid, name, emulatorLightConfig):
         bridgeConfig["lights"][newLightID] = light.copy()
         bridgeConfig["emulator"]["lights"][newLightID] = emulatorLightConfig
         newLights[newLightID] = {"name": name}
+        #add v2 uuid
+        lightUuid = str(uuid.uuid4())
+        zigBeeUuid = str(uuid.uuid4())
+        deviceUuid = str(uuid.uuid4())
+        bridgeConfig["emulator"]["links"]["v2"]["light"][lightUuid] = {"id_v1": newLightID, "zigBeeUuid": zigBeeUuid, "deviceUuid": deviceUuid}
+        bridgeConfig["emulator"]["links"]["v2"]["zigbee_connectivity"][zigBeeUuid] = {"lightUuid": lightUuid, "id_v1": newLightID, "resource": "lights"}
+        bridgeConfig["emulator"]["links"]["v2"]["device"][deviceUuid] = {"lightUuid": lightUuid, "id_v1": newLightID, "resource": "lights", "zigbee_connectivity": zigBeeUuid}
+        bridgeConfig["emulator"]["links"]["v1"]["lights"][newLightID] = lightUuid
+        if "streaming" in bridgeConfig["lights"][newLightID]["capabilities"]:
+            entertianmentUuid = str(uuid.uuid4())
+            bridgeConfig["emulator"]["links"]["v2"]["entertainment"][entertianmentUuid] = {"lightUuid": lightUuid, "id_v1": newLightID}
+            bridgeConfig["emulator"]["links"]["v2"]["device"][deviceUuid]["entertianmentUuid"] = entertianmentUuid
+            bridgeConfig["emulator"]["links"]["v2"]["light"][lightUuid]["entertianmentUuid"] = entertianmentUuid
         return newLightID
     return False
 
@@ -99,10 +156,20 @@ def addHueMotionSensor(uniqueid, name="Hue motion sensor"):
             uniqueid += "0" + new_sensor_id
         else:
             uniqueid += new_sensor_id
-    bridgeConfig["sensors"][nextFreeId(bridgeConfig, "sensors")] = {"name": "Hue temperature sensor "  + new_sensor_id, "uniqueid": uniqueid + ":d0:5b-02-0402", "type": "ZLLTemperature", "swversion": "6.1.0.18912", "state": {"temperature": None, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False, "battery": 100, "reachable": True, "alert":"none", "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+    bridgeConfig["sensors"][nextFreeId(bridgeConfig, "sensors")] =  {"state": {"temperature": None,"lastupdated": "none"},"swupdate": {"state": "noupdates","lastinstall": "2019-03-16T21:16:40"},"config": {"on": False,"battery": 100,"reachable": True,"alert": "none","ledindication": False,"usertest": False,"pending": []},"name": "Hue temperature sensor " + new_sensor_id,"type": "ZLLTemperature","modelid": "SML001","manufacturername": "Signify Netherlands B.V.","productname": "Hue temperature sensor","swversion": "6.1.1.27575","uniqueid": uniqueid + ":d0:5b-02-0402","capabilities": {"certified": True,"primary": False}}
     motion_sensor = nextFreeId(bridgeConfig, "sensors")
-    bridgeConfig["sensors"][motion_sensor] = {"name": name, "uniqueid": uniqueid + ":d0:5b-02-0406", "type": "ZLLPresence", "swversion": "6.1.0.18912", "state": {"lastupdated": "none", "presence": None}, "manufacturername": "Philips", "config": {"on": False,"battery": 100,"reachable": True, "alert": "lselect", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2,"pending": []}, "modelid": "SML001"}
-    bridgeConfig["sensors"][nextFreeId(bridgeConfig, "sensors")] = {"name": "Hue ambient light sensor " + new_sensor_id, "uniqueid": uniqueid + ":d0:5b-02-0400", "type": "ZLLLightLevel", "swversion": "6.1.0.18912", "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"}, "manufacturername": "Philips", "config": {"on": False,"battery": 100, "reachable": True, "alert": "none", "tholddark": 21597, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []}, "modelid": "SML001"}
+    bridgeConfig["sensors"][motion_sensor] = { "state": {"lastupdated": "none","presence": None  }, "swupdate": {"state": "noupdates","lastinstall": "2019-03-16T21:16:40"  }, "config": {"on": False,"battery": 100,"reachable": True,"alert": "none","ledindication": False,"usertest": False,"sensitivity": 2,"sensitivitymax": 2,"pending": []  }, "name": name, "type": "ZLLPresence", "modelid": "SML001", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue motion sensor", "swversion": "6.1.1.27575", "uniqueid": uniqueid + ":d0:5b-02-0406", "capabilities":{"certified":True,"primary":True}}
+    bridgeConfig["sensors"][nextFreeId(bridgeConfig, "sensors")] = {"state": {"dark": True,"daylight": False,"lightlevel": 6000,"lastupdated": "none"},"swupdate": {  "state": "noupdates",  "lastinstall": "2019-03-16T21:16:40"},"config": {"on": False,"battery": 100,"reachable": True,"alert": "none","tholddark": 9346,"tholdoffset": 7000,"ledindication": False,"usertest": False,"pending": []},"name": "Hue ambient light sensor " + new_sensor_id,"type": "ZLLLightLevel","modelid": "SML001","manufacturername": "Signify Netherlands B.V.","productname": "Hue ambient light sensor","swversion": "6.1.1.27575","uniqueid": uniqueid + ":d0:5b-02-0400","capabilities": {  "certified": True,  "primary": False}}
+    #add v2 uuids
+    deviceUuid = str(uuid.uuid4())
+    zigBeeUuid = str(uuid.uuid4())
+    batteryUuid = str(uuid.uuid4())
+    lightUuid = str(uuid.uuid4())
+    motionUuId = str(uuid.uuid4())
+    temperatureUuid = str(uuid.uuid4())
+    bridgeConfig["emulator"]["links"]["v2"]["device"][deviceUuid] = {"id_v1": motion_sensor, "resource": "sensors", "deviceUuid": deviceUuid, "zigBeeUuid": zigBeeUuid, "batteryUuid": batteryUuid, "motionUuId": motionUuId, "temperatureUuid": temperatureUuid, "lightUuid": lightUuid}
+    bridgeConfig["emulator"]["links"]["v2"]["zigbee_connectivity"][zigBeeUuid] = {"id_v1": motion_sensor, "resource": "sensors"}
+    bridgeConfig["emulator"]["links"]["v2"]["motion"][zigBeeUuid] = {"id_v1": motion_sensor, "motionUuId": motionUuId, "deviceUuid": deviceUuid}
     return(motion_sensor)
 
 def addHueSwitch(uniqueid, sensorsType):

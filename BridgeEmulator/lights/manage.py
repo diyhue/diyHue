@@ -10,22 +10,20 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
 newLights = configManager.runtimeConfig.newLights
 
-def sendLightRequest(light, data, rgb = None, entertainmentHostIP = None):
+def sendLightRequest(light, data, rgb = None):
     payload = {}
     if light in bridgeConfig["emulator"]["lights"]:
         protocol_name = bridgeConfig["emulator"]["lights"][light]["protocol"]
         for protocol in protocols:
             if "lights.protocols." + protocol_name == protocol.__name__:
-                #try:
-                if entertainmentHostIP and protocol_name == "yeelight":
-                    protocol.enableMusic(bridgeConfig["emulator"]["lights"][light]["ip"], entertainmentHostIP)
-                if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
-                    protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data, rgb)
-                else:
-                    protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data)
-                #except Exception as e:
-                #    bridgeConfig["lights"][light]["state"]["reachable"] = False
-                #    logging.warning(bridgeConfig["lights"][light]["name"] + " light not reachable: %s", e)
+                try:
+                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
+                        protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data, rgb)
+                    else:
+                        protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data)
+                except Exception as e:
+                    bridgeConfig["lights"][light]["state"]["reachable"] = False
+                    logging.warning(bridgeConfig["lights"][light]["name"] + " light not reachable: %s", e)
                 return
 
 def manageDeviceLights(lights_state):
@@ -39,13 +37,13 @@ def manageDeviceLights(lights_state):
             if bridgeConfig["lights"][light]["state"]["on"] == True or "on" in lights_state[light]: # fix: brightness change turn on the light
                 payload[bridgeConfig["emulator"]["lights"][light]["command_topic"]] = lights_state[light]
         else:
-            sendLightRequest(light, lights_state[light], bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
+            sendLightRequest(light, lights_state[light])
             sleep(0.05)
 
     if protocol == "native_multi": # bipass sendLightRequest function and send all light data in one request
         requests.put("http://"+bridgeConfig["emulator"]["lights"][list(lights_state.keys())[0]]["ip"]+"/state", json=payload, timeout=3)
     elif protocol == "mqtt":
-        sendLightRequest("1", {"lights": payload}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
+        sendLightRequest("1", {"lights": payload})
 
 
 
@@ -147,3 +145,65 @@ def updateGroupStats(light, lights, groups): #set group stats based on lights st
                     all_on = False
             groups[group]["state"] = {"any_on": any_on, "all_on": all_on,}
             groups[group]["action"]["on"] = any_on
+
+def switchScene(group, direction):
+    group_scenes = []
+    current_position = -1
+    possible_current_position = -1 # used in case the brigtness was changes and will be no perfect match (scene lightstates vs light states)
+    break_next = False
+    for scene in bridgeConfig["scenes"]:
+        if ("lights" in bridgeConfig["scenes"][scene] and bridgeConfig["groups"][group]["lights"][0] in bridgeConfig["scenes"][scene]["lights"]) or ("group" in bridgeConfig["scenes"][scene] and  bridgeConfig["scenes"][scene]["group"] == group):
+            group_scenes.append(scene)
+            if break_next: # don't lose time as this is the scene we need
+                break
+            is_current_scene = True
+            is_possible_current_scene = True
+            for light in bridgeConfig["scenes"][scene]["lightstates"]:
+                for key in bridgeConfig["scenes"][scene]["lightstates"][light].keys():
+                    if key == "xy":
+                        if not bridgeConfig["scenes"][scene]["lightstates"][light]["xy"][0] == bridgeConfig["lights"][light]["state"]["xy"][0] and not bridgeConfig["scenes"][scene]["lightstates"][light]["xy"][1] == bridgeConfig["lights"][light]["state"]["xy"][1]:
+                            is_current_scene = False
+                    else:
+                        if not bridgeConfig["scenes"][scene]["lightstates"][light][key] == bridgeConfig["lights"][light]["state"][key]:
+                            is_current_scene = False
+                            if not key == "bri":
+                                is_possible_current_scene = False
+            if is_current_scene:
+                current_position = len(group_scenes) -1
+                if direction == -1 and len(group_scenes) != 1:
+                    break
+                elif len(group_scenes) != 1:
+                    break_next = True
+            elif  is_possible_current_scene:
+                possible_current_position = len(group_scenes) -1
+
+    matched_scene = ""
+    if current_position + possible_current_position == -2:
+        logging.info("current scene not found, reset to zero")
+        if len(group_scenes) != 0:
+            matched_scene = group_scenes[0]
+        else:
+            logging.info("error, no scenes found")
+            return
+    elif current_position != -1:
+        if len(group_scenes) -1 < current_position + direction:
+            matched_scene = group_scenes[0]
+        else:
+            matched_scene = group_scenes[current_position + direction]
+    elif possible_current_position != -1:
+        if len(group_scenes) -1 < possible_current_position + direction:
+            matched_scene = group_scenes[0]
+        else:
+            matched_scene = group_scenes[possible_current_position + direction]
+    logging.info("matched scene " + bridgeConfig["scenes"][matched_scene]["name"])
+
+    for light in bridgeConfig["scenes"][matched_scene]["lightstates"].keys():
+        bridgeConfig["lights"][light]["state"].update(bridgeConfig["scenes"][matched_scene]["lightstates"][light])
+        if "xy" in bridgeConfig["scenes"][matched_scene]["lightstates"][light]:
+            bridgeConfig["lights"][light]["state"]["colormode"] = "xy"
+        elif "ct" in bridgeConfig["scenes"][matched_scene]["lightstates"][light]:
+            bridgeConfig["lights"][light]["state"]["colormode"] = "ct"
+        elif "hue" or "sat" in bridgeConfig["scenes"][matched_scene]["lightstates"][light]:
+            bridgeConfig["lights"][light]["state"]["colormode"] = "hs"
+        sendLightRequest(light, bridgeConfig["scenes"][matched_scene]["lightstates"][light])
+        updateGroupStats(light, bridgeConfig["lights"], bridgeConfig["groups"])

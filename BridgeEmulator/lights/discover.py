@@ -4,8 +4,8 @@ import socket
 import json
 from time import sleep
 from services.deconz import scanDeconz
-from threading import Thread
 from lights.protocols import mqtt, yeelight, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from functions.core import  generateDxState
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
@@ -49,18 +49,17 @@ def find_hosts(port):
 
 
 def scanForLights(): #scan for ESP8266 lights and strips
+    newLights = {"lastscan": "active"}
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
-    Thread(target=mqtt.discover).start()
-    Thread(target=yeelight.discover).start()
-    Thread(target=native_multi.discover, args=[device_ips]).start() # native_multi probe all esp8266 lights with firmware from diyhue repo
-    sleep(0.2) # wait half second to not send http requsts in the same time for the same device during multple protocols probe.
-    Thread(target=tasmota.discover, args=[device_ips]).start()
-    sleep(0.2)
-    Thread(target=shelly.discover, args=[device_ips]).start()
-    sleep(0.2)
-    Thread(target=esphome.discover, args=[device_ips]).start()
-    Thread(target=tradfri.discover).start()
+    mqtt()
+    yeelight.discover()
+    native_multi.discover(device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
+    tasmota.discove(device_ips)
+    shelly.discover(device_ips)
+    esphome.discover(device_ips)
+    tradfri.discover()
     scanDeconz()
     configManager.bridgeConfig.save_config()
+    generateDxState()

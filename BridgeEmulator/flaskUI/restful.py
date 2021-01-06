@@ -3,6 +3,7 @@ import logManager
 import uuid
 import json
 import requests
+from subprocess import Popen
 from threading import Thread
 from time import sleep
 from datetime import datetime
@@ -11,6 +12,7 @@ from lights.discover import scanForLights
 from functions.core import generateDxState, nextFreeId, capabilities
 from flask_restful import Resource
 from flask import request
+from functions.rules import rulesProcessor
 from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
@@ -21,14 +23,14 @@ dxState = configManager.runtimeConfig.dxState
 newLights = configManager.runtimeConfig.newLights
 
 
-def authorize(username, resource=None, resourceId=None, resourceParam=None):
+def authorize(username, resource='', resourceId='', resourceParam=''):
     if username not in bridgeConfig["config"]["whitelist"] and request.remote_addr != "127.0.0.1":
-        return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
+        return [{"error":{"type":1,"address":"/"  + resource + "/" + resourceId,"description":"unauthorized user"}}]
 
-    if resourceId not in ["0", "new"] and resourceId != None and resourceId not in bridgeConfig[resource]:
+    if resourceId not in ["0", "new"] and resourceId != '' and resourceId not in bridgeConfig[resource]:
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId,"description":"resource, " + resource + "/" + resourceId + ", not available"}}]
 
-    if resourceId != "0" and resourceParam != None and resourceParam not in bridgeConfig[resource][resourceId]:
+    if resourceId != "0" and resourceParam != '' and resourceParam not in bridgeConfig[resource][resourceId]:
         return [{"error":{"type":3,"address":"/" + resource + "/" + resourceId + "/" + resourceParam,"description":"resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
 
     return ["success"]
@@ -50,7 +52,7 @@ def resourceRecycle():
 
 class NewUser(Resource):
     def get(self):
-        return [{"error":{"type":4,"address":"/","description":"method, GET, not available for resource, /"}}]
+        return [{"error":{"type":4,"address":"/api","description":"method, GET, not available for resource, /"}}]
 
     def post(self):
         postDict = request.get_json(force=True)
@@ -69,9 +71,14 @@ class NewUser(Resource):
                 configManager.bridgeConfig.save_config()
                 return response
             else:
-                return [{"error":{"type":101,"address":"","description":"link button not pressed"}}]
+                return [{"error":{"type":101,"address":"/api/","description":"link button not pressed"}}]
         else:
-            return [{"error":{"type":6,"address":"/" + list(postDict.keys())[0],"description":"parameter, " + list(postDict.keys())[0] + ", not available"}}]
+            return [{"error":{"type":6,"address":"/api/" + list(postDict.keys())[0],"description":"parameter, " + list(postDict.keys())[0] + ", not available"}}]
+
+class ShortConfig(Resource):
+    def get(self):
+        config = bridgeConfig["config"]
+        return {"apiversion": config["apiversion"],"bridgeid": config["bridgeid"], "datastoreversion": config["datastoreversion"],"factorynew": False,"mac": config["mac"],"modelid": config["modelid"],"name": config["name"],"replacesbridgeid": None,"starterkitid": "","swversion": config["swversion"]}
 
 class EntireConfig(Resource):
     def get(self,username):
@@ -89,7 +96,7 @@ class ResourceElements(Resource):
                 return  bridgeConfig[resource]
         elif resource == "config":
             config = bridgeConfig["config"]
-            return {"name":config["name"],"datastoreversion":"94","swversion":config["swversion"],"apiversion":config["apiversion"],"mac":config["mac"],"bridgeid":config["bridgeid"],"factorynew":False,"replacesbridgeid":None,"modelid":config["modelid"],"starterkitid":""}
+            return {"name":config["name"],"datastoreversion": config["datastoreversion"],"swversion":config["swversion"],"apiversion":config["apiversion"],"mac":config["mac"],"bridgeid":config["bridgeid"],"factorynew":False,"replacesbridgeid":None,"modelid":config["modelid"],"starterkitid":""}
         return [{"error":{"type":1,"address":"/","description":"unauthorized user"}}]
 
     def post(self, username, resource):
@@ -100,7 +107,6 @@ class ResourceElements(Resource):
             print("scan for light")
             #if was a request to scan for lights of sensors
             Thread(target=scanForLights).start()
-            sleep(7) #give no more than 5 seconds for light scanning (otherwise will face app disconnection timeout)
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
         pprint(postDict)
@@ -130,6 +136,10 @@ class ResourceElements(Resource):
                         elif bridgeConfig["lights"][light]["state"]["colormode"] == "hs":
                             postDict["lightstates"][light]["hue"] = bridgeConfig["lights"][light]["state"]["hue"]
                             postDict["lightstates"][light]["sat"] = bridgeConfig["lights"][light]["state"]["sat"]
+            # build v2 uuid
+            sceneUuid = str(uuid.uuid4())
+            bridgeConfig["emulator"]["links"]["v2"]["scene"][sceneUuid] = new_object_id
+            bridgeConfig["emulator"]["links"]["v1"]["scenes"][new_object_id] = sceneUuid
 
         elif resource == "groups":
             if "type" not in postDict:
@@ -139,6 +149,19 @@ class ResourceElements(Resource):
             elif postDict["type"] == "Entertainment" and "stream" not in postDict:
                 postDict["stream"] = {"active": False, "owner": username, "proxymode": "auto", "proxynode": "/bridge"}
             postDict.update({"action": {"on": False}, "state": {"any_on": False, "all_on": False}})
+            # build v2 uuid
+            sceneUuid = str(uuid.uuid4())
+            if postDict["type"] in ["Room", "LightGroup"]:
+                roomUuid = str(uuid.uuid4())
+                groupedLightsUuid = str(uuid.uuid4())
+                bridgeConfig["emulator"]["links"]["v2"]["room"][roomUuid] = {"id_v1": new_object_id, "groupedLightsUuid": groupedLightsUuid}
+                bridgeConfig["emulator"]["links"]["v2"]["groupedLights"][groupedLightsUuid] = {"id_v1": new_object_id}
+                bridgeConfig["emulator"]["links"]["v1"]["groups"][new_object_id] = roomUuid
+            elif postDict["type"] == "Entertainment":
+                entertainmentUuid = str(uuid.uuid4())
+                bridgeConfig["emulator"]["links"]["v2"]["entertainment_configuration"][entertainmentUuid] = {"id_v1": new_object_id}
+                bridgeConfig["emulator"]["links"]["v1"]["groups"][new_object_id] = entertainmentUuid
+
         elif resource == "schedules":
             try:
                 postDict.update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "time": postDict["localtime"]})
@@ -161,6 +184,9 @@ class ResourceElements(Resource):
                 postDict["state"]["status"] = 0
             elif postDict["modelid"] == "PHA_CTRL_START":
                 postDict.update({"state": {"flag": False, "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}, "config": {"on": True,"reachable": True}})
+            # build v2 uuid
+
+
         elif resource == "resourcelinks":
             postDict.update({"owner" :username})
         generateDxState()
@@ -168,6 +194,18 @@ class ResourceElements(Resource):
         logging.info(json.dumps([{"success": {"id": new_object_id}}], sort_keys=True, indent=4, separators=(',', ': ')))
         configManager.bridgeConfig.save_config()
         return [{"success": {"id": new_object_id}}]
+
+    def put(self, username, resource):
+        authorisation = authorize(username, resource)
+        if "success" not in authorisation:
+            return authorisation
+        putDict = request.get_json(force=True)
+        bridgeConfig[resource].update(putDict)
+        responseDictionary = []
+        response_location = "/" + resource + "/"
+        for key, value in putDict.items():
+                responseDictionary.append({"success":{response_location + key: value}})
+        return responseDictionary
 
 
 class Element(Resource):
@@ -215,6 +253,10 @@ class Element(Resource):
                             bridgeConfig["scenes"][resourceid]["lightstates"][light]["sat"] = bridgeConfig["lights"][light]["state"]["sat"]
         elif resource == "sensors":
             currentTime = datetime.now()
+
+            if resourceid == "1" and bridgeConfig[resource][resourceid]["modelid"] == "PHDL00":
+                bridgeConfig["sensors"]["1"]["config"]["configured"] = True # mark daylight sensor as configured
+
             for key, value in putDict.items():
                 if key not in dxState["sensors"][resourceid]:
                     dxState["sensors"][resourceid][key] = {}
@@ -227,8 +269,7 @@ class Element(Resource):
                     dxState["sensors"][resourceid][key] = currentTime
             dxState["sensors"][resourceid]["state"]["lastupdated"] = currentTime
             bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = currentTime.strftime("%Y-%m-%dT%H:%M:%S")
-            if resourceid == "1" and bridgeConfig[resource][resourceid]["modelid"] == "PHDL00":
-                bridgeConfig["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
+            rulesProcessor(["sensors", resourceid], currentTime)
         elif resource == "groups" and "stream" in putDict:
             if "active" in putDict["stream"]:
                 if putDict["stream"]["active"]:
@@ -270,11 +311,11 @@ class Element(Resource):
                                 new_state = next(iter(bridgeConfig["scenes"][scene]["lightstates"]))
                                 new_state = bridgeConfig["scenes"][scene]["lightstates"][new_state]
                                 bridgeConfig["scenes"][scene]["lightstates"][light] = new_state
-            responseDictionary = []
-            response_location = "/" + resource + "/" + resourceid + "/"
-            for key, value in putDict.items():
-                    responseDictionary.append({"success":{response_location + key: value}})
-            return responseDictionary
+        responseDictionary = []
+        response_location = "/" + resource + "/" + resourceid + "/"
+        for key, value in putDict.items():
+                responseDictionary.append({"success":{response_location + key: value}})
+        return responseDictionary
 
 
 
@@ -313,6 +354,7 @@ class ElementParam(Resource):
         if "success" not in authorisation:
             return authorisation
         return bridgeConfig[resource][resourceid][param]
+
 
     def put(self, username, resource, resourceid, param):
         authorisation = authorize(username, resource, resourceid, param)
@@ -359,17 +401,28 @@ class ElementParam(Resource):
                     bridgeConfig["lights"][resourceid]["state"]["colormode"] = "hs"
 
             updateGroupStats(resourceid, bridgeConfig["lights"], bridgeConfig["groups"])
-            sendLightRequest(resourceid, putDict, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
+            sendLightRequest(resourceid, putDict)
         elif resource == "sensors":
-            if param == "state":
-                for key in putDict.keys():
-                    # track time of state changes in dxState
-                    if not key in bridgeConfig["sensors"][resourceid]["state"] or bridgeConfig["sensors"][resourceid]["state"][key] != putDict[key]:
-                        dxState["sensors"][resourceid]["state"][key] = currentTime
-            elif resourceid == "1":
+            if resourceid == "1":
                 bridgeConfig["sensors"]["1"]["config"]["configured"] = True ##mark daylight sensor as configured
-            dxState["sensors"][resourceid]["state"]["lastupdated"] = currentTime
-            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = currentTime.strftime("%Y-%m-%dT%H:%M:%S")
+            if resourceid not in dxState["sensors"]:
+                 dxState["sensors"][resourceid] = {}
+            if param not in dxState["sensors"][resourceid]:
+                 dxState["sensors"][resourceid][param] = {}
+            for key, value in putDict.items():
+                if key not in dxState["sensors"][resourceid][param]:
+                    dxState["sensors"][resourceid][param][key] = {}
+                if type(value) is dict:
+                    bridgeConfig["sensors"][resourceid][param][key].update(value)
+                    for element in value.keys():
+                        dxState["sensors"][resourceid][param][key][element] = currentTime
+                else:
+                    bridgeConfig["sensors"][resourceid][param][key] = value
+                    dxState["sensors"][resourceid][param][key] = currentTime
+
+            dxState["sensors"][resourceid]["state"]["lastupdated"] = currentTime # laustupdate key must always be updated
+            bridgeConfig["sensors"][resourceid]["state"]["lastupdated"] = currentTime.strftime("%Y-%m-%dT%H:%M:%S") # app visible lastupdated key must also be updated
+            rulesProcessor(["sensors", resourceid], currentTime)
         if  resourceid != "0" and "scene" not in putDict: #group 0 is virtual, must not be saved in bridge configuration, also the recall scene
             try:
                 bridgeConfig[resource][resourceid][param].update(putDict)

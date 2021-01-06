@@ -1,13 +1,14 @@
 import pytz
-import logging
 from astral.sun import sun
 from astral import LocationInfo
 from functions.rules import rulesProcessor
 from datetime import datetime
 from time import sleep
+import logManager
 import configManager
 
 bridgeConfig = configManager.bridgeConfig.json_config
+logging = logManager.logger.get_logger(__name__)
 dxState = configManager.runtimeConfig.dxState
 
 def daylightSensor():

@@ -9,14 +9,21 @@ import configManager
 import logManager
 import flask_login
 from flaskUI.core import User #dummy import for flaks_login module
-from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover
-from flaskUI.restful import NewUser, EntireConfig, ResourceElements, Element, ElementParam
+from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment
+from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam
+from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
+from flaskUI.error_pages.handlers import error_pages
+from werkzeug.serving import WSGIRequestHandler
+
+from functions.core import generateIds
+
 
 bridgeConfig = configManager.bridgeConfig.json_config
 dxState = configManager.runtimeConfig.dxState
 newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
 
+WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
 api = Api(app)
 
@@ -59,17 +66,27 @@ def request_loader(request):
 
 ### HUE API
 api.add_resource(NewUser, '/api/', strict_slashes=False)
+api.add_resource(ShortConfig, '/api/config', strict_slashes=False)
 api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
 api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
 api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
+### Entertainment api
+api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
+api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
+api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
+api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
 from flaskUI.devices.views import devices
+from flaskUI.mqtt.views import manageMqtt
+from flaskUI.deconz.views import manageDeconz
 from flaskUI.error_pages.handlers import error_pages
 app.register_blueprint(core)
 app.register_blueprint(devices)
+app.register_blueprint(manageMqtt)
+app.register_blueprint(manageDeconz)
 app.register_blueprint(error_pages)
 
 
@@ -89,6 +106,7 @@ def runHttp():
 if __name__ == '__main__':
     ### variables initialization
     generateDxState()
+    generateIds()
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
     mac = configManager.runtimeConfig.arg["MAC"]
@@ -106,7 +124,7 @@ if __name__ == '__main__':
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-
+    Thread(target=entertainment.entertainmentService).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=runHttps).start()
     runHttp()

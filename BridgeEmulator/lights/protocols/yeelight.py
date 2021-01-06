@@ -1,10 +1,14 @@
 import json
-import logging
 import random
 import socket
+import logManager
 import configManager
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+from functions.core import addNewLight
 
+
+bridgeConfig = configManager.bridgeConfig.json_config
+logging = logManager.logger.get_logger(__name__)
 Connections = {}
 
 bridgeConfig = configManager.bridgeConfig.json_config
@@ -18,7 +22,7 @@ def discover():
         'MAN: "ssdp:discover"',
         'ST: wifi_bulb'])
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    sock.settimeout(3)
+    sock.settimeout(5)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     sock.sendto(message.encode(), group)
@@ -27,6 +31,7 @@ def discover():
             response = sock.recv(1024).decode('utf-8').split("\r\n")
             properties = {"rgb": False, "ct": False}
             for line in response:
+                logging.info(line)
                 #logging.info("line check: " + line)
                 if line[:2] == "id":
                     properties["id"] = line[4:]
@@ -41,16 +46,16 @@ def discover():
                 elif line[:5] == "model":
                     properties["model"] = line.split(": ",1)[1]
             device_exist = False
-            for light in bridgeConfig["lights_address"].keys():
-                if bridgeConfig["lights_address"][light]["protocol"] == "yeelight" and  bridgeConfig["lights_address"][light]["id"] == properties["id"]:
+            for light in bridgeConfig["emulator"]["lights"].keys():
+                if bridgeConfig["emulator"]["lights"][light]["protocol"] == "yeelight" and  bridgeConfig["emulator"]["lights"][light]["id"] == properties["id"]:
                     device_exist = True
-                    bridgeConfig["lights_address"][light]["ip"] = properties["ip"]
+                    bridgeConfig["emulator"]["lights"][light]["ip"] = properties["ip"]
                     logging.debug("light id " + properties["id"] + " already exist, updating ip...")
                     break
             if (not device_exist):
-                #light_name = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
-                light_name = "Yeelight " + properties["model"] + " " + properties["ip"][-3:] if properties["name"] == "" else properties["name"] #just for me :)
-                logging.debug("Add YeeLight: " + properties["id"])
+                #lightName = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
+                lightName = "Yeelight " + properties["model"] + " " + properties["ip"][-3:] if properties["name"] == "" else properties["name"] #just for me :)
+                logging.info("Add YeeLight: " + properties["id"])
                 modelid = "LWB010"
                 if properties["model"] == "desklamp":
                     modelid = "LTW001"
@@ -58,12 +63,13 @@ def discover():
                     modelid = "LCT015"
                 elif properties["ct"]:
                     modelid = "LTW001"
-                new_light_id = nextFreeId(bridgeConfig, "lights")
-                bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Philips", "swversion": light_types[modelid]["swversion"]}
-                newlights.update({new_light_id: {"name": light_name}})
-                bridgeConfig["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "yeelight"}
 
-
+                emulatorLightConfig = {
+                    "ip": properties["ip"],
+                    "id": properties["id"],
+                    "protocol": "yeelight",
+                    }
+                addNewLight(modelid, lightName, emulatorLightConfig)
         except socket.timeout:
             logging.debug('Yeelight search end')
             sock.close()
@@ -195,19 +201,6 @@ def get_light_state(address, light):
     tcp_socket.close()
     return state
 
-def enableMusic(ip, host_ip):
-    if ip in Connections:
-        c = Connections[ip]
-        if not c._music:
-            c.enableMusic(host_ip)
-    else:
-        c = YeelightConnection(ip)
-        Connections[ip] = c
-        c.enableMusic(host_ip)
-
-def disableMusic(ip):
-    if ip in Connections: # Else? LOL
-        Connections[ip].disableMusic()
 
 class YeelightConnection(object):
     _music = False
@@ -218,15 +211,12 @@ class YeelightConnection(object):
     def __init__(self, ip):
         self._ip = ip
 
-    def connect(self, simple = False): #Use simple when you don't need to reconnect music mode
+    def connect(self, simple = True): #Use simple when you don't need to reconnect music mode
         self.disconnect() #To clean old socket
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.settimeout(5)
         self._socket.connect((self._ip, int(55443)))
-        if not simple and self._music:
-            self.enableMusic(self._host_ip)
-        else:
-            self._connected = True
+        self._connected = True
 
     def disconnect(self):
         self._connected = False
@@ -234,57 +224,6 @@ class YeelightConnection(object):
             self._socket.close()
         self._socket = None
 
-    def enableMusic(self, host_ip):
-        if self._connected and self._music:
-            raise AssertionError("Already in music mode!")
-
-        self._host_ip = host_ip
-
-        tempSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #Setup listener
-        tempSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        tempSock.settimeout(5)
-
-        tempSock.bind(("", 0))
-        port = tempSock.getsockname()[1] #Get listener port
-
-        tempSock.listen(3)
-
-        if not self._connected:
-            self.connect(True) #Basic connect for set_music
-
-        self.command("set_music", [1, host_ip, port]) #MAGIC
-        self.disconnect() #Disconnect from basic mode
-
-        while 1:
-            try:
-                conn, addr = tempSock.accept()
-                if addr[0] == self._ip: #Ignore wrong connections
-                    tempSock.close() #Close listener
-                    self._socket = conn #Replace socket with music one
-                    self._connected = True
-                    self._music = True
-                    break
-                else:
-                    try:
-                        logging.info("Rejecting connection to the music mode listener from %s", self._ip)
-                        conn.close()
-                    except:
-                        pass
-            except Exception as e:
-                tempSock.close()
-                raise ConnectionError("Yeelight with IP {} doesn't want to connect in music mode: {}".format(self._ip, e))
-
-        logging.info("Yeelight device with IP %s is now in music mode", self._ip)
-
-    def disableMusic(self):
-        if not self._music:
-            return
-
-        if self._socket:
-            self._socket.close()
-            self._socket = None
-        self._music = False
-        logging.info("Yeelight device with IP %s is no longer using music mode", self._ip)
 
     def send(self, data: bytes, flags: int = 0):
         try:

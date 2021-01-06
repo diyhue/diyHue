@@ -3,11 +3,10 @@ import configManager
 import json
 import random
 import paho.mqtt.client as mqtt
-from time import sleep
 from datetime import datetime
-from functions.core import nextFreeId
-from functions.devicesRules import addHueMotionSensor
-from functions.core import addNewLight
+from threading import Thread
+from functions.core import nextFreeId, addNewLight, addHueMotionSensor, longPressButton, generateDxState
+from functions.rules import rulesProcessor
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
@@ -28,12 +27,12 @@ standardSensors = ["TRADFRI remote control", "TRADFRI on/off switch"]
 standardSensorsData = {"TRADFRI remote control":
                 {"structure": {
                     "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "manufacturername": "IKEA of Sweden", "name": "Tradfri remote control", "modelid": "TRADFRI remote control",
-                    "state": {"buttonevent": 1002, "lastupdated": "2020-02-27T20:32:00"}, "swversion": "1.2.214", "type": "ZHASwitch", "uniqueid": ""},
+                    "state": {"buttonevent": 1002, "lastupdated": "none"}, "swversion": "1.2.214", "type": "ZHASwitch", "uniqueid": ""},
                 "dataConversion": {"rootKey": "action", "toggle": {"buttonevent": 1002}, "arrow_right_click": {"buttonevent": 5002}, "arrow_right_hold": {"buttonevent": 5001}, "arrow_left_click": {"buttonevent": 4002}, "arrow_left_hold": {"buttonevent": 4001}, "brightness_up_click": {"buttonevent": 2002}, "brightness_up_hold": {"buttonevent": 2001}, "brightness_down_click": {"buttonevent": 3002}, "brightness_down_hold": {"buttonevent": 3001}, "brightness_up_release": {"buttonevent": 2003},  "brightness_down_release": {"buttonevent": 3003}, "arrow_left_release": {"buttonevent": 4003}, "arrow_right_release": {"buttonevent": 5003}}},
             "TRADFRI on/off switch":
                 {"structure": {
                     "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "manufacturername": "IKEA of Sweden", "name": "TRADFRI on/off switch", "modelid": "TRADFRI on/off switch",
-                    "state": {"buttonevent": 1002, "lastupdated": "2020-02-27T20:32:00"}, "swversion": "2.2.008", "type": "ZHASwitch", "uniqueid": ""},
+                    "state": {"buttonevent": 1002, "lastupdated": "none"}, "swversion": "2.2.008", "type": "ZHASwitch", "uniqueid": ""},
                 "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}}
                 }
 
@@ -62,7 +61,7 @@ def on_autodiscovery_light(msg):
             keys = data.keys()
             light_color = "xy" in keys and data["xy"] == True
             light_brightness = "brightness" in keys and data["brightness"] == True
-            light_ct = "ct" in keys and data["ct"] == True
+            light_ct = "color_temp" in keys and data["color_temp"] == True
 
             modelid = None
             if light_color and light_ct:
@@ -83,6 +82,7 @@ def on_autodiscovery_light(msg):
                                     "command_topic": data["command_topic"]}
 
             addNewLight(modelid, lightName, emulatorLightConfig)
+            generateDxState()
 
 
 
@@ -105,47 +105,54 @@ def on_message(client, userdata, msg):
             for key in data:
                 if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
                     if key["friendly_name"] not in bridgeConfig["emulator"]["sensors"]: ## Add the new sensor
-                        logging.info("MQTT: Add new mqtt sensor" + key["modelID"])
+                        logging.info("MQTT: Add new mqtt sensor " + key["modelID"])
                         newSensorId = nextFreeId(bridgeConfig, "sensors")
                         if "modelID" in key:
                             if key["modelID"] in standardSensorsData and "structure" in standardSensorsData[key["modelID"]]:
-                                bridgeConfig["sensors"][newSensorId] = standardSensorsData[key["modelID"]]["structure"]
-                                bridgeConfig["sensors"][newSensorId]["uniqueid"] = convertHexToMac(key["ieeeAddr"]) + "-01-1000"
-                                bridgeConfig["sensors"][newSensorId]["name"] = key["friendly_name"]
+                                sensor = standardSensorsData[key["modelID"]]["structure"]
+                                sensor["uniqueid"] = convertHexToMac(key["ieeeAddr"]) + "-01-1000"
+                                sensor["name"] = key["friendly_name"]
+                                bridgeConfig["sensors"][newSensorId] = sensor.copy()
                                 bridgeConfig["emulator"]["sensors"][key["friendly_name"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "protocol": "mqtt"}
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["modelID"] in motionSensors:
                                 logging.info("MQTT: add new motion sensor " + key["modelID"])
                                 newSensorId = addHueMotionSensor("", name=key["friendly_name"])
-                                bridgeConfig["emulator"]["sensors"][key["ieeeAddr"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "lightSensor": "on", "protocol": "mqtt"}
+                                bridgeConfig["emulator"]["sensors"][key["friendly_name"]] = {"bridgeId": newSensorId, "modelid": key["modelID"], "lightSensor": "on", "protocol": "mqtt"}
                             else:
                                 pprint(key)
                                 logging.info("MQTT: unsupported sensor " + key["modelID"])
+                            generateDxState()
         else:
             device = msg.topic.split("/")[1]
             if device in bridgeConfig["emulator"]["sensors"]:
                 bridgeId = bridgeConfig["emulator"]["sensors"][device]["bridgeId"]
+                if "battery" in data:
+                    bridgeConfig["sensors"][bridgeId]["config"]["battery"] = int(data["battery"])
                 if bridgeConfig["sensors"][bridgeId]["config"]["on"] == False:
                     return
                 convertedPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
                 dxState["sensors"][bridgeId] = {"state": {}}
                 if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
                     return
-                ### If is a motion sensor update the light level
+                ### If is a motion sensor update the light level and temperature
                 if bridgeConfig["sensors"][bridgeConfig["emulator"]["sensors"][device]["bridgeId"]]["modelid"] in motionSensors:
                     convertedPayload["presence"] = data["occupancy"]
                     lightPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                    lightSensor = findLightSensors(bridgeConfig["sensors"], bridgeConfig["emulator"]["sensors"][device]["bridgeId"])
-                    if bridgeConfig["emulator"]["sensors"][device]["lightSensor"] == "on": # use build it light senor or the daylight logical sensor
-                        if "illuminance_lux" in data:
-                            if data["illuminance_lux"] > 10:
-                                lightPayload["dark"] = False
-                            else:
-                                lightPayload["dark"] = True
+                    lightSensor = findLightSensor(bridgeConfig["sensors"], bridgeConfig["emulator"]["sensors"][device]["bridgeId"])
+                    if "temperature" in data:
+                        tempSensor = findTempSensor(bridgeConfig["sensors"], bridgeConfig["emulator"]["sensors"][device]["bridgeId"])
+                        bridgeConfig["sensors"][tempSensor]["state"] = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
+                    if "illuminance_lux" in data:
+                        if data["illuminance_lux"] > 10:
+                            lightPayload["dark"] = False
                         else:
-                            lightPayload["dark"] = not bridgeConfig["sensors"]["1"]["state"]["daylight"]
+                            lightPayload["dark"] = True
+                    elif bridgeConfig["emulator"]["sensors"][device]["lightSensor"] == "on":
+                        lightPayload["dark"] = not bridgeConfig["sensors"]["1"]["state"]["daylight"]
                     else: # is always dark
                         lightPayload["dark"] = True
+
                     if  lightPayload["dark"]:
                         lightPayload["lightlevel"] = 6000
                     else:
@@ -167,19 +174,24 @@ def on_message(client, userdata, msg):
                 for key in convertedPayload.keys():
                     dxState["sensors"][bridgeId]["state"][key] = current_time
                 if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
-                    Thread(target=longPressButton, args=[bridgeConfig["emulator"]["sensors"][device]["bridgeId"], convertedPayload["buttonevent"], bridgeConfig]).start()
+                    Thread(target=longPressButton, args=[bridgeConfig["emulator"]["sensors"][device]["bridgeId"], convertedPayload["buttonevent"]]).start()
                 rulesProcessor(["sensors", bridgeConfig["emulator"]["sensors"][device]["bridgeId"]], current_time)
 
             on_state_update(msg)
     except:
         traceback.print_exc()
 
-def findLightSensors(sensors, sensorid):
+def findLightSensor(sensors, sensorid):
     lightSensorUID = sensors[sensorid]["uniqueid"][:-1] + "0"
     for sensor in sensors.keys():
         if "uniqueid" in sensors[sensor] and sensors[sensor]["uniqueid"] == lightSensorUID:
             return sensor
 
+def findTempSensor(sensors, sensorid):
+    tempSensprUID = sensors[sensorid]["uniqueid"][:-1] + "2"
+    for sensor in sensors.keys():
+        if "uniqueid" in sensors[sensor] and sensors[sensor]["uniqueid"] == tempSensprUID:
+            return sensor
 def convertHexToMac(hexValue):
     s = '{0:016x}'.format(int(hexValue,16))
     s = ':'.join(s[i:i + 2] for i in range(0, 16, 2))
