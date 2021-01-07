@@ -168,7 +168,7 @@ def discover(bridge_config, new_lights):
             else:
                 # OSRAM Smart+ plug
                 modelid = "Plug 01"
-        
+       
             # Handle Philips manufacturer a little bit more precise
             # you might look here: https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices.js
             if data["device"]["manufacturer"] == 'Philips':
@@ -199,7 +199,7 @@ def discover(bridge_config, new_lights):
             bridge_config["lights"][new_light_id]["type"] = light_types[modelid]["type"]
             bridge_config["lights"][new_light_id]["state"] = light_types[modelid]["state"]
             if "config" in light_types[modelid]:
-            bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
+                bridge_config["lights"][new_light_id]["config"] = light_types[modelid]["config"]
             else:
                 bridge_config["lights"][new_light_id]["config"] = {}
             # Add the lights to new lights, so it shows up in the search screen
