@@ -44,11 +44,18 @@ lightTypes["LCT015"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12
 lightTypes["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional"}
 lightTypes["LCT015"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": False,"renderer": True}}
 
-lightTypes["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581"}
+lightTypes["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581", "manufacturername": "Signify Netherlands B.V."}
 lightTypes["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 lightTypes["LST002"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LST002"]["config"] = {"archetype": "huelightstrip",	"function": "mixed", "direction": "omnidirectional", "startup": {"mode": "powerfail", "configured": False}}
 lightTypes["LST002"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
+
+
+lightTypes["LCX002"] = {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue play gradient lightstrip","swversion": "1.72.4_h5293B5","swconfigid": "C74E5108","productid": "Philips-LCX002-1-LedStripPXv1"}
+lightTypes["LCX002"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": False}
+lightTypes["LCX002"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-11-02T19:46:12"}
+lightTypes["LCX002"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
+lightTypes["LCX002"]["config"] = {"archetype": "huelightstriptv","function": "mixed","direction": "omnidirectional","startup": {"mode": "powerfail","configured": False}}
 
 lightTypes["LWB010"] = {"type": "Dimmable light", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
 lightTypes["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
@@ -74,13 +81,12 @@ def generateIds():
     if "links" not in bridgeConfig["emulator"]:
         bridgeConfig["emulator"]["links"] = {"v1": {
             "lights": {},
-            "groupedLights": {str(uuid.uuid4()): {"id_v1": "0"}},
             "scenes": {},
             "groups": {},
             "sensors": {}},
         "v2": {
             "light": {},
-            "groupedLights": {},
+            "groupedLights": {str(uuid.uuid4()): {"id_v1": "0"}},
             "scene": {},
             "room": {},
             "device": {},

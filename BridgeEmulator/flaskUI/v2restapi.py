@@ -194,14 +194,25 @@ def buildV2EntertainmentConfig(uuid):
 
     }
     index = 0
-    for light in bridgeConfig["groups"][id_v1]["lights"]:
+    loops = 0
+    gradientStrip = False
+    gradienStripPositions = [[-0.4000000059604645,0.800000011920929,-0.4000000059604645],[-0.4000000059604645,0.800000011920929,0.0],[-0.4000000059604645,0.800000011920929,0.4000000059604645],[0.0,0.800000011920929,0.4000000059604645],[0.4000000059604645,0.800000011920929,0.4000000059604645],[0.4000000059604645,0.800000011920929,0.0],[0.4000000059604645,0.800000011920929,-0.4000000059604645]]
+    light0 = bridgeConfig["groups"][id_v1]["lights"][0]
+    lightModelId = bridgeConfig["lights"][light0]["modelid"]
+    if lightModelId in ["LCX001","LCX002","LCX003"]:
+        loops = 7
+        gradientStrip = True
+    else:
+        loops = len(bridgeConfig["groups"][id_v1]["lights"])
+    for x in range(loops):
+        light = bridgeConfig["groups"][id_v1]["lights"][0] if gradientStrip else bridgeConfig["groups"][id_v1]["lights"][x]
         lightUuid = bridgeConfig["emulator"]["links"]["v1"]["lights"][light]
         entertainmentUuid = bridgeConfig["emulator"]["links"]["v2"]["light"][lightUuid]["entertianmentUuid"]
         result["channels"].append({
-          "channel_id": index,
+          "channel_id": x,
           "members": [
             {
-              "index": 0,
+              "index": index,
               "service": {
                 "reference_id": entertainmentUuid,
                 "reference_type": "entertainment",
@@ -211,25 +222,29 @@ def buildV2EntertainmentConfig(uuid):
             }
           ],
           "position": {
-            "x": bridgeConfig["groups"][id_v1]["locations"][light][0],
-            "y": bridgeConfig["groups"][id_v1]["locations"][light][1],
-            "z": bridgeConfig["groups"][id_v1]["locations"][light][2]
+            "x": gradienStripPositions[x][0] if gradientStrip else bridgeConfig["groups"][id_v1]["locations"][light][0],
+            "y": gradienStripPositions[x][1] if gradientStrip else bridgeConfig["groups"][id_v1]["locations"][light][1],
+            "z": gradienStripPositions[x][2] if gradientStrip else bridgeConfig["groups"][id_v1]["locations"][light][2]
           }
         })
-        result["locations"]["service_locations"].append({
-          "position": {
-            "x": bridgeConfig["groups"][id_v1]["locations"][light][0],
-            "y": bridgeConfig["groups"][id_v1]["locations"][light][1],
-            "z": bridgeConfig["groups"][id_v1]["locations"][light][2]
-          },
-          "service": {
-            "reference_id": entertainmentUuid,
-            "reference_type": "entertainment",
-            "rid": entertainmentUuid,
-            "rtype": "entertainment"
-          }
-        })
-        index += 1
+
+
+        if not gradientStrip or x == 0:
+            result["locations"]["service_locations"].append({
+              "position": {
+                "x": bridgeConfig["groups"][id_v1]["locations"][light][0],
+                "y": bridgeConfig["groups"][id_v1]["locations"][light][1],
+                "z": bridgeConfig["groups"][id_v1]["locations"][light][2]
+              },
+              "service": {
+                "reference_id": entertainmentUuid,
+                "reference_type": "entertainment",
+                "rid": entertainmentUuid,
+                "rtype": "entertainment"
+              }
+            })
+        if gradientStrip:
+            index += 1
     return result
 
 def buildV2Bridge():

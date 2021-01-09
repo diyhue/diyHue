@@ -335,14 +335,35 @@ class Element(Resource):
             for sensor in list(bridgeConfig["emulator"]["sensors"]):
                 if bridgeConfig["emulator"]["sensors"][sensor]["bridgeId"] == resourceid:
                     del bridgeConfig["emulator"]["sensors"][sensor]
+            #### remove sensor from v2 apiversion
+            if resourceid in bridgeConfig["emulator"]["links"]["v1"]["sensors"]:
+                del bridgeConfig["emulator"]["links"]["v2"]["device"][bridgeConfig["emulator"]["links"]["v1"]["sensors"][resourceid]]
         elif resource == "lights":
             # Remove this light from every group
             for group_id, group in bridgeConfig["groups"].items():
                 if "lights" in group and resourceid in group["lights"]:
                     group["lights"].remove(resourceid)
             del bridgeConfig["emulator"]["lights"][resourceid]
+            #### remove light from v2 apiversion
+            if resourceid in bridgeConfig["emulator"]["links"]["v1"]["lights"]:
+                lightV2 = bridgeConfig["emulator"]["links"]["v1"]["lights"][resourceid]
+                del bridgeConfig["emulator"]["links"]["v2"]["zigbee_connectivity"][lightV2["zigBeeUuid"]]
+                del bridgeConfig["emulator"]["links"]["v2"]["device"][lightV2["deviceUuid"]]
+                if "entertianmentUuid" in lightV2:
+                    del bridgeConfig["emulator"]["links"]["v2"]["entertainment"][lightV2["entertianmentUuid"]]
+                del bridgeConfig["emulator"]["links"]["v1"]["lights"][resourceid]
+
         elif resource == "groups":
             configManager.bridgeConfig.sanitizeBridgeScenes()
+            if resourceid in bridgeConfig["emulator"]["links"]["v1"]["groups"]:
+                groupV2 = bridgeConfig["emulator"]["links"]["v1"]["groups"][resourceid]
+                if groupV2 in bridgeConfig["emulator"]["links"]["v2"]["room"]:
+                    roomUuid = bridgeConfig["emulator"]["links"]["v2"]["room"][groupV2]
+                    del bridgeConfig["emulator"]["links"]["v2"]["groupedLights"][roomUuid["groupedLightsUuid"]]
+                    del bridgeConfig["emulator"]["links"]["v2"]["room"][groupV2]
+                if groupV2 in bridgeConfig["emulator"]["links"]["v2"]["entertainment_configuration"]:
+                    del bridgeConfig["emulator"]["links"]["v2"]["entertainment_configuration"][groupV2]
+                del bridgeConfig["emulator"]["links"]["v1"]["groups"][resourceid]
         del bridgeConfig[resource][resourceid]
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
         configManager.bridgeConfig.save_config()
