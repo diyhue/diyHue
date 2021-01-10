@@ -30,7 +30,7 @@ def process_arguments(configDir, args):
     else:
         logging.info("Debug logging enabled!")
     if not path.isfile(configDir + "/cert.pem"):
-        generate_certificate(args["FULLMAC"])
+        generate_certificate(args["MAC"])
 
 
 def parse_arguments():
