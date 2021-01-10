@@ -18,10 +18,9 @@ def get_environment_variable(var, boolean=False):
 
 def generate_certificate(mac):
     logging.info("Generating certificate")
-    serial = mac[:6] + "fffe" + mac[-6:]
+    serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
     call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial])
     logging.info("Certificate created")
-
 
 def process_arguments(configDir, args):
     if not args["DEBUG"]:
