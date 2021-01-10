@@ -7,4 +7,7 @@ touch /opt/hue-emulator/cert.pem
 
 cat private.key > /opt/hue-emulator/cert.pem
 cat public.crt >> /opt/hue-emulator/cert.pem
+
+cp /opt/hue-emulator/cert.pem /opt/hue-emulator/config/cert.pem
+
 rm private.key public.crt 
