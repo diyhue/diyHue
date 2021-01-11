@@ -5,6 +5,7 @@ from functions.lightRequest import sendLightRequest
 
 def entertainmentService(lights, addresses, groups, host_ip):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serverSocket.settimeout(3) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     frameID = 0

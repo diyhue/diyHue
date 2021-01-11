@@ -707,6 +707,7 @@ def rulesProcessor(device, current_time):
 
 def scanHost(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.settimeout(0.02) # Very short timeout. If scanning fails this could be increased
     result = sock.connect_ex((host, port))
     sock.close()
