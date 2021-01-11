@@ -37,6 +37,14 @@ light_types["LCT015"]["capabilities"] = {"certified": True,"control": {"colorgam
 light_types["LST002"] = {"type": "Color light", "swversion": "5.127.1.26581"}
 light_types["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 light_types["LST002"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
+light_types["LST002"]["config"] = {"archetype": "huelightstrip","direction": "omnidirectional","function": "mixed"}
+
+# Duplicate light strips
+light_types["LST001"] = light_types["LST002"]
+light_types["LST003"] = light_types["LST002"]
+light_types["LCL001"] = light_types["LST002"]
+light_types["LCL002"] = light_types["LST002"]
+
 
 light_types["LWB010"] = {"type": "Dimmable light", "swversion": "1.46.13_r26312", "manufacturername": "Philips"}
 light_types["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
@@ -48,6 +56,7 @@ light_types["LTW001"]["capabilities"] = {"certified": True,"control": {"mindimle
 
 light_types["Plug 01"] = {"type": "On/Off plug-in unit", "swversion": "V1.04.12"}
 light_types["Plug 01"]["state"] = {"on": False, "alert": "none", "reachable": True}
+light_types["Plug 01"]["config"] = {"archetype": "adapter", "function": "mixed", "direction": "omnidirectional"}
 
 # The Home Assistant below mimic Hue Bulbs to provide better compatability
 # HomeAssistant-RGB is a Hue White + Colour Ambience
