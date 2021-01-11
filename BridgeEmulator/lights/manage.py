@@ -29,7 +29,6 @@ def sendLightRequest(light, data, rgb = None):
 def manageDeviceLights(lights_state):
     protocol = bridgeConfig["emulator"]["lights"][list(lights_state.keys())[0]]["protocol"]
     payload = {}
-    onStatus = {} #for mqtt
     for light in lights_state.keys():
         if protocol == "native_multi":
             payload[bridgeConfig["emulator"]["lights"][light]["light_nr"]] = lights_state[light]
@@ -43,7 +42,7 @@ def manageDeviceLights(lights_state):
     if protocol == "native_multi": # bipass sendLightRequest function and send all light data in one request
         requests.put("http://"+bridgeConfig["emulator"]["lights"][list(lights_state.keys())[0]]["ip"]+"/state", json=payload, timeout=3)
     elif protocol == "mqtt":
-        sendLightRequest("1", {"lights": payload})
+        sendLightRequest(list(lights_state.keys())[0], {"lights": payload})
 
 
 

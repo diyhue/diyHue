@@ -53,10 +53,10 @@ def scanForLights(): #scan for ESP8266 lights and strips
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
-    mqtt()
+    mqtt.discover()
     yeelight.discover()
     native_multi.discover(device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
-    tasmota.discove(device_ips)
+    tasmota.discover(device_ips)
     shelly.discover(device_ips)
     esphome.discover(device_ips)
     tradfri.discover()
