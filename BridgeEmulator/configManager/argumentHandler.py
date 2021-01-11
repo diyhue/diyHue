@@ -18,10 +18,9 @@ def get_environment_variable(var, boolean=False):
 
 def generate_certificate(mac):
     logging.info("Generating certificate")
-    serial = mac[:6] + "fffe" + mac[-6:]
+    serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
     call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial])
     logging.info("Certificate created")
-
 
 def process_arguments(configDir, args):
     if not args["DEBUG"]:
@@ -100,7 +99,7 @@ def parse_arguments():
         dockerMAC = args.mac  # keeps : for cert generation
         mac = str(args.mac).replace(":", "")
     elif get_environment_variable('MAC'):
-        dockerMAC = get_environment_variable('MAC')
+        dockerMAC = get_environment_variable('MAC').strip('\u200e')
         mac = str(dockerMAC).replace(":", "")
     else:
         dockerMAC = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % host_ip,

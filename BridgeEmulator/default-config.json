@@ -20,7 +20,7 @@
          "time":"disconnected"
       },
       "ipaddress":"192.168.1.100",
-      "linkbutton":false,
+      "linkbutton":true,
       "localtime":"2020-12-30T11:00:07",
       "mac":"3a:21:25:f6:81:0c",
       "modelid":"BSB002",
