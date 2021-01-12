@@ -2023,7 +2023,7 @@ if __name__ == "__main__":
 
         while True:
             sleep(10)
-			sys.exit()
+            sys.exit()
     except Exception:
         logging.exception("server stopped ")
     finally:
