@@ -924,7 +924,7 @@ def websocketClient():
             del bridge_config["deconz"]["websocketport"]
 
         def received_message(self, m):
-            logging.info(m)
+            logging.debug(m)
             message = json.loads(str(m))
             try:
                 if message["r"] == "sensors":
