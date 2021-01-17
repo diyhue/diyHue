@@ -64,7 +64,7 @@ if args.debug or (os.getenv('DEBUG') and (os.getenv('DEBUG') == "true" or os.get
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     root.addHandler(ch)
-    
+
 if args.bind_ip:
     BIND_IP = args.bind_ip
 elif os.getenv('BIND_IP'):
@@ -883,7 +883,7 @@ def websocketClient():
             del bridge_config["deconz"]["websocketport"]
 
         def received_message(self, m):
-            logging.info(m)
+            logging.debug(m)
             message = json.loads(str(m))
             try:
                 if message["r"] == "sensors":
