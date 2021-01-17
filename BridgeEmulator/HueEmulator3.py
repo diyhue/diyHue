@@ -476,8 +476,6 @@ def resourceRecycle():
 def saveConfig(filename='config.json'):
     with open(CONFIG_PATH + '/' + filename, 'w', encoding="utf-8") as fp:
         json.dump(bridge_config, fp, sort_keys=True, indent=4, separators=(',', ': '))
-    if docker:
-        Popen(["cp", CONFIG_PATH + '/' + filename, CONFIG_PATH + '/export/'])
 
 def generateDxState():
     for sensor in bridge_config["sensors"]:
@@ -546,10 +544,7 @@ def schedulerProcessor():
             saveConfig()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                if docker:
-                    saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
-                else:
-                    saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
         sleep(1)
 
 def switchScene(group, direction):
