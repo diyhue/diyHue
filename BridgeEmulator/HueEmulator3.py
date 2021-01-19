@@ -97,6 +97,8 @@ if args.config_path:
     CONFIG_PATH = args.config_path
 elif os.getenv('CONFIG_PATH'):
     CONFIG_PATH = os.getenv('CONFIG_PATH')
+elif args.docker or (os.getenv('DOCKER') and os.getenv('DOCKER') == "true"):
+    CONFIG_PATH = cwd + "/export"
 else:
     CONFIG_PATH = cwd
 
@@ -289,9 +291,9 @@ def updateConfig():
     for sensor_id, sensor in bridge_config["deconz"]["sensors"].items():
         if "modelid" not in sensor:
             sensor["modelid"] = bridge_config["sensors"][sensor["bridgeid"]]["modelid"]
-        if sensor["modelid"] == "TRADFRI motion sensor":
+        if sensor["modelid"] in ["TRADFRI motion sensor", "lumi.sensor_motion"]:
             if "lightsensor" not in sensor:
-                sensor["lightsensor"] = "internal"
+                sensor["lightsensor"] = "astral"
 
     # Update scenes
     for scene_id, scene in bridge_config["scenes"].items():
@@ -945,11 +947,6 @@ def websocketClient():
                             elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "astral":
                                 message["state"]["dark"] = not bridge_config["sensors"]["1"]["state"]["daylight"]
 
-                            elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "combined":
-                                if not bridge_config["sensors"]["1"]["state"]["daylight"]:
-                                    message["state"]["dark"] = True
-                                elif (datetime.strptime(message["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S") - datetime.strptime(bridge_config["sensors"][light_sensor]["state"]["lastupdated"], "%Y-%m-%dT%H:%M:%S")).total_seconds() > 1200:
-                                    message["state"]["dark"] = False
 
                             if  message["state"]["dark"]:
                                 bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
@@ -965,13 +962,16 @@ def websocketClient():
                                 if bridge_config["sensors"][sensor]["type"] == "ZLLLightLevel" and bridge_config["sensors"][sensor]["uniqueid"] == bridge_config["sensors"][bridge_sensor_id]["uniqueid"][:-1] + "0":
                                     light_sensor = sensor
                                     break
-
-                            if bridge_config["sensors"]["1"]["modelid"] == "PHDL00" and bridge_config["sensors"]["1"]["state"]["daylight"]:
-                                bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
-                                bridge_config["sensors"][light_sensor]["state"]["dark"] = False
-                            else:
+                            if bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "none":
                                 bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
                                 bridge_config["sensors"][light_sensor]["state"]["dark"] = True
+                            elif bridge_config["deconz"]["sensors"][message["id"]]["lightsensor"] == "astral":
+                                if bridge_config["sensors"]["1"]["state"]["daylight"]:
+                                    bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 25000
+                                    bridge_config["sensors"][light_sensor]["state"]["dark"] = False
+                                else:
+                                    bridge_config["sensors"][light_sensor]["state"]["lightlevel"] = 6000
+                                    bridge_config["sensors"][light_sensor]["state"]["dark"] = True
 
                         #convert xiaomi motion sensor to hue sensor
                         if message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["modelid"] == "lumi.sensor_motion.aq2" and message["state"] and bridge_config["deconz"]["sensors"][message["id"]]["type"] == "ZHALightLevel":
@@ -1075,7 +1075,7 @@ def scanDeconz():
                 elif deconz_sensors[sensor]["modelid"] == "TRADFRI motion sensor":
                     logging.info("register TRADFRI motion sensor as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "internal"}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "astral"}
                 elif deconz_sensors[sensor]["modelid"] == "lumi.vibration.aq1":
                     logging.info("register Xiaomi Vibration sensor as Philips Motion Sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
@@ -1093,7 +1093,7 @@ def scanDeconz():
                 elif deconz_sensors[sensor]["modelid"] == "lumi.sensor_motion":
                     logging.info("register Xiaomi Motion sensor w/o light sensor")
                     newMotionSensorId = addHueMotionSensor("", deconz_sensors[sensor]["name"])
-                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
+                    bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": newMotionSensorId, "triggered": False, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"], "lightsensor": "astral"}
                 else:
                     bridge_config["sensors"][new_sensor_id] = deconz_sensors[sensor]
                     bridge_config["deconz"]["sensors"][sensor] = {"bridgeid": new_sensor_id, "modelid": deconz_sensors[sensor]["modelid"], "type": deconz_sensors[sensor]["type"]}
@@ -1474,7 +1474,7 @@ class S(BaseHTTPRequestHandler):
                                 addTradfriDimmer(key, get_parameters[key][0])
                             elif bridge_config["sensors"][key]["modelid"] == "TRADFRI on/off switch":
                                 addTradfriOnOffSwitch(key, get_parameters[key][0])
-                            elif bridge_config["deconz"]["sensors"][key]["modelid"] == "TRADFRI motion sensor":
+                            elif bridge_config["deconz"]["sensors"][key]["modelid"] in ["TRADFRI motion sensor", "lumi.sensor_motion"]:
                                 bridge_config["deconz"]["sensors"][key]["lightsensor"] = get_parameters[key][0]
                             #store room id in deconz sensors
                             for sensor in bridge_config["deconz"]["sensors"].keys():
