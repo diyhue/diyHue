@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import random
+import re
 import socket
 import ssl
 import sys
@@ -53,6 +54,7 @@ ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local I
 ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
 ap.add_argument("--no-link-button", action='store_true', help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
 ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
+ap.add_argument("--autoupdate", help="Try updating automatically from Hue website when needed", action="store_true")
 
 args = ap.parse_args()
 
@@ -160,6 +162,12 @@ else:
     disableOnlineDiscover = False
     logging.info("Online Discovery/Remote API Enabled!")
 
+if args.autoupdate or ((os.getenv('autoupdate') and (os.getenv('autoupdate') == "true" or os.getenv('autoupdate') == "True"))):
+    autoupdate = True
+    logging.info("Automatic update enabled!")
+else:
+    autoupdate = False
+    logging.info("Automatic update disabled!")
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 
@@ -1577,20 +1585,34 @@ class S(BaseHTTPRequestHandler):
         return b"{}" if self.headers['Content-Length'] is None or self.headers[
             'Content-Length'] == '0' else self.rfile.read(int(self.headers['Content-Length']))
 
+    @staticmethod
+    def extract_version(line: str):
+        match = re.search(r'Firmware( |(&nbsp;))+([0-9]+).*Bridge( |(&nbsp;))+V2', line, re.IGNORECASE)
+        if match:
+            return int(match.group(3))
+
     def do_POST(self):
         self._set_headers()
         logging.info("in post method")
         logging.info(self.path)
-        self.data_string = self.read_http_request_body()
         if self.path == "/updater":
             logging.info("check for updates")
-            update_data = json.loads(sendRequest("https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
-            for category in update_data.keys():
-                for key in update_data[category].keys():
+            git_update = json.loads(sendRequest("https://raw.githubusercontent.com/diyhue/diyHue/master/BridgeEmulator/updater", "GET", "{}"))
+            if autoupdate:
+                logging.info("Checking the latest gateway version at Hue website...")
+                release_note_page = sendRequest("https://www.philips-hue.com/en-us/support/release-notes/bridge", "GET", "{}")
+                webpage_lines = [x for x in release_note_page.splitlines() if x]
+                versions = list(filter(None.__ne__, map(self.extract_version, webpage_lines)))
+                latest_swversion = max(versions)
+                logging.info(f"Bridge version from Hue website: {latest_swversion}")
+                git_update["config"]["swversion"] = str(latest_swversion)
+            for category in git_update.keys():
+                for key in git_update[category].keys():
                     logging.info("patch " + category + " -> " + key )
-                    bridge_config[category][key] = update_data[category][key]
+                    bridge_config[category][key] = git_update[category][key]
             self._set_end_headers(bytes(json.dumps([{"success": {"/config/swupdate/checkforupdate": True}}],separators=(',', ':'),ensure_ascii=False), "utf8"))
         else:
+            self.data_string = self.read_http_request_body()
             raw_json = self.data_string.decode('utf8')
             raw_json = raw_json.replace("\t","")
             raw_json = raw_json.replace("\n","")
