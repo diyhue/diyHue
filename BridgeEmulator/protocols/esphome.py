@@ -177,7 +177,7 @@ def set_light(address, light, data, rgb = None):
                 request_data = request_data + "/turn_on"
         else:
             request_data = request_data + "/turn_on"
-        if address["esphome_model"] is not "ESPHome-Toggle":
+        if address["esphome_model"] != "ESPHome-Toggle":
             if "bri" in data:
                 brightness = int(data['bri'])
                 if address["esphome_model"] == "ESPHome-RGBW":

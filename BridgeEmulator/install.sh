@@ -69,7 +69,6 @@ echo -e "[2] Developer Branch - test latest features and fixes - Work in Progres
 echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
 echo -n "I go with Nr.: "
 
-
 branchSelection=""
 read userSelection
 case $userSelection in
@@ -112,7 +111,6 @@ python3 setup.py install
 cd ../
 rm -rf astral.zip astral-2.2/
 
-
 ### installing paho-mqtt library
 echo -e "\033[36m Installing Python MQTT.\033[0m"
 curl -sL https://files.pythonhosted.org/packages/59/11/1dd5c70f0f27a88a3a05772cd95f6087ac479fac66d9c7752ee5e16ddbbc/paho-mqtt-1.5.0.tar.gz -o paho-mqtt-1.5.0.tar.gz
@@ -130,6 +128,15 @@ cd WebSocket-for-Python-0.3.4/
 python3 setup.py install
 cd ../
 rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
+
+### installing zeroconf for Python
+echo -e "\033[36m Installing zeroconf for Python.\033[0m"
+curl -sL https://github.com/jstasiak/python-zeroconf/archive/0.28.6.zip -o zeroconf.zip
+unzip -qo zeroconf.zip
+cd python-zeroconf-0.28.6/
+python3 setup.py install
+cd ../
+rm -rf zeroconf.zip python-zeroconf-0.28.6/
 
 ### installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
