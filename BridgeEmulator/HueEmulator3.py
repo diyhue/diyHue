@@ -526,11 +526,16 @@ def schedulerProcessor():
             saveConfig()
             Thread(target=daylightSensor).start()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
-                if docker:
-                    saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
-                else:
-                    saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+                backup_config()
         sleep(1)
+
+
+def backup_config():
+    if docker:
+        saveConfig("export/config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+    else:
+        saveConfig("config-backup-" + datetime.now().strftime("%Y-%m-%d") + ".json")
+
 
 def switchScene(group, direction):
     group_scenes = []
@@ -1605,6 +1610,7 @@ class S(BaseHTTPRequestHandler):
                 versions = list(filter(None.__ne__, map(self.extract_version, webpage_lines)))
                 latest_swversion = max(versions)
                 logging.info(f"Bridge version from Hue website: {latest_swversion}")
+                backup_config()
                 git_update["config"]["swversion"] = str(latest_swversion)
             for category in git_update.keys():
                 for key in git_update[category].keys():
