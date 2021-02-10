@@ -56,6 +56,7 @@
       }
     </style>
     <link href="/static/assets/style.css" rel="stylesheet">
+    <link href="/static/assets/custom.css" rel="stylesheet">
 
     <!-- Specific Page CSS goes HERE -->
     {% block stylesheets %}{% endblock stylesheets %}
@@ -103,7 +104,7 @@
         {% include 'includes/navigation.html' %}
 
         <!-- ### $App Screen Content ### -->
-        <main class="main-content bgc-grey-100">
+        <main class="main-content">
           <div id="mainContent">
 
             {% block content %}{% endblock content %}
