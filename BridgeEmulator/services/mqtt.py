@@ -8,6 +8,7 @@ from threading import Thread
 from functions.core import nextFreeId, addNewLight, addHueMotionSensor, longPressButton, generateDxState
 from functions.rules import rulesProcessor
 
+
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.json_config
 newLights = configManager.runtimeConfig.newLights
@@ -22,7 +23,7 @@ discoveredDevices = {}
 
 
 motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "SML001"]
-standardSensors = ["TRADFRI remote control", "TRADFRI on/off switch"]
+standardSensors = ["TRADFRI remote control", "TRADFRI on/off switch", "TRADFRI wireless dimmer"]
 
 standardSensorsData = {"TRADFRI remote control":
                 {"structure": {
@@ -33,7 +34,12 @@ standardSensorsData = {"TRADFRI remote control":
                 {"structure": {
                     "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "manufacturername": "IKEA of Sweden", "name": "TRADFRI on/off switch", "modelid": "TRADFRI on/off switch",
                     "state": {"buttonevent": 1002, "lastupdated": "none"}, "swversion": "2.2.008", "type": "ZHASwitch", "uniqueid": ""},
-                "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}}
+                "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}},
+            "TRADFRI wireless dimmer":
+                {"structure": {
+                    "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "manufacturername": "IKEA of Sweden", "name": "TRADFRI wireless dimmer", "modelid": "TRADFRI wireless dimmer",
+                    "state": {"buttonevent": 1002, "lastupdated": "none"}, "swversion": "1.2.248", "type": "ZHASwitch", "uniqueid": ""},
+                "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}}
                 }
 
 
@@ -143,8 +149,8 @@ def on_message(client, userdata, msg):
                     if "temperature" in data:
                         tempSensor = findTempSensor(bridgeConfig["sensors"], bridgeConfig["emulator"]["sensors"][device]["bridgeId"])
                         bridgeConfig["sensors"][tempSensor]["state"] = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                    if "illuminance_lux" in data:
-                        if data["illuminance_lux"] > 10:
+                    if "illuminance" in data:
+                        if data["illuminance"] > 10:
                             lightPayload["dark"] = False
                         else:
                             lightPayload["dark"] = True

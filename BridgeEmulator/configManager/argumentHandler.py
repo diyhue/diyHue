@@ -22,6 +22,7 @@ def generate_certificate(mac):
     call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial])
     logging.info("Certificate created")
 
+
 def process_arguments(configDir, args):
     if not args["DEBUG"]:
         logManager.logger.configure_logger("INFO")
