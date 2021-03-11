@@ -1,5 +1,30 @@
 #!/bin/bash
 
+### Choose Branch for Install
+echo -e "\033[36mPlease choose a Branch to install\033[0m"
+echo -e "\033[33mSelect Branch by entering the corresponding Number: [Default: Master]\033[0m  "
+echo -e "[1] Master Branch - most stable Release "
+echo -e "[2] Developer Branch - test latest features and fixes - Work in Progress!"
+echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
+echo -n "I go with Nr.: "
+
+branchSelection=""
+read userSelection
+case $userSelection in
+        1)
+        branchSelection="master"
+        echo -e "Master selected"
+        ;;
+        2)
+        branchSelection="dev"
+        echo -e "Dev selected"
+        ;;
+				*)
+        branchSelection="master"
+        echo -e "Master selected"
+        ;;
+esac
+
 echo -e "\033[32m Deleting folders.\033[0m"
 rm -Rf /opt/hue-emulator
 echo -e "\033[32m Updating repository.\033[0m"
@@ -20,16 +45,16 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install ws4py
+python3 -m pip install ws4py zeroconf
 wait
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
-wget -q https://github.com/diyhue/diyHue/archive/master.zip -O diyHue.zip
+wget -q https://github.com/diyhue/diyHue/archive/$branchSelection.zip -O diyHue.zip
 echo -e "\033[32m Unzip diyHue.\033[0m"
 unzip -q -o  diyHue.zip
 wait
 echo -e "\033[32m Copying unzip files to directories.\033[0m"
-cd /opt/tmp/diyHue-master/BridgeEmulator
+cd /opt/tmp/diyHue-$branchSelection/BridgeEmulator
 cp HueEmulator3.py updater /opt/hue-emulator/
 cp default-config.json /opt/hue-emulator/config.json
 cp default-config.json /opt/hue-emulator/default-config.json
@@ -46,13 +71,13 @@ rm -Rf /opt/hue-emulator/functions/network.py
 mv /opt/hue-emulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 wait
 echo -e "\033[32m Copying startup service.\033[0m"
-cp hueemulatorWrt-service /etc/init.d/
+cp diyHueWrt-service /etc/init.d/
 echo -e "\033[32m Generating certificate.\033[0m"
 #mac=`cat /sys/class/net/$(ip route get 8.8.8.8 | sed -n 's/.* dev \([^ ]*\).*/\1/p')/address`
 mac=`cat /sys/class/net/br-lan/address`
 curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
 echo -e "\033[32m Changing permissions.\033[0m"
-chmod +x /etc/init.d/hueemulatorWrt-service
+chmod +x /etc/init.d/diyHueWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
 chmod +x /opt/hue-emulator/protocols

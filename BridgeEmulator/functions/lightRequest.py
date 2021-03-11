@@ -237,7 +237,7 @@ def sendLightRequest(light, data, lights, addresses, rgb = None, entertainmentHo
 def syncWithLights(lights, addresses, users, groups, off_if_unreachable): #update Hue Bridge lights states
     while True:
         logging.info("sync with lights")
-        for light in addresses:
+        for light in list(addresses):
             try:
                 protocol_name = addresses[light]["protocol"]
                 for protocol in protocols:

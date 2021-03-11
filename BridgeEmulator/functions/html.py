@@ -184,13 +184,11 @@ def webformDeconz(bridge_config):
             content += "</div>\n"
     content += "<legend>Tradfri Motion Sensors Setup</legend>\n"
     for deconzSensor in bridge_config["deconz"]["sensors"].keys():
-        if bridge_config["deconz"]["sensors"][deconzSensor]["modelid"] == "TRADFRI motion sensor":
+        if bridge_config["deconz"]["sensors"][deconzSensor]["modelid"] in ["TRADFRI motion sensor", "lumi.sensor_motion"]:
             content += "<div class=\"pure-control-group\">\n"
             content += "<label for=\"sensor-" + deconzSensor + "\">" + bridge_config["sensors"][bridge_config["deconz"]["sensors"][deconzSensor]["bridgeid"]]["name"] + "</label>\n"
             content += "<select id=\"sensor-" + deconzSensor + "\" name=\"" + deconzSensor + "\">\n"
-            content += "<option value=\"internal\"" + ("selected" if bridge_config["deconz"]["sensors"][deconzSensor]["lightsensor"] == "internal" else "") + ">Internal</option>\n"
             content += "<option value=\"astral\"" + ("selected" if bridge_config["deconz"]["sensors"][deconzSensor]["lightsensor"] == "astral" else "") + ">Astral</option>\n"
-            content += "<option value=\"combined\"" + ("selected" if bridge_config["deconz"]["sensors"][deconzSensor]["lightsensor"] == "combined" else "") + ">Combined</option>\n"
             content += "<option value=\"none\"" + ("selected" if bridge_config["deconz"]["sensors"][deconzSensor]["lightsensor"] == "none" else "") + ">None</option>\n"
             content += "</select>\n"
             content += "</div>\n"
