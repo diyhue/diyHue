@@ -161,10 +161,10 @@ def discover(bridge_config, new_lights):
                 modelid = "LCT015"
             elif light_color: # Every light as LCT001? Or also support other lights
                 modelid = "LCT001"
-            elif light_brightness:
-                modelid = "LWB010"
             elif light_ct:
                 modelid = "LTW001"
+            elif light_brightness:
+                modelid = "LWB010"
             else:
                 # OSRAM Smart+ plug
                 modelid = "Plug 01"
