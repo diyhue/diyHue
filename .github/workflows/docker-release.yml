@@ -71,7 +71,7 @@ jobs:
       - name: Run docker image
         if: success()
         run: |
-          docker run -d --name diyhue --network=host -v /mnt/hue-emulator/config:/opt/hue-emulator/config -e MAC=b8:27:eb:d4:dc:11 -e IP=192.168.1.123 -e DECONZ=192.168.1.111 -e IP_RANGE=5,6 -e DEBUG=true diyhue/diyhue:ci
+          docker run -d --name diyhue --network=host -v /mnt/hue-emulator/export:/opt/hue-emulator/export -e MAC=b8:27:eb:d4:dc:11 -e IP=192.168.1.123 -e DECONZ=192.168.1.111 -e IP_RANGE=5,6 -e DEBUG=true diyhue/diyhue:ci
           sleep 15
           docker logs diyhue
 
