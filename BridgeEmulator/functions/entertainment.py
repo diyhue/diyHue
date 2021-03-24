@@ -88,7 +88,8 @@ def entertainmentService(lights, addresses, groups, host_ip):
                             lightId = data[i+1] * 256 + data[i+2]
                             if lightId != 0:
                                 x = (data[i+3] * 256 + data[i+4]) / 65535
-	@@ -78,40 +93,52 @@ def entertainmentService(lights, addresses, groups, host_ip):
+                                y = (data[i+5] * 256 + data[i+6]) / 65535
+                                bri = int((data[i+7] * 256 + data[i+8]) / 256)
                                 if bri == 0:
                                     lights[str(lightId)]["state"]["on"] = False
                                 else:
