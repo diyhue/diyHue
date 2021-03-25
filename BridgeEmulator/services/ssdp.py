@@ -1,9 +1,10 @@
-import logging
+import logManager
 import random
 import socket
 import struct
 from time import sleep
 
+logging = logManager.logger.get_logger(__name__)
 
 def ssdpSearch(ip, port, mac):
     SSDP_ADDR = '239.255.255.250'
@@ -21,7 +22,7 @@ def ssdpSearch(ip, port, mac):
     mreq = struct.pack('4sL', group, socket.INADDR_ANY)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-    logging.debug("starting ssdp...")
+    logging.info("starting ssdp...")
 
     while True:
         data, address = sock.recvfrom(1024)
@@ -35,7 +36,7 @@ def ssdpSearch(ip, port, mac):
         sleep(1)
 
 def ssdpBroadcast(ip, port, mac):
-    logging.debug("start ssdp broadcast")
+    logging.info("start ssdp broadcast")
     SSDP_ADDR = '239.255.255.250'
     SSDP_PORT = 1900
     MSEARCH_Interval = 2

@@ -13,10 +13,5 @@ argumentHandler.process_arguments(bridgeConfig.configDir, runtimeConfig.arg)
 bridgeConfig.load_config()
 
 # Initialize bridge config
-bridgeConfig.generate_security_key()
+#bridgeConfig.generate_security_key()
 bridgeConfig.write_args(runtimeConfig.arg)
-
-# Clean and update config
-bridgeConfig.sanitizeBridgeScenes()
-bridgeConfig.updateConfig()
-

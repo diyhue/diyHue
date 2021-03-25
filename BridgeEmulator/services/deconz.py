@@ -4,15 +4,13 @@ import configManager
 import logManager
 import json
 from threading import Thread
-from functions.core import generateDxState, nextFreeId, addHueMotionSensor
 from functions.rules import rulesProcessor
 from functions.request import sendRequest
 from ws4py.client.threadedclient import WebSocketClient
 from lights.manage import updateGroupStats
 
-bridge_config = configManager.bridgeConfig.json_config
+bridge_config = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
-dxState = configManager.runtimeConfig.dxState
 
 def scanDeconz():
     deconz_ip = configManager.runtimeConfig.arg["DECONZ"]

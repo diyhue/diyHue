@@ -1,7 +1,9 @@
-import logging
+import logManager
 import requests
 import json
 from time import sleep
+
+logging = logManager.logger.get_logger(__name__)
 
 def runRemoteDiscover(config):
     print("Starting remote discovery")
@@ -10,7 +12,6 @@ def runRemoteDiscover(config):
         try:
             payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress"],"macaddress": config["mac"],"name": config["name"]}
             response = requests.post(url, timeout=5, json=payload)
-            print(response.text)
             sleep(30)
         except:
                 logging.debug("remote sever is down")

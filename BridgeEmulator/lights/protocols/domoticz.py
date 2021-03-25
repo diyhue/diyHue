@@ -2,7 +2,7 @@ import json
 import configManager
 import requests
 
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 
 def set_light(address, light, data):

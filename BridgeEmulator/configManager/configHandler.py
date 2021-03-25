@@ -1,24 +1,31 @@
 from configManager import configInit
 from datetime import datetime
+from time import tzset
 import os
 import json
 import logManager
-
+import yaml
+import weakref
+from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor
+from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
-def _open_json(path):
+class NoAliasDumper(yaml.SafeDumper):
+    def ignore_aliases(self, data):
+        return True
+
+def _open_yaml(path):
     with open(path, 'r', encoding="utf-8") as fp:
-        return json.load(fp)
+        return yaml.load(fp, Loader=yaml.FullLoader)
 
-
-def _write_json(path, contents):
+def _write_yaml(path, contents):
     with open(path, 'w', encoding="utf-8") as fp:
-        json.dump(contents, fp, sort_keys=True, indent=4, separators=(',', ': '))
+        yaml.dump(contents, fp , Dumper=NoAliasDumper)
 
 
 class Config:
-    json_config = None
-    projectDir = '/opt/hue-emulator'  # cwd = os.path.split(os.path.abspath(__file__))[0]
+    yaml_config = None
+    projectDir = '/opt/hue-emulator'
     configDir = projectDir + '/config'
 
     def __init__(self):
@@ -26,44 +33,139 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "v2": {}, "sensors_id": {}, "temp": {"scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
-            if os.path.exists(self.configDir + "/config.json"):
-                self.json_config = _open_json(self.configDir + "/config.json")
-                logging.info("Config loaded")
+            #load config
+            if os.path.exists(self.configDir + "/config.yaml"):
+                config = _open_yaml(self.configDir + "/config.yaml")
+                os.environ['TZ'] = config["timezone"]
+                tzset()
+                config["apiUsers"] = {}
+                for user, data in config["whitelist"].items():
+                    self.yaml_config["apiUsers"][user] = ApiUser(user, data["name"], data["client_key"], data["create_date"], data["last_use_date"])
+                del config["whitelist"]
+                self.yaml_config["config"] = config
             else:
-                logging.info("Config not found, creating new config from default settings")
-                self.json_config = _open_json(self.projectDir + '/default-config.json')
-                self.save_config()
+                self.yaml_config["config"] = {"Remote API enabled": False,"mqtt":{"enabled":False},"deconz":{"enabled":False},"alarm":{"on":False},"apiUsers":{},"apiversion":"1.41.0","name":"DiyHue Bridge","netmask":"255.255.255.0","swversion":"1941132080","timezone":"Europe/London","linkbutton":{"lastlinkbuttonpushed": 1599398980},"users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}}}
+            # load lights
+            if os.path.exists(self.configDir + "/lights.yaml"):
+                lights = _open_yaml(self.configDir + "/lights.yaml")
+                for light, data in lights.items():
+                    data["id_v1"] = light
+                    self.yaml_config["lights"][light] = Light(data)
+                    #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])
+            #groups
+            #create group 0
+            self.yaml_config["groups"]["0"] = Group({"name":"Group 0","id_v1": "0","type":"LightGroup","state":{"all_on":False,"any_on":True},"recycle":False,"action":{"on":False,"bri":165,"hue":8418,"sat":140,"effect":"none","xy":[0.6635,0.2825],"ct":366,"alert":"select","colormode":"hs"}})
+            for key, light in self.yaml_config["lights"].items():
+                self.yaml_config["groups"]["0"].add_light(light)
+            # create groups
+            if os.path.exists(self.configDir + "/groups.yaml"):
+                groups = _open_yaml(self.configDir + "/groups.yaml")
+                for group, data in groups.items():
+                    data["id_v1"] = group
+                    self.yaml_config["groups"][group] = Group(data)
+                    #   Reference lights objects instead of id's
+                    for light in data["lights"]:
+                        self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                    if "locations" in data:
+                        for light, location in data["locations"].items():
+                            lightObj = self.yaml_config["lights"][light]
+                            self.yaml_config["groups"][group].locations[lightObj] = location
+            #scenes
+            if os.path.exists(self.configDir + "/scenes.yaml"):
+                scenes = _open_yaml(self.configDir + "/scenes.yaml")
+                for scene, data in scenes.items():
+                    data["id_v1"] = scene
+                    if data["type"] == "GroupScene":
+                        group = weakref.ref(self.yaml_config["groups"][data["group"]])
+                        data["lights"] = group().lights
+                        data["group"] = group
+                    else:
+                        objctsList = []
+                        for light in data["lights"]:
+                            objctsList.append(weakref.ref(self.yaml_config["lights"][light]))
+                        data["lights"] = objctsList
+                    owner = self.yaml_config["apiUsers"][data["owner"]]
+                    data["owner"] = owner
+                    self.yaml_config["scenes"][scene] = Scene(data)
+                    for light, lightstate in data["lightstates"].items():
+                        lightObj = self.yaml_config["lights"][light]
+                        self.yaml_config["scenes"][scene].lightstates[lightObj] = lightstate
+
+            #rules
+            if os.path.exists(self.configDir + "/rules.yaml"):
+                rules = _open_yaml(self.configDir + "/rules.yaml")
+                for rule, data in rules.items():
+                    data["id_v1"] = rule
+                    owner = self.yaml_config["apiUsers"][data["owner"]]
+                    data["owner"] = owner
+                    self.yaml_config["rules"][rule] = Rule(data)
+            #schedules
+            if os.path.exists(self.configDir + "/schedules.yaml"):
+                schedules = _open_yaml(self.configDir + "/schedules.yaml")
+                for schedule, data in schedules.items():
+                    data["id_v1"] = schedule
+                    self.yaml_config["schedules"][schedule] = Schedule(data)
+            #sensors
+            if os.path.exists(self.configDir + "/sensors.yaml"):
+                sensors = _open_yaml(self.configDir + "/sensors.yaml")
+                for sensor, data in sensors.items():
+                    data["id_v1"] = sensor
+                    self.yaml_config["sensors"][sensor] = Sensor(data)
+                    self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"][sensor])
+            else:
+                data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}
+                self.yaml_config["sensors"]["1"] = Sensor(data)
+                self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"]["1"])
+            if os.path.exists(self.configDir + "/resourcelinks.yaml"):
+                #resourcelinks
+                resourcelinks = _open_yaml(self.configDir + "/resourcelinks.yaml")
+                for resourcelink, data in resourcelinks.items():
+                    data["id_v1"] = resourcelink
+                    owner = self.yaml_config["apiUsers"][data["owner"]]
+                    data["owner"] = owner
+                    self.yaml_config["resourcelinks"][resourcelink] = ResourceLink(data)
+                logging.info("Config loaded")
+                #pprint(self.yaml_config)
         except Exception:
             logging.exception("CRITICAL! Config file was not loaded")
             raise SystemExit("CRITICAL! Config file was not loaded")
+        bridgeConfig = self.yaml_config
+
 
     def save_config(self, backup=False):
+        path = self.configDir + '/'
         if backup:
-            filename = "config--backup-" + datetime.now().strftime("%Y-%m-%d--%H-%m-%S") + ".json"
-        else:
-            filename = "config.json"
-        path = self.configDir + '/' + filename
-        _write_json(path, self.json_config)
-        return filename
+            path = self.configDir + '/backup/'
+            if not os.path.exists(path):
+                os.makedirs(path)
+        config = self.yaml_config["config"]
+        config["whitelist"] = {}
+        for user, obj in self.yaml_config["apiUsers"].items():
+            config["whitelist"][user] = obj.save()
+
+        _write_yaml(path + "config.yaml", config)
+        for object in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
+            filePath = path + object + ".yaml"
+            dumpDict = {}
+            for element in self.yaml_config[object]:
+                if element != "0":
+                    dumpDict[self.yaml_config[object][element].id_v1] = self.yaml_config[object][element].save()
+            _write_yaml(filePath, dumpDict)
+
 
     def reset_config(self):
         backup = self.save_config(True)
         try:
-            os.remove(self.configDir + "/config.json")
+            os.remove(self.configDir + "/*.yaml")
         except:
             logging.exception("Something went wrong when deleting the config")
         self.load_config()
         return backup
 
     def write_args(self, args):
-        self.json_config = configInit.write_args(args, self.json_config)
+        self.yaml_config = configInit.write_args(args, self.yaml_config)
 
     def generate_security_key(self):
-        self.json_config = configInit.generate_security_key(self.json_config)
-
-    def sanitizeBridgeScenes(self):
-        self.json_config = configInit.sanitizeBridgeScenes(self.json_config)
-
-    def updateConfig(self):
-        self.json_config = configInit.updateConfig(self.json_config)
+        self.yaml_config = configInit.generate_security_key(self.yaml_config)

@@ -7,7 +7,7 @@ from lights.protocols import protocols
 
 
 logging = logManager.logger.get_logger(__name__)
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 
 def sendLightRequest(light, data, rgb = None):

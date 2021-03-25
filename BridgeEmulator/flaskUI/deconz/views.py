@@ -2,7 +2,7 @@ from flask import render_template, request, Blueprint, redirect, url_for
 import flask_login
 import configManager
 
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 
 
 manageDeconz = Blueprint('deconz',__name__)

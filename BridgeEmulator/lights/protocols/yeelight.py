@@ -2,19 +2,15 @@ import json
 import random
 import socket
 import logManager
-import configManager
+#import configManager
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
-from functions.core import addNewLight
 
 
-bridgeConfig = configManager.bridgeConfig.json_config
 logging = logManager.logger.get_logger(__name__)
 Connections = {}
 
-bridgeConfig = configManager.bridgeConfig.json_config
-newLights = configManager.runtimeConfig.newLights
 
-def discover():
+def discover(detectedLights):
     group = ("239.255.255.250", 1982)
     message = "\r\n".join([
         'M-SEARCH * HTTP/1.1',
@@ -29,6 +25,7 @@ def discover():
     while True:
         try:
             response = sock.recv(1024).decode('utf-8').split("\r\n")
+            logging.debug(response)
             properties = {"rgb": False, "ct": False}
             for line in response:
                 logging.info(line)
@@ -45,35 +42,29 @@ def discover():
                     properties["name"] = line[6:]
                 elif line[:5] == "model":
                     properties["model"] = line.split(": ",1)[1]
-            device_exist = False
-            for light in bridgeConfig["emulator"]["lights"].keys():
-                if bridgeConfig["emulator"]["lights"][light]["protocol"] == "yeelight" and  bridgeConfig["emulator"]["lights"][light]["id"] == properties["id"]:
-                    device_exist = True
-                    bridgeConfig["emulator"]["lights"][light]["ip"] = properties["ip"]
-                    logging.debug("light id " + properties["id"] + " already exist, updating ip...")
-                    break
-            if (not device_exist):
-                #lightName = "YeeLight id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
-                lightName = "Yeelight " + properties["model"] + " " + properties["ip"][-3:] if properties["name"] == "" else properties["name"] #just for me :)
-                logging.info("Add YeeLight: " + properties["id"])
-                modelid = "LWB010"
-                if properties["model"] == "desklamp":
-                    modelid = "LTW001"
-                elif properties["rgb"]:
-                    modelid = "LCT015"
-                elif properties["ct"]:
-                    modelid = "LTW001"
 
-                emulatorLightConfig = {
-                    "ip": properties["ip"],
-                    "id": properties["id"],
-                    "protocol": "yeelight",
-                    }
-                addNewLight(modelid, lightName, emulatorLightConfig)
+            lightName = "Yeelight " + properties["model"] + " " + properties["ip"][-3:] if properties["name"] == "" else properties["name"] #just for me :)
+            logging.info("Found YeeLight: " + properties["id"])
+            modelid = "LWB010"
+            if properties["model"] == "desklamp":
+                modelid = "LTW001"
+            elif properties["rgb"]:
+                modelid = "LCT015"
+            elif properties["ct"]:
+                modelid = "LTW001"
+
+            emulatorLightConfig = {
+                "ip": properties["ip"],
+                "id": properties["id"],
+                "protocol": "yeelight",
+                }
+            detectedLights.append({"protocol": "yeelight", "name": lightName, "modelid": modelid, "protocol_cfg": {"ip": properties["ip"], "id": properties["id"], "model": properties["model"]}})
         except socket.timeout:
             logging.debug('Yeelight search end')
             sock.close()
             break
+
+    return detectedLights
 
 def command(ip, light, api_method, param):
     if ip in Connections:
@@ -87,8 +78,8 @@ def command(ip, light, api_method, param):
         if not c._music and c._connected:
             c.disconnect()
 
-def set_light(address, light, data, rgb = None):
-    ip = address["ip"]
+def set_light(light, data):
+    ip = light.protocol_cfg["ip"]
     if ip in Connections:
         c = Connections[ip]
     else:
@@ -110,15 +101,15 @@ def set_light(address, light, data, rgb = None):
             payload["set_bright"] = [int(value / 2.55) + 1, "smooth", transitiontime]
         elif key == "ct":
             #if ip[:-3] == "201" or ip[:-3] == "202":
-            if light["name"].find("desklamp") > 0:
+            if light.name.find("desklamp") > 0:
                 if value > 369: value = 369
             payload["set_ct_abx"] = [int((-4800/347) * value + 2989900/347), "smooth", transitiontime]
         elif key == "hue":
-            payload["set_hsv"] = [int(value / 182), int(light["state"]["sat"] / 2.54), "smooth", transitiontime]
+            payload["set_hsv"] = [int(value / 182), int(light.state["sat"] / 2.54), "smooth", transitiontime]
         elif key == "sat":
-            payload["set_hsv"] = [int(light["state"]["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
+            payload["set_hsv"] = [int(light.state["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
-            bri = light["state"]["bri"]
+            bri = light.state["bri"]
             if rgb:
                 color = rgbBrightness(rgb, bri)
             else:

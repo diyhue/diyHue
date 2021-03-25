@@ -1,11 +1,9 @@
 import logManager
-import configManager
 import json
 import random
 import requests
 from datetime import datetime
 from time import strftime
-from functions.core import addHueMotionSensor, addHueSwitch
 from threading import Thread
 import traceback
 
@@ -14,26 +12,23 @@ import paho.mqtt.publish as publish
 
 # internal functions
 from functions.colors import hsv_to_rgb
-from functions.rules import rulesProcessor
 
 logging = logManager.logger.get_logger(__name__)
-bridgeConfig = configManager.bridgeConfig.json_config
-newLights = configManager.runtimeConfig.newLights
 
 
-def set_light(address, lights, data):
+def set_light(light, data):
     messages = []
     lightsData = {}
 
     if "lights" not in data:
-        lightsData = {address["command_topic"]: data}
+        lightsData = {light.protocol_cfg["command_topic"]: data}
     else:
         lightsData = data["lights"]
 
-    for light in lightsData.keys():
+    for topic in lightsData.keys():
         payload = {"transition": 0.3}
         colorFromHsv = False
-        for key, value in lightsData[light].items():
+        for key, value in lightsData[topic].items():
             if key == "on":
                 payload['state'] = "ON" if value == True else "OFF"
             if key == "bri":
@@ -49,14 +44,14 @@ def set_light(address, lights, data):
             if key == "transitiontime":
                 payload['transition'] = value / 10
         if colorFromHsv:
-            color = hsv_to_rgb(data['hue'], data['sat'], light["state"]["bri"])
+            color = hsv_to_rgb(data['hue'], data['sat'], light.state["bri"])
             payload['color'] = { 'r': color[0], 'g': color[1], 'b': color[2] }
-        messages.append({"topic": light, "payload": json.dumps(payload)})
+        messages.append({"topic": topic, "payload": json.dumps(payload)})
     logging.debug("MQTT publish to: " + json.dumps(messages))
     auth = None
-    if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridgeConfig["emulator"]["mqtt"]["mqttPassword"] != "":
-        auth = {'username':bridgeConfig["emulator"]["mqtt"]["mqttUser"], 'password':bridgeConfig["emulator"]["mqtt"]["mqttPassword"]}
-    publish.multiple(messages, hostname=bridgeConfig["emulator"]["mqtt"]["mqttServer"], port=bridgeConfig["emulator"]["mqtt"]["mqttPort"], auth=auth)
+    if light.protocol_cfg["mqtt_server"]["mqttUser"] != "" and light.protocol_cfg["mqtt_server"]["mqttPassword"] != "":
+        auth = {'username':  light.protocol_cfg["mqtt_server"]["mqttUser"], 'password':  light.protocol_cfg["mqtt_server"]["mqttPassword"]}
+    publish.multiple(messages, hostname= light.protocol_cfg["mqtt_server"]["mqttServer"], port= light.protocol_cfg["mqtt_server"]["mqttPort"], auth=auth)
 
 def get_light_state(address, light):
     if latestStates[address['state_topic']] is None:
@@ -74,10 +69,10 @@ def get_light_state(address, light):
 
     return state
 
-def discover():
-    if bridgeConfig["emulator"]["mqtt"]["enabled"]:
+def discover(mqtt_config):
+    if mqtt_config["enabled"]:
         logging.info("MQTT discovery called")
         auth = None
-        if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridgeConfig["emulator"]["mqtt"]["mqttPassword"] != "":
-            auth = {'username':bridgeConfig["emulator"]["mqtt"]["mqttUser"], 'password':bridgeConfig["emulator"]["mqtt"]["mqttPassword"]}
-        publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=bridgeConfig["emulator"]["mqtt"]["mqttServer"], port=bridgeConfig["emulator"]["mqtt"]["mqttPort"], auth=auth)
+        if mqtt_config["mqttUser"] != "" and mqtt_config["mqttPassword"] != "":
+            auth = {'username': mqtt_config["mqttUser"], 'password': mqtt_config["mqttPassword"]}
+        publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)

@@ -2,7 +2,7 @@ import json
 import configManager
 from subprocess import check_output
 from functions.colors import convert_rgb_xy, hsv_to_rgb
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 
 def set_light(address, light, data, rgb = None):

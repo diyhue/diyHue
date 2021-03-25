@@ -1,18 +1,16 @@
 import json
-import logging
+import logManager
 import random
 import requests
 import socket
 import sys
-import configManager
 from time import sleep
 from subprocess import check_output
 import lights
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from functions.network import getIpAddress
 
-bridgeConfig = configManager.bridgeConfig.json_config
-newLights = configManager.runtimeConfig.newLights
+logging = logManager.logger.get_logger(__name__)
 
 def sendRequest(url, timeout=3):
 
@@ -21,7 +19,7 @@ def sendRequest(url, timeout=3):
     return response.text
 
 
-def discover(device_ips):
+def discover(detectedLights, device_ips):
     logging.debug("tasmota: <discover> invoked!")
     for ip in device_ips:
         try:
@@ -37,52 +35,37 @@ def discover(device_ips):
                     logging.debug ("tasmota: Mac:      " + device_data["StatusNET"]["Mac"] )
 
                     properties = {"rgb": True, "ct": False, "ip": ip, "name": device_data["StatusNET"]["Hostname"], "id": device_data["StatusNET"]["Mac"], "mac": device_data["StatusNET"]["Mac"]}
-                    device_exist = False
-                    for light in bridgeConfig["lights_address"].keys():
-                        if bridgeConfig["lights_address"][light]["protocol"] == "tasmota" and  bridgeConfig["lights_address"][light]["id"] == properties["id"]:
-                            device_exist = True
-                            bridgeConfig["lights_address"][light]["ip"] = properties["ip"]
-                            logging.debug("tasmota: light id " + properties["id"] + " already exist, updating ip...")
-                            break
-                    if (not device_exist):
-                        light_name = "Tasmota id " + properties["id"][-8:] if properties["name"] == "" else properties["name"]
-                        logging.debug("tasmota: Add Tasmota: " + properties["id"])
-                        modelid = "Tasmota"
-                        new_light_id = nextFreeId(bridgeConfig, "lights")
-                        bridgeConfig["lights"][new_light_id] = {"state": light_types[modelid]["state"], "type": light_types[modelid]["type"], "name": light_name, "uniqueid": "4a:e0:ad:7f:cf:" + str(random.randrange(0, 99)) + "-1", "modelid": modelid, "manufacturername": "Tasmota", "swversion": light_types[modelid]["swversion"]}
-                        newLights.update({new_light_id: {"name": light_name}})
-                        bridgeConfig["lights_address"][new_light_id] = {"ip": properties["ip"], "id": properties["id"], "protocol": "tasmota"}
+                    detectedLights.append({"protocol": "tasmota", "name": device_data["StatusNET"]["Hostname"], "modelid": "LCT015", "protocol_cfg": {"ip": ip, "id": device_data["StatusNET"]["Mac"]}})
 
         except Exception as e:
             logging.debug("tasmota: ip " + ip + " is unknow device, " + str(e))
 
 
-
-def set_light(address, light, data, rgb = None):
-    logging.debug("tasmota: <set_light> invoked! IP=" + address["ip"])
+def set_light(light, data, rgb = None):
+    logging.debug("tasmota: <set_light> invoked! IP=" + light.protocol_cfg["ip"])
 
     for key, value in data.items():
         logging.debug("tasmota: key " + key)
 
         if key == "on":
             if value:
-                sendRequest ("http://"+address["ip"]+"/cm?cmnd=Power%20on")
+                sendRequest ("http://"+light.protocol_cfg["ip"]+"/cm?cmnd=Power%20on")
             else:
-                sendRequest ("http://"+address["ip"]+"/cm?cmnd=Power%20off")
+                sendRequest ("http://"+light.protocol_cfg["ip"]+"/cm?cmnd=Power%20off")
         elif key == "bri":
             brightness = int(100.0 * (value / 254.0))
-            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Dimmer%20" + str(brightness))
+            sendRequest ("http://"+light.protocol_cfg["ip"]+"/cm?cmnd=Dimmer%20" + str(brightness))
         elif key == "ct":
             color = {}
         elif key == "xy":
             if rgb:
                 color = rgbBrightness(rgb, light["state"]["bri"])
             else:
-                color = convert_xy(value[0], value[1], light["state"]["bri"])
-            sendRequest ("http://"+address["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
+                color = convert_xy(value[0], value[1], light.state["bri"])
+            sendRequest ("http://"+light.protocol_cfg["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
         elif key == "alert":
                 if value == "select":
-                    sendRequest ("http://" + address["ip"] + "/cm?cmnd=dimmer%20100")
+                    sendRequest ("http://" + light.protocol_cfg["ip"] + "/cm?cmnd=dimmer%20100")
 
 
 def hex_to_rgb(value):
@@ -98,7 +81,7 @@ def rgb_to_hex(rgb):
 
 def get_light_state(address, light):
     logging.debug("tasmota: <get_light_state> invoked!")
-    data = sendRequest ("http://" + address["ip"] + "/cm?cmnd=Status%2011")
+    data = sendRequest ("http://" + light.protocol_cfg["ip"] + "/cm?cmnd=Status%2011")
     #logging.debug(data)
     light_data = json.loads(data)["StatusSTS"]
     #logging.debug(light_data)

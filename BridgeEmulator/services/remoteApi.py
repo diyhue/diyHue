@@ -1,9 +1,11 @@
-import logging
+import logManager
 import requests
 import base64
 import urllib.parse
 import json
 from time import sleep
+
+logging = logManager.logger.get_logger(__name__)
 
 def runRemoteApi(BIND_IP, config):
     if BIND_IP == '':

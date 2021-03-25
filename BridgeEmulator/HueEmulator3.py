@@ -2,7 +2,6 @@
 from flask import Flask
 from flask.json import jsonify
 from flask_restful import Api
-from functions.core import generateDxState
 from threading import Thread
 import ssl
 import configManager
@@ -14,12 +13,11 @@ from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
+from functions.daylightSensor import daylightSensor
 
-from functions.core import generateIds
+from pprint import pprint
 
-
-bridgeConfig = configManager.bridgeConfig.json_config
-dxState = configManager.runtimeConfig.dxState
+bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
 
@@ -39,7 +37,7 @@ login_manager.login_view = "core.login"
 
 @login_manager.user_loader
 def user_loader(email):
-    if email not in bridgeConfig["emulator"]["users"]:
+    if email not in bridgeConfig["config"]["users"]:
         return
 
     user = User()
@@ -50,7 +48,7 @@ def user_loader(email):
 @login_manager.request_loader
 def request_loader(request):
     email = request.form.get('email')
-    if email not in bridgeConfig["emulator"]["users"]:
+    if email not in bridgeConfig["config"]["users"]:
         return
 
     user = User()
@@ -59,7 +57,7 @@ def request_loader(request):
     # DO NOT ever store passwords in plaintext and always compare password
     # hashes using constant-time comparison!
     print(email)
-    user.is_authenticated = request.form['password'] == bridgeConfig["emulator"]["users"][email]["password"]
+    user.is_authenticated = request.form['password'] == bridgeConfig["config"]["users"][email]["password"]
 
     return user
 
@@ -105,26 +103,24 @@ def runHttp():
 
 if __name__ == '__main__':
     ### variables initialization
-    generateDxState()
-    generateIds()
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
     mac = configManager.runtimeConfig.arg["MAC"]
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
     ### config initialization
-    configManager.bridgeConfig.updateConfig()
-    configManager.bridgeConfig.save_config()
+    #configManager.bridgeConfig.save_config( backup=True)
+    daylightSensor(bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"])
     ### start services
-    if bridgeConfig["emulator"]["deconz"]["enabled"]:
-        Thread(target=deconz.websocketClient).start()
-    if bridgeConfig["emulator"]["mqtt"]["enabled"]:
+#    if bridgeConfig["emulator"]["deconz"]["enabled"]:
+#        Thread(target=deconz.websocketClient).start()
+    if bridgeConfig["config"]["mqtt"]["enabled"]:
         Thread(target=mqtt.mqttServer).start()
-    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
-        Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
+#    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
+    Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=entertainment.entertainmentService).start()
+#    Thread(target=entertainment.entertainmentService).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=runHttps).start()
     runHttp()

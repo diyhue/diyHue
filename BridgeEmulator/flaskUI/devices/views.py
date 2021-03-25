@@ -10,7 +10,7 @@ logging = logManager.logger.get_logger(__name__)
 suportedDevicesRules = ["TRADFRI remote control", "TRADFRI on/off switch", "TRADFRI wireless dimmer"]
 dailightMotionEmulation = ["TRADFRI motion sensor", "lumi.sensor_motion"]
 #################
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 
 devices = Blueprint('devices',__name__)
 
@@ -22,28 +22,29 @@ def sensors():
     devicesConfig = []
     motionSensorsConfig = []
 
-    for key, device in bridgeConfig["emulator"]["sensors"].items():
-        if device["modelid"] in suportedDevicesRules:
-            devicesConfig.append({"name": bridgeConfig["sensors"][device["bridgeId"]]["name"], "id": device["bridgeId"], "modelid": device["modelid"], "configured": device["configured"] if "configured" in device else {"room": None, "option": None}})
-        if device["modelid"] in dailightMotionEmulation:
-            motionSensorsConfig.append({"name": bridgeConfig["sensors"][device["bridgeId"]]["name"], "id": device["bridgeId"], "lightSensor":  device["lightSensor"]})
+    for key, device in bridgeConfig["sensors"].items():
+        if device.modelid in suportedDevicesRules:
+            devicesConfig.append({"name": device.name, "id": device.id_v1, "modelid": device.modelid, "configured": device.protocol_cfg["configured"] if "configured" in  device.protocol_cfg else {"room": None, "option": None}})
+        if device.type == "ZLLLightLevel" and "modelid" in device.protocol_cfg and device.protocol_cfg["modelid"] in dailightMotionEmulation:
+            motionSensorsConfig.append({"name": device.name, "id": device.id_v1, "lightSensor":  device.protocol_cfg["lightSensor"]})
     for key, group in bridgeConfig["groups"].items():
-        groups.append({"name": group["name"], "id": key})
+        groups.append({"name": group.name, "id": group.id_v1})
     if request.method == 'POST':
         # clean all previews rules
         for resourcelink in list(bridgeConfig["resourcelinks"]):
-            if bridgeConfig["resourcelinks"][resourcelink]["classid"] == 15555:
-                for link in bridgeConfig["resourcelinks"][resourcelink]["links"]:
-                    pices = link.split('/')
-                    if pices[1] == "rules":
-                        del bridgeConfig["rules"][pices[2]]
+            if bridgeConfig["resourcelinks"][resourcelink].classid == 15555:
+                for link in bridgeConfig["resourcelinks"][resourcelink].links:
+                    pices = link.split("/")
+                    object = bridgeConfig[pices[1]][pices[2]]
+                    if object.recycle:
+                        del bridgeConfig[pices[1]][pices[2]]
                 del bridgeConfig["resourcelinks"][resourcelink]
         # set new rules
         formFields = request.form.to_dict()
         for key, value in formFields.items():
             if key.startswith('device-'):
                 deviceid = key[7:]
-                modelid = bridgeConfig["sensors"][deviceid]["modelid"]
+                modelid = bridgeConfig["sensors"][deviceid].modelid
                 if modelid == "TRADFRI on/off switch":
                     addTradfriOnOffSwitch(deviceid, value)
                 elif modelid == "TRADFRI remote control":
@@ -52,13 +53,13 @@ def sensors():
                     elif formFields["config-" + deviceid] == "Scene Switch":
                         addTradfriSceneRemote(deviceid, value)
         # save current html fields
-        for key, device in bridgeConfig["emulator"]["sensors"].items():
-            if "device-" + device["bridgeId"] in formFields:
-                bridgeConfig["emulator"]["sensors"][key]["configured"] = {"room": formFields["device-" + device["bridgeId"]]}
-                if "config-" + device["bridgeId"] in formFields:
-                    bridgeConfig["emulator"]["sensors"][key]["configured"]["option"] = formFields["config-" + device["bridgeId"]]
-            elif "motion-" + device["bridgeId"] in formFields:
-                bridgeConfig["emulator"]["sensors"][key]["lightSensor"] = formFields["motion-" + device["bridgeId"]]
+        for key, device in bridgeConfig["sensors"].items():
+            if "device-" + device.id_v1 in formFields:
+                device.protocol_cfg["configured"] = {"room": formFields["device-" + device.id_v1]}
+                if "config-" + device.id_v1 in formFields:
+                    device.protocol_cfg["configured"]["option"] = formFields["config-" + device.id_v1]
+            elif "motion-" + device.id_v1 in formFields:
+                device.protocol_cfg["lightSensor"] = formFields["motion-" + device.id_v1]
         configManager.bridgeConfig.save_config()
 
     return render_template('devices.html', groups=groups, devicesConfig=devicesConfig, motionSensors=motionSensorsConfig, form=form)

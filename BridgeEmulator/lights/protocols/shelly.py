@@ -4,15 +4,15 @@ import random
 import requests
 import socket
 import sys
-import configManager
+#import configManager
 from time import sleep
 from subprocess import check_output
 import lights
 from functions.network import getIpAddress
 
 
-bridgeConfig = configManager.bridgeConfig.json_config
-newLights = configManager.runtimeConfig.newLights
+#bridgeConfig = configManager.bridgeConfig.yaml_config
+#newLights = configManager.runtimeConfig.newLights
 
 def sendRequest(url, timeout=3):
     head = {"Content-type": "application/json"}

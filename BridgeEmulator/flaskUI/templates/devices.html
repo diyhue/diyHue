@@ -39,8 +39,8 @@
         <div class="form-group row"><label for="motion-{{ motionSensor.id }}" class="col-sm-2 col-form-label">{{ motionSensor.name }}</label>
           <div class="col-sm-4"><select class="form-control" id="motione-{{ motionSensor.id }}" name="motion-{{ motionSensor.id }}">
             <option selected="selected">Choose Mode...</option>
-            <option value="no"{% if motionSensor.lightSensor == "no" %} selected="selected" {% endif %}>Always Dark</option>
-            <option value="yes" {% if motionSensor.lightSensor == "yes" %} selected="selected" {% endif %}>Daylight Sensor</option>
+            <option value="off"{% if motionSensor.lightSensor == "off" %} selected="selected" {% endif %}>Always Dark</option>
+            <option value="on" {% if motionSensor.lightSensor == "on" %} selected="selected" {% endif %}>Daylight Sensor</option>
            </select>
           </div>
         </div>
@@ -76,7 +76,7 @@
   </div>
  </div>
 
- 
+
 
 
 {% endblock content %}

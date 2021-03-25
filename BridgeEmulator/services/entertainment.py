@@ -5,15 +5,13 @@ from subprocess import Popen
 from functions.colors import convert_rgb_xy, convert_xy
 from lights.manage import sendLightRequest
 import paho.mqtt.publish as publish
-
 logging = logManager.logger.get_logger(__name__)
-bridgeConfig = configManager.bridgeConfig.json_config
+bridgeConfig = configManager.bridgeConfig.yaml_config
 
 cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller than this values
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
-
-v2ApiLights = {}
+YeelightConnections = {}
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -30,185 +28,155 @@ def skipSimilarFrames(light, color, brightness):
         return 1
     return 0
 
-Connections = {}
-
-def findGradientStrip():
-    for light in bridgeConfig["lights"].keys():
-        if bridgeConfig["lights"][light]["modelid"] in ["LCX001", "LCX002", "LCX003"]:
-            lights = []
-            for x in range(7):
-                lights.append([light, x])
-            v2ApiLights["v1"] = lights
-            return "ok"
+def findGradientStrip(group):
+    for light in group.lights:
+        if light().modelid in ["LCX001", "LCX002", "LCX003"]:
+            return light()
     return "not found"
 
+YeelightConnections = {}
 
-
-def entertainmentService():
+def entertainmentService(group, user):
+    Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + user.username + "," + user.client_key])
+    lights_v2 = []
+    lights_v1 = {}
+    group.stream.update({"active": True, "owner": user.username, "proxymode": "auto", "proxynode": "/bridge"})
+    channel = 0
+    for light in group.lights:
+        light().state["mode"] = "streaming"
+        lights_v1[int(light().id_v1)] = light()
+        lights_v2.append(light())
+        channel += 1
+    logging.debug(lights_v1)
+    logging.debug(lights_v2)
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    serverSocket.settimeout(30) #Set a packet timeout that we catch later
+    serverSocket.settimeout(5) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 1
-    lightStatus = {}
-    syncing = False #Flag to check whether or not we had been syncing when a timeout occurs
-    while True:
-        try:
-            data = serverSocket.recvfrom(106)[0]
+    host_ip = bridgeConfig["config"]["ipaddress"]
+    try:
+        while True:
+            data = serverSocket.recvfrom(200)[0]
+            logging.debug(",".join('{:02x}'.format(x) for x in data))
             nativeLights = {}
             esphomeLights = {}
             mqttLights = []
             if data[:9].decode('utf-8') == "HueStream":
-                syncing = True #Set sync flag when receiving valid data
                 i = 0
                 apiVersion = 0
-                entertainmentGroup = 0
                 counter = 0
                 if data[9] == 1: #api version 1
                     i = 16
                     apiVersion = 1
-                    counter = len(data)
+                    counter = len(group.lights) * 9 + 15
                 elif data[9] == 2: #api version 1
                     i = 52
                     apiVersion = 2
-                    entertainmentGroup = bridgeConfig["emulator"]["links"]["v2"]["entertainment_configuration"][data[16:52].decode('utf-8')]["id_v1"]
-                    if data[16:52].decode('utf-8') not in v2ApiLights:
-                        lights = []
-                        for light in bridgeConfig["groups"][entertainmentGroup]["lights"]:
-                            if bridgeConfig["lights"][light]["modelid"] in ["LCX001","LCX002","LCX003"]:
-                                for x in range(7):
-                                    lights.append([light, x])
-                            else:
-                                lights.append([light, bridgeConfig["emulator"]["lights"][str(light)]["light_nr"] - 1])
-                        v2ApiLights[data[16:52].decode('utf-8')] = lights
-
-                    counter = len(v2ApiLights[data[16:52].decode('utf-8')]) * 7 + 52
-                if data[14] == 0: #rgb colorspace
-                    while (i < counter):
-                        #if True: # data[i] == 0: #Type of device 0x00 = Light
-                        lightId = 0
-                        if apiVersion == 1:
-                            if data[i] == 0:  # Type of device 0x00 = Light
-                                lightId = data[i+1] * 256 + data[i+2]
-                            elif data[i] == 1:  # Type of device Gradient Strip
-                                if "v1" not in v2ApiLights:
-                                    findGradientStrip()
-                                lightId = v2ApiLights["v1"][data[i + 2]][0]
-                            if lightId == 0:
+                    counter = len(group.getV2EntertainmentConfig()["channels"]) * 7 + 52
+                channels = {}
+                while (i < counter):
+                    light = None
+                    r,g,b = 0,0,0
+                    if apiVersion == 1:
+                        if (data[i+1] * 256 + data[i+2]) in channels:
+                            channels[data[i+1] * 256 + data[i+2]] += 1
+                        else:
+                            channels[data[i+1] * 256 + data[i+2]] = 0
+                        if data[i] == 0:  # Type of device 0x00 = Light
+                            if data[i+1] * 256 + data[i+2] == 0:
                                 break
+                            light = lights_v1[data[i+1] * 256 + data[i+2]]
+                        elif data[i] == 1:  # Type of device Gradient Strip
+                            light = findGradientStrip(group)
+                        if data[14] == 0: #rgb colorspace
                             r = int((data[i+3] * 256 + data[i+4]) / 256)
                             g = int((data[i+5] * 256 + data[i+6]) / 256)
                             b = int((data[i+7] * 256 + data[i+8]) / 256)
-                        elif apiVersion == 2:
-                            lightId = v2ApiLights[data[16:52].decode('utf-8')][data[i]][0]
+                        elif data[14] == 1: #cie colorspace
+                            x = (data[i+3] * 256 + data[i+4]) / 65535
+                            y = (data[i+5] * 256 + data[i+6]) / 65535
+                            bri = int((data[i+7] * 256 + data[i+8]) / 256)
+                            r, g, b = convert_xy(x, y, bri)
+                    elif apiVersion == 2:
+                        if data[i] not in channels:
+                            channels[data[i]] = 0
+                        else:
+                            channels[data[i]] += 1
+                        light = lights_v2[data[i]]
+                        if data[14] == 0: #rgb colorspace
                             r = int((data[i+1] * 256 + data[i+2]) / 256)
                             g = int((data[i+3] * 256 + data[i+4]) / 256)
                             b = int((data[i+5] * 256 + data[i+6]) / 256)
-                            if lightId == 0:
-                                break
-                        #print("Light:" + str(lightId) + " RED: " + str(r) + ", GREEN: " + str(g) + "BLUE: " + str(b) )
-                        proto = bridgeConfig["emulator"]["lights"][str(lightId)]["protocol"]
-                        if lightId not in lightStatus:
-                            lightStatus[lightId] = {"on": False, "bri": 1}
-                        if r == 0 and  g == 0 and  b == 0:
-                            bridgeConfig["lights"][str(lightId)]["state"]["on"] = False
-                        else:
-                            bridgeConfig["lights"][str(lightId)]["state"].update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
-                        if proto in ["native", "native_multi", "native_single"]:
-                            if bridgeConfig["emulator"]["lights"][str(lightId)]["ip"] not in nativeLights:
-                                nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]] = {}
-                            if apiVersion == 1:
-                                if bridgeConfig["lights"][str(lightId)]["modelid"] in ["LCX001", "LCX002", "LCX003"]:
-                                    if "v1" in v2ApiLights:
-                                        nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]][v2ApiLights["v1"][data[i+2]][1]] = [r, g, b]
-                                    else:
-                                        for x in range(7):
-                                            nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]][x] = [r, g, b]
-                                else:
-                                    nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]][bridgeConfig["emulator"]["lights"][str(lightId)]["light_nr"]] = [r, g, b]
-                            elif apiVersion == 2:
-                                nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]][v2ApiLights[data[16:52].decode('utf-8')][data[i]][1]] = [r, g, b]
-                        elif proto == "esphome":
-                            if bridgeConfig["emulator"]["lights"][str(lightId)]["ip"] not in esphomeLights:
-                                esphomeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]] = {}
-                            bri = int(max(r,g,b))
-                            esphomeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]]["color"] = [r, g, b, bri]
-                        elif proto == "mqtt":
-                            operation = skipSimilarFrames(lightId, bridgeConfig["lights"][str(lightId)]["state"]["xy"], bridgeConfig["lights"][str(lightId)]["state"]["bri"])
+                        elif data[14] == 1: #cie colorspace
+                            x = (data[i+1] * 256 + data[i+2]) / 65535
+                            y = (data[i+3] * 256 + data[i+4]) / 65535
+                            bri = int((data[i+5] * 256 + data[i+6]) / 256)
+                            r, g, b = convert_xy(x, y, bri)
+                    if light == None:
+                        logging.info("error in light identification")
+                        break
+                    logging.debug("Light:" + str(light.name) + " RED: " + str(r) + ", GREEN: " + str(g) + "BLUE: " + str(b) )
+                    proto = light.protocol
+                    if r == 0 and  g == 0 and  b == 0:
+                        light.state["on"] = False
+                    else:
+                        light.state.update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
+                    if proto in ["native", "native_multi", "native_single"]:
+                        if light.protocol_cfg["ip"] not in nativeLights:
+                            nativeLights[light.protocol_cfg["ip"]] = {}
+                        if apiVersion == 1:
+                            if light.modelid in ["LCX001", "LCX002", "LCX003"]:
+                                if data[i] == 1: # individual strip address
+                                    nativeLights[light.protocol_cfg["ip"]][data[i+1] * 256 + data[i+2]] = [r, g, b]
+                                elif data[i] == 0: # individual strip address
+                                    for x in range(7):
+                                        nativeLights[light.protocol_cfg["ip"]][x] = [r, g, b]
+                            else:
+                                nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
+
+                        elif apiVersion == 2:
+                            if light.modelid in ["LCX001", "LCX002", "LCX003"]:
+                                nativeLights[light.protocol_cfg["ip"]][channels[data[i]]] = [r, g, b]
+                            else:
+                                nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
+                    elif proto == "esphome":
+                        if light.protocol_cfg["ip"] not in esphomeLights:
+                            esphomeLights[light.protocol_cfg["ip"]] = {}
+                        bri = int(max(r,g,b))
+                        esphomeLights[light.protocol_cfg["ip"]]["color"] = [r, g, b, bri]
+                    elif proto == "mqtt":
+                        operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
+                        if operation == 1:
+                            mqttLights.append({"topic": light.protocol_cfg["command_topic"], "payload": json.dumps({"brightness": light.state["bri"], "transition": 0.2})})
+                        elif operation == 2:
+                            mqttLights.append({"topic": light.protocol_cfg["command_topic"], "payload": json.dumps({"color": {"x": light.state["xy"][0], "y": light.state["xy"][1]}, "transition": 0.15})})
+                    elif proto == "yeelight":
+                        enableMusic(light.protocol_cfg["ip"], host_ip)
+                        c = YeelightConnections[light.protocol_cfg["ip"]]
+                        operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
+                        if operation == 1:
+                            c.command("set_bright", [int(light.state["bri"] / 2.55), "smooth", 200])
+                            #c.command("set_bright", [int(bridgeConfig["lights"][str(lightId)]["state"]["bri"] / 2.55), "sudden", 0])
+
+                        elif operation == 2:
+                            c.command("set_rgb", [(r * 65536) + (g * 256) + b, "smooth", 200])
+                            #c.command("set_rgb", [(r * 65536) + (g * 256) + b, "sudden", 0])
+                    else:
+                        if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
+                            operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
                             if operation == 1:
-                                mqttLights.append({"topic": bridgeConfig["emulator"]["lights"][str(lightId)]["command_topic"], "payload": json.dumps({"brightness": bridgeConfig["lights"][str(lightId)]["state"]["bri"], "transition": 0.2})})
+                                light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
                             elif operation == 2:
-                                mqttLights.append({"topic": bridgeConfig["emulator"]["lights"][str(lightId)]["command_topic"], "payload": json.dumps({"color": {"x": bridgeConfig["lights"][str(lightId)]["state"]["xy"][0], "y": bridgeConfig["lights"][str(lightId)]["state"]["xy"][1]}, "transition": 0.15})})
-                        elif proto == "yeelight":
-                            operation = skipSimilarFrames(lightId, bridgeConfig["lights"][str(lightId)]["state"]["xy"], bridgeConfig["lights"][str(lightId)]["state"]["bri"])
-                            if operation != 0:
-                                sendLightRequest(str(lightId), {"xy": bridgeConfig["lights"][str(lightId)]["state"]["xy"], "transitiontime": 3}, [r, g, b])
+                                light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
 
-                        else:
-                            if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
-                                if r == 0 and  g == 0 and  b == 0:
-                                    if lightStatus[lightId]["on"]:
-                                        sendLightRequest(str(lightId), {"on": False, "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"], None, host_ip)
-                                        lightStatus[lightId]["on"] = False
-                                elif lightStatus[lightId]["on"] == False:
-                                    sendLightRequest(str(lightId), {"on": True, "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"], None, host_ip)
-                                    lightStatus[lightId]["on"] = True
-                                operation = skipSimilarFrames(lightId, bridgeConfig["lights"][str(lightId)]["state"]["xy"], bridgeConfig["lights"][str(lightId)]["state"]["bri"])
-                                if operation == 1:
-                                    sendLightRequest(str(lightId), {"bri": bridgeConfig["lights"][str(lightId)]["state"]["bri"], "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"], None, host_ip)
-                                elif operation == 2:
-                                    sendLightRequest(str(lightId), {"xy": bridgeConfig["lights"][str(lightId)]["state"]["xy"], "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
+                    fremeID += 1
+                    if fremeID == 25:
+                        fremeID = 1
+                    if apiVersion == 1:
+                        i = i + 9
+                    elif  apiVersion == 2:
+                        i = i + 7
 
-                        fremeID += 1
-                        if fremeID == 25:
-                            fremeID = 1
-                        if apiVersion == 1:
-                            i = i + 9
-                        elif  apiVersion == 2:
-                            i = i + 7
-                elif data[14] == 1: #cie colorspace
-                    i = 16
-                    while i < len(data):
-                        if data[i] == 0: #Type of device 0x00 = Light
-                            lightId = data[i+1] * 256 + data[i+2]
-                            if lightId != 0:
-                                x = (data[i+3] * 256 + data[i+4]) / 65535
-                                y = (data[i+5] * 256 + data[i+6]) / 65535
-                                bri = int((data[i+7] * 256 + data[i+8]) / 256)
-                                if bri == 0:
-                                    bridgeConfig["lights"][str(lightId)]["state"]["on"] = False
-                                else:
-                                    bridgeConfig["lights"][str(lightId)]["state"].update({"on": True, "bri": bri, "xy": [x,y], "colormode": "xy"})
-                                if bridgeConfig["emulator"]["lights"][str(lightId)]["protocol"] in ["native", "native_multi", "native_single"]:
-                                    if bridgeConfig["emulator"]["lights"][str(lightId)]["ip"] not in nativeLights:
-                                        nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]] = {}
-                                    nativeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]][bridgeConfig["emulator"]["lights"][str(lightId)]["light_nr"] - 1] = convert_xy(x, y, bri)
-                                elif bridgeConfig["emulator"]["lights"][str(lightId)]["protocol"] == "esphome":
-                                    if bridgeConfig["emulator"]["lights"][str(lightId)]["ip"] not in esphomeLights:
-                                        esphomeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]] = {}
-                                    r, g, b = convert_xy(x, y, bri)
-                                    esphomeLights[bridgeConfig["emulator"]["lights"][str(lightId)]["ip"]]["color"] = [r, g, b, bri]
-                                elif bridgeConfig["emulator"]["lights"][str(lightId)]["protocol"] == "mqtt":
-                                    operation = skipSimilarFrames(lightId, [x,y], bri)
-                                    if operation == 1:
-                                        mqttLights.append({"topic": bridgeConfig["emulator"]["lights"][str(lightId)]["command_topic"], "payload": json.dumps({"brightness": bri, "transition": 0.2})})
-                                    elif operation == 2:
-                                        mqttLights.append({"topic": bridgeConfig["emulator"]["lights"][str(lightId)]["command_topic"], "payload": json.dumps({"color": {"x": x, "y": y}, "transition": 0.15})})
-                                else:
-                                    fremeID += 1
-                                    if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
-                                        operation = skipSimilarFrames(lightId, [x,y], bri)
-                                        if operation == 1:
-                                            sendLightRequest(str(lightId), {"bri": bri, "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
-                                        elif operation == 2:
-                                            sendLightRequest(str(lightId), {"xy": [x,y], "transitiontime": 3}, bridgeConfig["lights"], bridgeConfig["emulator"]["lights"])
-                                fremeID += 1
-                                if fremeID == 25:
-                                    fremeID = 1
-
-                        if apiVersion == 1:
-                            i = i + 9
-                        elif  apiVersion == 2:
-                            i = i + 7
             if len(nativeLights) != 0:
                 for ip in nativeLights.keys():
                     udpmsg = bytearray()
@@ -224,35 +192,31 @@ def entertainmentService():
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
             if len(mqttLights) != 0:
                 auth = None
-                if bridgeConfig["emulator"]["mqtt"]["mqttUser"] != "" and bridgeConfig["emulator"]["mqtt"]["mqttPassword"] != "":
-                    auth = {'username':bridgeConfig["emulator"]["mqtt"]["mqttUser"], 'password':bridgeConfig["emulator"]["mqtt"]["mqttPassword"]}
-                publish.multiple(mqttLights, hostname=bridgeConfig["emulator"]["mqtt"]["mqttServer"], port=bridgeConfig["emulator"]["mqtt"]["mqttPort"], auth=auth)
-        except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
-            if syncing: #Reset sync status and kill relay service
-                logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
-                Popen(["killall", "entertain-srv"])
-                for group in bridgeConfig["groups"].keys():
-                    if "type" in bridgeConfig["groups"][group] and bridgeConfig["groups"][group]["type"] == "Entertainment":
-                        bridgeConfig["groups"][group]["stream"].update({"active": False, "owner": None})
-                        for light in bridgeConfig["groups"][group]["lights"]:
-                            bridgeConfig["lights"][light]["state"]["mode"] = "homeautomation"
-                syncing = False
+                if bridgeConfig["config"]["mqtt"]["mqttUser"] != "" and bridgeConfig["config"]["mqtt"]["mqttPassword"] != "":
+                    auth = {'username':bridgeConfig["config"]["mqtt"]["mqttUser"], 'password':bridgeConfig["config"]["mqtt"]["mqttPassword"]}
+                publish.multiple(mqttLights, hostname=bridgeConfig["config"]["mqtt"]["mqttServer"], port=bridgeConfig["config"]["mqtt"]["mqttPort"], auth=auth)
 
+    except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
+        logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
+        group.stream.update({"active": False, "owner": None})
+        for light in group.lights:
+            light().state["mode"] = "homeautomation"
+        Popen(["killall", "entertain-srv"])
 
 
 def enableMusic(ip, host_ip):
-    if ip in Connections:
-        c = Connections[ip]
+    if ip in YeelightConnections:
+        c = YeelightConnections[ip]
         if not c._music:
             c.enableMusic(host_ip)
     else:
         c = YeelightConnection(ip)
-        Connections[ip] = c
+        YeelightConnections[ip] = c
         c.enableMusic(host_ip)
 
 def disableMusic(ip):
-    if ip in Connections: # Else? LOL
-        Connections[ip].disableMusic()
+    if ip in YeelightConnections: # Else? LOL
+        YeelightConnections[ip].disableMusic()
 
 class YeelightConnection(object):
     _music = False
