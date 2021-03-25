@@ -16,6 +16,8 @@ jobs:
             arch_friendly: armv7
           - arch: linux/arm64
             arch_friendly: arm64
+          - arch: linux/arm/v6
+            arch_friendly: armv6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
