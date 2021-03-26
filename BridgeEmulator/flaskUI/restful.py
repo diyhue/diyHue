@@ -292,13 +292,13 @@ class Element(Resource):
         if resource == "resourcelinks":
             pprint(bridgeConfig["resourcelinks"][resourceid].getV1Api())
             for link in bridgeConfig["resourcelinks"][resourceid].links:
-                pices = link.split("/")
-                object = bridgeConfig[pices[1]][pices[2]]
-                if hasattr(object, "recycle") and object.recycle:
-                    try:
-                        del bridgeConfig[pices[1]][pices[2]]
-                    except:
-                        logging.info("link not found")
+                try:
+                    pices = link.split("/")
+                    object = bridgeConfig[pices[1]][pices[2]]
+                    if hasattr(object, "recycle") and object.recycle:
+                        del object
+                except:
+                    logging.info("link not found")
         if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid == "SML001": # delete also light and temperature sensor
             for sensor in list(bridgeConfig["sensors"].keys()):
                 if bridgeConfig["sensors"][sensor].uniqueid != None and bridgeConfig["sensors"][sensor].uniqueid[:-1] == bridgeConfig["sensors"][resourceid].uniqueid[:-1] and bridgeConfig["sensors"][sensor].id_v1 != resourceid:
