@@ -36,12 +36,12 @@ def longPressButton(sensor, buttonevent):
     return
 
 
-def getObject(friendly_name):
+def getObject(friendly_name, objectsList):
     if friendly_name in sensors_ids:
         logging.debug("Cache Hit for " + friendly_name)
         return sensors_ids[friendly_name]()
     else:
-        for key, sensor in bridgeConfig["sensors"].items():
+        for key, sensor in objectsList.items():
             if sensor.protocol == "mqtt" and sensor.protocol_cfg["friendly_name"] == friendly_name:
                 if sensor.modelid == "SML001" and sensor.type != "ZLLPresence":
                     continue
@@ -128,13 +128,13 @@ def on_message(client, userdata, msg):
         current_time =  datetime.now()
         logging.debug("MQTT: got state message on " + msg.topic)
         data = json.loads(msg.payload)
-        #logging.debug(msg.payload)
+        logging.debug(msg.payload)
         if msg.topic.startswith(discoveryPrefix + "/light/"):
             on_autodiscovery_light(msg)
         elif msg.topic == "zigbee2mqtt/bridge/config/devices":
             for key in data:
                 if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
-                    if getObject(key["friendly_name"]) == False: ## Add the new sensor
+                    if getObject(key["friendly_name"], bridgeConfig["sensors"]) == False: ## Add the new sensor
                         logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
                         if key["modelID"] in standardSensors:
                             new_sensor_id = nextFreeId(bridgeConfig, "sensors")
@@ -151,7 +151,7 @@ def on_message(client, userdata, msg):
         elif msg.topic == "zigbee2mqtt/bridge/log":
             if data["type"] == "device_announced":
                 device = msg.topic.split("/")[1]
-                light = getObject(device)
+                light = getObject(device, bridgeConfig["lights"])
                 if light.startup["mode"] == "powerfail":
                     loggin.info("set last state for " + data["meta"]["friendly_name"])
                     payload = {}
@@ -160,7 +160,7 @@ def on_message(client, userdata, msg):
 
         else:
             device = msg.topic.split("/")[1]
-            sensor = getObject(device)
+            sensor = getObject(device, bridgeConfig["sensors"])
             if sensor != False:
                 if "battery" in data:
                     sensor.config["battery"] = int(data["battery"])
@@ -183,7 +183,7 @@ def on_message(client, userdata, msg):
                         else:
                             lightPayload["dark"] = True
                     elif lightSensor.protocol_cfg["lightSensor"] == "on":
-                        lightPayload["dark"] = not bridgeConfig["sensors"]["1"]["state"]["daylight"]
+                        lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
                     else: # is always dark
                         lightPayload["dark"] = True
 
@@ -195,13 +195,11 @@ def on_message(client, userdata, msg):
                     if lightPayload["dark"] != lightSensor.state["dark"]:
                         lightSensor.dxState["dark"] = current_time
                     lightSensor.state.update(lightPayload)
-
                     # send email if alarm is enabled:
                     if data["occupancy"] and bridgeConfig["config"]["alarm"]["on"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
                         logging.info("Alarm triggered, sending email...")
                         requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": sensor.name}, timeout=10)
                         bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
-
                 elif sensor.modelid in standardSensors:
                     convertedPayload.update(standardSensors[sensor.modelid]["dataConversion"][data[standardSensors[sensor.modelid]["dataConversion"]["rootKey"]]])
                 for key in convertedPayload.keys():

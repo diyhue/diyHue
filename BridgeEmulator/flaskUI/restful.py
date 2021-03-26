@@ -188,7 +188,7 @@ class ResourceElements(Resource):
             bridgeConfig[resource][new_object_id] = HueObjects.Schedule(postDict)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
                                 sort_keys=True, indent=4, separators=(',', ': ')))
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": {"id": new_object_id}}]
 
     def put(self, username, resource):
@@ -281,7 +281,6 @@ class Element(Resource):
                 putDict["locations"] = locations
         bridgeConfig[resource][resourceid].update_attr(putDict)
         rulesProcessor(bridgeConfig[resource][resourceid] ,currentTime)
-        #configManager.bridgeConfig.save_config()
         pprint(responseDictionary)
         return responseDictionary
 
@@ -294,9 +293,8 @@ class Element(Resource):
             for link in bridgeConfig["resourcelinks"][resourceid].links:
                 try:
                     pices = link.split("/")
-                    object = bridgeConfig[pices[1]][pices[2]]
-                    if hasattr(object, "recycle") and object.recycle:
-                        del object
+                    if hasattr(bridgeConfig[pices[1]][pices[2]], "recycle") and bridgeConfig[pices[1]][pices[2]].recycle:
+                        del bridgeConfig[pices[1]][pices[2]]
                 except:
                     logging.info("link not found")
         if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid == "SML001": # delete also light and temperature sensor

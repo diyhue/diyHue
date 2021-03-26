@@ -109,7 +109,7 @@ if __name__ == '__main__':
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
     ### config initialization
     #configManager.bridgeConfig.save_config( backup=True)
-    daylightSensor(bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"])
+    Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
 #    if bridgeConfig["emulator"]["deconz"]["enabled"]:
 #        Thread(target=deconz.websocketClient).start()

@@ -134,7 +134,7 @@ class Config:
         bridgeConfig = self.yaml_config
 
 
-    def save_config(self, backup=False):
+    def save_config(self, backup=False, resource="all"):
         path = self.configDir + '/'
         if backup:
             path = self.configDir + '/backup/'
@@ -145,14 +145,22 @@ class Config:
         for user, obj in self.yaml_config["apiUsers"].items():
             config["whitelist"][user] = obj.save()
 
-        _write_yaml(path + "config.yaml", config)
-        for object in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
+        if resource in ["all", "config"]:
+            _write_yaml(path + "config.yaml", config)
+            logging.debug("Dump config file " + path + "config.yaml")
+        saveResources = []
+        if resource == "all":
+            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]
+        else:
+            saveResources.append(resource)
+        for object in saveResources:
             filePath = path + object + ".yaml"
             dumpDict = {}
             for element in self.yaml_config[object]:
                 if element != "0":
                     dumpDict[self.yaml_config[object][element].id_v1] = self.yaml_config[object][element].save()
             _write_yaml(filePath, dumpDict)
+            logging.debug("Dump config file " + filePath)
 
 
     def reset_config(self):

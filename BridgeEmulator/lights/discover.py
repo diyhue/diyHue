@@ -59,7 +59,7 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         light["protocol_cfg"] = protocol_cfg
         bridgeConfig["lights"][newLightID] = HueObjects.Light(light)
         bridgeConfig["groups"]["0"].add_light(bridgeConfig["lights"][newLightID])
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.save_config(backup=False, resource="lights")
         return newLightID
     return False
 
