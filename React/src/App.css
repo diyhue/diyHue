@@ -1,0 +1,19 @@
+.lightCards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px
+}
+
+.lightCard {
+    background: lightblue;
+    text-align: center;
+    padding: 20px;
+    border-radius: 20px;
+}
+
+.container {
+    display: none;
+}
+.container.show {
+    display: block;
+}

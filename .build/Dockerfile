@@ -32,11 +32,12 @@ RUN apt update && apt install --no-install-recommends -y \
 COPY ./BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
 COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
 COPY ./BridgeEmulator/lights/ /opt/hue-emulator/lights/
+COPY ./BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
+COPY ./BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
 COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
 COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
 COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
-COPY ./BridgeEmulator/default-config.json /opt/hue-emulator/
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/
