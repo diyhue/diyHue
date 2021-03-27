@@ -297,6 +297,7 @@ class Element(Resource):
                         del bridgeConfig[pices[1]][pices[2]]
                 except:
                     logging.info("link not found")
+            configManager.bridgeConfig.save_config()
         if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid == "SML001": # delete also light and temperature sensor
             for sensor in list(bridgeConfig["sensors"].keys()):
                 if bridgeConfig["sensors"][sensor].uniqueid != None and bridgeConfig["sensors"][sensor].uniqueid[:-1] == bridgeConfig["sensors"][resourceid].uniqueid[:-1] and bridgeConfig["sensors"][sensor].id_v1 != resourceid:
@@ -308,7 +309,7 @@ class Element(Resource):
                         del bridgeConfig["scenes"][scene]
 
         del bridgeConfig[resource][resourceid]
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 
 

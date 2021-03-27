@@ -52,6 +52,8 @@ def sensors():
                         addTradfriCtRemote(deviceid, value)
                     elif formFields["config-" + deviceid] == "Scene Switch":
                         addTradfriSceneRemote(deviceid, value)
+                elif modelid == "TRADFRI wireless dimmer":
+                    addTradfriDimmer(deviceid, value)
         # save current html fields
         for key, device in bridgeConfig["sensors"].items():
             if "device-" + device.id_v1 in formFields:

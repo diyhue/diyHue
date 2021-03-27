@@ -9,7 +9,8 @@ def addTradfriDimmer(sensor_id, group_id):
     resourcelinkId = nextFreeId(bridgeConfig, "resourcelinks")
 
     owner = bridgeConfig["apiUsers"][list(bridgeConfig["apiUsers"])[0]]
-    bridgeConfig["resourcelinks"][resourcelinkId] = HueObjects.ResourceLink({"id_v1": resourcelinkId, "classid": 15555,"description": "Rules for sensor " + sensor_id, "links": [bridgeConfig["sensors"][sensor_id]], "name": "Emulator rules " + sensor_id,"owner": owner})
+    bridgeConfig["resourcelinks"][resourcelinkId] = HueObjects.ResourceLink({"id_v1": resourcelinkId, "classid": 15555,"description": "Rules for sensor " + sensor_id, "links": ["/" + bridgeConfig["sensors"][sensor_id].getObjectPath()["resource"] + "/" + bridgeConfig["sensors"][sensor_id].getObjectPath()["id"]
+    ], "name": "Emulator rules " + sensor_id,"owner": owner})
     for rule in rules:
         ruleId = nextFreeId(bridgeConfig, "rules")
         data = rule

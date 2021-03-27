@@ -20,7 +20,7 @@ from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-sensors_ids = {}
+devices_ids = {}
 
 
 def longPressButton(sensor, buttonevent):
@@ -36,19 +36,25 @@ def longPressButton(sensor, buttonevent):
     return
 
 
-def getObject(friendly_name, objectsList):
-    if friendly_name in sensors_ids:
+def getObject(friendly_name):
+    if friendly_name in devices_ids:
         logging.debug("Cache Hit for " + friendly_name)
-        return sensors_ids[friendly_name]()
+        return devices_ids[friendly_name]()
     else:
-        for key, sensor in objectsList.items():
-            if sensor.protocol == "mqtt" and sensor.protocol_cfg["friendly_name"] == friendly_name:
-                if sensor.modelid == "SML001" and sensor.type != "ZLLPresence":
-                    continue
-                sensors_ids[friendly_name] = weakref.ref(sensor)
-                logging.debug("Cache Miss " + friendly_name)
-                return sensor
-        logging.debug("Sensor not found for " + friendly_name)
+        for resource in ["sensors", "lights"]:
+            for key, device in bridgeConfig[resource].items():
+                if device.protocol == "mqtt":
+                    if "friendly_name" in device.protocol_cfg and device.protocol_cfg["friendly_name"] == friendly_name:
+                        if device.modelid == "SML001" and device.type != "ZLLPresence":
+                            continue
+                        devices_ids[friendly_name] = weakref.ref(device)
+                        logging.debug("Cache Miss " + friendly_name)
+                        return device
+                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
+                        devices_ids[friendly_name] = weakref.ref(device)
+                        logging.debug("Cache Miss " + friendly_name)
+                        return device
+        logging.debug("Device not found for " + friendly_name)
         return False
 
 client = mqtt.Client()
@@ -134,7 +140,7 @@ def on_message(client, userdata, msg):
         elif msg.topic == "zigbee2mqtt/bridge/config/devices":
             for key in data:
                 if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
-                    if getObject(key["friendly_name"], bridgeConfig["sensors"]) == False: ## Add the new sensor
+                    if getObject(key["friendly_name"]) == False: ## Add the new sensor
                         logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
                         if key["modelID"] in standardSensors:
                             new_sensor_id = nextFreeId(bridgeConfig, "sensors")
@@ -150,17 +156,16 @@ def on_message(client, userdata, msg):
                             logging.info("MQTT: unsupported sensor " + key["modelID"])
         elif msg.topic == "zigbee2mqtt/bridge/log":
             if data["type"] == "device_announced":
-                device = msg.topic.split("/")[1]
-                light = getObject(device, bridgeConfig["lights"])
-                if light.startup["mode"] == "powerfail":
-                    loggin.info("set last state for " + data["meta"]["friendly_name"])
+                light = getObject(data["meta"]["friendly_name"])
+                if light.config["startup"]["mode"] == "powerfail":
+                    logging.info("set last state for " + light.name)
                     payload = {}
                     payload["state"] = "ON" if light.state["on"] else "OFF"
                     client.publish(light.protocol_cfg['command_topic'], json.dumps(payload))
 
         else:
             device = msg.topic.split("/")[1]
-            sensor = getObject(device, bridgeConfig["sensors"])
+            sensor = getObject(device)
             if sensor != False:
                 if "battery" in data:
                     sensor.config["battery"] = int(data["battery"])
@@ -206,6 +211,7 @@ def on_message(client, userdata, msg):
                     if sensor.state[key] != convertedPayload[key]:
                         sensor.dxState[key] = current_time
                 sensor.state.update(convertedPayload)
+                logging.debug(convertedPayload)
                 if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
                     Thread(target=longPressButton, args=[sensor, convertedPayload["buttonevent"]]).start()
                 rulesProcessor(sensor, current_time)
@@ -246,13 +252,6 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("zigbee2mqtt/bridge/log")
 
 def mqttServer():
-    #sleep(3)
-    #sensor = bridgeConfig["sensors"]["21"]
-
-    #nowtime = datetime.now()
-    #sensor.state['buttonevent'] = 1002
-    #sensor.dxState['lastupdated'] = nowtime
-    #rulesProcessor(sensor, nowtime)
 
     logging.info("Strting MQTT service...")
     # ================= MQTT CLIENT Connection========================
