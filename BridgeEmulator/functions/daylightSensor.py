@@ -22,10 +22,10 @@ def daylightSensor(timezone, sensor):
         logging.info("deltaSunriseOffset: " + str(deltaSunriseOffset))
         current_time =  datetime.utcnow()
         if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
-            sensor.state = {"daylight":True}
+            sensor.state["daylight"] = True
             logging.info("set daylight sensor to true")
         else:
-            sensor.state = {"daylight":False}
+            sensor.state["daylight"] = False
             logging.info("set daylight sensor to false")
         if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600:
             logging.info("will start the sleep for sunset")
@@ -34,7 +34,7 @@ def daylightSensor(timezone, sensor):
             sensor.state = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
             sensor.dxstate["daylight"] = current_time
             rulesProcessor(["sensors","1"], current_time)
-        if deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
+        elif deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
             logging.info("will start the sleep for sunrise")
             sleep(deltaSunriseOffset)
             logging.debug("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))

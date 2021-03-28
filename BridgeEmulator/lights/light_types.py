@@ -15,9 +15,9 @@ lightTypes["LCT015"]["v2_static"]["metadata"] = {"archetype": "sultan_bulb"}
 lightTypes["LCT015"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 lightTypes["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional","startup":{"mode":"safety","configured": True}}
 
-lightTypes["LST002"] = {"v1_static": {"type": "Color light", "swversion": "5.127.1.26581"}}
+lightTypes["LST002"] = {"v1_static": {"type": "Color light", "swversion": "1.50.2_r30933", "productname":"Hue lightstrip plus","swconfigid":"59F2C3A3","productid":"Philips-LST002-1-LedStripsv3"}}
 lightTypes["LST002"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
-lightTypes["LST002"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.2151,0.7106],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 200,"mindimlevel": 10000},"streaming": {"proxy": False,"renderer": True}}
+lightTypes["LST002"]["v1_static"]["capabilities"] = {"certified":True,"control":{"mindimlevel":40,"maxlumen":1600,"colorgamuttype":"C","colorgamut":[[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"ct":{"min":153,"max":500}},"streaming":{"renderer":True,"proxy":True}}
 lightTypes["LST002"]["v2_static"] = {"metadata": {"archetype": "hue_lightstrip"}}
 lightTypes["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 lightTypes["LST002"]["config"] = {"archetype": "huelightstrip",	"function": "mixed", "direction": "omnidirectional", "startup": {"mode": "safety", "configured": False}}
