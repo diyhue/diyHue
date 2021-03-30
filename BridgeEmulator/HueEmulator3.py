@@ -1804,7 +1804,7 @@ class S(BaseHTTPRequestHandler):
                         bridge_config[url_pieces[3]][url_pieces[4]].update(put_dictionary)
                 elif url_pieces[3] == "lights" and "config" in put_dictionary:
                     bridge_config["lights"][url_pieces[4]]["config"].update(put_dictionary["config"])
-                    if "startup" in put_dictionary["config"] and bridge_config["lights_address"][url_pieces[4]]["protocol"] == "native":
+                    if "startup" in put_dictionary["config"] and bridge_config["lights_address"][url_pieces[4]]["protocol"] in ["native", "native_single", "native_multi"]:
                         if put_dictionary["config"]["startup"]["mode"] == "safety":
                             sendRequest("http://" + bridge_config["lights_address"][url_pieces[4]]["ip"] + "/", "POST", {"startup": 1})
                         elif put_dictionary["config"]["startup"]["mode"] == "powerfail":
