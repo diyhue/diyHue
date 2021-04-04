@@ -68,7 +68,7 @@ def entertainmentService(group, user):
                 if data[9] == 1: #api version 1
                     i = 16
                     apiVersion = 1
-                    counter = len(group.lights) * 9 + 15
+                    counter = len(data)
                 elif data[9] == 2: #api version 1
                     i = 52
                     apiVersion = 2
