@@ -90,7 +90,7 @@ app.register_blueprint(error_pages)
 
 def runHttps():
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ctx.load_cert_chain(certfile="cert.pem")
+    ctx.load_cert_chain(certfile="config/cert.pem")
     ctx.options |= ssl.OP_NO_TLSv1
     ctx.options |= ssl.OP_NO_TLSv1_1
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
