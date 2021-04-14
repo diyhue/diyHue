@@ -24,6 +24,14 @@ html, body {
     overflow: auto;
   }
 
+.clear{
+  clear: both;
+}
+
+#root {
+  height:100%;
+  width: 100%;
+}
 
 .flexContainer {
   display: -webkit-flex;
@@ -58,35 +66,45 @@ html, body {
 
   .switchContainer{
     float: right;
-    margin: 10px 0 0 0;
-  }
+    margin: 8px 0 0 0;
 
       p{
         float: right;
         color: #eee;
-        margin: 2px 50px 0 10px;
-
-      .slider{
-        background: rgba(0, 0, 0, .9);
-        }
+        margin: 5px 50px 0 70px;
       }
 
-    .groupToggle{
-      float: right;
-      color: #aaa;
-      margin: 2px 50px 0 10px;
-      height: 100%;
-      line-height: 47px;
-      font-size: 20pt;
-    }
+      .slider{
+        background: rgba(255,255,255, .15);
+        }
 
-    .groupToggle:active{
-      color: #fff;
-    }
 
-    .groupToggle:focus{
-      color: #fff;
-    }
+      input:checked + .slider {
+        background-color: rgba(255,255,255, .2);
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px rgba(255,255,255, .2);
+      }
+
+  }
+
+.groupToggle{
+  float: right;
+  color: #aaa;
+  margin: 2px 50px 0 10px;
+  height: 100%;
+  line-height: 47px;
+  font-size: 20pt;
+}
+
+.groupToggle:active{
+  color: #fff;
+}
+
+.groupToggle:focus{
+  color: #fff;
+}
 }
 
 
@@ -95,6 +113,7 @@ html, body {
   background: rgba(0, 0, 0, .7);
   width: 250px;
   margin-top: 50px;
+  min-width: 250px;
 
 
 
@@ -102,6 +121,9 @@ html, body {
     width: 100%;
     padding: 0;
 
+    a {
+      text-decoration: none;
+    }
 
     li{
       list-style: none;
@@ -113,7 +135,7 @@ html, body {
 
     li:hover{
     background:rgba(0, 0, 0, .9);
-    text-decoration: underline;
+    text-decoration: none;
     }
   }
 
@@ -135,7 +157,7 @@ html, body {
 }
 
 .content{
-  margin-top: 50px;
+  margin-top: 100px;
 }
 
 .cardGrid{
@@ -162,6 +184,7 @@ html, body {
   position: relative;
   width: 320px;
   height: 100px;
+  min-height: 100px;
   background: #272727;
   border-radius: 8px;
   -webkit-box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
@@ -173,14 +196,16 @@ html, body {
 
   .overlayBtn{
     position: absolute;
-    height: 50px;
-    width: 75%;
-    top: 20px;
+    height: 70px;
+    width: 220px;
+    top: 0;
+    cursor: pointer;
   }
 
   .iconContainer{
     float: left;
-    line-height: 100px;
+    line-height: 85px;
+    height: 85px;
     margin: 0 0 0 15px;
 
     i{
@@ -188,14 +213,22 @@ html, body {
       text-align:center;
       width: 50px;
     }
+    svg{
+      height: 30px;
+      width: 30px;
+      margin-top: 25px;
+    }
   }
 
   .textContainer{
     float: left;
-    margin: 20px 0 0 10px;
+    margin: 0 0 0 10px;
+    height: 85px;
+    line-height: 85px;
 
     p{
       margin: 0;
+      padding: 0;
 
       &sub{
         font-size: 11pt;
@@ -207,8 +240,10 @@ html, body {
 
   .switchContainer{
     float: right;
-    line-height: 100px;
-    margin: 0 15px 0 0;
+    height:85px;
+    line-height: 85px;
+    width: 50px;
+    margin: 0 25px 0 0;
     }
 
 }
@@ -221,6 +256,9 @@ html, body {
    p, i{
      color: #ccc;
    }
+   svg{
+     fill: #ccc;
+   }
    p.sub{
      color: #aaa;
    }
@@ -230,10 +268,20 @@ html, body {
     p, i{
       color: #222;
     }
+    svg{
+      fill: #222;
+    }
     p.sub{
       color: #444;
     }
    }
+}
+
+.groupContainer{
+  .lightContainer{
+    width: 280px;
+    float: none;
+  }
 }
 
 .groupContainer{
@@ -244,36 +292,76 @@ html, body {
     padding-top: .1px;
 
       .slideContainer{
-        top: 75px;
-        height: 23px;
+        top: 80px;
+        height: 20px;
       }
 
       p{
-        margin-top: 13px;
+
       }
 
       .dimmer{
         background:rgba(0,0,0,0.4);
         width: 100%;
-        margin-top: 80px;
+        margin-top: 84px;
         border-radius: 8px;
-        padding: 30px 10px 20px 10px;
+        padding: 30px 10px 10px 10px;
+        box-sizing: border-box;
+
+
+        h3{
+          color: #eee;
+        }
+
+        .sceneContainer{
+          width: 130px;
+          height: 75px;
+          margin: 5px;
+          background: #272727;
+          border-radius: 8px;
+          -webkit-box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+          box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+          float: left;
+          padding: 5px;
+          color: #eee;
+          cursor: pointer;
+        }
+
+        .sceneContainer:hover{
+          background: #3e3e3e;
+        }
+
       }
 
       .header{
         position: absolute;
-        margin-top: -40px;
+        margin-top: -45px;
         width: 100%;
-        height: 30px;
+        height: 40px;
 
         .icon{
           width: 35px;
           height: 35px;
-          line-height:32px;
+          line-height:35px;
           background: rgba(0, 0, 0, .7);
           border-radius: 50%;
           float: left;
           font-size: 18pt;
+          border: 2px solid rgba(0, 0, 0, .7);
+
+          svg{
+            fill: #eee;
+            width: 30px;
+            height: 30px;
+            display: block;
+            margin: 2px 1px 2px 1px;
+          }
+
+        }
+
+        .icon:hover{
+            background: rgba(85, 85, 85, 0.7);
+            border: 2px solid rgba(85, 85, 85, 0.7);
         }
 
         i{
@@ -294,12 +382,21 @@ html, body {
           margin-left: 10px;
           width: 35px;
           height: 35px;
-          line-height: 29px;
+          line-height: 35px;
           background: rgba(0, 0, 0, .7);
           border-radius: 50%;
           float: right;
           font-size: 13pt;
-          border: 2px solid rgba(0, 0, 0, .7);;
+          border: 2px solid rgba(0, 0, 0, .7);
+
+          svg{
+            fill: #eee;
+            width: 20px;
+            height: 20px;
+            display: block;
+            margin: 7px auto;
+          }
+
         }
 
         .tab:hover{
@@ -307,8 +404,9 @@ html, body {
           border: 2px solid rgba(85, 85, 85, 0.7);
         }
 
-        .tab:active{
-          border: 2px solid #eee;
+        .tab:active, .tab.active{
+          border: 2px solid #aaa;
+          background: rgba(85, 85, 85, 0.7);
         }
 
     }
@@ -344,6 +442,8 @@ html, body {
   -webkit-transition: .4s;
   transition: .4s;
   border-radius: 40px;
+  width: 57px;
+  height: 30px;
 }
 
   .switchContainer .slider:before {
@@ -379,9 +479,11 @@ html, body {
 /* Light intensity slider */
 .slideContainer {
   position: absolute;
-  bottom: -5px;
+  bottom: 0;
   left:0;
   width: 100%;
+
+height: 20px;
 }
 
   .slideContainer .slider{
@@ -456,6 +558,11 @@ input[type="range"]::-ms-fill-upper {
     width: 100%;
     margin: 5px 0 0 0;
   }
+
+  .groupContainer.expanded{
+    margin-top: 60px;
+    }
+
   .lightGrid{
     margin: 20px 0 0 0;
     padding: 0;
@@ -466,9 +573,11 @@ input[type="range"]::-ms-fill-upper {
     width:100%;
   }
 
-  .contentContainer{
+  .cardGrid{
+    padding: 0;
     margin: 0;
   }
+
 
   .topbar .switchContainer p{
     margin: 2px 15px 0 10px;
@@ -480,6 +589,8 @@ input[type="range"]::-ms-fill-upper {
     top: 0;
     bottom: 0;
     z-index:1000;
+    width: 250px;
+    min-width: 250px;
     background: rgba(0,0,0,0.8);
     -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);

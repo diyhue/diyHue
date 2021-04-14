@@ -1,7 +1,8 @@
-import React, { useState, Component } from "react";
-import { HashRouter, Route, Switch } from 'react-router-dom';
-import './scss/style.scss';
+import React from 'react'
+import TheLayout from './containers/TheLayout'
 
+import './scss/style.scss';
+//import "./App.css";
 
 const loading = (
   <div className="pt-3 text-center">
@@ -9,32 +10,15 @@ const loading = (
   </div>
 )
 
-// Containers
-//const TheLayout = React.lazy(() => import('./containers/TheLayout'));
+const App = () => {
 
-// Pages
-//const Login = React.lazy(() => import('./views/Login'));
-//const Page404 = React.lazy(() => import('./views/Page404'));
-//const Page500 = React.lazy(() => import('./views/Page500'));
-const Lights = React.lazy(() => import('./views/Lights'));
-
-
-class App extends Component {
-
-  render() {
-    return (
-      <HashRouter>
-          <React.Suspense fallback={loading}>
-            <Switch>
-              <Route exact path="/login" name="Login Page" render={props => <Lights {...props}/>} />
-              <Route exact path="/404" name="Page 404" render={props => <Lights {...props}/>} />
-              <Route exact path="/500" name="Page 500" render={props => <Lights {...props}/>} />
-              <Route path="/" name="Home" render={props => <Lights {...props}/>} />
-            </Switch>
-          </React.Suspense>
-      </HashRouter>
-    );
-  }
+  return (
+      <React.Suspense fallback={loading}>
+        <div className="flexContainer">
+          <TheLayout/>
+        </div>
+      </React.Suspense>
+  )
 }
 
-export default App;
+export default App

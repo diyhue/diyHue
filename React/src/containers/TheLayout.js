@@ -1,24 +1,26 @@
-import React from 'react'
+import { useState } from "react";
+
 import {
   TheContent,
   TheSidebar,
-  TheFooter,
   TheHeader
 } from './index'
 
 const TheLayout = () => {
 
+  const [showSidebar, setShowSidebar] = useState(true);
+
   return (
-    <div className="c-app c-default-layout">
-      <TheSidebar/>
-      <div className="c-wrapper">
-        <TheHeader/>
-        <div className="c-body">
-          <TheContent/>
-        </div>
-        <TheFooter/>
-      </div>
-    </div>
+    <>
+      <TheHeader
+        showSidebar = {showSidebar}
+        setShowSidebar = {setShowSidebar}
+      />
+      <TheSidebar
+        showSidebar = {showSidebar}
+      />
+      <TheContent/>
+      </>
   )
 }
 
