@@ -1,0 +1,2 @@
+(this.webpackJsonpDiyHue=this.webpackJsonpDiyHue||[]).push([[5],{84:function(n,t,e){"use strict";e.r(t),e.d(t,"default",(function(){return s}));e(1);var i=e(5);function s(){return Object(i.jsxs)(i.Fragment,{children:[Object(i.jsx)("p",{children:"Description for Linkbutton"}),Object(i.jsxs)("div",{className:"linkbtn",children:["Call to action",Object(i.jsx)("div",{className:"linkbtn2"})]})]})}}}]);
+//# sourceMappingURL=5.fb943944.chunk.js.map
