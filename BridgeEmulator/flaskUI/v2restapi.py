@@ -168,7 +168,7 @@ class ClipV2Resource(Resource):
             return "", 401
         data = []
         if resource == "scene":
-            for key, scene in bridgeConfig["scene"].items():
+            for key, scene in bridgeConfig["scenes"].items():
                 data.append(scene.getV2Api())
         elif resource == "light":
             for key, light in bridgeConfig["lights"].items():
