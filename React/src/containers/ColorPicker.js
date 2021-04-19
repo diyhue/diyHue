@@ -1,11 +1,26 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { cieToRgb, rgbToCie } from "../color";
 import iro from "@jaames/iro";
 import axios from "axios";
 
+
 export default function KelvinPicker({ user, lights, groupLights }) {
   const pickerRef = useRef(null);
   const picker = useRef(null);
+
+  const [animation, setAnimation] = useState(true);
+
+  useEffect(() => {
+    // Component loads the first time... 
+    // animation is true => hide class will be returned, so it is opacity 0 (css file at the end)
+    // It will be set to false so class *line 54* will be switched
+    setAnimation(false)
+
+    //This return function will be fired when the component gets unmounted, so to be sure the color wheel gets faded out
+    return () => {
+      setAnimation(false);
+    }
+  }, []);
 
   let colors = [];
   for (const [index, light] of groupLights.entries()) {
@@ -20,7 +35,7 @@ export default function KelvinPicker({ user, lights, groupLights }) {
   console.log('Apply state ' + JSON.stringify(newState));
   axios
     .put(
-      `http://localhost/api/${user}/lights/${groupLights[newState['index']]}/state`,
+      `/api/${user}/lights/${groupLights[newState['index']]}/state`,
       {xy: rgbToCie(rgb['r'], rgb['g'], rgb['b'])}
     )
   };
@@ -40,5 +55,5 @@ export default function KelvinPicker({ user, lights, groupLights }) {
       picker.current.on("input:end", onChange);
     }
   }, [pickerRef.current]);
-  return <div ref={pickerRef}></div>;
+  return <div ref={pickerRef} className={animation ? "hide" : "show"}></div>;
 }

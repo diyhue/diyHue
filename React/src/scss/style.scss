@@ -603,3 +603,11 @@ input[type="range"]::-ms-fill-upper {
   }
 
 }
+
+.show {
+  opacity: 1;
+  transition: opacity .5s;
+}
+.hide {
+  opacity: 0;
+}

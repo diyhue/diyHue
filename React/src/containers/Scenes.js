@@ -3,7 +3,7 @@ import axios from "axios";
 const applyScene = (user, scene) => {
 axios
   .put(
-    `http://localhost/api/${user}/groups/0/action`,
+    `/api/${user}/groups/0/action`,
     {'scene': scene}
   )
 };

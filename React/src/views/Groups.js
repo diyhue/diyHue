@@ -1,25 +1,46 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Group from "../containers/Group"
+import Group from "../containers/Group";
 
 export default function Groups() {
 
   const [config, setConfig] = useState({ config: {}, lights: {}, groups: {}, scenes: {}});
 
-  const [groupState, setgroupState] = useState(false);
+  const [API_KEY, setAPI_KEY] = useState();
 
   useEffect(() => {
-    axios
-      .get("http://localhost/api/local")
-      .then((fetchedData) => {
-        setConfig(fetchedData.data);
-      });
-  }, [groupState]);
+    axios.get("http://localhost/get-key").then((result) => {
+      if (typeof result.data === "string" && result.data.length === 32) {
+        console.log(`API_KEY from API: ${result.data}`);
+        setAPI_KEY(result.data);
+      } else {
+        // 🔥 TODO: Promt an error when the reseived data is not the key
+        //         E.g. alert("Not Authorized");
+        setAPI_KEY("12345678901234567890123456789012");
+      }
+      fetchConfig(); // 🔥 TODO: Move this call inside the above if statement - so that it is onyl fetching when there is a key
+    }).catch((error) => {console.error(error)});
+  }, []);
 
-  const switchLight = (state) => {
-    console.log(`Current State is: ${state}`, `Switchting to ${!state}`);
-    setgroupState(!state);
-  };
+  const fetchConfig = () => {
+    axios
+      .get(`http://localhost/api/${API_KEY}`)
+      .then((fetchedData) => {
+        console.log(fetchedData.data);
+        setConfig(fetchedData.data);
+      }).catch((error) => {console.error(error)});
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (API_KEY !== undefined) {
+        fetchConfig();
+      } else {
+        console.log("No Key");
+      }
+    }, 10000); // <<-- ⏱ 1000ms = 1s
+    return () => clearInterval(interval);
+  }, [API_KEY]);
 
   return (
   <div className="content">
@@ -27,11 +48,9 @@ export default function Groups() {
       {Object.entries(config.groups).filter(group => group[1].type !== 'Entertainment').map(([id, group]) => (
           <Group
             key={id}
-            user={Object.keys(config.config['whitelist'])[0]}
+            api_key={API_KEY}
             id={id}
             group={group}
-            groupState={groupState}
-            setgroupState={setgroupState}
             lights={config.lights}
             scenes={config.scenes}
           />

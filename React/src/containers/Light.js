@@ -9,7 +9,7 @@ const Light = ({ user, id, light }) => {
   console.log('Apply state ' + JSON.stringify(newState));
   axios
     .put(
-      `http://localhost/api/${user}/lights/${id}/state`,
+      `/api/${user}/lights/${id}/state`,
       newState
     )
   };
