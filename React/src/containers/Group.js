@@ -17,14 +17,14 @@ const Group = ({api_key, id, group, lights, scenes}) => {
     const newState = {'on': state};
     setToggleState(state);
     console.log('Apply state ' + JSON.stringify(newState));
-    axios.put(`http://localhost/api/${api_key}/groups/${id}/action`, newState);
+    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
   }
 
   const handleBriChange = (state) => {
     const newState = {'bri': state};
     setBriState(state);
     console.log('Apply state ' + JSON.stringify(newState));
-    axios.put(`http://localhost/api/${api_key}/groups/${id}/action`, newState);
+    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
   }
 
   const getStyle = () => {

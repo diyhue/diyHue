@@ -9,7 +9,7 @@ export default function Groups() {
   const [API_KEY, setAPI_KEY] = useState();
 
   useEffect(() => {
-    axios.get("http://localhost/get-key").then((result) => {
+    axios.get("/get-key").then((result) => {
       if (typeof result.data === "string" && result.data.length === 32) {
         console.log(`API_KEY from API: ${result.data}`);
         setAPI_KEY(result.data);
@@ -18,27 +18,32 @@ export default function Groups() {
         //         E.g. alert("Not Authorized");
         setAPI_KEY("12345678901234567890123456789012");
       }
+      console.log("debug 1")
       fetchConfig(); // 🔥 TODO: Move this call inside the above if statement - so that it is onyl fetching when there is a key
     }).catch((error) => {console.error(error)});
   }, []);
 
   const fetchConfig = () => {
-    axios
-      .get(`http://localhost/api/${API_KEY}`)
-      .then((fetchedData) => {
-        console.log(fetchedData.data);
-        setConfig(fetchedData.data);
-      }).catch((error) => {console.error(error)});
+    console.log("fetch")
+    if (API_KEY !== undefined) {
+      axios
+        .get(`/api/${API_KEY}`)
+        .then((fetchedData) => {
+          console.log(fetchedData.data);
+          setConfig(fetchedData.data);
+        }).catch((error) => {console.error(error)});
+    }
   }
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (API_KEY !== undefined) {
+        console.log("debug 2")
         fetchConfig();
       } else {
         console.log("No Key");
       }
-    }, 10000); // <<-- ⏱ 1000ms = 1s
+    }, 1000); // <<-- ⏱ 1000ms = 1s
     return () => clearInterval(interval);
   }, [API_KEY]);
 

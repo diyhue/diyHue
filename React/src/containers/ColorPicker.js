@@ -4,7 +4,7 @@ import iro from "@jaames/iro";
 import axios from "axios";
 
 
-export default function KelvinPicker({ user, lights, groupLights }) {
+export default function KelvinPicker({ api_key, lights, groupLights }) {
   const pickerRef = useRef(null);
   const picker = useRef(null);
 
@@ -35,7 +35,7 @@ export default function KelvinPicker({ user, lights, groupLights }) {
   console.log('Apply state ' + JSON.stringify(newState));
   axios
     .put(
-      `/api/${user}/lights/${groupLights[newState['index']]}/state`,
+      `/api/${api_key}/lights/${groupLights[newState['index']]}/state`,
       {xy: rgbToCie(rgb['r'], rgb['g'], rgb['b'])}
     )
   };

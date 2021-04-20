@@ -1,15 +1,14 @@
 import axios from "axios";
 
-const applyScene = (user, scene) => {
-axios
-  .put(
-    `/api/${user}/groups/0/action`,
-    {'scene': scene}
-  )
-};
+const Scenes = ({api_key, groupId, scenes}) => {
+  const applyScene = (scene) => {
+    axios
+      .put(
+        `/api/${api_key}/groups/0/action`,
+        {'scene': scene}
+      )
+    };
 
-const Scenes = ({user, groupId, scenes}) => {
-  console.log("group is " + groupId)
   return (
     <>
     {Object.entries(scenes).filter(scene => scene[1].group === groupId).map(([id, scene]) => (
