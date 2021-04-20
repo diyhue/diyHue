@@ -2,7 +2,9 @@ from flask import render_template, request, Blueprint, redirect, url_for, make_r
 from werkzeug.security import generate_password_hash,check_password_hash
 from flaskUI.core.forms import LoginForm
 import flask_login
+import uuid
 import configManager
+import HueObjects
 from flaskUI.core import User
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -14,20 +16,15 @@ core = Blueprint('core',__name__)
 def index():
     return render_template('index.html', groups=bridgeConfig["groups"], lights=bridgeConfig["lights"])
 
-@core.route('/state', methods=['GET', 'PUT'])
-@flask_login.login_required
-def interface_api():
-    if request.method == 'GET':
-        result = {}
-        for group in bridgeConfig["groups"]:
-            result[bridgeConfig["groups"][group].id_v1] = {"name": bridgeConfig["groups"][group].name, "on":  bridgeConfig["groups"][group].state["any_on"], "lights": []}
-            for light in bridgeConfig["groups"][group].lights:
-                result[bridgeConfig["groups"][group].id_v1]["lights"].append(light().state)
-        return result
-    elif request.method == 'PUT':
-        putDict = request.json
-        bridgeConfig["groups"][putDict["group"]].setV1Action(state=putDict["action"], scene=None)
-        return "success"
+@core.route('/get-key')
+#@flask_login.login_required
+def get_key():
+    if len(bridgeConfig["apiUsers"]) == 0:
+        # generate a new user for the web interface
+        username = str(uuid.uuid1()).replace('-', '')
+        bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(username, 'WebUi', None)
+        configManager.bridgeConfig.save_config()
+    return list(bridgeConfig["apiUsers"])[0]
 
 @core.route('/save')
 def save_config():
