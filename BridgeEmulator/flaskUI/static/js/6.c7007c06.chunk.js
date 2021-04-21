@@ -1,0 +1,2 @@
+(this.webpackJsonpdiyhue=this.webpackJsonpdiyhue||[]).push([[6],{84:function(n,t,i){"use strict";i.r(t),i.d(t,"default",(function(){return s}));var c=i(56),e=i.n(c),o=i(5);function s(){return Object(o.jsxs)("div",{className:"content",children:[Object(o.jsx)("p",{children:"Description for Linkbutton"}),Object(o.jsx)("div",{className:"linkbtn",onClick:function(){e.a.put("/api/local/config",{linkbutton:{lastlinkbuttonpushed:Date.now()}})},children:"Call to action"})]})}}}]);
+//# sourceMappingURL=6.c7007c06.chunk.js.map
