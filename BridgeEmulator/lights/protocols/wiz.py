@@ -42,7 +42,7 @@ def set_light(light, data):
         elif key == "alert" and value != "none":
             payload["dimming"] = 100
     logging.debug(json.dumps({"method": "setPilot", "params": payload}))
-    udpmsg = bytes(json.dumps({"method": "setPilot", "params": payload}))
+    udpmsg = bytes(json.dumps({"method": "setPilot", "params": payload}), "utf8")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
     sock.sendto(udpmsg, (ip, 38899))
 
