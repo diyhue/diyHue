@@ -23,7 +23,7 @@ def set_light(light, data):
         elif key == "bri":
             payload["dimming"] = int(value / 2.83) + 10
         elif key == "ct":
-            payload["temperature"] = int((-4800/347) * value + 2989900/347)
+            payload["temp"] = round(translateRange(value, 153, 500, 6500, 2700))
         elif key == "hue":
             rgb = hsv_to_rgb(value, light.state["sat"], light.state["bri"])
             payload["r"] = rgb[0]
@@ -41,11 +41,17 @@ def set_light(light, data):
             payload["b"] = rgb[2]
         elif key == "alert" and value != "none":
             payload["dimming"] = 100
-
-    udpmsg = bytes(json.dumps({"method": "setPilot", "params":payload}))
+    logging.debug(json.dumps({"method": "setPilot", "params": payload}))
+    udpmsg = bytes(json.dumps({"method": "setPilot", "params": payload}))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
     sock.sendto(udpmsg, (ip, 38899))
 
 
 def get_light_state(address, light):
     pass
+
+def translateRange(value, leftMin, leftMax, rightMin, rightMax):
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
+    valueScaled = float(value - leftMin) / float(leftSpan)
+    return rightMin + (valueScaled * rightSpan)
