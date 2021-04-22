@@ -6,20 +6,23 @@ import {
   TheHeader
 } from './index'
 
-const TheLayout = () => {
+const TheLayout = ({API_KEY}) => {
 
   const [showSidebar, setShowSidebar] = useState(true);
 
   return (
     <>
       <TheHeader
+        API_KEY = {API_KEY}
         showSidebar = {showSidebar}
         setShowSidebar = {setShowSidebar}
       />
       <TheSidebar
         showSidebar = {showSidebar}
       />
-      <TheContent/>
+      <TheContent
+        API_KEY = {API_KEY}
+      />
       </>
   )
 }

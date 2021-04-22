@@ -3,13 +3,13 @@ import axios from "axios";
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 import { FaLightbulb } from "react-icons/fa";
 
-const Light = ({ user, id, light }) => {
+const Light = ({ api_key, id, light }) => {
 
   const switchLight = (newState) => {
   console.log('Apply state ' + JSON.stringify(newState));
   axios
     .put(
-      `http://localhost/api/${user}/lights/${id}/state`,
+      `/api/${api_key}/lights/${id}/state`,
       newState
     )
   };

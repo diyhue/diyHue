@@ -1,26 +1,32 @@
 import { FaCaretLeft, FaList  ,  FaPalette, FaTint, FaCouch} from "react-icons/fa";
 import { useState } from "react";
 import axios from "axios";
-import color from "../color";
 import Scenes from "./Scenes"
 import Light from "./Light"
 import ColorPicker from "./ColorPicker"
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 
-const Group = ({user, id, group, groupState, setgroupState, lights, scenes}) => {
+const Group = ({api_key, id, group, lights, scenes}) => {
 
   const [showContainer, setShowContainer] = useState('closed');
-  const [state, setState] = useState(group.state)
+  const [toggleState, setToggleState] = useState(group.state['any_on']);
+  const [briState, setBriState] = useState(group.action['bri']);
 
+  const handleToggleChange = (state) => {
+    const newState = {'on': state};
+    setToggleState(state);
+    group.state['any_on'] = state;
+    console.log('Apply state ' + JSON.stringify(newState));
+    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
+  }
 
-  const setGroup = (newState) => {
-  console.log('Apply state ' + JSON.stringify(newState));
-  axios
-    .put(
-      `http://localhost/api/${user}/groups/${id}/action`,
-      newState
-    )
-  };
+  const handleBriChange = (state) => {
+    const newState = {'bri': state};
+    setBriState(state);
+    group.action['bri'] = state;
+    console.log('Apply state ' + JSON.stringify(newState));
+    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
+  }
 
   const getStyle = () => {
     if (group.state['any_on']) {
@@ -28,11 +34,20 @@ const Group = ({user, id, group, groupState, setgroupState, lights, scenes}) => 
       let step = 100 / group["lights"].length;
       for (const [index, light] of group.lights.entries()) {
         if (lights[light]['state']['colormode'] === 'xy') {
+          if (group["lights"].length === 1) {
+            lightBg = lightBg + 'rgba(200,200,200,1) 0%,'; 
+          }
           lightBg = lightBg + cieToRgb(lights[light]['state']['xy'][0], lights[light]['state']['xy'][1], 254) + ' ' + Math.floor(step * (index + 1)) + '%,';
         } else if (lights[light]['state']['colormode'] === 'ct') {
+          if (group["lights"].length === 1) {
+            lightBg = lightBg + 'rgba(200,200,200,1) 0%,'; 
+          }
           lightBg = lightBg + colorTemperatureToRgb(lights[light]['state']['ct']) + ' ' + Math.floor(step * (index + 1)) + '%,';
         }
         else {
+          if (group["lights"].length === 1) {
+            lightBg = lightBg + 'rgba(200,200,200,1) 0%,'; 
+          }
           lightBg = lightBg + 'rgba(255,212,93,1) ' + Math.floor(step * (index + 1)) + '%,';
         }
       }
@@ -63,27 +78,34 @@ const Group = ({user, id, group, groupState, setgroupState, lights, scenes}) => 
       <div className="switchContainer">
         <label className="switch">
           <input type="checkbox"
-            defaultChecked={state['any_on']}
-            onChange={(e) => setGroup({'on': e.currentTarget.checked})}
+            value={toggleState}
+            checked={group.state['any_on']}
+            onChange={(e) => handleToggleChange(e.target.checked)}
           />
           <span className="slider"></span>
         </label>
       </div>
       <div className="slideContainer">
-        <input type="range" min="1" max="254" defaultValue={group.action['bri']} step="1" className="slider"
-          onChange={(e) => setGroup({'bri': e.currentTarget.value})}
+        <input
+          type="range"
+          min="1"
+          max="254"
+          value={group.action['bri']}
+          step="1"
+          className="slider"
+          onChange={(e) => handleBriChange(e.target.value)}
         />
       </div>
       <div className="dimmer">
         {showContainer === 'scenes' && <Scenes
-          user={user}
+          api_key={api_key}
           groupId={id}
           scenes={ scenes }
         />}
         {showContainer === 'lights' &&
         <div className="lightsContainer">
           {group.lights.map((light) => (<Light
-            user={user}
+            api_key={api_key}
             key={light}
             id={light}
             light={lights[light]}
@@ -91,7 +113,7 @@ const Group = ({user, id, group, groupState, setgroupState, lights, scenes}) => 
           ))}
         </div>}
         {showContainer === 'colorPicker' && <ColorPicker
-            user={user}
+            api_key={api_key}
             lights={ lights }
             groupLights = { group.lights }
         />}

@@ -17,7 +17,7 @@ const loading = (
   </div>
 )
 
-const TheContent = () => {
+const TheContent = ({API_KEY}) => {
   return (
     <main className="container">
         <Suspense fallback={loading}>
@@ -32,7 +32,7 @@ const TheContent = () => {
                     name={route.name}
                     render={props => (
                       <CFade>
-                        <route.component {...props} />
+                        <route.component API_KEY={API_KEY} />
                       </CFade>
                     )} />
                 )

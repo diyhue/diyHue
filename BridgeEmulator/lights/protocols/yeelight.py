@@ -109,11 +109,7 @@ def set_light(light, data):
         elif key == "sat":
             payload["set_hsv"] = [int(light.state["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
-            bri = light.state["bri"]
-            if rgb:
-                color = rgbBrightness(rgb, bri)
-            else:
-                color = convert_xy(value[0], value[1], bri)
+            color = convert_xy(value[0], value[1], light.state["bri"])
             payload["set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
         elif key == "alert" and value != "none":
             payload["start_cf"] = [ 4, 0, "1000, 2, 5500, 100, 1000, 2, 5500, 1, 1000, 2, 5500, 100, 1000, 2, 5500, 1"]

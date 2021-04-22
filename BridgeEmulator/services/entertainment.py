@@ -50,7 +50,7 @@ def entertainmentService(group, user):
     logging.debug(lights_v1)
     logging.debug(lights_v2)
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    serverSocket.settimeout(5) #Set a packet timeout that we catch later
+    serverSocket.settimeout(10) #Set a packet timeout that we catch later
     serverSocket.bind(('127.0.0.1', 2101))
     fremeID = 1
     host_ip = bridgeConfig["config"]["ipaddress"]

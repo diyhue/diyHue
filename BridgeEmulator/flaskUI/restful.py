@@ -60,7 +60,7 @@ class NewUser(Resource):
         pprint(postDict)
         if "devicetype" in postDict:
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
-            if last_button_press + 30 >= datetime.now().timestamp() or True:
+            if last_button_press + 30 >= datetime.now().timestamp():
                 username = str(uuid.uuid1()).replace('-', '')
                 if postDict["devicetype"].startswith("Hue Essentials"):
                     username = "hueess" + username[-26:]
