@@ -17,7 +17,7 @@ export default function LinkButton({API_KEY}) {
        <div className="notificationContainer">
          <div className="notification error"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
          <div className="notification warning"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
-         <div className="notification sucess"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
+         <div className="notification success"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
        </div>
 
 
