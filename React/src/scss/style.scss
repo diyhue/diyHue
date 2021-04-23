@@ -130,12 +130,17 @@ html, body {
       padding:15px 15px 15px 40px;
       color: #eee;
       font-size: 13.5pt;
+        -webkit-transition: all .3s;
+      transition: all .3s;
     }
 
 
     li:hover{
-    background:rgba(0, 0, 0, .9);
+    background:rgba(49, 49, 49, 0.6);
     text-decoration: none;
+      -webkit-transition: all .3s;
+    transition: all .3s;
+    border-radius: 30px;
     }
   }
 
@@ -160,12 +165,13 @@ html, body {
   margin-top: 100px;
 }
 
-.cardGrid{
+.cardGrid, .contentContainer{
   background: rgba(0, 0, 0, .6);
   border-radius: 15px;
   margin: 50px;
   padding: 30px;
   display: flow-root;
+  color:#eee;
 
 
   .headline{
@@ -540,6 +546,148 @@ input[type="range"]::-ms-fill-upper {
   background-color: rgba(255,255,255,0);
 }
 /* END Light intensity slider */
+
+
+/*Notification Container*/
+.notificationContainer{
+  position: absolute;
+  bottom: 0;
+  left:50%; 
+  transform:translate(-50%, 0); 
+
+  .notification{
+    position: relative;
+    height: 75px;
+    border-radius: 50px;
+    margin-bottom: 10px;
+    line-height: 75px;
+
+  p{
+    margin-left: 25px;
+    margin-right: 75px;
+  }
+
+  .icon{
+    position: absolute;
+    top: 0;
+    right:0; 
+    width: 75px;
+    height: 75px;
+  }
+
+  .icon:hover,.icon:active{
+    
+    svg{
+      fill:rgba(255,255,255,.9);
+        -webkit-transition: all .3s;
+      transition: all .3s;
+    }
+
+  }
+
+  svg{
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    fill:rgba(255,255,255,.5);
+    width: 25px;
+    height: 25px;
+    -webkit-transition: all .3s;
+      transition: all .3s;
+  }
+
+  &.success{
+    background: linear-gradient(160deg, #a1ee59, #59ee80);
+    box-shadow: 2px 2px 15px 2px hsla(91, 81%, 20%, .2), 2px 2px 15px 2px hsla(136, 81%, 20%, .2);
+  }
+
+  &.warning{
+    background: linear-gradient(130deg, #eecb59, #f1ee49);
+    box-shadow: 2px 2px 15px 2px hsla(46, 81%, 44%, .2), 2px 2px 15px 2px hsla(59, 86%, 42%, .2);
+  }
+
+  &.error{
+    background: linear-gradient(170deg, #ee7759, #ee5b59);
+    box-shadow: 2px 2px 15px 2px hsla(1, 81%, 44%, .2), 2px 2px 15px 2px hsla(4, 81%, 44%, .2);
+  }
+
+  }
+}
+
+
+
+/* Linkbutton */
+.linkbtn,.linkbtn2 {
+  margin-top: 50px;
+  width: 300px;
+  height: 100px;
+  line-height: 100px;
+  color: rgba(255,255,255,0.9);
+  border-radius: 50px;
+  background: linear-gradient(-45deg, #597cee, #a659ee, #ee59c6, #ee5b59, #eecb59, #a1ee59, #59ee80, #59ebee);
+  background-size: 650%;
+  -webkit-animation: linkbtn 20s linear infinite;
+          animation: linkbtn 20s linear infinite;
+  font-size: 30px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.linkbtn2 {
+  position: absolute;
+  margin-top: -65px;
+  opacity: 0.2;
+  z-index: 1;
+  filter: blur(35px);
+  cursor: pointer;
+  -webkit-transition: all .3s;
+  transition: all .3s;
+}
+
+.linkbtn2:hover{
+  z-index: 1;
+  opacity: 1;
+  margin-top: -100px;
+  background: rgba(0, 0, 0, .3);
+  filter:blur(0);
+  -webkit-transition: all .3s;
+  transition: all .3s;
+}
+
+.linkbtn2:active{
+  z-index: 1;
+  opacity: 1;
+  margin-top: -100px;
+  background: rgba(255,255,255, .3);
+  filter:blur(0);
+  -webkit-transition: all .3s;
+  transition: all .3s;
+}
+
+@-webkit-keyframes linkbtn {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes linkbtn {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+/* END Linkbutton */
+
 
 
 @media screen and (max-width: 750px) {
