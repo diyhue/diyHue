@@ -130,12 +130,17 @@ html, body {
       padding:15px 15px 15px 40px;
       color: #eee;
       font-size: 13.5pt;
+        -webkit-transition: all .3s;
+      transition: all .3s;
     }
 
 
     li:hover{
-    background:rgba(0, 0, 0, .9);
+    background:rgba(49, 49, 49, 0.6);
     text-decoration: none;
+      -webkit-transition: all .3s;
+    transition: all .3s;
+    border-radius: 30px;
     }
   }
 
