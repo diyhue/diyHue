@@ -640,6 +640,8 @@ input[type="range"]::-ms-fill-upper {
   z-index: 1;
   filter: blur(35px);
   cursor: pointer;
+  -webkit-transition: all .3s;
+  transition: all .3s;
 }
 
 .linkbtn2:hover{
@@ -648,6 +650,8 @@ input[type="range"]::-ms-fill-upper {
   margin-top: -100px;
   background: rgba(0, 0, 0, .3);
   filter:blur(0);
+  -webkit-transition: all .3s;
+  transition: all .3s;
 }
 
 .linkbtn2:active{
@@ -656,6 +660,8 @@ input[type="range"]::-ms-fill-upper {
   margin-top: -100px;
   background: rgba(255,255,255, .3);
   filter:blur(0);
+  -webkit-transition: all .3s;
+  transition: all .3s;
 }
 
 @-webkit-keyframes linkbtn {
