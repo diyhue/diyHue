@@ -160,12 +160,13 @@ html, body {
   margin-top: 100px;
 }
 
-.cardGrid{
+.cardGrid, .contentContainer{
   background: rgba(0, 0, 0, .6);
   border-radius: 15px;
   margin: 50px;
   padding: 30px;
   display: flow-root;
+  color:#eee;
 
 
   .headline{
@@ -540,6 +541,74 @@ input[type="range"]::-ms-fill-upper {
   background-color: rgba(255,255,255,0);
 }
 /* END Light intensity slider */
+
+
+/* Linkbutton */
+.linkbtn,.linkbtn2 {
+  margin-top: 50px;
+  width: 300px;
+  height: 100px;
+  line-height: 100px;
+  color: rgba(255,255,255,0.9);
+  border-radius: 50px;
+  background: linear-gradient(-45deg, #597cee, #a659ee, #ee59c6, #ee5b59, #eecb59, #a1ee59, #59ee80, #59ebee);
+  background-size: 650%;
+  -webkit-animation: linkbtn 20s linear infinite;
+          animation: linkbtn 20s linear infinite;
+  font-size: 30px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.linkbtn2 {
+  position: absolute;
+  margin-top: -65px;
+  opacity: 0.2;
+  z-index: 1;
+  filter: blur(35px);
+  cursor: pointer;
+}
+
+.linkbtn2:hover{
+  z-index: 1;
+  opacity: 1;
+  margin-top: -100px;
+  background: rgba(0, 0, 0, .3);
+  filter:blur(0);
+}
+
+.linkbtn2:active{
+  z-index: 1;
+  opacity: 1;
+  margin-top: -100px;
+  background: rgba(255,255,255, .3);
+  filter:blur(0);
+}
+
+@-webkit-keyframes linkbtn {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes linkbtn {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+/* END Linkbutton */
+
 
 
 @media screen and (max-width: 750px) {
