@@ -1,26 +1,33 @@
 import axios from "axios";
+import { useState } from "react";
 import { FaTimes } from "react-icons/fa";
+import Flash from "../containers/Flash"
 
 export default function LinkButton({API_KEY}) {
-  console.log(API_KEY)
+  //console.log(API_KEY)
+
+  const [type, setType] = useState('none');
+  const [message, setMessage] = useState('no message');
 
   const pushLinkButton = () => {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'linkbutton': {'lastlinkbuttonpushed': Date.now()}}
-      )
+        {'linkbutton': {'lastlinkbuttonpushed': Date.now() / 1000 | 0 }}
+      ).then((fetchedData) => {
+        console.log(fetchedData.data);
+        setMessage('Pairing is allowed for 30 seconds');
+        setType('success');
+      }).catch((error) => {
+        console.error(error)
+        setMessage('Error occured, check browser console');
+        setType('error');
+      });
     };
 
   return (
     <div className="content">
-       <div className="notificationContainer">
-         <div className="notification error"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
-         <div className="notification warning"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
-         <div className="notification success"><p>%Errormessage%</p><div className="icon"><FaTimes/></div></div>
-       </div>
-
-
+      {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
       <div className="contentContainer">
         <p>Push this button to accept the pairing of the requested app</p>
         <div className="linkbtn" onClick={() => pushLinkButton()}>Link App
