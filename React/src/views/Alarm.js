@@ -15,8 +15,27 @@ const Alarm = ({ API_KEY }) => {
     }).catch((error) => {console.error(error)});
   }, []);
 
+
+  const toggleEnable = (e) => {
+    setEnable(e);
+    axios
+      .put(
+        `/api/${API_KEY}/config`,
+        {'alarm': {'enabled': enable}}
+      ).then((fetchedData) => {
+        console.log(fetchedData.data);
+        setMessage(`Alarm ${e ? 'activated' : 'deactivated'}`);
+        setType('none');
+        setType('success');
+      }).catch((error) => {
+        console.error(error)
+        setMessage('Error occured, check browser console');
+        setType('none');
+        setType('error');
+      });
+  }
+
   const onSubmit = (e) => {
-    console.log("submit")
     e.preventDefault()
     axios
       .put(
@@ -25,10 +44,12 @@ const Alarm = ({ API_KEY }) => {
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage('Successfully saved');
+        setType('none');
         setType('success');
       }).catch((error) => {
         console.error(error)
         setMessage('Error occured, check browser console');
+        setType('none');
         setType('error');
       });
   }
@@ -42,7 +63,7 @@ const Alarm = ({ API_KEY }) => {
           <input type="checkbox"
             value={enable}
             checked={enable}
-            onChange={(e) => setEnable(e.target.checked)}
+            onChange={(e) => toggleEnable(e.target.checked)}
           />
           <span className="slider"></span>
         </label>

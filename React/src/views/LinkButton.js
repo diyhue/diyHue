@@ -17,10 +17,12 @@ export default function LinkButton({API_KEY}) {
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage('Pairing is allowed for 30 seconds');
+        setType('none');
         setType('success');
       }).catch((error) => {
         console.error(error)
         setMessage('Error occured, check browser console');
+        setType('none');
         setType('error');
       });
     };

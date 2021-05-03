@@ -31,7 +31,7 @@ There are basically two different ways on passing data around;
 
   useEffect(() => {
     axios
-      .get("http://localhost/apilocal")
+      .get("/apilocal")
       .then((fetchedData) => {
         setConfig(fetchedData.data);
       });
@@ -45,7 +45,7 @@ const App = () => {
 const [API_KEY, setAPI_KEY] = useState();
 
 useEffect(() => {
-  axios.get("http://localhost/get-key").then((result) => {
+  axios.get("/get-key").then((result) => {
     if (typeof result.data === "string" && result.data.length === 32) {
       console.log(`API_KEY from API: ${result.data}`);
       setAPI_KEY(result.data);
