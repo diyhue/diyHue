@@ -1351,9 +1351,9 @@ class S(BaseHTTPRequestHandler):
                 bridge_config["tradfri"] = {"psk": registration["9091"], "ip": get_parameters["ip"][0], "identity": new_identity}
                 lights_found = scanTradfri()
                 if lights_found == 0:
-                    self._set_end_headers(bytes(webformTradfri() + "<br> No lights where found", "utf8"))
+                    self._set_end_headers(bytes(webformTradfri() + "<br> No lights were found", "utf8"))
                 else:
-                    self._set_end_headers(bytes(webformTradfri() + "<br> " + str(lights_found) + " lights where found", "utf8"))
+                    self._set_end_headers(bytes(webformTradfri() + "<br> " + str(lights_found) + " lights were found", "utf8"))
             else:
                 self._set_end_headers(bytes(webformTradfri(), "utf8"))
         elif self.path.startswith("/milight"): #setup milight bulb
@@ -1428,7 +1428,7 @@ class S(BaseHTTPRequestHandler):
                             bridge_config["lights"][light_id] = data
 
                         if lights_found == 0:
-                            self._set_end_headers(bytes(webform_hue() + "<br> No lights where found", "utf8"))
+                            self._set_end_headers(bytes(webform_hue() + "<br> No lights were found", "utf8"))
                         else:
                             saveConfig()
                             self._set_end_headers(bytes(webform_hue() + "<br> " + str(lights_found) + " lights were found", "utf8"))
@@ -1900,7 +1900,7 @@ class S(BaseHTTPRequestHandler):
             logging.info(json.dumps(response_dictionary, sort_keys=True, indent=4, separators=(',', ': ')))
             if len(url_pieces) > 4:
                 rulesProcessor([url_pieces[3], url_pieces[4]], current_time)
-            sanitizeBridgeScenes() # in case some lights where removed from group it will need to remove them also from group scenes.
+            sanitizeBridgeScenes() # in case some lights were removed from group it will need to remove them also from group scenes.
         else:
             self._set_end_headers(bytes(json.dumps([{"error": {"type": 1, "address": self.path, "description": "unauthorized user" }}],separators=(',', ':'),ensure_ascii=False), "utf8"))
 
