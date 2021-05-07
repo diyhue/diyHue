@@ -17,6 +17,7 @@ def entertainmentService(lights, addresses, groups, host_ip):
             data = serverSocket.recvfrom(106)[0]
             nativeLights = {}
             esphomeLights = {}
+            wledLights = {}
             if data[:9].decode('utf-8') == "HueStream":
                 syncing = True  # Set sync flag when receiving valid data
                 if data[14] == 0:  # rgb colorspace
@@ -50,6 +51,14 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                     bri = int(max(r, g, b))
                                     esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [
                                         r, g, b, bri]
+                                elif proto == "wled":
+                                    if addresses[str(lightId)]["ip"] not in wledLights:
+                                        wledLights[addresses[str(lightId)]["ip"]] = {
+                                        }
+                                    wledLights[addresses[str(lightId)]["ip"]]["color"] = [
+                                        r, g, b]
+                                    wledLights[addresses[str(
+                                        lightId)]["ip"]]["ledCount"] = addresses[str(lightId)]["ledCount"]
                                 else:
                                     if frameID == 24:  # => every seconds, increase in case the destination device is overloaded
                                         gottaSend = False
@@ -108,6 +117,15 @@ def entertainmentService(lights, addresses, groups, host_ip):
                                     r, g, b = convert_xy(x, y, bri)
                                     esphomeLights[addresses[str(lightId)]["ip"]]["color"] = [
                                         r, g, b, bri]
+                                elif proto == "wled":
+                                    if addresses[str(lightId)]["ip"] not in wledLights:
+                                        wledLights[addresses[str(lightId)]["ip"]] = {
+                                        }
+                                    r, g, b = convert_xy(x, y, bri)
+                                    wledLights[addresses[str(lightId)]["ip"]]["color"] = [
+                                        r, g, b]
+                                    wledLights[addresses[str(
+                                        lightId)]["ip"]]["ledCount"] = addresses[str(lightId)]["ledCount"]
                                 else:
                                     frameID += 1
                                     if frameID == 24:  # 24 = every seconds, increase in case the destination device is overloaded
@@ -132,6 +150,16 @@ def entertainmentService(lights, addresses, groups, host_ip):
                     sock = socket.socket(
                         socket.AF_INET, socket.SOCK_DGRAM)  # UDP
                     sock.sendto(udpmsg, (ip.split(":")[0], 2100))
+            if len(wledLights) != 0:
+                wled_udpmode = 2 
+                wled_secstowait = 2
+                udphead = [wled_udpmode, wled_secstowait]
+                for ip in wledLights.keys():
+                    color = wledLights[ip]["color"] * int(wledLights[ip]["ledCount"])
+                    udpdata = bytes(udphead+color)
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.sendto(udpdata, (ip, 21314))
+
         except Exception:  # Assuming the only exception is a network timeout, please don't scream at me
             if syncing:  # Reset sync status and kill relay service
                 logging.info(
