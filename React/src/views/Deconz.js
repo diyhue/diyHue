@@ -38,37 +38,39 @@ const Deconz = ({ API_KEY }) => {
   return (
     <div className="content">
         {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
-        <form className='add-form' onSubmit={onSubmit}>
-        <div className="switchContainer">
-        <label className="switch">
-          <input type="checkbox"
-            value={enable}
-            checked={enable}
-            onChange={(e) => setEnable(e.target.checked)}
-          />
-          <span className="slider"></span>
-        </label>
-      </div>
-        <div className='form-control'>
-            <label>Deconz host</label>
-            <input
-            type='text'
-            placeholder='Deconz host'
-            value={deconzHost}
-            onChange={(e) => setDeconzHost(e.target.value)}
+        <div className='contentContainer'>
+          <form className='add-form' onSubmit={onSubmit}>
+          <div className="switchContainer">
+          <label className="switch">
+            <input type="checkbox"
+              value={enable}
+              checked={enable}
+              onChange={(e) => setEnable(e.target.checked)}
             />
+            <span className="slider"></span>
+          </label>
         </div>
-        <div className='form-control'>
-            <label>Deconz port</label>
-            <input
-            type='number'
-            placeholder='Deconz port'
-            value={deconzPort}
-            onChange={(e) => setDeconzPort(e.target.value)}
-            />
+          <div className='form-control'>
+              <label>Deconz host</label>
+              <input
+              type='text'
+              placeholder='Deconz host'
+              value={deconzHost}
+              onChange={(e) => setDeconzHost(e.target.value)}
+              />
+          </div>
+          <div className='form-control'>
+              <label>Deconz port</label>
+              <input
+              type='number'
+              placeholder='Deconz port'
+              value={deconzPort}
+              onChange={(e) => setDeconzPort(e.target.value)}
+              />
+          </div>
+          <input type='submit' value='Save' className='btn btn-block' />
+          </form>
         </div>
-        <input type='submit' value='Save' className='btn btn-block' />
-        </form>
     </div>
   )
 }

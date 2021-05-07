@@ -57,28 +57,30 @@ const Alarm = ({ API_KEY }) => {
   return (
     <div className="content">
         {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
-        <form className='add-form' onSubmit={onSubmit}>
-        <div className="switchContainer">
-        <label className="switch">
-          <input type="checkbox"
-            value={enable}
-            checked={enable}
-            onChange={(e) => toggleEnable(e.target.checked)}
-          />
-          <span className="slider"></span>
-        </label>
-      </div>
-        <div className='form-control'>
-            <label>e-mail</label>
-            <input
-            type='text'
-            placeholder='Notification email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+        <div className='contentContainer'>
+          <form className='add-form' onSubmit={onSubmit}>
+          <div className="switchContainer">
+          <label className="switch">
+            <input type="checkbox"
+              value={enable}
+              checked={enable}
+              onChange={(e) => toggleEnable(e.target.checked)}
             />
+            <span className="slider"></span>
+          </label>
         </div>
-        <input type='submit' value='Save' className='btn btn-block' />
-        </form>
+          <div className='form-control'>
+              <label>e-mail</label>
+              <input
+              type='text'
+              placeholder='Notification email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              />
+          </div>
+          <input type='submit' value='Save' className='btn btn-block' />
+          </form>
+        </div>
     </div>
   )
 }
