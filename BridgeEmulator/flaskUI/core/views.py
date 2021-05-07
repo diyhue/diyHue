@@ -17,7 +17,7 @@ def index():
     return render_template('index.html', groups=bridgeConfig["groups"], lights=bridgeConfig["lights"])
 
 @core.route('/get-key')
-#@flask_login.login_required
+@flask_login.login_required
 def get_key():
     if len(bridgeConfig["apiUsers"]) == 0:
         # generate a new user for the web interface
@@ -26,16 +26,18 @@ def get_key():
         configManager.bridgeConfig.save_config()
     return list(bridgeConfig["apiUsers"])[0]
 
+@core.route('/lights')
+@flask_login.login_required
+def get_lights():
+    result = {}
+    for light, object in bridgeConfig["lights"].items():
+        result[light] = object.save()
+    return result
+
 @core.route('/save')
 def save_config():
     configManager.bridgeConfig.save_config()
     return "config saved"
-
-
-@core.route('/config')
-@flask_login.login_required
-def config():
-    return render_template('config.html', config=bridgeConfig["config"])
 
 
 @core.route('/login', methods=['GET', 'POST'])

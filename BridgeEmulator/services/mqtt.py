@@ -1,7 +1,6 @@
 import logManager
 import configManager
 import json
-import random
 import weakref
 import HueObjects
 import paho.mqtt.client as mqtt
@@ -201,7 +200,7 @@ def on_message(client, userdata, msg):
                         lightSensor.dxState["dark"] = current_time
                     lightSensor.state.update(lightPayload)
                     # send email if alarm is enabled:
-                    if data["occupancy"] and bridgeConfig["config"]["alarm"]["on"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
+                    if data["occupancy"] and bridgeConfig["config"]["alarm"]["enabled"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
                         logging.info("Alarm triggered, sending email...")
                         requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": sensor.name}, timeout=10)
                         bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())

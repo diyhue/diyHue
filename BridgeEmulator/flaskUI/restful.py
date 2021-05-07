@@ -225,7 +225,6 @@ class Element(Resource):
             return response
         if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
             return bridgeConfig[resource][resourceid].getV1Api()
-            # return bridgeConfig["objects"]["lights"][resourceid].getV2Api()
         return bridgeConfig[resource][resourceid]
 
     def put(self, username, resource, resourceid):
@@ -318,7 +317,7 @@ class ElementParam(Resource):
         authorisation = authorize(username, resource, resourceid, param)
         if "success" not in authorisation:
             return authorisation
-        return bridgeConfig[resource][resourceid][param]
+        return bridgeConfig[resource][resourceid].getV1Api()[param]
 
     def put(self, username, resource, resourceid, param):
         authorisation = authorize(username, resource, resourceid, param)
