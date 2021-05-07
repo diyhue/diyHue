@@ -31,7 +31,7 @@ There are basically two different ways on passing data around;
 
   useEffect(() => {
     axios
-      .get("/api/local")
+      .get("/apilocal")
       .then((fetchedData) => {
         setConfig(fetchedData.data);
       });

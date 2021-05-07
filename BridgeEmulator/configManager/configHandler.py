@@ -21,7 +21,7 @@ def _open_yaml(path):
 
 def _write_yaml(path, contents):
     with open(path, 'w', encoding="utf-8") as fp:
-        yaml.dump(contents, fp , Dumper=NoAliasDumper)
+        yaml.dump(contents, fp , Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False )
 
 
 class Config:

@@ -24,13 +24,13 @@ const TheSidebar = ({ showSidebar }) => {
         <a href="#MQTT">
           <li><FaCube style={{color: '#0084FF'}}/> MQTT</li>
         </a>
-        <a href="#alerts">
-          <li><FaExclamationTriangle style={{color: '#AE2D00'}}/> Alerts</li>
+        <a href="#alarm">
+          <li><FaExclamationTriangle style={{color: '#AE2D00'}}/> Alarm</li>
         </a>
         <a href="#settings">
           <li><FaCog style={{color: '#8B00FF'}}/> Settings</li>
         </a>
-        <a href="#logout">
+        <a href="/logout">
           <li><FaSignOutAlt style={{color: '#fff'}}/> Logout</li>
         </a>
       </ul>
