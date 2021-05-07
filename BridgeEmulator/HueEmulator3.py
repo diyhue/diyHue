@@ -26,6 +26,7 @@ app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/stat
 api = Api(app)
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
+app.config['JSON_AS_ASCII'] = False
 
 
 login_manager = flask_login.LoginManager()
