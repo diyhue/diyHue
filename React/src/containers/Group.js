@@ -2,7 +2,7 @@ import { FaCaretLeft, FaList  ,  FaPalette, FaTint, FaCouch} from "react-icons/f
 import { useState } from "react";
 import axios from "axios";
 import Scenes from "./Scenes"
-import Light from "./Light"
+import Light from "./GroupLight"
 import ColorPicker from "./ColorPicker"
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 
