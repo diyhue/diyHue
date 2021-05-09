@@ -42,59 +42,55 @@ const Mqtt = ({ API_KEY }) => {
   return (
     <div className="content">
         {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
-        <div className='contentContainer'>
-          <form className='add-form' onSubmit={onSubmit}>
-          <div className="switchContainer">
-          <label className="switch">
-            <input type="checkbox"
-              value={enable}
-              checked={enable}
-              onChange={(e) => setEnable(e.target.checked)}
+        <form className='add-form' onSubmit={onSubmit}>
+        <div className="switchContainer">
+        <label className="switch">
+          <input type="checkbox"
+            value={enable}
+            checked={enable}
+            onChange={(e) => setEnable(e.target.checked)}
+          />
+          <span className="slider"></span>
+        </label>
+      </div>
+        <div className='form-control'>
+            <label>MQTT server</label>
+            <input
+            type='text'
+            placeholder='MQTT server'
+            value={mqttServer}
+            onChange={(e) => setMqttServer(e.target.value)}
             />
-            <span className="slider"></span>
-          </label>
         </div>
-          <div className='form-control'>
-              <label>MQTT server</label>
-              <input
-              type='text'
-              placeholder='MQTT server'
-              value={mqttServer}
-              onChange={(e) => setMqttServer(e.target.value)}
-              />
-          </div>
-          <div className='form-control'>
-              <label>MQTT port</label>
-              <input
-              type='number'
-              placeholder='MQTT port'
-              value={mqttPort}
-              onChange={(e) => setMqttPort(e.target.value)}
-              />
-          </div>
-          <div className='form-control'>
-              <label>MQTT username</label>
-              <input
-              type='text'
-              placeholder='MQTT username'
-              value={mqttUser}
-              onChange={(e) => setMqttUser(e.target.value)}
-              />
-          </div>
-          <div className='form-control'>
-              <label>MQTT password</label>
-              <input
-              type='text'
-              placeholder='MQTT password'
-              value={mqttPass}
-              onChange={(e) => setMqttPass(e.target.value)}
-              />
-          </div>
-          <div className='form-control'>
-            <input type='submit' value='Save' className='btn btn-block' />
-          </div>
-          </form>
+        <div className='form-control'>
+            <label>MQTT port</label>
+            <input
+            type='number'
+            placeholder='MQTT port'
+            value={mqttPort}
+            onChange={(e) => setMqttPort(e.target.value)}
+            />
         </div>
+        <div className='form-control'>
+            <label>MQTT username</label>
+            <input
+            type='text'
+            placeholder='MQTT username'
+            value={mqttUser}
+            onChange={(e) => setMqttUser(e.target.value)}
+            />
+        </div>
+        <div className='form-control'>
+            <label>MQTT password</label>
+            <input
+            type='text'
+            placeholder='MQTT password'
+            value={mqttPass}
+            onChange={(e) => setMqttPass(e.target.value)}
+            />
+        </div>
+        <input type='submit' value='Save' className='btn btn-block' />
+        </form>
     </div>
   )
 }
