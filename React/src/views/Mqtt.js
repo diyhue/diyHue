@@ -90,7 +90,9 @@ const Mqtt = ({ API_KEY }) => {
               onChange={(e) => setMqttPass(e.target.value)}
               />
           </div>
-          <input type='submit' value='Save' className='btn btn-block' />
+          <div className='form-control'>
+            <input type='submit' value='Save' className='btn btn-block' />
+          </div>
           </form>
         </div>
     </div>

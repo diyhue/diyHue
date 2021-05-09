@@ -78,7 +78,9 @@ const Alarm = ({ API_KEY }) => {
               onChange={(e) => setEmail(e.target.value)}
               />
           </div>
-          <input type='submit' value='Save' className='btn btn-block' />
+          <div className='form-control'>
+            <input type='submit' value='Save' className='btn btn-block' />
+          </div>
           </form>
         </div>
     </div>

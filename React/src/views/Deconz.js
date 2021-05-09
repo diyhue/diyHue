@@ -68,7 +68,9 @@ const Deconz = ({ API_KEY }) => {
               onChange={(e) => setDeconzPort(e.target.value)}
               />
           </div>
-          <input type='submit' value='Save' className='btn btn-block' />
+          <div className='form-control'>
+            <input type='submit' value='Save' className='btn btn-block green' />
+          </div>
           </form>
         </div>
     </div>
