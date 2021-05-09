@@ -547,7 +547,6 @@ input[type="range"]::-ms-fill-upper {
 }
 /* END Light intensity slider */
 
-
 /*Notification Container*/
 .notificationContainer{
   position: absolute;
@@ -688,6 +687,69 @@ input[type="range"]::-ms-fill-upper {
 }
 /* END Linkbutton */
 
+
+
+/* forms */
+.form-control{
+  margin-top: 20px;
+
+  label{
+    margin-right: 10px;
+  }
+
+  input{
+    padding: 15px;
+    border: none;
+    background: #272727;
+    border-radius: 8px;
+    -webkit-box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+    color: #ccc;
+    font-size: 17px;
+    border: 1px solid #000;
+  }
+
+  input:focus{
+    border-color: rgba(52, 152, 219, 1);
+  }
+
+  input.btn-block{
+    background: rgba(52, 152, 219, 1);
+    padding: 20px 60px;
+    border-radius: 35px;
+    color: #eee;
+    font-size: 18px;
+    font-weight: 500;
+    text-transform: uppercase;
+    border: none;
+    
+    &:hover,&:active,&:focus{
+      border: none;
+      background: rgb(61, 177, 255);
+    }
+  }
+
+  input.btn-block.red{
+    background: rgba(231, 76, 60, 1);
+    color: #eee;
+
+    &:hover,&:active{
+      background: rgb(255, 86, 68);
+    }
+  }
+
+  input.btn-block.green{
+    background: rgba(46, 204, 113, 1);
+    color: #eee;
+
+    &:hover,&:active{
+      background: rgb(53, 233, 128);
+    }
+  }
+
+}
+
+/* END forms */
 
 
 @media screen and (max-width: 750px) {
