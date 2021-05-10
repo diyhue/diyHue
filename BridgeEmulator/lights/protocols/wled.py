@@ -36,7 +36,7 @@ def discover(detectedLights):
         try:
             x = WledDevice(device[0], device[1])
             logging.info("Found wled: " + device[1])
-            modelid = "LCT015"
+            modelid = "LST002"
             lightName = x.name
             detectedLights.append({"protocol": "wled", "name": lightName, "modelid": modelid, "protocol_cfg": {
                               "ip": device[0], "ledCount": x.ledCount, "mdns_name": device[1], "mac": x.mac}})
