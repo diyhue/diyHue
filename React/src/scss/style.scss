@@ -256,7 +256,7 @@ html, body {
 
 /* Overrides */
 
-.lightContainer, .groupContainer{
+.lightContainer, .groupContainer,.groupContainer.textDark, .groupContainer.textLight{
 
   &.textLight{
    p, i{
@@ -449,7 +449,7 @@ html, body {
   transition: .4s;
   border-radius: 40px;
   width: 57px;
-  height: 30px;
+  height: 32px;
 }
 
   .switchContainer .slider:before {
@@ -458,7 +458,7 @@ html, body {
     height: 26px;
     width: 26px;
     left: 2px;
-    bottom: 2px;
+    bottom: 3px;
     background-color:#aaa;
     -webkit-transition: .4s;
     transition: .4s;
