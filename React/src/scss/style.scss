@@ -71,7 +71,7 @@ html, body {
       p{
         float: right;
         color: #eee;
-        margin: 5px 50px 0 70px;
+        margin: 7px 50px 0 70px;
       }
 
       .slider{
@@ -572,6 +572,7 @@ input[type="range"]::-ms-fill-upper {
     right:0; 
     width: 75px;
     height: 75px;
+    cursor: pointer;
   }
 
   .icon:hover,.icon:active{
@@ -616,6 +617,42 @@ input[type="range"]::-ms-fill-upper {
 
 
 /* Linkbutton */
+.headerlinkbtn {
+  width: 150px;
+  height: 30px;
+  color: rgba(255,255,255,0.9);
+  background: linear-gradient(-45deg, #597cee, #a659ee, #ee59c6, #ee5b59, #eecb59, #a1ee59, #59ee80, #59ebee);
+  background-size: 650%;
+  -webkit-animation: linkbtn 20s linear infinite;
+          animation: linkbtn 20s linear infinite;
+  margin-top: 0px;
+  margin-right: 40px;
+  border-radius: 50px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    z-index: 1;
+    opacity: 1;
+    -webkit-animation: linkbtn 2s linear infinite;
+    animation: linkbtn 2s linear infinite;
+    filter:blur(0);
+    -webkit-transition: all .3s;
+    transition: all .3s;
+  }
+
+  &:active {
+  z-index: 1;
+  opacity: 1;
+  margin-top: 5px;
+  -webkit-transition: all .3s;
+  transition: all .3s;
+  }
+}
+
 .linkbtn,.linkbtn2 {
   margin-top: 50px;
   width: 300px;
