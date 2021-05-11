@@ -15,6 +15,7 @@
     "react-dom": "^17.0.1",
     "react-flash-message": "^1.0.5",
     "react-icons": "^4.2.0",
+    "react-responsive": "^8.2.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.3",
     "web-vitals": "^1.0.1"
