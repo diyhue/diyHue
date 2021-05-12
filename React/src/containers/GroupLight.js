@@ -17,16 +17,19 @@ const Light = ({ api_key, id, light }) => {
   const [state, setState] = useState(light.state)
 
   const getStyle = () => {
-    let lightBg;
-    if (state['colormode'] === 'xy') {
-      lightBg = cieToRgb(state['xy'][0], state['xy'][1], 254)
-    } else if (state['colormode'] === 'ct') {
-      lightBg = colorTemperatureToRgb(state['ct'])
+
+    if (state['on']) {
+      let lightBg;
+      if (state['colormode'] === 'xy') {
+        lightBg = cieToRgb(state['xy'][0], state['xy'][1], 254)
+      } else if (state['colormode'] === 'ct') {
+        lightBg = colorTemperatureToRgb(state['ct'])
+      }
+      else {
+        lightBg = 'linear-gradient(90deg, rgba(255,212,93,1))';
+      }
+      return { background: lightBg};
     }
-    else {
-      lightBg = 'linear-gradient(90deg, rgba(255,212,93,1))';
-    }
-    return { background: lightBg};
   }
 
   return (
