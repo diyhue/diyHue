@@ -6,11 +6,11 @@ import uuid
 import configManager
 import HueObjects
 from flaskUI.core import User
+from lights.light_types import lightTypes
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
-
 core = Blueprint('core',__name__)
-
+from pprint import pprint
 @core.route('/')
 @flask_login.login_required
 def index():
@@ -33,6 +33,28 @@ def get_lights():
     for light, object in bridgeConfig["lights"].items():
         result[light] = object.save()
     return result
+
+@core.route('/light-types', methods=['GET', 'POST'])
+@flask_login.login_required
+def get_light_types():
+    if request.method == 'GET':
+        result = []
+        for modelid in lightTypes.keys():
+            result.append(modelid)
+        return {"result": result}
+    elif request.method == 'POST':
+        data = request.get_json(force=True)
+        pprint(data)
+        lightId = list(data)[0]
+        print(lightId)
+        modelId = data[lightId]
+        print(modelId)
+        bridgeConfig["lights"][lightId].modelid = modelId
+        bridgeConfig["lights"][lightId].state = lightTypes[modelId]["state"]
+        bridgeConfig["lights"][lightId].config = lightTypes[modelId]["config"]
+        return "success"
+
+
 
 @core.route('/save')
 def save_config():

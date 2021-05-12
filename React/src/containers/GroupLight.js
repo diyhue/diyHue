@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { RiAlertLine } from "react-icons/ri";
 import axios from "axios";
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 import { FaLightbulb } from "react-icons/fa";
@@ -14,16 +15,14 @@ const Light = ({ api_key, id, light }) => {
     )
   };
 
-  const [state, setState] = useState(light.state)
-
   const getStyle = () => {
 
-    if (state['on']) {
+    if (light['state']['on']) {
       let lightBg;
-      if (state['colormode'] === 'xy') {
-        lightBg = cieToRgb(state['xy'][0], state['xy'][1], 254)
-      } else if (state['colormode'] === 'ct') {
-        lightBg = colorTemperatureToRgb(state['ct'])
+      if (light['state']['colormode'] === 'xy') {
+        lightBg = cieToRgb(light['state']['xy'][0], light['state']['xy'][1], 254)
+      } else if (light['state']['colormode'] === 'ct') {
+        lightBg = colorTemperatureToRgb(light['state']['ct'])
       }
       else {
         lightBg = 'linear-gradient(90deg, rgba(255,212,93,1))';
@@ -33,17 +32,17 @@ const Light = ({ api_key, id, light }) => {
   }
 
   return (
-      <div className={`lightContainer ${state['on'] ? 'textDark' : 'textLight'}`} style={getStyle()}>
+      <div className={`lightContainer ${light['state']['on'] ? 'textDark' : 'textLight'}`} style={getStyle()}>
           <div className="iconContainer">
             <FaLightbulb/>
           </div>
           <div className="textContainer">
-          <p>{ light.name }</p>
+          <p>{ light.name } {light['state']['reachable'] || <RiAlertLine title='Unrechable'/>}</p>
           </div>
           <div className="switchContainer">
             <label className="switch">
               <input type="checkbox"
-                defaultChecked={state['on']}
+                defaultChecked={light['state']['on']}
                 onChange={(e) => switchLight({'on': e.currentTarget.checked})}
               />
               <span className="slider"></span>
