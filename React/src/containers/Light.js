@@ -6,9 +6,28 @@ import axios from "axios";
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
+import { confirmAlert } from 'react-confirm-alert'; // Import
+import 'react-confirm-alert/src/react-confirm-alert.css'; // Import css
 
 
 const Light = ({api_key, id, light, modelIds, setType, setMessage}) => {
+
+
+  const deleteAlert = () => {
+    confirmAlert({
+      title: 'Delete light ' + light['name'],
+      message: 'Are you sure to do this?',
+      buttons: [
+        {
+          label: 'Yes',
+          onClick: () => deleteLight()
+        },
+        {
+          label: 'No'
+        }
+      ]
+    });
+  };
 
   const deleteLight = () => {
     axios.delete(`/api/${api_key}/lights/${id}`)
@@ -64,7 +83,7 @@ const Light = ({api_key, id, light, modelIds, setType, setMessage}) => {
     {light["name"]} {light['state']['reachable'] && <FaCheck title='Reachable'/> || <RiAlertLine title='Unrechable'/>}<br/>
     <Dropdown options={modelIds} value={light["modelid"]} onChange={(e) => setModelId(e.value)} placeholder="Choose light modelid" />
      Protocol: {light["protocol"]}<br/> IP: {light["protocol_cfg"]["ip"]}<br/>
-    <MdDeleteForever title='Delete' onClick={() => deleteLight()}/>  <MdSystemUpdate title='Update' />
+    <MdDeleteForever title='Delete' onClick={() => deleteAlert()}/>  <MdSystemUpdate title='Update' />
     </>
   )
 }
