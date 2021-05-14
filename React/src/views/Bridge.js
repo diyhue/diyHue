@@ -92,7 +92,7 @@ const Bridge = ({ API_KEY }) => {
                 />
             </div>
             <div className='form-control'>
-                <label>Software Version</label>
+                <label>Timezone</label>
                 <Dropdown options={timezones} value={timezone} onChange={(e) => setTimezone(e.value)} placeholder="Choose light modelid" />
             </div>
             <div className="switchContainer">

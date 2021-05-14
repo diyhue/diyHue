@@ -196,17 +196,25 @@ class ResourceElements(Resource):
         if "success" not in authorisation:
             return authorisation
         putDict = request.get_json(force=True)
-        bridgeConfig[resource].update(putDict)
+        ## apply timezone OS variable
         if resource == "config" and "timezone" in putDict:
             os.environ['TZ'] = putDict["timezone"]
             tzset()
-        responseDictionary = []
+
+        for key, value in putDict.items():
+            if isinstance(value, dict):
+                bridgeConfig[resource][key].update(value)
+            else:
+                bridgeConfig[resource][key] = value
+
+        ## build response list
+        responseList = []
         response_location = "/" + resource + "/"
         for key, value in putDict.items():
-            responseDictionary.append(
+            responseList.append(
                 {"success": {response_location + key: value}})
-        pprint(responseDictionary)
-        return responseDictionary
+        pprint(responseList)
+        return responseList
 
 
 class Element(Resource):
@@ -235,10 +243,10 @@ class Element(Resource):
         putDict = request.get_json(force=True)
         pprint(putDict)
         currentTime = datetime.now()
-        responseDictionary = []
+        responseList = []
         response_location = "/" + resource + "/" + resourceid + "/"
         for key, value in putDict.items():
-            responseDictionary.append({"success": {response_location + key: value}})
+            responseList.append({"success": {response_location + key: value}})
         if "group" in putDict:
             putDict["group"] = weakref.ref(bridgeConfig["groups"][putDict["group"]])
         if "lights" in putDict:
@@ -280,8 +288,8 @@ class Element(Resource):
                 putDict["locations"] = locations
         bridgeConfig[resource][resourceid].update_attr(putDict)
         rulesProcessor(bridgeConfig[resource][resourceid] ,currentTime)
-        pprint(responseDictionary)
-        return responseDictionary
+        pprint(responseList)
+        return responseList
 
     def delete(self, username, resource, resourceid):
         authorisation = authorize(username, resource, resourceid)
@@ -345,13 +353,13 @@ class ElementParam(Resource):
             bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
             rulesProcessor(bridgeConfig[resource][resourceid] ,currentTime)
         bridgeConfig[resource][resourceid].update_attr({param: putDict})
-        responseDictionary = []
+        responseList = []
         responseLocation = "/" + resource + "/" + resourceid + "/" + param + "/"
         for key, value in putDict.items():
-            responseDictionary.append(
+            responseList.append(
                 {"success": {responseLocation + key: value}})
-        pprint(responseDictionary)
-        return responseDictionary
+        pprint(responseList)
+        return responseList
 
     def delete(self, username, resource, resourceid, param):
         authorisation = authorize(username, resource, resourceid)
