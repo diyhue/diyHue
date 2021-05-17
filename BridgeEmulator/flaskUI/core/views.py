@@ -6,18 +6,18 @@ import uuid
 import configManager
 import HueObjects
 from flaskUI.core import User
+from lights.light_types import lightTypes
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
-
 core = Blueprint('core',__name__)
-
+from pprint import pprint
 @core.route('/')
 @flask_login.login_required
 def index():
     return render_template('index.html', groups=bridgeConfig["groups"], lights=bridgeConfig["lights"])
 
 @core.route('/get-key')
-#@flask_login.login_required
+@flask_login.login_required
 def get_key():
     if len(bridgeConfig["apiUsers"]) == 0:
         # generate a new user for the web interface
@@ -26,16 +26,50 @@ def get_key():
         configManager.bridgeConfig.save_config()
     return list(bridgeConfig["apiUsers"])[0]
 
+@core.route('/lights')
+@flask_login.login_required
+def get_lights():
+    result = {}
+    for light, object in bridgeConfig["lights"].items():
+        result[light] = object.save()
+    return result
+
+
+@core.route('/sensors')
+@flask_login.login_required
+def get_sensors():
+    result = {}
+    for sensor, object in bridgeConfig["sensors"].items():
+        result[sensor] = object.save()
+    return result
+
+
+@core.route('/light-types', methods=['GET', 'POST'])
+@flask_login.login_required
+def get_light_types():
+    if request.method == 'GET':
+        result = []
+        for modelid in lightTypes.keys():
+            result.append(modelid)
+        return {"result": result}
+    elif request.method == 'POST':
+        data = request.get_json(force=True)
+        pprint(data)
+        lightId = list(data)[0]
+        print(lightId)
+        modelId = data[lightId]
+        print(modelId)
+        bridgeConfig["lights"][lightId].modelid = modelId
+        bridgeConfig["lights"][lightId].state = lightTypes[modelId]["state"]
+        bridgeConfig["lights"][lightId].config = lightTypes[modelId]["config"]
+        return "success"
+
+
+
 @core.route('/save')
 def save_config():
     configManager.bridgeConfig.save_config()
     return "config saved"
-
-
-@core.route('/config')
-@flask_login.login_required
-def config():
-    return render_template('config.html', config=bridgeConfig["config"])
 
 
 @core.route('/login', methods=['GET', 'POST'])

@@ -2,7 +2,7 @@ import { FaCaretLeft, FaList  ,  FaPalette, FaTint, FaCouch} from "react-icons/f
 import { useState } from "react";
 import axios from "axios";
 import Scenes from "./Scenes"
-import Light from "./Light"
+import Light from "./GroupLight"
 import ColorPicker from "./ColorPicker"
 import {cieToRgb, colorTemperatureToRgb } from "../color";
 
@@ -17,7 +17,7 @@ const Group = ({api_key, id, group, lights, scenes}) => {
     setToggleState(state);
     group.state['any_on'] = state;
     console.log('Apply state ' + JSON.stringify(newState));
-    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
+    axios.put(`http://localhost/api/${api_key}/groups/${id}/action`, newState);
   }
 
   const handleBriChange = (state) => {
@@ -25,7 +25,7 @@ const Group = ({api_key, id, group, lights, scenes}) => {
     setBriState(state);
     group.action['bri'] = state;
     console.log('Apply state ' + JSON.stringify(newState));
-    axios.put(`/api/${api_key}/groups/${id}/action`, newState);
+    axios.put(`http://localhost/api/${api_key}/groups/${id}/action`, newState);
   }
 
   const getStyle = () => {

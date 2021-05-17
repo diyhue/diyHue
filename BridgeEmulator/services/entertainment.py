@@ -61,6 +61,7 @@ def entertainmentService(group, user):
             nativeLights = {}
             esphomeLights = {}
             mqttLights = []
+            wledLights = {}
             if data[:9].decode('utf-8') == "HueStream":
                 i = 0
                 apiVersion = 0
@@ -161,6 +162,13 @@ def entertainmentService(group, user):
                         elif operation == 2:
                             c.command("set_rgb", [(r * 65536) + (g * 256) + b, "smooth", 200])
                             #c.command("set_rgb", [(r * 65536) + (g * 256) + b, "sudden", 0])
+                    elif proto == "wled":
+                        if light.protocol_cfg["ip"] not in wledLights:
+                            wledLights[light.protocol_cfg["ip"]] = {}
+                            wledLights[light.protocol_cfg["ip"]
+                                       ]["ledCount"] = light.protocol_cfg["ledCount"]
+                        wledLights[light.protocol_cfg["ip"]
+                                   ]["color"] = [r, g, b]
                     else:
                         if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
                             operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
@@ -195,6 +203,15 @@ def entertainmentService(group, user):
                 if bridgeConfig["config"]["mqtt"]["mqttUser"] != "" and bridgeConfig["config"]["mqtt"]["mqttPassword"] != "":
                     auth = {'username':bridgeConfig["config"]["mqtt"]["mqttUser"], 'password':bridgeConfig["config"]["mqtt"]["mqttPassword"]}
                 publish.multiple(mqttLights, hostname=bridgeConfig["config"]["mqtt"]["mqttServer"], port=bridgeConfig["config"]["mqtt"]["mqttPort"], auth=auth)
+            if len(wledLights) != 0:
+                wled_udpmode = 2
+                wled_secstowait = 2
+                for ip in wledLights.keys():
+                    udphead = [wled_udpmode, wled_secstowait]
+                    color = wledLights[ip]["color"] * int(wledLights[ip]["ledCount"])
+                    udpdata = bytes(udphead+color)
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.sendto(udpdata, (ip, 21324))
 
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))

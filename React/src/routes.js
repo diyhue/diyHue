@@ -1,6 +1,7 @@
 import React from 'react';
 
 const Groups = React.lazy(() => import('./views/Groups'));
+const Lights = React.lazy(() => import('./views/Lights'));
 const LinkButton = React.lazy(() => import('./views/LinkButton'));
 const Mqtt = React.lazy(() => import('./views/Mqtt'));
 const Deconz = React.lazy(() => import('./views/Deconz'));
@@ -9,8 +10,9 @@ const Devices = React.lazy(() => import('./views/Devices'));
 const Bridge = React.lazy(() => import('./views/Bridge'));
 
 const routes = [
-  { path: '/', exact: true, name: 'Lights', component: Groups },
+  { path: '/', exact: true, name: 'Groups', component: Groups },
   { path: '/groups', exact: true, name: 'Groups', component: Groups },
+  { path: '/lights', exact: true, name: 'Lights', component: Lights },
   { path: '/linkbutton', exact: true, name: 'LinkButton', component: LinkButton },
   { path: '/mqtt', exact: true, name: 'MQTT', component: Mqtt },
   { path: '/deconz', exact: true, name: 'Deconz', component: Deconz },

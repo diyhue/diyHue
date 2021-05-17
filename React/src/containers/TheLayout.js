@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { useMediaQuery } from 'react-responsive';
 import {
   TheContent,
   TheSidebar,
@@ -8,7 +8,9 @@ import {
 
 const TheLayout = ({API_KEY}) => {
 
-  const [showSidebar, setShowSidebar] = useState(true);
+
+  const isMobile = useMediaQuery({ query: `(max-width: 760px)` });
+  const [showSidebar, setShowSidebar] = useState(! isMobile);
 
   return (
     <>

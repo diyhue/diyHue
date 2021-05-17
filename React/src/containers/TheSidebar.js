@@ -1,7 +1,8 @@
 import React from 'react'
-import { FaHome, FaLink, FaCube,  FaBraille, FaExclamationTriangle, FaCog, FaSignOutAlt} from "react-icons/fa";
+import { FaHome, FaLightbulb, FaLink, FaCube,  FaBraille, FaExclamationTriangle, FaCog, FaSignOutAlt} from "react-icons/fa";
 
 const TheSidebar = ({ showSidebar }) => {
+
   return (
     <div className={`sidebar ${showSidebar ? '' : 'active'}`}>
       <ul>
@@ -9,11 +10,14 @@ const TheSidebar = ({ showSidebar }) => {
         <a href="#home">
           <li><FaHome style={{color: '#0092FF'}}/> Home</li>
         </a>
+        <a href="#lights">
+          <li><FaLightbulb style={{color: '#FF9E00'}}/> Lights</li>
+        </a>
         <a href="#linkbutton">
           <li><FaLink style={{color: '#FF92FF'}}/> Link Button</li>
         </a>
         <a href="#bridge">
-          <li><FaCube style={{color: '#FF9E00'}}/> Bridge</li>
+          <li><FaCube style={{color: '#92FFFF'}}/> Bridge</li>
         </a>
         <a href="#devices">
           <li><FaBraille style={{color: '#764600'}}/> Devices</li>

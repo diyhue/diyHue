@@ -5,7 +5,7 @@ import json
 from time import sleep
 from datetime import datetime
 from services.deconz import scanDeconz
-from lights.protocols import mqtt, yeelight, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import wled, mqtt, yeelight, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -74,6 +74,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
     yeelight.discover(detectedLights)
     native_multi.discover(detectedLights,device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
     tasmota.discover(detectedLights,device_ips)
+    wled.discover(detectedLights)
     #shelly.discover(detectedLights,device_ips)
     #esphome.discover(detectedLights,device_ips)
     #tradfri.discover(detectedLights)
@@ -92,6 +93,12 @@ def scanForLights(): #scan for ESP8266 lights and strips
                          break
                 elif light["protocol"] in ["yeelight", "tasmota"]:
                     if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
+                        logging.info("Update IP for light " + light["name"])
+                        lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        lightIsNew = False
+                elif light["protocol"] in ["wled"]:
+                    # check based on mac address
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
