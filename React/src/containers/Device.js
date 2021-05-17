@@ -44,7 +44,7 @@ const Device = ({api_key, id, device, setType, setMessage}) => {
     axios.put(`/api/${api_key}/sensors/${id}/config`, {"on": state})
     .then((fetchedData) => {
       console.log(fetchedData.data);
-      setMessage('Device successfully ' + (state? 'enabled' : 'disabled'));
+      setMessage(device["name"] + ' successfully ' + (state? 'enabled' : 'disabled'));
       setType('none');
       setType('success');
     }).catch((error) => {
@@ -57,15 +57,16 @@ const Device = ({api_key, id, device, setType, setMessage}) => {
 
   const batteryLevel = () => {
     let battery = device["config"]["battery"];
+    let battryLevel = battery + '%';
     console.log(battery)
     if (battery > 90) {
-      return <TiBatteryFull title={battery + '%'}/>
+      return <TiBatteryFull title={battryLevel}/>
     } else if (battery > 70) {
-      return <TiBatteryHigh title={battery + '%'}/>
+      return <TiBatteryHigh title={battryLevel}/>
     } else if (battery > 40) {
-      return <TiBatteryMid title={battery + '%'}/>
+      return <TiBatteryMid title={battryLevel}/>
     } else {
-      return <TiBatteryLow title={battery + '%'}/>
+      return <TiBatteryLow title={battryLevel}/>
     }
   }
 

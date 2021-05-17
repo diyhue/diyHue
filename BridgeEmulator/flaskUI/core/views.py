@@ -76,7 +76,7 @@ def save_config():
 def login():
     form = LoginForm()
     if request.method == 'GET':
-        return render_template('accounts/login.html', form=form)
+        return render_template('login.html', form=form)
     email = form.email.data
     if email not in bridgeConfig["config"]["users"]:
         return 'User don\'t exist'
