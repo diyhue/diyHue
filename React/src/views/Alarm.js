@@ -21,7 +21,7 @@ const Alarm = ({ API_KEY }) => {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'alarm': {'enabled': enable}}
+        {'alarm': {'enabled': e}}
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage(`Alarm ${e ? 'activated' : 'deactivated'}`);

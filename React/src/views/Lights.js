@@ -10,7 +10,7 @@ export default function Groups({API_KEY}) {
   const [type, setType] = useState('none');
   const [message, setMessage] = useState('no message');
 
-  const fetchConfig = () => {
+  const fetchLights = () => {
     if (API_KEY !== undefined ) {
       axios
       .get(`/lights`)
@@ -19,6 +19,24 @@ export default function Groups({API_KEY}) {
         setLights(fetchedData.data);
       }).catch((error) => {console.error(error)});
     }
+  }
+
+  const searchForLights = () => {
+    if (API_KEY !== undefined ) {
+      axios
+      .post(`/api/${API_KEY}/lights`, "")
+      .then((fetchedData) => {
+        console.log(fetchedData.data);
+        setMessage('Searching for new lights...');
+        setType('none');
+        setType('success');
+      }).catch((error) => {
+        console.error(error)
+        setMessage('Error occured, check browser console');
+        setType('none');
+        setType('error');
+      });
+    };
   }
 
   const fetchModelIds = () => {
@@ -34,10 +52,10 @@ export default function Groups({API_KEY}) {
 
 
   useEffect(() => {
-    fetchConfig();
+    fetchLights();
     fetchModelIds();
     const interval = setInterval(() => {
-      fetchConfig();
+      fetchLights();
     }, 2000); // <<-- ⏱ 1000ms = 1s
     return () => clearInterval(interval);
   }, [API_KEY]);
@@ -46,6 +64,8 @@ export default function Groups({API_KEY}) {
     <div className="content">
       {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
       <div className="cardGrid">
+      <div className="linkbtn" onClick={() => searchForLights()}>Scan For Lights
+        <div className='btn btn-block'></div></div>
         {Object.entries(lights).map(([id, light]) => (
             <Light
               key={id}

@@ -18,7 +18,7 @@ const TheHeader = ({showSidebar, setShowSidebar, API_KEY}) => {
   const fetchGroups = () => {
     if (API_KEY !== undefined ) {
       axios
-      .get(`/api/${API_KEY}/groups/0`)
+      .get(`http://localhost/api/${API_KEY}/groups/0`)
       .then((fetchedData) => {
         console.log(fetchedData.data);
         setGroup0State(fetchedData.data["state"]["any_on"]);

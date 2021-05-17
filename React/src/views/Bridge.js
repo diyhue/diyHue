@@ -135,6 +135,15 @@ const Bridge = ({ API_KEY }) => {
                 />
             </div>
             <div className='form-control'>
+                <label>Local time</label>
+                <input
+                readOnly
+                type='text'
+                placeholder='time'
+                value={Date(readonlyConf['localtime'])}
+                />
+            </div>
+            <div className='form-control'>
             <input type='submit' value='Save' className='btn btn-block' />
           </div>
           </form>

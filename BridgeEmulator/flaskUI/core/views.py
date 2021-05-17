@@ -34,6 +34,16 @@ def get_lights():
         result[light] = object.save()
     return result
 
+
+@core.route('/sensors')
+@flask_login.login_required
+def get_sensors():
+    result = {}
+    for sensor, object in bridgeConfig["sensors"].items():
+        result[sensor] = object.save()
+    return result
+
+
 @core.route('/light-types', methods=['GET', 'POST'])
 @flask_login.login_required
 def get_light_types():
