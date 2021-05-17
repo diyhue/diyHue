@@ -30,7 +30,7 @@ const Light = ({api_key, id, light, modelIds, setType, setMessage}) => {
   };
 
   const deleteLight = () => {
-    axios.delete(`http://localhost/api/${api_key}/lights/${id}`)
+    axios.delete(`/api/${api_key}/lights/${id}`)
     .then((fetchedData) => {
       console.log(fetchedData.data);
       setMessage('Light successfully deleted');
@@ -45,7 +45,7 @@ const Light = ({api_key, id, light, modelIds, setType, setMessage}) => {
   }
 
   const alertLight = () => {
-    axios.put(`http://localhost/api/${api_key}/lights/${id}/state`, {"alert": "select"})
+    axios.put(`/api/${api_key}/lights/${id}/state`, {"alert": "select"})
     .then((fetchedData) => {
       console.log(fetchedData.data);
       setMessage('Light alerted');
@@ -61,7 +61,7 @@ const Light = ({api_key, id, light, modelIds, setType, setMessage}) => {
 
   const setModelId = (modelid) => {
     console.log( {[id]: modelid})
-    axios.post(`http://localhost/light-types`, {[id]: modelid})
+    axios.post(`/light-types`, {[id]: modelid})
     .then((fetchedData) => {
       console.log(fetchedData.data);
       setMessage('Modelid updated');

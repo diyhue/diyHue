@@ -4,7 +4,7 @@ const Scenes = ({api_key, groupId, scenes}) => {
   const applyScene = (scene) => {
     axios
       .put(
-        `http://localhost/api/${api_key}/groups/0/action`,
+        `/api/${api_key}/groups/0/action`,
         {'scene': scene}
       )
     };
