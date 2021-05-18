@@ -1,6 +1,8 @@
 import json
-import logging
+import logManager
 import requests
+
+logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data):
     state = requests.put("http://"+light.protocol_cfg["ip"]+"/state", json=data, timeout=3)

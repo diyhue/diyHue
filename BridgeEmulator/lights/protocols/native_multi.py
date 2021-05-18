@@ -31,7 +31,7 @@ def discover(detectedLights, device_ips):
             response = requests.get("http://" + ip + "/detect", timeout=3)
             if response.status_code == 200:
                 device_data = json.loads(response.text)
-                logging.info(json.dumps(device_data))
+                logging.debug(json.dumps(device_data))
 
                 if "modelid" in device_data:
                     logging.info(ip + " is " + device_data['name'])
