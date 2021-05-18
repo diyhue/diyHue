@@ -1,12 +1,8 @@
 import json
-import configManager
 import requests
 
-bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
-
-def set_light(address, light, data):
-    url = "http://" + address[light]["ip"] + "/api/" + address[light]["username"] + "/lights/" + address[light]["light_id"] + "/state"
+def set_light(light, data):
+    url = "http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["username"] + "/lights/" + light.protocol_cfg["light_id"] + "/state"
     payload = {}
     payload.update(data)
     color = {}
@@ -27,8 +23,9 @@ def set_light(address, light, data):
     if len(color) != 0:
         equests.put(url, json=color, timeout=3)
 
-def get_light_state(address, light):
-    state = requests.get("http://" + address[light]["ip"] + "/api/" + address[light]["username"] + "/lights/" + address[light]["light_id"]), timeout=3)
+def get_light_state(light):
+    state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["username"] + "/lights/" + light.protocol_cfg["light_id"]), timeout=3)
     return json.loads(state.text)["state"]
 
-def discover():
+def discover(detectedLights):
+    pass
