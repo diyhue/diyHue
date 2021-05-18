@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaHome, FaLightbulb, FaLink, FaCube,  FaBraille, FaExclamationTriangle, FaCog, FaSignOutAlt} from "react-icons/fa";
+import { FaHome, FaLightbulb, FaLink, FaCube,  FaBraille, FaExclamationTriangle, FaCog, FaSignOutAlt, FaInstagram} from "react-icons/fa";
 
 const TheSidebar = ({ showSidebar }) => {
 
@@ -24,6 +24,9 @@ const TheSidebar = ({ showSidebar }) => {
         </a>
         <a href="#deconz">
           <li><FaCube style={{color: '#42A138'}}/> Deconz</li>
+        </a>
+        <a href="#hue">
+          <li><FaInstagram style={{color: '#8400FF'}}/> Hue Bridge</li>
         </a>
         <a href="#MQTT">
           <li><FaCube style={{color: '#0084FF'}}/> MQTT</li>

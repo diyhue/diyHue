@@ -8,6 +8,7 @@ const Deconz = React.lazy(() => import('./views/Deconz'));
 const Alarm = React.lazy(() => import('./views/Alarm'));
 const Devices = React.lazy(() => import('./views/Devices'));
 const Bridge = React.lazy(() => import('./views/Bridge'));
+const HueBridge = React.lazy(() => import('./views/HueBridge'));
 
 const routes = [
   { path: '/', exact: true, name: 'Groups', component: Groups },
@@ -19,7 +20,7 @@ const routes = [
   { path: '/alarm', exact: true, name: 'Alarm', component: Alarm },
   { path: '/bridge', exact: true, name: 'Bridge', component: Bridge },
   { path: '/devices', exact: true, name: 'Devices', component: Devices },
-  //{ path: '/lights', name: 'Lights', component: Light }
+  { path: '/hue', exact: true, name: 'Hue Bridge', component: HueBridge },
 ];
 
 export default routes;
