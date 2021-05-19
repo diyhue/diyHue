@@ -24,7 +24,7 @@ def set_light(light, data):
     if len(payload) != 0:
         requests.put(url, json=payload, timeout=3)
     if len(color) != 0:
-        equests.put(url, json=color, timeout=3)
+        requests.put(url, json=color, timeout=3)
 
 def get_light_state(light):
     state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["username"] + "/lights/" + light.protocol_cfg["light_id"], timeout=3)
