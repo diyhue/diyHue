@@ -1791,7 +1791,7 @@ class S(BaseHTTPRequestHandler):
                             for light in bridge_config["groups"][url_pieces[4]]["lights"]:
                                 bridge_config["lights"][light]["state"]["mode"] = "streaming"
                             logging.info("start hue entertainment")
-                            Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                            Popen([cwd + "/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                             sleep(0.2)
                             bridge_config["groups"][url_pieces[4]]["stream"].update({"active": True, "owner": url_pieces[2], "proxymode": "auto", "proxynode": "/bridge"})
                         else:
@@ -1835,7 +1835,7 @@ class S(BaseHTTPRequestHandler):
                         if "active" in put_dictionary:
                             if put_dictionary["active"]:
                                 logging.info("start hue entertainment")
-                                Popen(["/opt/hue-emulator/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
+                                Popen([cwd + "/entertain-srv", "server_port=2100", "dtls=1", "psk_list=" + url_pieces[2] + ",321c0c2ebfa7361e55491095b2f5f9db"])
                                 sleep(0.2)
                                 bridge_config["groups"][url_pieces[4]]["stream"].update({"active": True, "owner": url_pieces[2], "proxymode": "auto", "proxynode": "/bridge"})
                             else:
