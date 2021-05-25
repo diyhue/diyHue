@@ -5,7 +5,7 @@ import json
 from time import sleep
 from datetime import datetime
 from services.deconz import scanDeconz
-from lights.protocols import wled, mqtt, yeelight, hue, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import wled, mqtt, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -70,24 +70,25 @@ def scanForLights(): #scan for ESP8266 lights and strips
     #return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
-    mqtt.discover(bridgeConfig["config"]["mqtt"]) # lights will be added by the service
+    if bridgeConfig["config"]["mqtt"]["enabled"]:
+        mqtt.discover(bridgeConfig["config"]["mqtt"]) # brioadcast MQTT message, lights will be added by the service
+    if bridgeConfig["config"]["deconz"]["enabled"]:
+        deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
     yeelight.discover(detectedLights)
     native_multi.discover(detectedLights,device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
     tasmota.discover(detectedLights,device_ips)
     wled.discover(detectedLights)
-    wled.discover(detectedLights)
     hue.discover(detectedLights, bridgeConfig["config"]["hue"])
-    #shelly.discover(detectedLights,device_ips)
+    shelly.discover(detectedLights,device_ips)
     #esphome.discover(detectedLights,device_ips)
     #tradfri.discover(detectedLights)
-    #scanDeconz(detectedLights)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
         # check if light is already present
         lightIsNew = True
         for key, lightObj in bridgeConfig["lights"].items():
             if lightObj.protocol == light["protocol"]:
-                if light["protocol"] in ["native", "native_single", "native_multi"]:
+                if light["protocol"] == "native_multi":
                      if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["light_nr"] == light["protocol_cfg"]["light_nr"]:
                          logging.info("Update IP for light " + light["name"])
                          lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
@@ -98,15 +99,17 @@ def scanForLights(): #scan for ESP8266 lights and strips
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
-                elif light["protocol"] == "wled":
+                elif light["protocol"] in ["shelly", "wled", "native", "native_single"]:
                     # check based on mac address
                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
-                elif  light["protocol"] == "hue":
+                elif  light["protocol"] in  ["hue", "deconz"]:
                     # check based on light uniqueid
                     if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]:
+                        logging.info("Update IP for light " + light["name"])
+                        lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])

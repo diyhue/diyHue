@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 from flask import Flask
 from flask.json import jsonify
+#from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
 import ssl
@@ -14,20 +15,17 @@ from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
-
 from pprint import pprint
-
 bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
-
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
 api = Api(app)
+#cors = CORS(app, resources={r"*": {"origins": "*"}})
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
 api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}
-
 
 login_manager = flask_login.LoginManager()
 # We can now pass in our app to the login manager
@@ -112,8 +110,8 @@ if __name__ == '__main__':
     #configManager.bridgeConfig.save_config( backup=True)
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
-#    if bridgeConfig["emulator"]["deconz"]["enabled"]:
-#        Thread(target=deconz.websocketClient).start()
+    if bridgeConfig["config"]["deconz"]["enabled"]:
+        Thread(target=deconz.websocketClient).start()
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         Thread(target=mqtt.mqttServer).start()
 #    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:

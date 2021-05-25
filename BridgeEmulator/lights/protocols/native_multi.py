@@ -13,7 +13,7 @@ def set_light(light, data):
     state = requests.put("http://"+light.protocol_cfg["ip"]+"/state", json=lightsData, timeout=3)
     return state.text
 
-def get_light_state(address, light):
+def get_light_state(light):
     state = requests.get("http://"+light.protocol_cfg["ip"]+"/state?light=" + str(light.protocol_cfg["light_nr"]), timeout=3)
     return json.loads(state.text)
 

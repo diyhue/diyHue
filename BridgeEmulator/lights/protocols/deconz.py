@@ -1,12 +1,11 @@
 import json
-import configManager
+import logManager
 import requests
 
-bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
+logging = logManager.logger.get_logger(__name__)
 
-def set_light(address, light, data):
-    url = "http://" + addresses[light]["ip"] + "/api/" + addresses[light]["username"] + "/lights/" + addresses[light]["light_id"] + "/state"
+def set_light(light, data):
+    url = "http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["deconzUser"] + "/lights/" + light.protocol_cfg["deconzId"] + "/state"
     payload = {}
     payload.update(data)
     color = {}
@@ -26,10 +25,28 @@ def set_light(address, light, data):
         requests.put(url, json=payload, timeout=3)
         sleep(0.7)
     if len(color) != 0:
-        equests.put(url, json=color, timeout=3)
+        requests.put(url, json=color, timeout=3)
 
-def get_light_state(address, light):
-    state = requests.get("http://" + address[light]["ip"] + "/api/" + address[light]["username"] + "/lights/" + address[light]["light_id"]), timeout=3)
+def get_light_state(light):
+    state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["deconzUser"] + "/lights/" + light.protocol_cfg["deconzId"], timeout=3)
     return json.loads(state.text)["state"]
 
-def discover():
+def discover(detectedLights, credentials):
+    if "deconzUser" in credentials and credentials["deconzUser"] != "":
+        logging.debug("deconz: <discover> invoked!")
+        try:
+            response = requests.get("http://" + credentials["deconzHost"] + ":" + credentials["deconzPort"] + "/api/" + credentials["deconzUser"] + "/lights", timeout=3)
+            if response.status_code == 200:
+                logging.debug(response.text)
+                lights = json.loads(response.text)
+                for id, light in lights.items():
+                    modelid = "LCT015"
+                    if light["type"] == "Dimmable light":
+                        modelid = "LWB010"
+                    elif light["type"] == "Color temperature light":
+                        modelid = "LTW001"
+                    elif light["type"] == "On/Off plug-in unit":
+                        modelid = "LOM001"
+                    detectedLights.append({"protocol": "deconz", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["deconzHost"] + ":" + credentials["deconzPort"], "deconzUser": credentials["deconzUser"], "modelid": light["modelid"], "deconzId": id, "uniqueid": light["uniqueid"]}})
+        except Exception as e:
+            logging.info("Error connecting to Deconz: %s", e)
