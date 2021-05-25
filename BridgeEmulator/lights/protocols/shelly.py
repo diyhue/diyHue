@@ -1,15 +1,8 @@
 import json
-import logging
-import random
+import logManager
 import requests
-import socket
-import sys
-#import configManager
-from time import sleep
-from subprocess import check_output
-import lights
-from functions.network import getIpAddress
 
+logging = logManager.logger.get_logger(__name__)
 
 #bridgeConfig = configManager.bridgeConfig.yaml_config
 #newLights = configManager.runtimeConfig.newLights
@@ -35,7 +28,7 @@ def discover(detectedLights, device_ips):
                     shelly_data = json.loads(shelly_response.text)
                     logging.debug("shelly: ip: " + shelly_data["wifi_sta"]["ip"])
                     logging.debug("shelly: Mac:      " + shelly_data["mac"])
-                    detectedLights.append({"protocol": "shelly", "name": ip, "modelid": "LOM001", "protocol_cfg": {"ip": ip, "mac": shelly_data["mac"}})
+                    detectedLights.append({"protocol": "shelly", "name": ip, "modelid": "LOM001", "protocol_cfg": {"ip": ip, "mac": shelly_data["mac"]}})
 
         except Exception as e:
             logging.debug("shelly: ip " + ip + " is unknow device, " + str(e))
