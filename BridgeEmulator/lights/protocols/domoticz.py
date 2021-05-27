@@ -1,12 +1,11 @@
 import json
-import configManager
 import requests
+import logManager
 
-bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
+logging = logManager.logger.get_logger(__name__)
 
-def set_light(address, light, data):
-    url = "http://" + address[light]["ip"] + "/json.htm?type=command&idx=" + address[light]["light_id"]
+def set_light(light, data):
+    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&idx=" + light.protocol_cfg["light_id"]
     if "on" in data and not "bri" in data and not "ct" in data and not "xy" in data:
         for key, value in data.items():
             url += "&param=switchlight"
@@ -53,14 +52,16 @@ def set_light(address, light, data):
     requests.put(url, timeout=3)
 
 
-def get_light_state(address, light):
-    light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/json.htm?type=devices&rid=" + addresses[light]["light_id"], "GET", "{}"))
+def get_light_state(light):
+    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=devices&rid=" + light.protocol_cfg["light_id"]).json()
     state = {}
     if light_data["result"][0]["Status"] == "Off":
          state["on"] = False
     else:
          state["on"] = True
     state["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))
+    light.state.update(state)
     return state
 
 def discover():
+    pass

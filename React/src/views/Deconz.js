@@ -8,29 +8,63 @@ const Deconz = ({ API_KEY }) => {
   const [enable, setEnable] = useState(false)
   const [deconzHost, setDeconzHost] = useState('127.0.0.1')
   const [deconzPort, setDeconzPort] = useState(8443)
+  const [deconzUser, setDeconzUser] = useState('')
 
   useEffect(() => {
     axios.get(`/api/${API_KEY}/config/deconz`).then((result) => {
         setEnable(result.data["enabled"]);
         setDeconzHost(result.data["deconzHost"]);
         setDeconzPort(result.data["deconzPort"]);
+        setDeconzUser(result.data["deconzUser"]);
     }).catch((error) => {console.error(error)});
   }, []);
 
-  const onSubmit = (e) => {
-    console.log("submit")
-    e.preventDefault()
+
+  const pairDeconz = () => {
+    axios.post(
+      `http://${deconzHost}:${deconzPort}/api`,
+      {"devicetype": "diyhue#bridge"}, {timeout: 2000}
+    ).then((result) => {
+      if ( "success" in result.data[0]) {
+        setDeconzUser(result.data[0]["success"]["username"])
+        axios.put(
+          `/api/${API_KEY}/config`,
+          {'deconz': {'enabled': enable, 'deconzHost': deconzHost, 'deconzPort': deconzPort,'deconzUser': result.data[0]["success"]["username"]}}
+        ).then((fetchedData) => {
+          console.log(fetchedData.data);
+          setMessage('Connected, service restart required.');
+          setType('none');
+          setType('success');
+        })
+      } else {
+        setMessage(result.data[0]["error"]["description"]);
+        setType('none');
+        setType('error');
+      }
+    }).catch((error) => {
+      console.error(error);
+      setMessage( error.message);
+      setType('none');
+      setType('error');
+    });
+  }
+
+
+  const toggleEnable = (e) => {
+    setEnable(e);
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'deconz': {'enabled': enable, 'deconzHost': deconzHost, 'deconzPort': deconzPort}}
+        {'deconz': {'enabled': e}}
       ).then((fetchedData) => {
         console.log(fetchedData.data);
-        setMessage('Successfully saved, please restart the service');
+        setMessage(`Deconz ${e ? 'enabled' : 'disabled'}`);
+        setType('none');
         setType('success');
       }).catch((error) => {
         console.error(error)
         setMessage('Error occured, check browser console');
+        setType('none');
         setType('error');
       });
   }
@@ -39,13 +73,13 @@ const Deconz = ({ API_KEY }) => {
     <div className="content">
         {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
         <div className='contentContainer'>
-          <form className='add-form' onSubmit={onSubmit}>
+          <form className='add-form' onSubmit={pairDeconz}>
           <div className="switchContainer">
           <label className="switch">
             <input type="checkbox"
               value={enable}
               checked={enable}
-              onChange={(e) => setEnable(e.target.checked)}
+              onChange={(e) => toggleEnable(e.target.checked)}
             />
             <span className="slider"></span>
           </label>
@@ -69,7 +103,16 @@ const Deconz = ({ API_KEY }) => {
               />
           </div>
           <div className='form-control'>
-            <input type='submit' value='Save' className='btn btn-block green' />
+              <label>Deconz User</label>
+              <input
+              type='text'
+              placeholder='Automatically populated'
+              readOnly
+              value={deconzUser}
+              />
+          </div>
+          <div className='form-control'>
+            <input type='submit' value={typeof deconzUser === "string" &&  deconzUser.length > 0 ? 'Pair again' : 'Pair'} className='btn btn-block' />
           </div>
           </form>
         </div>

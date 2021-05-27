@@ -1,12 +1,11 @@
 import json
-import configManager
+import logManager
 import requests
 
-bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
+logging = logManager.logger.get_logger(__name__)
 
-def set_light(address, light, data):
-    url = "http://" + address[light]["ip"] + "/gateways/" + address[light]["device_id"] + "/" + address[light]["mode"] + "/" + str(address[light]["group"])
+def set_light(light, data):
+    url = "http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["device_id"] + "/" + light.protocol_cfg["mode"] + "/" + str(light.protocol_cfg["group"])
     for key, value in data.items():
         if key == "on":
             payload["status"] = value
@@ -24,11 +23,11 @@ def set_light(address, light, data):
                 payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = rgbBrightness(rgb, lights[light]["state"]["bri"])
             else:
                 payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = convert_xy(value[0], value[1], lights[light]["state"]["bri"])
-    logging.info(json.dumps(payload))
+    logging.debug(json.dumps(payload))
     requests.put(url, json=payload, timeout=3)
 
-def get_light_state(address, light):
-    r = requests.get("http://" + address[light]["ip"] + "/gateways/" + address[light]["device_id"] + "/" + address[light]["mode"] + "/" + str(address[light]["group"]), timeout=3)
+def get_light_state(light):
+    r = requests.get("http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["device_id"] + "/" + light.protocol_cfg["mode"] + "/" + str(light.protocol_cfg["group"]), timeout=3)
     light_data = json.loads(r.text)
     state ={}
     if light_data["state"] == "ON":
@@ -43,10 +42,12 @@ def get_light_state(address, light):
     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
         state["colormode"] = "hs"
         state["hue"] = light_data["hue"] * 180
-        if (not "saturation" in light_data) and addresses[light]["mode"] == "rgbw":
+        if (not "saturation" in light_data) and light.protocol_cfg["mode"] == "rgbw":
             state["sat"] = 255
         else:
             state["sat"] = int(light_data["saturation"] * 2.54)
+    light.state.update(state)
     return state
 
 def discover():
+    pass

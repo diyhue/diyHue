@@ -11,7 +11,7 @@ const HueBridge = ({ API_KEY }) => {
   useEffect(() => {
     axios.get(`/api/${API_KEY}/config/hue`).then((result) => {
         setBridgeIp(result.data["ip"]);
-        setHueUser(result.data["username"]);
+        setHueUser(result.data["hueUser"]);
     }).catch((error) => {console.error(error)});
   }, []);
 
@@ -24,7 +24,7 @@ const HueBridge = ({ API_KEY }) => {
         setHueUser(result.data[0]["success"]["username"])
         axios.put(
           `/api/${API_KEY}/config`,
-          {'hue': {'ip': bridgeIp, 'username': result.data[0]["success"]["username"]}}
+          {'hue': {'ip': bridgeIp, 'hueUser': result.data[0]["success"]["username"]}}
         ).then((fetchedData) => {
           console.log(fetchedData.data);
           setMessage('Connected, now scan for lights');

@@ -96,7 +96,8 @@ const Bridge = ({ API_KEY }) => {
                 <Dropdown options={timezones} value={timezone} onChange={(e) => setTimezone(e.value)} placeholder="Choose light modelid" />
             </div>
             <div className="switchContainer">
-              <label className="switch"> Remote API 
+            <p>Remote API </p>
+              <label className="switch">
                 <input type="checkbox"
                   value={remoteApi}
                   checked={remoteApi}

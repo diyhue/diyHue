@@ -1,12 +1,12 @@
 import json
-import configManager
+import logManager
 from subprocess import check_output
 from functions.colors import convert_rgb_xy, hsv_to_rgb
-bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
 
-def set_light(address, light, data, rgb = None):
-    url = "coaps://" + address[light]["ip"] + ":5684/15001/" + str(address[light]["device_id"])
+logging = logManager.logger.get_logger(__name__)
+
+def set_light(light, data):
+    url = "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["device_id"])
     for key, value in data.items():
         if key == "on":
             payload["5850"] = int(value)
@@ -51,25 +51,33 @@ def set_light(address, light, data, rgb = None):
 
     if "5712" not in payload:
         payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
-    check_output("./coap-client-linux -m put -u \"" + addresses[light]["identity"] + "\" -k \"" + addresses[light]["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
+    check_output("./coap-client-linux -m put -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
 
-def get_light_state(address, light):
-    light_data = json.loads(check_output("./coap-client-linux -m get -u \"" + address[light]["identity"] + "\" -k \"" + address[light]["preshared_key"] + "\" \"coaps://" + address[light]["ip"] + ":5684/15001/" + str(address[light]["device_id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
-    state = {}
-    state["on"] = bool(light_data["3311"][0]["5850"])
-    state["bri"] = light_data["3311"][0]["5851"]
+def get_light_state(light):
+    light_data = json.loads(check_output("./coap-client-linux -m get -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["preshared_key"] + "\" \"coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["device_id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+    light.state["on"] = bool(light_data["3311"][0]["5850"])
+    light.state["bri"] = light_data["3311"][0]["5851"]
     if "5706" in light_data["3311"][0]:
         if light_data["3311"][0]["5706"] == "f5faf6":
-            state["ct"] = 170
+            light.state["ct"] = 170
         elif light_data["3311"][0]["5706"] == "f1e0b5":
-            state["ct"] = 320
+            light.state["ct"] = 320
         elif light_data["3311"][0]["5706"] == "efd275":
-            state["ct"] = 470
+            light.state["ct"] = 470
     else:
-        state["ct"] = 470
-    state["reachable"] = True
+        light.state["ct"] = 470
+    light.state["reachable"] = True
 
     return state
 
-def discover():
-    return
+def discover(detectedLights, tradfriConfig):
+    if "psk" in tradfriConfig:
+        logging.debug("tradfri: <discover> invoked!")
+        tradriDevices = json.loads(check_output("./coap-client-linux -m get -u \"" + tradfriConfig["identity"] + "\" -k \"" + tradfriConfig["psk"] + "\" \"coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+        logging.debug(tradriDevices)
+        for device in tradriDevices:
+            deviceParameters = json.loads(check_output("./coap-client-linux -m get -u \"" + tradfriConfig["identity"] + "\" -k \"" + tradfriConfig["psk"] + "\" \"coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001/" + str(device) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+            if "3311" in deviceParameters:
+                logging.debug("found tradfi light " + deviceParameters["9001"])
+                detectedLights.append({"protocol": "tradfri", "name": deviceParameters["9001"], "modelid": "LCT015", "protocol_cfg": {"ip": tradfriConfig["tradfriGwIp"], "id": device, "identity": tradfriConfig["identity"], "psk":  tradfriConfig["psk"]}})
+    return detectedLights

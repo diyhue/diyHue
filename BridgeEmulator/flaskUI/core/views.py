@@ -3,14 +3,15 @@ from werkzeug.security import generate_password_hash,check_password_hash
 from flaskUI.core.forms import LoginForm
 import flask_login
 import uuid
+import json
 import configManager
 import HueObjects
 from flaskUI.core import User
 from lights.light_types import lightTypes
-
+from subprocess import check_output
+from pprint import pprint
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core',__name__)
-from pprint import pprint
 @core.route('/')
 @flask_login.login_required
 def index():
@@ -54,17 +55,25 @@ def get_light_types():
         return {"result": result}
     elif request.method == 'POST':
         data = request.get_json(force=True)
-        pprint(data)
         lightId = list(data)[0]
-        print(lightId)
         modelId = data[lightId]
-        print(modelId)
         bridgeConfig["lights"][lightId].modelid = modelId
         bridgeConfig["lights"][lightId].state = lightTypes[modelId]["state"]
         bridgeConfig["lights"][lightId].config = lightTypes[modelId]["config"]
         return "success"
 
-
+@core.route('/tradfri', methods=['POST'])
+def pairTradfri():
+    try:
+        data = request.get_json(force=True)
+        pprint(data)
+        registration = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k \"" + data["tradfriCode"] + "\" -e '{\"9090\":\"" + data["identity"] + "\"}' \"coaps://" + data["tradfriGwIp"] + ":5684/15011/9063\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+        if "9091" in registration:
+            bridgeConfig["config"]["tradfri"] = {"psk": registration["9091"], "tradfriGwIp": data["tradfriGwIp"], "identity": data["identity"]}
+            return {"result": "success", "psk": registration["9091"]}
+        return {"result": registration}
+    except Exception as e:
+        return {"result": str(e)}
 
 @core.route('/save')
 def save_config():

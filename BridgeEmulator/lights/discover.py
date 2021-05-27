@@ -80,8 +80,8 @@ def scanForLights(): #scan for ESP8266 lights and strips
     wled.discover(detectedLights)
     hue.discover(detectedLights, bridgeConfig["config"]["hue"])
     shelly.discover(detectedLights,device_ips)
-    #esphome.discover(detectedLights,device_ips)
-    #tradfri.discover(detectedLights)
+    esphome.discover(detectedLights,device_ips)
+    tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
         # check if light is already present
@@ -94,12 +94,12 @@ def scanForLights(): #scan for ESP8266 lights and strips
                          lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                          lightIsNew = False
                          break
-                elif light["protocol"] in ["yeelight", "tasmota"]:
+                elif light["protocol"] in ["yeelight", "tasmota", "tradfri"]:
                     if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
-                elif light["protocol"] in ["shelly", "wled", "native", "native_single"]:
+                elif light["protocol"] in ["shelly", "wled", "native", "native_single", "esphome"]:
                     # check based on mac address
                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"]:
                         logging.info("Update IP for light " + light["name"])

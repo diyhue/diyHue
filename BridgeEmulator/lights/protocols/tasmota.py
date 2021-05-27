@@ -79,7 +79,7 @@ def rgb_to_hex(rgb):
     return '%02x%02x%02x' % rgb
     #return '#%02x%02x%02x' % rgb
 
-def get_light_state(address, light):
+def get_light_state(light):
     logging.debug("tasmota: <get_light_state> invoked!")
     data = sendRequest ("http://" + light.protocol_cfg["ip"] + "/cm?cmnd=Status%2011")
     #logging.debug(data)

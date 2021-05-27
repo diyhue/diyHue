@@ -77,13 +77,9 @@ api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:
 ### WEB INTERFACE
 from flaskUI.core.views import core
 from flaskUI.devices.views import devices
-from flaskUI.mqtt.views import manageMqtt
-from flaskUI.deconz.views import manageDeconz
 from flaskUI.error_pages.handlers import error_pages
 app.register_blueprint(core)
 app.register_blueprint(devices)
-app.register_blueprint(manageMqtt)
-app.register_blueprint(manageDeconz)
 app.register_blueprint(error_pages)
 
 

@@ -1,5 +1,6 @@
 import React from 'react'
 import { FaHome, FaLightbulb, FaLink, FaCube,  FaBraille, FaExclamationTriangle, FaCog, FaSignOutAlt, FaInstagram} from "react-icons/fa";
+import {AiOutlineGateway} from "react-icons/ai";
 
 const TheSidebar = ({ showSidebar }) => {
 
@@ -24,6 +25,9 @@ const TheSidebar = ({ showSidebar }) => {
         </a>
         <a href="#deconz">
           <li><FaCube style={{color: '#42A138'}}/> Deconz</li>
+        </a>
+        <a href="#tradfri">
+          <li><AiOutlineGateway style={{color: '#CCA138'}}/> Tradfri</li>
         </a>
         <a href="#hue">
           <li><FaInstagram style={{color: '#8400FF'}}/> Hue Bridge</li>
