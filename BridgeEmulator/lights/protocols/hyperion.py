@@ -42,12 +42,12 @@ def discover(detectedLights):
                     properties["ip"] = line.split(":")[2][2:]
                 elif line[:6] == "SERVER":
                     properties["version"] = re.match("Hyperion/\S*", line)
-            detectedLights.append({"protocol": "hyperion", "name": properties["name"], "modelid": "LCT015", "protocol_cfg": properties})
+            if "name" in properties:
+                detectedLights.append({"protocol": "hyperion", "name": properties["name"], "modelid": "LCT015", "protocol_cfg": properties})
 
         except socket.timeout:
             logging.debug('Hyperion search end')
             sock.close()
-            break
 
 
 def set_light(light, data):
