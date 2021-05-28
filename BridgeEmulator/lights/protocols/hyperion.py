@@ -48,6 +48,7 @@ def discover(detectedLights):
         except socket.timeout:
             logging.debug('Hyperion search end')
             sock.close()
+            break
 
 
 def set_light(light, data):
