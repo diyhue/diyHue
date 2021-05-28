@@ -12,24 +12,24 @@ const Deconz = ({ API_KEY }) => {
 
   useEffect(() => {
     axios.get(`/api/${API_KEY}/config/deconz`).then((result) => {
-        setEnable(result.data["enabled"]);
-        setDeconzHost(result.data["deconzHost"]);
-        setDeconzPort(result.data["deconzPort"]);
-        setDeconzUser(result.data["deconzUser"]);
-    }).catch((error) => {console.error(error)});
+      setEnable(result.data["enabled"]);
+      setDeconzHost(result.data["deconzHost"]);
+      setDeconzPort(result.data["deconzPort"]);
+      setDeconzUser(result.data["deconzUser"]);
+    }).catch((error) => { console.error(error) });
   }, []);
 
 
   const pairDeconz = () => {
     axios.post(
       `http://${deconzHost}:${deconzPort}/api`,
-      {"devicetype": "diyhue#bridge"}, {timeout: 2000}
+      { "devicetype": "diyhue#bridge" }, { timeout: 2000 }
     ).then((result) => {
-      if ( "success" in result.data[0]) {
+      if ("success" in result.data[0]) {
         setDeconzUser(result.data[0]["success"]["username"])
         axios.put(
           `/api/${API_KEY}/config`,
-          {'deconz': {'enabled': enable, 'deconzHost': deconzHost, 'deconzPort': deconzPort,'deconzUser': result.data[0]["success"]["username"]}}
+          { 'deconz': { 'enabled': enable, 'deconzHost': deconzHost, 'deconzPort': deconzPort, 'deconzUser': result.data[0]["success"]["username"] } }
         ).then((fetchedData) => {
           console.log(fetchedData.data);
           setMessage('Connected, service restart required.');
@@ -43,7 +43,7 @@ const Deconz = ({ API_KEY }) => {
       }
     }).catch((error) => {
       console.error(error);
-      setMessage( error.message);
+      setMessage(error.message);
       setType('none');
       setType('error');
     });
@@ -55,7 +55,7 @@ const Deconz = ({ API_KEY }) => {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'deconz': {'enabled': e}}
+        { 'deconz': { 'enabled': e } }
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage(`Deconz ${e ? 'enabled' : 'disabled'}`);
@@ -71,51 +71,51 @@ const Deconz = ({ API_KEY }) => {
 
   return (
     <div className="content">
-        {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
-        <div className='contentContainer'>
-          <form className='add-form' onSubmit={pairDeconz}>
+      {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
+      <div className='contentContainer'>
+        <form className='add-form' onSubmit={pairDeconz}>
           <div className="switchContainer">
-          <label className="switch">
-            <input type="checkbox"
-              value={enable}
-              checked={enable}
-              onChange={(e) => toggleEnable(e.target.checked)}
-            />
-            <span className="slider"></span>
-          </label>
-        </div>
+            <label className="switch">
+              <input type="checkbox"
+                value={enable}
+                checked={enable}
+                onChange={(e) => toggleEnable(e.target.checked)}
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
           <div className='form-control'>
-              <label>Deconz host</label>
-              <input
+            <label>Deconz host</label>
+            <input
               type='text'
               placeholder='Deconz host'
               value={deconzHost}
               onChange={(e) => setDeconzHost(e.target.value)}
-              />
+            />
           </div>
           <div className='form-control'>
-              <label>Deconz port</label>
-              <input
+            <label>Deconz port</label>
+            <input
               type='number'
               placeholder='Deconz port'
               value={deconzPort}
               onChange={(e) => setDeconzPort(e.target.value)}
-              />
+            />
           </div>
           <div className='form-control'>
-              <label>Deconz User</label>
-              <input
+            <label>Deconz User</label>
+            <input
               type='text'
               placeholder='Automatically populated'
               readOnly
               value={deconzUser}
-              />
+            />
           </div>
           <div className='form-control'>
-            <input type='submit' value={typeof deconzUser === "string" &&  deconzUser.length > 0 ? 'Pair again' : 'Pair'} className='btn btn-block' />
+            <input type='submit' value={typeof deconzUser === "string" && deconzUser.length > 0 ? 'Pair again' : 'Pair'} className='btn btn-block' />
           </div>
-          </form>
-        </div>
+        </form>
+      </div>
     </div>
   )
 }

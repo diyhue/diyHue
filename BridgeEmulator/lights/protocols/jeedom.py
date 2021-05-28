@@ -5,8 +5,8 @@ import requests
 bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 
-def set_light(address, light, data):
-    url = "http://" + address[light]["ip"] + "/core/api/jeeApi.php?apikey=" + address[light]["light_api"] + "&type=cmd&id="
+def set_light(light, data):
+    url = "http://" + light.protocol_cfg["ip"] + "/core/api/jeeApi.php?apikey=" +light.protocol_cfg["light_api"] + "&type=cmd&id="
     for key, value in data.items():
         if key == "on":
             if value:
@@ -18,13 +18,15 @@ def set_light(address, light, data):
     requests.get(url, timeout=3)
 
 def get_light_state(address, light):
-    light_data = json.loads(sendRequest("http://" + addresses[light]["ip"] + "/core/api/jeeApi.php?apikey=" + addresses[light]["light_api"] + "&type=cmd&id=" + addresses[light]["light_id"], "GET", "{}"))
+    light_data = requests.get("http://" +light.protocol_cfg["ip"] + "/core/api/jeeApi.php?apikey=" + light.protocol_cfg["light_api"] + "&type=cmd&id=" + light.protocol_cfg["light_id"]).json()
     state = {}
     if light_data == 0:
          state["on"] = False
     else:
          state["on"] = True
     state["bri"] = str(round(float(light_data)/100*255))
+    light.state.update(state)
     return state
 
 def discover():
+    pass

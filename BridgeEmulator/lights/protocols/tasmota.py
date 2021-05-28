@@ -26,7 +26,7 @@ def discover(detectedLights, device_ips):
             logging.debug ( "tasmota: probing ip " + ip)
             response = requests.get ("http://" + ip + "/cm?cmnd=Status%200", timeout=3)
             if response.status_code == 200:
-                device_data = json.loads(response.text)
+                device_data = response.json()
                 #logging.debug(pretty_json(device_data))
                 if ("StatusSTS" in device_data):
 

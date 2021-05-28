@@ -17,4 +17,4 @@ def get_light_state(light):
 
 
 def discover():
-    return
+    pass

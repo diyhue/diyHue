@@ -9,13 +9,13 @@ const Devices = ({ API_KEY }) => {
   const [message, setMessage] = useState('no message');
 
   const fetchDevices = () => {
-    if (API_KEY !== undefined ) {
+    if (API_KEY !== undefined) {
       axios
-      .get(`/sensors`)
-      .then((fetchedData) => {
-        console.log(fetchedData.data);
-        setDevices(fetchedData.data);
-      }).catch((error) => {console.error(error)});
+        .get(`/sensors`)
+        .then((fetchedData) => {
+          console.log(fetchedData.data);
+          setDevices(fetchedData.data);
+        }).catch((error) => { console.error(error) });
     }
   }
 
@@ -32,19 +32,19 @@ const Devices = ({ API_KEY }) => {
       {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
       <div className="cardGrid">
         {Object.entries(devices).map(([id, device]) => (
-            <Device
-              key={id}
-              api_key={API_KEY}
-              id={id}
-              device={device}
-              setType={setType}
-              setMessage={setMessage}
-            />
+          <Device
+            key={id}
+            api_key={API_KEY}
+            id={id}
+            device={device}
+            setType={setType}
+            setMessage={setMessage}
+          />
         ))}
-        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
 
 export default Devices

@@ -5,7 +5,7 @@ import json
 from time import sleep
 from datetime import datetime
 from services.deconz import scanDeconz
-from lights.protocols import wled, mqtt, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -63,6 +63,18 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         return newLightID
     return False
 
+def manualAddLight(ip, protocol, modelid="LCT015", name="", config={}):
+    if protocol == "auto":
+        detectedLights = []
+        native_multi.discover(detectedLights,[ip])
+        tasmota.discover(detectedLights,[ip])
+        shelly.discover(detectedLights,[ip])
+        esphome.discover(detectedLights,[ip])
+        if len(detectedLight) == 1:
+            logging.info("Found light " + detectedLights[0]["protocol"] + " " + detectedLights[0]["name"])
+            addNewLight(detectedLight[0]["modelid"], detectedLight[0]["name"], detectedLight[0]["protocol"], detectedLight[0]["protocol_cfg"])
+    else:
+        addNewLight(modelid, name, protocol, config)
 
 def scanForLights(): #scan for ESP8266 lights and strips
     bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
@@ -82,6 +94,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
     shelly.discover(detectedLights,device_ips)
     esphome.discover(detectedLights,device_ips)
     tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
+    hyperion.discover(detectedLights)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
         # check if light is already present
@@ -94,7 +107,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                          lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                          lightIsNew = False
                          break
-                elif light["protocol"] in ["yeelight", "tasmota", "tradfri"]:
+                elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion"]:
                     if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]

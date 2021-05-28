@@ -10,9 +10,9 @@ const Alarm = ({ API_KEY }) => {
 
   useEffect(() => {
     axios.get(`/api/${API_KEY}/config/alarm`).then((result) => {
-        setEnable(result.data["enabled"]);
-        setEmail(result.data["email"]);
-    }).catch((error) => {console.error(error)});
+      setEnable(result.data["enabled"]);
+      setEmail(result.data["email"]);
+    }).catch((error) => { console.error(error) });
   }, []);
 
 
@@ -21,7 +21,7 @@ const Alarm = ({ API_KEY }) => {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'alarm': {'enabled': e}}
+        { 'alarm': { 'enabled': e } }
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage(`Alarm ${e ? 'activated' : 'deactivated'}`);
@@ -40,7 +40,7 @@ const Alarm = ({ API_KEY }) => {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'alarm': {'enabled': enable, 'email': email}}
+        { 'alarm': { 'enabled': enable, 'email': email } }
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage('Successfully saved');
@@ -56,33 +56,33 @@ const Alarm = ({ API_KEY }) => {
 
   return (
     <div className="content">
-        {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
-        <div className='contentContainer'>
-          <form className='add-form' onSubmit={onSubmit}>
+      {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
+      <div className='contentContainer'>
+        <form className='add-form' onSubmit={onSubmit}>
           <div className="switchContainer">
-          <label className="switch">
-            <input type="checkbox"
-              value={enable}
-              checked={enable}
-              onChange={(e) => toggleEnable(e.target.checked)}
-            />
-            <span className="slider"></span>
-          </label>
-        </div>
+            <label className="switch">
+              <input type="checkbox"
+                value={enable}
+                checked={enable}
+                onChange={(e) => toggleEnable(e.target.checked)}
+              />
+              <span className="slider"></span>
+            </label>
+          </div>
           <div className='form-control'>
-              <label>e-mail</label>
-              <input
+            <label>e-mail</label>
+            <input
               type='text'
               placeholder='Notification email'
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              />
+            />
           </div>
           <div className='form-control'>
             <input type='submit' value='Save' className='btn btn-block' />
           </div>
-          </form>
-        </div>
+        </form>
+      </div>
     </div>
   )
 }

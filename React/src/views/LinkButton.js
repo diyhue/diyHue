@@ -3,7 +3,7 @@ import { useState } from "react";
 import { FaTimes } from "react-icons/fa";
 import Flash from "../containers/Flash"
 
-export default function LinkButton({API_KEY}) {
+export default function LinkButton({ API_KEY }) {
   //console.log(API_KEY)
 
   const [type, setType] = useState('none');
@@ -13,7 +13,7 @@ export default function LinkButton({API_KEY}) {
     axios
       .put(
         `/api/${API_KEY}/config`,
-        {'linkbutton': {'lastlinkbuttonpushed': Date.now() / 1000 | 0 }}
+        { 'linkbutton': { 'lastlinkbuttonpushed': Date.now() / 1000 | 0 } }
       ).then((fetchedData) => {
         console.log(fetchedData.data);
         setMessage('Pairing is allowed for 30 seconds');
@@ -25,7 +25,7 @@ export default function LinkButton({API_KEY}) {
         setType('none');
         setType('error');
       });
-    };
+  };
 
   return (
     <div className="content">

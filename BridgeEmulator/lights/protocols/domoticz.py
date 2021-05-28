@@ -18,7 +18,7 @@ def set_light(light, data):
         url += "&param=setcolbrightnessvalue"
         color_data = {}
 
-        old_light_state = lights[light]["state"]
+        old_light_state = light.state
         colormode = old_light_state["colormode"]
         ct = old_light_state["ct"]
         bri = old_light_state["bri"]
