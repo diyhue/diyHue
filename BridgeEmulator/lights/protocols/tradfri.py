@@ -6,6 +6,7 @@ from functions.colors import convert_rgb_xy, hsv_to_rgb
 logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data):
+    payload = {}
     url = "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"])
     for key, value in data.items():
         if key == "on":
@@ -51,10 +52,10 @@ def set_light(light, data):
 
     if "5712" not in payload:
         payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
-    check_output("./coap-client-linux -m put -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["preshared_key"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
+    check_output("./coap-client-linux -m put -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["psk"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
 
 def get_light_state(light):
-    light_data = json.loads(check_output("./coap-client-linux -m get -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["preshared_key"] + "\" \"coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+    light_data = json.loads(check_output("./coap-client-linux -m get -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["psk"] + "\" \"coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
     light.state["on"] = bool(light_data["3311"][0]["5850"])
     light.state["bri"] = light_data["3311"][0]["5851"]
     if "5706" in light_data["3311"][0]:
