@@ -70,6 +70,7 @@ Switches (custom esp8266 switches) | | Hue Sync for PC|  MQTT lights [see mqtt](
 Autodiscover lights | | HueSwitcher |  any PWM(CCT, RGB, RGBW) incl. Dimming|
 Hue entertainment | |  | On/Off 433Mhz devices (multiple devices for every esp8266) | 
  | || | LYT8266|
+ | || | [WLED](https://github.com/aircoookie/wled)|
 
 
 
@@ -131,7 +132,8 @@ Hue entertainment | |  | On/Off 433Mhz devices (multiple devices for every esp82
 - On/Off plugs/lights (up to 6 lights for every esp8266)
 - On/Off 433Mhz devices (multiple devices for every esp8266)
 - MQTT lights [see mqtt](https://diyhue.readthedocs.io/en/latest/lights/mqtt.html)
-- [Hyperion.ng](https://github.com/hyperion-project/hyperion.ng) -->
+- [Hyperion.ng](https://github.com/hyperion-project/hyperion.ng)
+- [WLED](https://github.com/aircoookie/wled) -->
   
 <!-- ## To Do-->
 
