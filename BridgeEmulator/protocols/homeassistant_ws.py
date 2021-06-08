@@ -235,15 +235,15 @@ def create_ws_client(config, lights, adresses, sensors):
     global homeassistant_token
     global homeassistant_url
     global include_by_default
-    if config['homeAssistantIp'] is not None:
+    if 'homeAssistantIp' in config:
         homeassistant_ip = config['homeAssistantIp']
-    if config['homeAssistantPort'] is not None:
+    if 'homeAssistantPort' in config:
         homeAssistant_port = config['homeAssistantPort']
-    if config['homeAssistantToken'] is not None:
+    if 'homeAssistantToken' in config:
         homeassistant_token = config['homeAssistantToken']
-    if config['homeAssistantIncludeByDefault'] is not None:
+    if 'homeAssistantIncludeByDefault' in config:
         include_by_default = config['homeAssistantIncludeByDefault']
-    if config['homeAssistantUseHttps'] is not None:
+    if 'homeAssistantUseHttps' in config:
         use_https = config['homeAssistantUseHttps']
    
     ws_prefix = "ws"
