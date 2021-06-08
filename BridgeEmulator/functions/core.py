@@ -12,7 +12,7 @@ def staticConfig():
             "errorcode": 0,
             "status": "idle"
         },
-        "datastoreversion": "98",
+        "datastoreversion": "103",
         "dhcp": True,
         "factorynew": False,
         "internetservices": {
@@ -24,7 +24,7 @@ def staticConfig():
         "linkbutton": False,
         "modelid": "BSB002",
         "portalconnection": "disconnected",
-        "portalservices": True,
+        "portalservices": False,
         "portalstate": {
             "communication": "disconnected",
             "incoming": False,
@@ -34,7 +34,6 @@ def staticConfig():
         "proxyaddress": "none",
         "proxyport": 0,
         "replacesbridgeid": None,
-        "starterkitid": "",
         "swupdate": {
             "checkforupdate": False,
             "devicetypes": {

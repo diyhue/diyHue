@@ -133,13 +133,11 @@ def hex_to_rgb(value):
     tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
     return list(tup)
 
-def get_light_state(address, light):
-    #logging.info("name is: " + light["name"])
-    #if light["name"].find("desklamp") > 0: logging.info("is desk lamp")
+def get_light_state(light):
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
-    tcp_socket.connect((address["ip"], int(55443)))
+    tcp_socket.connect((light.protocol_cfg["ip"], int(55443)))
     msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
@@ -150,7 +148,7 @@ def get_light_state(address, light):
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
     #if ip[:-3] == "201" or ip[:-3] == "202":
-    if light["name"].find("desklamp") > 0:
+    if light.name.find("desklamp") > 0:
         msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
@@ -186,6 +184,7 @@ def get_light_state(address, light):
             state["sat"] = int(int(hue_data[1]) * 2.54)
             state["colormode"] = "hs"
     tcp_socket.close()
+    light.state.update(state)
     return state
 
 

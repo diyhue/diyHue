@@ -120,7 +120,6 @@ class Light():
             state = incProcess(self.state, state)
             self.updateLightState(state)
             self.state.update(state)
-        pprint(state)
 
         for protocol in protocols:
             if "lights.protocols." + self.protocol == protocol.__name__:
@@ -138,6 +137,7 @@ class Light():
     def getDevice(self):
         result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL,
                                        self.id_v2 + 'device')), "type": "device"}
+        result["id_v1"] = self.id_v1
         result["metadata"] = {
             "archetype": "sultan_bulb",
             "name": self.name
@@ -152,20 +152,14 @@ class Light():
         }
         result["services"] = [
             {
-                "reference_id": self.id_v2,
-                "reference_type": "light",
                 "rid": self.id_v2,
                 "rtype": "light"
             },
             {
-                "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
-                "reference_type": "zigbee_connectivity",
                 "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
                 "rtype": "zigbee_connectivity"
             },
             {
-                "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')),
-                "reference_type": "entertainment",
                 "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')),
                 "rtype": "entertainment"
             }
@@ -181,6 +175,12 @@ class Light():
         result["status"] = "connected" if self.state["reachable"] else "connectivity_issue"
         result["type"] = "zigbee_connectivity"
         return result
+
+    def getBridgeHome(self):
+        return {
+            "rid": self.id_v2,
+            "rtype": "light"
+        }
 
     def getV2Api(self):
         result = {}
@@ -206,14 +206,17 @@ class Light():
             }
         if "bri" in self.state:
             result["dimming"] = {
-                "brightness": self.state["bri"]
+                "brightness": self.state["bri"] / 2.54
             }
-        result["dynamics"] = {}
+        result["dynamics"] = {
+            "status": "none",
+            "status_values": ["none"]
+            }
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {"name": self.name}
         if "archetype" in self.config:
-            result["metadata"]["archetype"] = self.config["archetype"]
+            result["metadata"]["archetype"] = "sultan_bulb" # self.config["archetype"]
         result["mode"] = "normal"
         result["on"] = {
             "on": self.state["on"]
@@ -361,7 +364,6 @@ class Group():
                 light().state.update(lightsState[light().id_v1])
                 light().updateLightState(lightsState[light().id_v1])
                 if light().protocol in ["native_multi", "mqtt"]:
-                    light().updateLightState(lightsState[light().id_v1])
                     if light().protocol_cfg["ip"] not in queueState:
                         queueState[light().protocol_cfg["ip"]] = {
                             "object": light(), "lights": {}}
@@ -413,8 +415,6 @@ class Group():
     def getV2Room(self):
         result = {"grouped_services": [], "services": []}
         result["grouped_services"].append({
-            "reference_id": self.id_v2,
-            "reference_type": "grouped_light",
             "rid": self.id_v2,
             "rtype": "grouped_light"
 
@@ -428,9 +428,7 @@ class Group():
         for light in self.lights:
             if light():
                 result["services"].append({
-                    "reference_id": light().id_v1,
-                    "reference_type": "light",
-                    "rid": light().id_v1,
+                    "rid": light().id_v2,
                     "rtype": "light"
                 })
 
@@ -441,7 +439,7 @@ class Group():
         result = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
-        result["on"] = self.update_state()["any_on"]
+        result["on"] = {"on": self.update_state()["any_on"]}
         result["type"] = "grouped_light"
         return result
 
@@ -470,8 +468,6 @@ class Group():
             "stream_proxy": {
                 "mode": "auto",
                 "node": {
-                    "reference_id": "57a9ebc9-406d-4a29-a4ff-42acee9e9be9",
-                    "reference_type": "entertainment",
                     "rid": "57a9ebc9-406d-4a29-a4ff-42acee9e9be9",
                     "rtype": "entertainment"
                 }
@@ -496,8 +492,6 @@ class Group():
                             {
                                 "index": x,
                                 "service": {
-                                    "reference_id": entertainmentUuid,
-                                    "reference_type": "entertainment",
                                     "rid": entertainmentUuid,
                                     "rtype": "entertainment"
                                 }
@@ -516,8 +510,6 @@ class Group():
                             "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
                         },
                         "service": {
-                            "reference_id": entertainmentUuid,
-                            "reference_type": "entertainment",
                             "rid": entertainmentUuid,
                             "rtype": "entertainment"
                         }
@@ -551,7 +543,7 @@ class Scene():
         self.name = data["name"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.owner = data["owner"] if "owner" in data else "none"
+        self.owner = data["owner"]
         self.appdata = data["appdata"] if "appdata" in data else {}
         self.type = data["type"] if "type" in data else "LightScene"
         self.picture = data["picture"] if "picture" in data else ""
@@ -561,12 +553,33 @@ class Scene():
         self.lightstates = weakref.WeakKeyDictionary()
         self.group = data["group"] if "group" in data else None
         self.lights = data["lights"] if "lights" in data else []
+        if "group" in data:
+            self.storelightstate()
+            self.lights = self.group().lights
 
     def __del__(self):
         logging.info(self.name + " scene was destroyed.")
 
     def add_light(self, light):
         self.lights.append(light)
+
+    def activate(self, action):
+        queueState = {}
+        for light, state in self.lightstates.items():
+            light.state.update(state)
+            light.updateLightState(state)
+            if light.protocol in ["native_multi", "mqtt"]:
+                if light.protocol_cfg["ip"] not in queueState:
+                    queueState[light.protocol_cfg["ip"]] = {
+                        "object": light, "lights": {}}
+                if light.protocol == "native_multi":
+                    queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["light_nr"]] = state
+                elif light.protocol == "mqtt":
+                    queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["command_topic"]] = state
+            else:
+                light.setV1State(state)
+        for device, state in queueState.items():
+            state["object"].setV1State(state)
 
     def getV1Api(self):
         result = {}
@@ -576,7 +589,8 @@ class Scene():
         result["lightstates"] = {}
         if self.type == "LightScene":
             for light in self.lights:
-                result["lights"].append(light().id_v1)
+                if light():
+                    result["lights"].append(light().id_v1)
         elif self.type == "GroupScene":
             result["group"] = self.group().id_v1
             for light in self.group().lights:
@@ -608,7 +622,7 @@ class Scene():
                 v2State["on"] = {"on": state["on"]}
             if "bri" in state:
                 v2State["dimming"] = {
-                    "brightness": state["bri"]}
+                    "brightness": state["bri"] / 2.54}
             if "xy" in state:
                 v2State["color"] = {"xy": {"x": state["xy"][0], "y": state["xy"][1]}}
             if "ct" in state:
@@ -619,8 +633,6 @@ class Scene():
                 {
                     "action": v2State,
                     "target": {
-                        "reference_id": light.id_v2,
-                        "reference_type": "light",
                         "rid": light.id_v2,
                         "rtype": "light",
                     },
@@ -630,34 +642,47 @@ class Scene():
         if self.type == "GroupScene":
             if self.group():
                 result["group"] = {
-                    "reference_id": self.group().id_v2,
-                    "reference_type": "room",
-                    "rid": self.group().id_v2,
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.group().id_v2 + 'room')),
                     "rtype": "room"
                 }
         result["metadata"] = {}
+        if self.image != None:
+            result["metadata"]["image"] = {"rid": self.image,
+                "rtype": "public_image"}
+        result["metadata"]["name"] = self.name
         result["id"] = self.id_v2
         result["id_v1"] = "/scenes/" + self.id_v1
-        result["name"] = self.name
         result["type"] = "scene"
         return result
+
+    def storelightstate(self):
+        lights = []
+        if self.type == "GroupScene":
+            for light in self.group().lights:
+                if light():
+                    lights.append(light)
+        else:
+            for light in self.lightstates.keys():
+                if light():
+                    lights.append(light)
+        for light in lights:
+            state = {}
+            if "colormode" in light().state:
+                if light().state["colormode"] == "xy":
+                    state["xy"] = light().state["xy"]
+                elif light().state["colormode"] == "ct":
+                    state["ct"] = light().state["ct"]
+                elif light().state["colormode"] == "hs":
+                    state["hue"] = light().state["hue"]
+                    state["sat"] = light().state["sat"]
+            state["on"] = light().state["on"]
+            state["bri"] = light().state["bri"]
+            self.lightstates[light()] = state
 
     def update_attr(self, newdata):
         self.lastupdated = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         if "storelightstate" in newdata and newdata["storelightstate"]:
-            for light, state in self.lightstates.items():
-                state = {}
-                if "colormode" in light.state:
-                    if light.state["colormode"] == "xy":
-                        state["xy"] = light.state["xy"]
-                    elif light.state["colormode"] == "ct":
-                        state["ct"] = light.state["ct"]
-                    elif light.state["colormode"] == "hs":
-                        state["hue"] = light.state["hue"]
-                        state["sat"] = light.state["sat"]
-                state["on"] = light.state["on"]
-                state["bri"] = light.state["bri"]
-
+            self.storelightstate()
             return
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
@@ -882,6 +907,20 @@ class Sensor():
     def setV1State(self, state):
         self.state.update(state)
 
+    def getBridgeHome(self):
+        if self.modelid == "SML001":
+            if self.type == "ZLLPresence":
+                rtype = "motion"
+            elif self.type == "ZLLLightLevel":
+                rtype = "temperature"
+            elif self.type == "ZLLTemperature":
+                rtype = "light_level"
+            return {
+                "rid": self.id_v2,
+                "rtype": rtype
+                }
+        return False
+
     def getV1Api(self):
         result = {}
         if self.modelid in sensorTypes:
@@ -923,32 +962,22 @@ class Sensor():
             }
             result["services"] = [
                 {
-                    "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
-                    "reference_type": "motion",
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
                     "rtype": "motion"
                 },
                 {
-                    "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'battery')),
-                    "reference_type": "battery",
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'battery')),
                     "rtype": "battery"
                 },
                 {
-                    "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
-                    "reference_type": "zigbee_connectivity",
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
                     "rtype": "zigbee_connectivity"
                 },
                 {
-                    "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'light_level')),
-                    "reference_type": "light_level",
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'light_level')),
                     "rtype": "light_level"
                 },
                 {
-                    "reference_id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
-                    "reference_type": "temperature",
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
                     "rtype": "temperature"
                 }

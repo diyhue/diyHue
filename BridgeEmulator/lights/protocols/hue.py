@@ -5,7 +5,7 @@ import requests
 logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data):
-    url = "http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/lights/" + light.protocol_cfg["light_id"] + "/state"
+    url = "http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/lights/" + light.protocol_cfg["id"] + "/state"
     payload = {}
     payload.update(data)
     color = {}
@@ -27,7 +27,7 @@ def set_light(light, data):
         requests.put(url, json=color, timeout=3)
 
 def get_light_state(light):
-    state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/lights/" + light.protocol_cfg["light_id"], timeout=3)
+    state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/lights/" + light.protocol_cfg["id"], timeout=3)
     return json.loads(state.text)["state"]
 
 def discover(detectedLights, credentials):
@@ -46,6 +46,6 @@ def discover(detectedLights, credentials):
                         modelid = "LTW001"
                     elif light["type"] == "On/Off plug-in unit":
                         modelid = "LOM001"
-                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "light_id": id, "uniqueid": light["uniqueid"]}})
+                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "id": id, "uniqueid": light["uniqueid"]}})
         except Exception as e:
             logging.info("Error connecting to Hue Bridge: %s", e)

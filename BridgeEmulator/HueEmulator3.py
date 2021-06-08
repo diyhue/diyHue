@@ -9,13 +9,16 @@ import configManager
 import logManager
 import flask_login
 from flaskUI.core import User #dummy import for flaks_login module
-from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment
+from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch
 from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from pprint import pprint
+import json
+from time import sleep, time
+
 bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
@@ -68,8 +71,9 @@ api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
 api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
 api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
-### Entertainment api
+### V2 API
 api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
+#api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
 api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
 api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
 api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
@@ -78,10 +82,22 @@ api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:
 from flaskUI.core.views import core
 from flaskUI.devices.views import devices
 from flaskUI.error_pages.handlers import error_pages
+
+
+@app.route('/eventstream/clip/v2')
+def streamV2Events():
+    def generate():
+        yield f": hi\n"
+        while True:
+            if len(bridgeConfig["temp"]["eventstream"]) > 0:
+                yield f"id: {int(time()) }:0\ndata: {json.dumps(bridgeConfig['temp']['eventstream'])}\n"
+                bridgeConfig["temp"]["eventstream"] = []
+            sleep(0.5)
+    return app.response_class(generate(), mimetype='text/event-stream; charset=utf-8')
+
 app.register_blueprint(core)
 app.register_blueprint(devices)
 app.register_blueprint(error_pages)
-
 
 def runHttps():
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -102,8 +118,7 @@ if __name__ == '__main__':
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
     mac = configManager.runtimeConfig.arg["MAC"]
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
-    ### config initialization
-    #configManager.bridgeConfig.save_config( backup=True)
+
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
     if bridgeConfig["config"]["deconz"]["enabled"]:
@@ -113,9 +128,9 @@ if __name__ == '__main__':
 #    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
     Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
+    Thread(target=stateFetch.syncWithLights, args=[False]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-#    Thread(target=entertainment.entertainmentService).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=runHttps).start()
     runHttp()

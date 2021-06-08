@@ -53,21 +53,8 @@ def set_light(light, data):
         auth = {'username':  light.protocol_cfg["mqtt_server"]["mqttUser"], 'password':  light.protocol_cfg["mqtt_server"]["mqttPassword"]}
     publish.multiple(messages, hostname= light.protocol_cfg["mqtt_server"]["mqttServer"], port= light.protocol_cfg["mqtt_server"]["mqttPort"], auth=auth)
 
-def get_light_state(address, light):
-    if latestStates[address['state_topic']] is None:
-        return { 'reachable': False }
-    state = { 'reachable': True }
-    mqttState = latestStates[address['state_topic']]
-    for key, value in mqttState.items():
-        if key == "state":
-            state['on'] = (value == 'ON')
-        if key == "brightness":
-            state['bri'] = value
-        if key == "color":
-            state["colormode"] = "xy"
-            state['xy'] = [value['x'], value['y']]
-
-    return state
+def get_light_state(light):
+    pass
 
 def discover(mqtt_config):
     if mqtt_config["enabled"]:

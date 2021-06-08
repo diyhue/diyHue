@@ -34,7 +34,7 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
-        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "v2": {}, "sensors_id": {}, "temp": {"scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "v2": {}, "sensors_id": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
