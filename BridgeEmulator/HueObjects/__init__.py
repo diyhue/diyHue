@@ -124,7 +124,7 @@ class Light():
         for protocol in protocols:
             if "lights.protocols." + self.protocol == protocol.__name__:
                 try:
-                    if self.protocol in ["mi_box", "esphome", "tasmota", "wled"]:
+                    if self.protocol in ["mi_box", "esphome", "tasmota"]:
                         protocol.set_light(self, state, rgb)
                     else:
                         protocol.set_light(self, state)
