@@ -139,17 +139,12 @@ class Light():
                                        self.id_v2 + 'device')), "type": "device"}
         result["id_v1"] = self.id_v1
         result["metadata"] = {
-            "archetype": "sultan_bulb",
+            "archetype": lightTypes[self.modelid]["device"]["product_archetype"],
             "name": self.name
         }
-        result["product_data"] = {
-            "certified": True,
-            "manufacturer_name": "Signify Netherlands B.V.",
-            "model_id": self.modelid,
-            "product_archetype": "sultan_bulb",
-            "product_name": "Hue color lamp",
-            "software_version": "1.65.9"
-        }
+        result["product_data"] = lightTypes[self.modelid]["device"]
+        result["product_data"]["model_id"] = self.modelid
+
         result["services"] = [
             {
                 "rid": self.id_v2,
@@ -216,7 +211,7 @@ class Light():
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {"name": self.name}
         if "archetype" in self.config:
-            result["metadata"]["archetype"] = "sultan_bulb" # self.config["archetype"]
+            result["metadata"]["archetype"] = lightTypes[self.modelid]["device"]["product_archetype"]
         result["mode"] = "normal"
         result["on"] = {
             "on": self.state["on"]

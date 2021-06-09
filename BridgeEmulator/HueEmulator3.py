@@ -9,15 +9,12 @@ import configManager
 import logManager
 import flask_login
 from flaskUI.core import User #dummy import for flaks_login module
-from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch
 from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from pprint import pprint
-import json
-from time import sleep, time
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 newLights = configManager.runtimeConfig.newLights
@@ -82,23 +79,12 @@ api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:
 from flaskUI.core.views import core
 from flaskUI.devices.views import devices
 from flaskUI.error_pages.handlers import error_pages
-
-
-@app.route('/eventstream/clip/v2')
-def streamV2Events():
-    def generate():
-        yield f": hi\n"
-        while True:
-            if len(bridgeConfig["temp"]["eventstream"]) > 0:
-                yield f"id: {int(time()) }:0\ndata: {json.dumps(bridgeConfig['temp']['eventstream'])}\n"
-                bridgeConfig["temp"]["eventstream"] = []
-            sleep(0.5)
-            
-    return app.response_class(generate(), mimetype='text/event-stream; charset=utf-8')
+from services.eventStreamer import stream
 
 app.register_blueprint(core)
 app.register_blueprint(devices)
 app.register_blueprint(error_pages)
+app.register_blueprint(stream)
 
 def runHttps():
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -114,6 +100,7 @@ def runHttp():
     app.run(host="0.0.0.0", port=80)
 
 if __name__ == '__main__':
+    from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
@@ -134,4 +121,5 @@ if __name__ == '__main__':
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=runHttps).start()
+    Thread(target=eventStreamer.messageBroker).start()
     runHttp()
