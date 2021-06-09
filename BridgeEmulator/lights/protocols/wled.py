@@ -32,21 +32,16 @@ def discover(detectedLights):
     services = ["_http._tcp.local."]
     browser = ServiceBrowser(zeroconf, services, handlers=[on_mdns_discover])
     sleep(2)
-    #mdns.append(['10.0.0.20','deskwled'])
+    lights = []
     for device in mdns:
         try:
             x = WledDevice(device[0], device[1])
             logging.info("Found wled: " + device[1])
             modelid = "LCX002" # Gradient Strip
-            #   protocol_cfg:
-            #         ip: 10.0.0.20
-            #         ledCount: 60
-            #         mdns_name: deskwled
-            #         mac: 3c:71:bf:32:49:f1
-            #         segment_id: 1
-            for segmentid in range(x.segmentCount):    
-                detectedLights.append({"protocol": "wled", 
-                                    "name": x.name + "_seg" + segmentid, 
+            segmentid = 0
+            for _ in range(0, x.segmentCount+1):
+                lights.append({"protocol": "wled", 
+                                    "name": x.name + "_seg" + str(segmentid), 
                                     "modelid": modelid,
                                     "protocol_cfg": {
                                         "ip": x.ip, 
@@ -56,64 +51,57 @@ def discover(detectedLights):
                                         "segmentId": segmentid
                                         }
                                     })
+                segmentid = segmentid + 1
+            for light in lights:
+                detectedLights.append(light)
         except:
             break
 
-# def set_light(light, data, rgb):
-#     logging.info("GOT WLED")
-#     print(data)
-#     ip = light.protocol_cfg['ip']
-#     if ip in Connections:
-#         c = Connections[ip]
-#     else:
-#         c = WledDevice(ip, light.protocol_cfg['mdns_name'])
-#         Connections[ip] = c
 
-#     state = {}
-#     for k, v in data.items():
-#         if k == "on":
-#             if v:
-#                 state['on'] = True
-#             else:
-#                 state['on'] = False
-#         elif k == "bri":
-#             state['bri'] = v+1
-#         elif k == "ct":
-#             kelvin = round(translateRange(v, 153, 500, 6500, 2000))
-#             color = kelvinToRgb(kelvin)
-#             state = {"seg": [{"col": [[color[0], color[1], color[2]]]}]}
-#             c.sendJson(state)
-#         elif k == "xy":
-#             if rgb:
-#                 color = rgbBrightness(rgb, 255)
-#                 state = {"seg": [{"col": [[color[0], color[1], color[2]]]}]}
-#                 c.sendJson(state)
-#             else:
-#                 logging.info("XYXYXY")
-#                 color = convert_xy(v[0], v[1], 255)
-#                 state = {"seg": [{"col": [[color[0], color[1], color[2]]]}]}
-#         c.sendJson(state)
+def set_light(light, data):
+    ip = light.protocol_cfg['ip']
+    if ip in Connections:
+        c = Connections[ip]
+    else:
+        c = WledDevice(ip, light.protocol_cfg['mdns_name'])
+        Connections[ip] = c
+    state = {}
 
-def set_light(light, state):
-    pass
-    # print(state)
-    # print(dir(light))
+    for _, value in data.items():
+        if _ == "on":
+                    if value:
+                        c.setOnSeg(True, light.protocol_cfg['segmentId'])
+                        return
+                    else:
+                        c.setOnSeg(False, light.protocol_cfg['segmentId'])
+                        return
+        for __, ivalue in value.items():
+            for k, v in ivalue.items():
+                if k == "on":
+                    if v:
+                        c.setOnSeg(True, light.protocol_cfg['segmentId'])
+                    else:
+                        c.setOnSeg(False, light.protocol_cfg['segmentId'])
+                elif k == "bri":
+                    c.setBriSeg(v+1, light.protocol_cfg['segmentId'])
+                elif k == "ct":
+                    kelvin = round(translateRange(v, 153, 500, 6500, 2000))
+                    color = kelvinToRgb(kelvin)
+                    c.setRGBSeg(color[0], color[1], color[2], light.protocol_cfg['segmentId'])
+                elif k == "xy":
+                    color = convert_xy(v[0], v[1], 255)
+                    c.setRGBSeg(color[0], color[1], color[2], light.protocol_cfg['segmentId'])
+            
 
 
 def get_light_state(light):
-    #{"on":true,"bri":100,"xy":[0.193282,0.212996],"ct":417,"hue":0,"sat":254,"colormode":"xy"} 
-    state = {}
-    with urllib.request.urlopen('http://' + light.protocol_cfg['ip'] + '/json/state') as resp:
-        data = json.loads(resp.read())
-        state['on'] = data['on']
-        state['bri'] = data['bri']
-        # Weird division by zero when a color is 0
-        r = int(data['seg'][light.protocol_cfg['segmentid']]['col'][0][0])+1
-        g = int(data['seg'][light.protocol_cfg['segmentid']]['col'][1][0])+1
-        b = int(data['seg'][light.protocol_cfg['segmentid']]['col'][2][0])+1
-        state['xy'] = convert_rgb_xy(r, g, b)
-        state["colormode"] = "xy"
-        return state
+    ip = light.protocol_cfg['ip']
+    if ip in Connections:
+        c = Connections[ip]
+    else:
+        c = WledDevice(ip, light.protocol_cfg['mdns_name'])
+        Connections[ip] = c
+    return c.getSegState(light.protocol_cfg['segmentId'])
 
 def translateRange(value, leftMin, leftMax, rightMin, rightMax):
     leftSpan = leftMax - leftMin
@@ -169,12 +157,37 @@ class WledDevice:
     def getSegments(self):
         self.segments = self.getLightState()['state']['seg']
         self.segmentCount = len(self.segments)
-        print(self.segments)
         
     def getLightState(self):
         with urllib.request.urlopen(self.url + '/json') as resp:
             data = json.loads(resp.read())
             return data
+    
+    def getSegState(self, seg):
+        state = {}
+        data = self.getLightState()['state']['seg'][seg]
+        state['bri'] = data['bri']
+        state['on'] = data['on']
+        state['bri'] = data['bri']
+        # Weird division by zero when a color is 0
+        r = int(data['col'][0][0])+1
+        g = int(data['col'][0][1])+1
+        b = int(data['col'][0][2])+1
+        state['xy'] = convert_rgb_xy(r, g, b)
+        state["colormode"] = "xy"
+        return state
+        
+    def setRGBSeg(self, r, g, b, seg):
+        state = {"seg": [{"id": seg, "col": [[r, g, b]]}]}
+        self.sendJson(state)
+
+    def setOnSeg(self, on, seg):
+        state = {"seg": [{"id": seg, "on": on}]}
+        self.sendJson(state)
+        
+    def setBriSeg(self, bri, seg):
+        state = {"seg": [{"id": seg, "bri": bri}]}
+        self.sendJson(state)
 
     def sendJson(self, data):
         req = urllib.request.Request(self.url + "/json")
@@ -183,7 +196,3 @@ class WledDevice:
         jsondataasbytes = jsondata.encode('utf-8')
         req.add_header('Content-Length', len(jsondataasbytes))
         response = urllib.request.urlopen(req, jsondataasbytes)
-
-
-if __name__ == "__main__":
-    x = WledDevice('10.0.0.20', 'wled')

@@ -112,7 +112,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
-                elif light["protocol"] in ["shelly", "wled", "native", "native_single", "esphome"]:
+                elif light["protocol"] in ["shelly", "native", "native_single", "esphome"]:
                     # check based on mac address
                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"]:
                         logging.info("Update IP for light " + light["name"])
@@ -121,6 +121,12 @@ def scanForLights(): #scan for ESP8266 lights and strips
                 elif  light["protocol"] in  ["hue", "deconz"]:
                     # check based on light uniqueid
                     if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]:
+                        logging.info("Update IP for light " + light["name"])
+                        lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        lightIsNew = False
+                elif light["protocol"] in ["wled"]:
+                    # Check mac and segment
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["segmentId"] == light["protocol_cfg"]["segmentId"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
