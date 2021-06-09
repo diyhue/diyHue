@@ -93,6 +93,7 @@ def streamV2Events():
                 yield f"id: {int(time()) }:0\ndata: {json.dumps(bridgeConfig['temp']['eventstream'])}\n"
                 bridgeConfig["temp"]["eventstream"] = []
             sleep(0.5)
+            
     return app.response_class(generate(), mimetype='text/event-stream; charset=utf-8')
 
 app.register_blueprint(core)
