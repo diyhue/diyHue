@@ -303,12 +303,13 @@ class ClipV2Resource(Resource):
                 objCreation["lights"] = objLights
             newObject = HueObjects.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
-
-        bridgeConfig["temp"]["eventstream"].append({"data":{"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [postDict, {"id": newObject.id_v2}, {"id_v1": "/" + newObject.getObjectPath()["resource"] + "/" + newObject.getObjectPath()["id"]}, {"type": resource}],
+        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": newObject.id_v2, "id_v1": "/" + newObject.getObjectPath()["resource"] + "/" + newObject.getObjectPath()["id"], "type": resource}],
                 "id": str(uuid.uuid4()),
                 "type": "add"
-                }})
+                }
+        streamMessage["data"][0].update(postDict)
+        bridgeConfig["temp"]["eventstream"].append(streamMessage)
 
         return {"data": [
                     {
@@ -386,12 +387,14 @@ class ClipV2ResourceId(Resource):
             "rid": resourceid,
             "rtype": resource
             }]}
-
-        bridgeConfig["temp"]["eventstream"].append({"data": {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [putDict, {"id": object.id_v2}, {"id_v1": "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"]}, {"type": resource}],
+        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": object.id_v2, "id_v1": "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"], "type": resource}],
                 "id": str(uuid.uuid4()),
                 "type": "update"
-                }})
+                }
+
+        streamMessage["data"][0].update(putDict)
+        bridgeConfig["temp"]["eventstream"].append(streamMessage)
         return response
 
 
@@ -414,8 +417,9 @@ class ClipV2ResourceId(Resource):
             "rid": resourceid,
             "rtype": resource
             }]}
+
         bridgeConfig["temp"]["eventstream"].append({"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [{"id": object.id_v2}, {"id_v1": "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"]}, {"type": resource}],
+            "data": [{"id": object.id_v2, "id_v1": "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"], "type": resource}],
                 "id": str(uuid.uuid4()),
                 "type": "delete"
                 })
