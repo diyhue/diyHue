@@ -20,7 +20,8 @@ ARG TARGETPLATFORM
 COPY requirements.txt ./
 
 ## Install requirements  
-RUN apt-get update && apt-get install --no-install-recommends -y \
+RUN apt-get update && apt-get install -y apt-utils \
+    && apt-get install --no-install-recommends -y \
     python3-minimal python3-pip python3-setuptools \
     openssl nmap psmisc iproute2 \
     && pip3 install -r requirements.txt --no-cache-dir \
