@@ -20,7 +20,7 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build -t diyhue/core:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+          docker build --platform=${{ matrix.arch }} -t diyhue/core:ci -f ./.build/Dockerfile --build-arg TARGETPLATFORM=${{ matrix.arch }} .
 
       - name: Run docker image
         run: |
