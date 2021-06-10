@@ -89,7 +89,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
     yeelight.discover(detectedLights)
     native_multi.discover(detectedLights,device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
     tasmota.discover(detectedLights,device_ips)
-    wled.discover(detectedLights)
+    wled.discover(detectedLights,device_ips)
     hue.discover(detectedLights, bridgeConfig["config"]["hue"])
     shelly.discover(detectedLights,device_ips)
     esphome.discover(detectedLights,device_ips)

@@ -5,38 +5,52 @@ import random
 import math
 import sys
 import logManager
+import requests
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from time import sleep
 from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf, ZeroconfServiceTypes
 
 logging = logManager.logger.get_logger(__name__)
 
-mdns = []
+discovered_lights = []
 Connections = {}
 
 
 def on_mdns_discover(zeroconf, service_type, name, state_change):
-    global mdns
+    global discovered_lights
     if "wled" in name and state_change is ServiceStateChange.Added:
         info = zeroconf.get_service_info(service_type, name)
         if info:
             addresses = ["%s" % (socket.inet_ntoa(addr))
                          for addr in info.addresses]
-            mdns.append([addresses[0], name])
+            discovered_lights.append([addresses[0], name])
 
 
-def discover(detectedLights):
-    logging.info('wled discovery started')
+def discover(detectedLights, device_ips):
+    logging.info('<WLED> discovery started')
     ip_version = IPVersion.V4Only
     zeroconf = Zeroconf(ip_version=ip_version)
     services = ["_http._tcp.local."]
     browser = ServiceBrowser(zeroconf, services, handlers=[on_mdns_discover])
     sleep(2)
+    if len(discovered_lights) == 0:
+        # Didn't find anything using mdns, trying device_ips
+        logging.info("<WLED> Nothing found using mDNS, trying device_ips method...")
+        for ip in device_ips:
+            try:
+                response = requests.get("http://" + ip + "/json/info", timeout=3)
+                if response.status_code == 200:
+                    json_resp = json.loads(response.content)
+                    if json_resp['brand'] == "WLED":
+                        discovered_lights.append([ip, json_resp['name']])
+            except Exception as e:
+                logging.debug("<WLED> ip %s is unknown device", ip)
+
     lights = []
-    for device in mdns:
+    for device in discovered_lights:
         try:
             x = WledDevice(device[0], device[1])
-            logging.info("Found wled device: %s with %d segments" %
+            logging.info("<WLED> Found device: %s with %d segments" %
                          (device[1], x.segmentCount))
             modelid = "LCX002"  # Gradient Strip
             segmentid = 0
