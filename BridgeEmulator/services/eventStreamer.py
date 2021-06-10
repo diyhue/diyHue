@@ -25,10 +25,10 @@ def messageBroker():
 def streamV2Events():
     def generate():
         counter = 1000
-        yield f": hi\n"
+        yield f": hi\n\n"
         while counter > 0: # ensure we stop at some point
             if len(messages) > 0:
-                yield f"id: {int(time()) }:0\ndata: {json.dumps(messages)}\n"
+                yield f"id: {int(time()) }:0\ndata: {json.dumps(messages)}\n\n"
             sleep(0.5)
             counter -=1
 
