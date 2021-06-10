@@ -18,7 +18,7 @@ def messageBroker():
             bridgeConfig["temp"]["eventstream"] = []
             sleep(0.6) # ensure all devices connected receive the events
             messages = []
-    sleep(0.5)
+        sleep(0.5)
 
 
 @stream.route('/eventstream/clip/v2')
