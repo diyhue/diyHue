@@ -232,15 +232,21 @@ class ClipV2Resource(Resource):
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Room":
                     response["data"].append(group.getV2Room())
+        elif resource == "zone":
+            for key, group in bridgeConfig["groups"].items():
+                if group.type == "Zone":
+                    print("to be defined")
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
                 response["data"].append(group.getV2GroupedLight())
         elif resource == "zigbee_connectivity":
             for key, light in bridgeConfig["lights"].items():
-                response["data"].append(light.getZigBee())
+                zigbee = light.getZigBee()
+                if zigbee != None:
+                    response["data"].append(zigbee)
             for key, sensor in bridgeConfig["sensors"].items():
                 zigbee = sensor.getZigBee()
-                if not zigbee != None:
+                if zigbee != None:
                     response["data"].append(zigbee)
             response["data"].append(v2BridgeZigBee()) # the bridge
         elif resource == "entertainment":
