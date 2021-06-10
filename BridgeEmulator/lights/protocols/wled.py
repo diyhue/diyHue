@@ -67,6 +67,14 @@ def set_light(light, data):
         c = WledDevice(ip, light.protocol_cfg['mdns_name'])
         Connections[ip] = c
 
+    if "alert" in data:
+        c.setRGBSeg(150, 0, 0,
+                    light.protocol_cfg['segmentId'])
+        sleep(0.2)
+        c.setRGBSeg(0, 0, 150,
+                    light.protocol_cfg['segmentId'])
+        return
+            
     for _, value in data.items():
         if _ == "on":
             if value:
