@@ -47,7 +47,7 @@ def set_light(light, data):
     sock.sendto(udpmsg, (ip, 38899))
 
 
-def get_light_state(address, light):
+def get_light_state(light):
     pass
 
 def translateRange(value, leftMin, leftMax, rightMin, rightMax):
