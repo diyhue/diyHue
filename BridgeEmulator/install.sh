@@ -66,7 +66,7 @@ echo -e "\033[36mPlease choose a Branch to install\033[0m"
 echo -e "\033[33mSelect Branch by entering the corresponding Number: [Default: Master]\033[0m  "
 echo -e "[1] Master Branch - most stable Release "
 echo -e "[2] Developer Branch - test latest features and fixes - Work in Progress!"
-echo -e "[3] Flask Branch - latest features and fixes - Work in Progress!"
+echo -e "[3] Beta Branch - Work with Hue App 4.0 - Work in Progress!"
 echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
 echo -n "I go with Nr.: "
 
@@ -82,8 +82,8 @@ case $userSelection in
         echo -e "Dev selected"
         ;;
 	3)
-        branchSelection="flask"
-        echo -e "Flask selected"
+        branchSelection="beta"
+        echo -e "Beta selected"
         ;;
 				*)
         branchSelection="master"
