@@ -694,7 +694,10 @@ input[type="range"]::-ms-fill-upper {
   margin-top: 20px;
 
   label{
-    margin-right: 10px;
+    margin: 10px 0 10px 5px;
+    display: block;
+    font-size: 14px;
+    color: #ccc;
   }
 
   input{
@@ -707,6 +710,7 @@ input[type="range"]::-ms-fill-upper {
     color: #ccc;
     font-size: 17px;
     border: 1px solid #000;
+    min-width: 250px;
   }
 
   input:focus{
