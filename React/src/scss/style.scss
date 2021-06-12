@@ -700,7 +700,7 @@ input[type="range"]::-ms-fill-upper {
     color: #ccc;
   }
 
-  input{
+  input {
     padding: 15px;
     border: none;
     background: #272727;
@@ -711,6 +711,43 @@ input[type="range"]::-ms-fill-upper {
     font-size: 17px;
     border: 1px solid #000;
     min-width: 250px;
+  }
+
+  .Dropdown-control {
+    padding: 15px;
+    border: none;
+    background: #272727;
+    border-radius: 8px;
+    -webkit-box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+    color: #ccc;
+    font-size: 17px;
+    border: 1px solid #000;
+    min-width: 250px;
+  }
+
+  .Dropdown-root.is-open{
+    .Dropdown-control{
+      border-bottom-right-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+
+  .Dropdown-menu{
+    background: #272727;
+    border: none;
+    box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .Dropdown-placeholder{
+    font-size: 17px;
+  }
+
+  .Dropdown-arrow{
+    margin-top: 10px;
+    margin-right: 10px;
   }
 
   input:focus{
