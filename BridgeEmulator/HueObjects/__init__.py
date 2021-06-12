@@ -57,6 +57,59 @@ def incProcess(state, data):
     return data
 
 
+class BehaviorInstance():
+    def __init__(self, data):
+        self.id_v2 = data["id"] if "id" in data else genV2Uuid()
+        self.id_v1 = self.id_v2 # used for config save
+        self.name = data["metadata"]["name"]
+        self.configuration = data["configuration"]
+        self.enabled = data["enabled"] if "enabled" in data else False
+        self.script_id = data["script_id"] if "script_id" in data else ""
+
+    def getV2Api(self):
+        result = {"configuration": self.configuration,
+          "dependees": [],
+          "enabled": self.enabled,
+          "id": self.id_v2,
+          "id_v1": "",
+          "last_error": "",
+          "metadata": {
+            "name": self.name,
+            "type": "InstanceMetadata"
+          },
+          "migrated_from": "",
+          "script_id": self.script_id,
+          "status": "running",
+          "type": "behavior_instance"
+        }
+
+        for resource in self.configuration["where"]:
+            result["dependees"].append({"level": "critical",
+              "target": {
+                "rid": resource[list(resource.keys())[0]]["rid"],
+                "rtype": resource[list(resource.keys())[0]]["rtype"],
+                "type": "ResourceIdentifier"
+              },
+              "type": "ResourceDependee"
+            })
+
+        return result
+
+    def update_attr(self, newdata):
+        for key, value in newdata.items():
+            updateAttribute = getattr(self, key)
+            if isinstance(updateAttribute, dict):
+                updateAttribute.update(value)
+                setattr(self, key, updateAttribute)
+            else:
+                setattr(self, key, value)
+
+    def save(self):
+        result = {"id_v2": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled,
+                  "script_id": self.script_id}
+        return result
+
+
 class ApiUser():
     def __init__(self, username, name, client_key, create_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), last_use_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")):
         self.username = username
