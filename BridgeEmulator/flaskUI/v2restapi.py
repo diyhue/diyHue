@@ -16,7 +16,6 @@ from datetime import datetime
 from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
-
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
