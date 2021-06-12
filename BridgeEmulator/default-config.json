@@ -589,7 +589,8 @@
       "homeAssistantIp": "127.0.0.1", 
       "homeAssistantPort": 8123, 
       "homeAssistantToken": "",
-      "homeAssistantIncludeByDefault": true
+      "homeAssistantIncludeByDefault": true,
+      "homeAssistantUseHttps": false
     },
     "yeelight": {
       "enabled": true

@@ -16,6 +16,7 @@ homeassistant_token = ''
 homeassistant_url = 'ws://127.0.0.1:8123/api/websocket'
 homeassistant_ws_client = None
 include_by_default = False
+use_https = False
 
 # This is Home Assistant States so looks like this:
 # {
@@ -234,16 +235,22 @@ def create_ws_client(config, lights, adresses, sensors):
     global homeassistant_token
     global homeassistant_url
     global include_by_default
-    if config['homeAssistantIp'] is not None:
+    if 'homeAssistantIp' in config:
         homeassistant_ip = config['homeAssistantIp']
-    if config['homeAssistantPort'] is not None:
+    if 'homeAssistantPort' in config:
         homeAssistant_port = config['homeAssistantPort']
-    if config['homeAssistantToken'] is not None:
+    if 'homeAssistantToken' in config:
         homeassistant_token = config['homeAssistantToken']
-    if config['homeAssistantIncludeByDefault'] is not None:
+    if 'homeAssistantIncludeByDefault' in config:
         include_by_default = config['homeAssistantIncludeByDefault']
+    if 'homeAssistantUseHttps' in config:
+        use_https = config['homeAssistantUseHttps']
+   
+    ws_prefix = "ws"
+    if use_https:
+        ws_prefix = "wss"
 
-    homeassistant_url = f'ws://{homeassistant_ip}:{homeAssistant_port}/api/websocket'
+    homeassistant_url = f'{ws_prefix}://{homeassistant_ip}:{homeAssistant_port}/api/websocket'
     connect_if_required()
 
 
