@@ -7,7 +7,7 @@ import logManager
 import yaml
 import uuid
 import weakref
-from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor
+from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
 from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
@@ -34,7 +34,7 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
-        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "v2": {}, "sensors_id": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instances": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
@@ -119,16 +119,22 @@ class Config:
                 data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}
                 self.yaml_config["sensors"]["1"] = Sensor(data)
                 self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"]["1"])
+            #resourcelinks
             if os.path.exists(self.configDir + "/resourcelinks.yaml"):
-                #resourcelinks
                 resourcelinks = _open_yaml(self.configDir + "/resourcelinks.yaml")
                 for resourcelink, data in resourcelinks.items():
                     data["id_v1"] = resourcelink
                     owner = self.yaml_config["apiUsers"][data["owner"]]
                     data["owner"] = owner
                     self.yaml_config["resourcelinks"][resourcelink] = ResourceLink(data)
-                logging.info("Config loaded")
-                #pprint(self.yaml_config)
+            #behavior_instance
+            if os.path.exists(self.configDir + "/behavior_instances.yaml"):
+                behavior_instances = _open_yaml(self.configDir + "/behavior_instances.yaml")
+                for behavior_instance, data in behavior_instances.items():
+                    self.yaml_config["behavior_instances"][behavior_instance] = BehaviorInstance(data)
+
+            logging.info("Config loaded")
+            pprint(self.yaml_config)
         except Exception:
             logging.exception("CRITICAL! Config file was not loaded")
             raise SystemExit("CRITICAL! Config file was not loaded")
@@ -151,7 +157,7 @@ class Config:
             logging.debug("Dump config file " + path + "config.yaml")
         saveResources = []
         if resource == "all":
-            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]
+            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instances"]
         else:
             saveResources.append(resource)
         for object in saveResources:
