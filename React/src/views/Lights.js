@@ -69,7 +69,7 @@ export default function Groups({ API_KEY }) {
         <div className="linkbtn" onClick={() => searchForLights()}>Scan For Lights
         <div className='btn btn-block'></div></div>
         <a onClick={() => setLightForm(!lightForm)} className="someClassWithCursorPointer">Add light manually</a>
-        {lightForm && <AddLight></AddLight>}
+        {lightForm && <AddLight api_key={API_KEY}  ></AddLight>}
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}
