@@ -6,6 +6,7 @@ from threading import Thread
 from datetime import datetime, timedelta
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
+from functions.scripts import triggerScript
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -49,8 +50,35 @@ def runScheduler():
                             sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
                             if obj.autodelete:
                                 del obj
+
             except Exception as e:
                 logging.info("Exception while processing the schedule " + schedule + " | " + str(e))
+
+        for instance, obj in bridgeConfig["behavior_instance"].items():
+            try:
+                delay = 0
+                if obj.enabled:
+                    if "when" in obj.configuration:
+                        if "recurrence_days" in  obj.configuration["when"]:
+                            if datetime.now().strftime("%A").lower() not in obj.configuration["when"]["recurrence_days"]:
+                                continue
+                        if "time_point" in obj.configuration["when"] and obj.configuration["when"]["time_point"]["type"] == "time":
+                            triggerTime = obj.configuration["when"]["time_point"]["time"]
+                            if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
+                                Thread(target=triggerScript, args=[obj]).start()
+
+                    elif "when_extended" in obj.configuration:
+                        if "recurrence_days" in  obj.configuration["when_extended"]:
+                            if datetime.now().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
+                                continue
+                            if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
+                                triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
+                                if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
+                                    Thread(target=triggerScript, args=[obj]).start()
+
+
+            except Exception as e:
+                logging.info("Exception while processing the schedule " + obj.name + " | " + str(e))
 
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             configManager.bridgeConfig.save_config()

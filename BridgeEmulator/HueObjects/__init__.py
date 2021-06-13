@@ -105,7 +105,7 @@ class BehaviorInstance():
                 setattr(self, key, value)
 
     def save(self):
-        result = {"id_v2": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled,
+        result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled,
                   "script_id": self.script_id}
         return result
 
@@ -383,7 +383,7 @@ class Group():
                     all_on = False
         return {"all_on": all_on, "any_on": any_on}
 
-    def setV1Action(self, state, scene):
+    def setV1Action(self, state, scene=None):
         lightsState = {}
         if scene != None:
             sceneStates = list(scene.lightstates.items())
@@ -611,11 +611,17 @@ class Scene():
     def add_light(self, light):
         self.lights.append(light)
 
-    def activate(self, action):
+    def activate(self, transition={}):
         queueState = {}
         for light, state in self.lightstates.items():
             light.state.update(state)
             light.updateLightState(state)
+            if len(transition) > 0:
+                state["transitiontime"] = 0
+                if "seconds" in transition:
+                    state["transitiontime"] += transition["seconds"] * 10
+                if "minutes" in transition:
+                    state["transitiontime"] += transition["minutes"] * 600
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:
                     queueState[light.protocol_cfg["ip"]] = {
@@ -1048,9 +1054,8 @@ class Sensor():
         if self.id_v1 == "1" and "config" in newdata: # manage daylight sensor
             if "long" in newdata["config"] and "lat" in newdata["config"]:
                 self.config["configured"] = True
-                self.protocol_cfg = {"long": newdata["config"]["long"], "lat": newdata["config"]["lat"]}
-                #del newdata["config"]["long"]
-                #del newdata["config"]["lat"]
+                self.protocol_cfg = {"long": float(newdata["config"]["long"][:-1]), "lat": float(newdata["config"]["lat"][:-1])}
+                return
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
             if isinstance(updateAttribute, dict):

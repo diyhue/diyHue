@@ -12,7 +12,7 @@ logging = logManager.logger.get_logger(__name__)
 
 def daylightSensor(timezone, sensor):
     if sensor.config["configured"]:
-        localzone = LocationInfo('localzone', timezone.split("/")[1], timezone, float(sensor.protocol_cfg["lat"][:-1]), float(sensor.protocol_cfg["long"][:-1]))
+        localzone = LocationInfo('localzone', timezone.split("/")[1], timezone, sensor.protocol_cfg["lat"], sensor.protocol_cfg["long"])
         s = sun(localzone.observer, date=datetime.utcnow())
         deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.utcnow()
         deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.utcnow()
@@ -32,15 +32,14 @@ def daylightSensor(timezone, sensor):
             sleep(deltaSunsetOffset)
             logging.debug("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
             sensor.state = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
-            sensor.dxstate["daylight"] = current_time
+            sensor.dxState["daylight"] = current_time
             rulesProcessor(["sensors","1"], current_time)
         elif deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
             logging.info("will start the sleep for sunrise")
             sleep(deltaSunriseOffset)
             logging.debug("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
             sensor.state = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
-
-            sensor.dxstate["daylight"] = current_time
+            sensor.dxState["daylight"] = current_time
             rulesProcessor(["sensors","1"], current_time)
     else:
         logging.debug("Daylight Sensor: location is not configured")

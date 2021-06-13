@@ -34,7 +34,7 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
-        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instances": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instance": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
@@ -128,10 +128,10 @@ class Config:
                     data["owner"] = owner
                     self.yaml_config["resourcelinks"][resourcelink] = ResourceLink(data)
             #behavior_instance
-            if os.path.exists(self.configDir + "/behavior_instances.yaml"):
-                behavior_instances = _open_yaml(self.configDir + "/behavior_instances.yaml")
-                for behavior_instance, data in behavior_instances.items():
-                    self.yaml_config["behavior_instances"][behavior_instance] = BehaviorInstance(data)
+            if os.path.exists(self.configDir + "/behavior_instance.yaml"):
+                behavior_instance = _open_yaml(self.configDir + "/behavior_instance.yaml")
+                for behavior_instance, data in behavior_instance.items():
+                    self.yaml_config["behavior_instance"][behavior_instance] = BehaviorInstance(data)
 
             logging.info("Config loaded")
             pprint(self.yaml_config)
@@ -157,7 +157,7 @@ class Config:
             logging.debug("Dump config file " + path + "config.yaml")
         saveResources = []
         if resource == "all":
-            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instances"]
+            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance"]
         else:
             saveResources.append(resource)
         for object in saveResources:

@@ -13,7 +13,6 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
         logging.info("start lights sync")
         for key, light in bridgeConfig["lights"].items():
             protocol_name = light.protocol
-            print(protocol_name)
             for protocol in protocols:
                 if "lights.protocols." + protocol_name == protocol.__name__:
                     try:

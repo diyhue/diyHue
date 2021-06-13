@@ -273,8 +273,8 @@ class ClipV2Resource(Resource):
             response["data"].append(geoLocation())
             response["type"] = "ClipMessageGeolocation"
         elif resource == "behavior_instance":
-            for key, behavior_instance in bridgeConfig["behavior_instances"].items():
-                response["data"].append(behavior_instance.getV2Api())
+            for key, instance in bridgeConfig["behavior_instance"].items():
+                response["data"].append(instance.getV2Api())
             response["type"] = "ClipMessageBehaviorInstance"
         elif resource == "geofence_client":
             response["type"] = "ClipMessageGeofenceClient"
@@ -313,7 +313,7 @@ class ClipV2Resource(Resource):
             bridgeConfig["scenes"][new_object_id] = newObject
         elif resource == "behavior_instance":
             newObject = HueObjects.BehaviorInstance(postDict)
-            bridgeConfig["behavior_instances"][newObject.id_v2] = newObject
+            bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
         # build stream message
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [{"id": newObject.id_v2, "type": resource}],
@@ -323,7 +323,7 @@ class ClipV2Resource(Resource):
         streamMessage["id_v1"] = "/" + newObject.getObjectPath()["resource"] + "/" + newObject.getObjectPath()["id"] if  hasattr(newObject, 'getObjectPath') else ""
         streamMessage["data"][0].update(postDict)
         bridgeConfig["temp"]["eventstream"].append(streamMessage)
-
+        logging.debug(streamMessage)
         return {"data": [{
                     "rid": newObject.id_v2,
                     "rtype": resource}
@@ -390,7 +390,7 @@ class ClipV2ResourceId(Resource):
             object.activate(putDict)
         elif resource == "grouped_light":
             v1Request = convertV2StateToV1(putDict)
-            object.setV1Action(state=v1Request, scene=None)
+            object.setV1Action(state=v1Request)
         elif resource == "geolocation":
             bridgeConfig["sensors"]["1"].protocol_cfg = {"lat": putDict["latitude"], "long": putDict["longitude"]}
             bridgeConfig["sensors"]["1"].config["configured"] = True
@@ -417,15 +417,21 @@ class ClipV2ResourceId(Resource):
         if "user" not in authorisation:
             return "", 403
         object = getObject(resource, resourceid)
-        del bridgeConfig[object.getObjectPath()["resource"]][object.getObjectPath()["id"]]
+        if object:
+            del bridgeConfig[object.getObjectPath()["resource"]][object.getObjectPath()["id"]]
+        else:
+            del bridgeConfig[resource][resourceid]
+
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
             }]}
 
-        bridgeConfig["temp"]["eventstream"].append({"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [{"id": object.id_v2, "id_v1": "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"], "type": resource}],
+        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": resourceid, "type": resource}],
                 "id": str(uuid.uuid4()),
                 "type": "delete"
-                })
+                }
+        streamMessage["id_v1"] = "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"] if  hasattr(object, 'getObjectPath') else ""
+        bridgeConfig["temp"]["eventstream"].append(streamMessage)
         return response
