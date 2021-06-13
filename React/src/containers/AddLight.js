@@ -5,7 +5,7 @@ import 'react-dropdown/style.css';
 
 const AddLight = () => {
 
-    const [protocol, setProtocol] = useState('Autodetect')
+    const [protocol, setProtocol] = useState('auto')
 
     const protocols = [
         { value: 'auto', label: 'Autodetect' },
@@ -58,7 +58,7 @@ const AddLight = () => {
                 />
             </div>
             {
-                protocol !== 'auto' &&
+                protocol !== 'auto' && 
                 <>
                     <div className='form-control'>
                         <label>Name</label>
