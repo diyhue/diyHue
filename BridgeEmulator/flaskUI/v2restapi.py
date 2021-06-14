@@ -13,7 +13,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime
-from pprint import pprint
+
 logging = logManager.logger.get_logger(__name__)
 
 

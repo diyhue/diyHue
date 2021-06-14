@@ -8,7 +8,6 @@ import yaml
 import uuid
 import weakref
 from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
-from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
 class NoAliasDumper(yaml.SafeDumper):
@@ -134,7 +133,6 @@ class Config:
                     self.yaml_config["behavior_instance"][behavior_instance] = BehaviorInstance(data)
 
             logging.info("Config loaded")
-            pprint(self.yaml_config)
         except Exception:
             logging.exception("CRITICAL! Config file was not loaded")
             raise SystemExit("CRITICAL! Config file was not loaded")

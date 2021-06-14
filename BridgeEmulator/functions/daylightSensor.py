@@ -4,11 +4,17 @@ from astral import LocationInfo
 from functions.rules import rulesProcessor
 from datetime import datetime
 from time import sleep
+from threading import Thread
+from functions.scripts import triggerScript
 import logManager
 import configManager
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
+
+def runBackgroundSleep(instance, seconds):
+    sleep(seconds)
+    triggerScript(instance)
 
 def daylightSensor(timezone, sensor):
     if sensor.config["configured"]:
@@ -41,5 +47,20 @@ def daylightSensor(timezone, sensor):
             sensor.state = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
             sensor.dxState["daylight"] = current_time
             rulesProcessor(["sensors","1"], current_time)
+        # v2 api routines
+        for key, instance in bridgeConfig["behavior_instance"].items():
+            if "when_extended" in instance.configuration:
+                offset = 0
+                if instance.configuration["when_extended"]["start_at"]["time_point"]["type"] == "sunrise":
+                    if "offset" in instance.configuration["when_extended"]["start_at"]["time_point"]:
+                        offset = 60 * instance.configuration["when_extended"]["start_at"]["time_point"]["offset"]["minutes"]
+                    if deltaSunriseOffset + offset > 0 and deltaSunriseOffset + offset < 3600:
+                        Thread(target=runBackgroundSleep, args=[instance, deltaSunriseOffset + offset]).start()
+                elif instance.configuration["when_extended"]["start_at"]["time_point"]["type"] == "sunset":
+                    if "offset" in instance.configuration["when_extended"]["start_at"]["time_point"]:
+                        offset = 60 * instance.configuration["when_extended"]["start_at"]["time_point"]["offset"]["minutes"]
+                    if deltaSunsetOffset + offset > 0 and deltaSunsetOffset + offset < 3600:
+                        Thread(target=runBackgroundSleep, args=[instance, deltaSunsetOffset + offset]).start()
+
     else:
         logging.debug("Daylight Sensor: location is not configured")

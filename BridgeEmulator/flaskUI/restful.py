@@ -131,12 +131,19 @@ class ResourceElements(Resource):
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
+
         pprint(postDict)
+        v2Resource = "none"
         # find the first unused id for new object
         new_object_id = nextFreeId(bridgeConfig, resource)
         postDict["id_v1"] = new_object_id
         postDict["owner"] = bridgeConfig["apiUsers"][username]
         if resource == "groups":
+            if "type" in postDict:
+                if postDict["type"] == "Zone":
+                    v2Resource = "zone"
+                else:
+                    v2Resource = "room"
             bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
             if "locations" in postDict:
                 for light, location in postDict["locations"].items():
@@ -145,6 +152,7 @@ class ResourceElements(Resource):
                 for light in postDict["lights"]:
                     bridgeConfig[resource][new_object_id].add_light(bridgeConfig["lights"][light])
         elif resource == "scenes":
+            v2Resource = "scene"
             if "group" in postDict:
                 postDict["group"] = weakref.ref(bridgeConfig["groups"][postDict["group"]])
             elif "lights" in postDict:
@@ -183,9 +191,21 @@ class ResourceElements(Resource):
         elif resource == "resourcelinks":
             bridgeConfig[resource][new_object_id] = HueObjects.ResourceLink(postDict)
         elif resource == "sensors":
+            v2Resource = "device"
             bridgeConfig[resource][new_object_id] = HueObjects.Sensor(postDict)
         elif resource == "schedules":
             bridgeConfig[resource][new_object_id] = HueObjects.Schedule(postDict)
+        newObject = bridgeConfig[resource][new_object_id]
+        if v2Resource != "none":
+            streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "data": [{"id": newObject.id_v2, "type": resource}],
+                    "id_v1": "/" + resource + "/" + new_object_id,
+                    "id": str(uuid.uuid4()),
+                    "type": "add"
+                    }
+            #streamMessage["data"][0].update(postDict)
+            bridgeConfig["temp"]["eventstream"].append(streamMessage)
+            logging.debug(streamMessage)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
                                 sort_keys=True, indent=4, separators=(',', ': ')))
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
