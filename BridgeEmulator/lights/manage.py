@@ -17,7 +17,7 @@ def sendLightRequest(light, data, rgb = None):
         for protocol in protocols:
             if "lights.protocols." + protocol_name == protocol.__name__:
                 try:
-                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota", "wled"]:
+                    if protocol_name in ["yeelight", "mi_box", "esphome", "tasmota"]:
                         protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data, rgb)
                     else:
                         protocol.set_light(bridgeConfig["emulator"]["lights"][light], bridgeConfig["lights"][light], data)
