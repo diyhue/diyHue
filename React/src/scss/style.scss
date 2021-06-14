@@ -739,6 +739,10 @@ input[type="range"]::-ms-fill-upper {
     box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.5);
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
+    color: #ccc;
+    .Dropdown-option{
+      color: #ccc;
+    }
   }
 
   .Dropdown-placeholder{
