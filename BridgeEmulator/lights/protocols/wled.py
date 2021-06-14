@@ -35,10 +35,12 @@ def discover(detectedLights, device_ips):
     sleep(2)
     if len(discovered_lights) == 0:
         # Didn't find anything using mdns, trying device_ips
-        logging.info("<WLED> Nothing found using mDNS, trying device_ips method...")
+        logging.info(
+            "<WLED> Nothing found using mDNS, trying device_ips method...")
         for ip in device_ips:
             try:
-                response = requests.get("http://" + ip + "/json/info", timeout=3)
+                response = requests.get(
+                    "http://" + ip + "/json/info", timeout=3)
                 if response.status_code == 200:
                     json_resp = json.loads(response.content)
                     if json_resp['brand'] == "WLED":
@@ -81,40 +83,38 @@ def set_light(light, data):
         c = WledDevice(ip, light.protocol_cfg['mdns_name'])
         Connections[ip] = c
 
-    if "alert" in data:
-        c.setRGBSeg(150, 0, 0,
-                    light.protocol_cfg['segmentId'])
-        sleep(0.2)
-        c.setRGBSeg(0, 0, 150,
-                    light.protocol_cfg['segmentId'])
-        return
-            
-    for _, value in data.items():
-        if _ == "on":
-            if value:
+    if "lights" in data:
+        # We ignore the segment count of hue provides atm
+        destructured_data = data["lights"][list(data["lights"].keys())[0]]
+        send_light_data(c, light, destructured_data)
+    else:
+        send_light_data(c, light, data)
+
+
+def send_light_data(c, light, data):
+    for k, v in data.items():
+        if k == "on":
+            if v:
                 c.setOnSeg(True, light.protocol_cfg['segmentId'])
-                return
             else:
                 c.setOnSeg(False, light.protocol_cfg['segmentId'])
-                return
-        for __, ivalue in value.items():
-            for k, v in ivalue.items():
-                if k == "on":
-                    if v:
-                        c.setOnSeg(True, light.protocol_cfg['segmentId'])
-                    else:
-                        c.setOnSeg(False, light.protocol_cfg['segmentId'])
-                elif k == "bri":
-                    c.setBriSeg(v+1, light.protocol_cfg['segmentId'])
-                elif k == "ct":
-                    kelvin = round(translateRange(v, 153, 500, 6500, 2000))
-                    color = kelvinToRgb(kelvin)
-                    c.setRGBSeg(color[0], color[1], color[2],
-                                light.protocol_cfg['segmentId'])
-                elif k == "xy":
-                    color = convert_xy(v[0], v[1], 255)
-                    c.setRGBSeg(color[0], color[1], color[2],
-                                light.protocol_cfg['segmentId'])
+        elif k == "bri":
+            c.setBriSeg(v+1, light.protocol_cfg['segmentId'])
+        elif k == "ct":
+            kelvin = round(translateRange(v, 153, 500, 6500, 2000))
+            color = kelvinToRgb(kelvin)
+            c.setRGBSeg(color[0], color[1], color[2],
+                        light.protocol_cfg['segmentId'])
+        elif k == "xy":
+            color = convert_xy(v[0], v[1], 255)
+            c.setRGBSeg(color[0], color[1], color[2],
+                        light.protocol_cfg['segmentId'])
+        elif k == "alert":
+            c.setRGBSeg(150, 0, 0,
+                        light.protocol_cfg['segmentId'])
+            sleep(0.6)
+            c.setRGBSeg(0, 0, 150,
+                        light.protocol_cfg['segmentId'])
 
 
 def get_light_state(light):
