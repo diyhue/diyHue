@@ -36,6 +36,7 @@ def triggerScript(behavior_instance):
 
     # Go to sleep
     elif behavior_instance.script_id == "7e571ac6-f363-42e1-809a-4cbf6523ed72":
+        logging.debug("Start Go to Sleep " + behavior_instance.name)
         for element in behavior_instance.configuration["where"]:
             if "group" in element:
                 group = findGroup(element["group"]["rid"])
@@ -45,10 +46,11 @@ def triggerScript(behavior_instance):
                 sleep(behavior_instance.configuration["fade_out_duration"]["seconds"])
                 if behavior_instance.configuration["end_state"] ==  "turn_off":
                     group.setV1Action(state={"on": False})
-                logging.debug("FInish Go to Sleep")
+                logging.debug("Finish Go to Sleep")
 
     # Activate scene
     elif behavior_instance.script_id == "7238c707-8693-4f19-9095-ccdc1444d228":
+        logging.debug("Start routine " + behavior_instance.name)
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
                 scene = findScene(element)

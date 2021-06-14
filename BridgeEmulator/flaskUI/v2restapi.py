@@ -22,7 +22,9 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
 
 def getObject(element, v2uuid):
-    if element in v2Resources and v2uuid in v2Resources[element]:
+    if element in ["behavior_instance"]:
+        return bridgeConfig[element][v2uuid]
+    elif element in v2Resources and v2uuid in v2Resources[element]:
         logging.debug("Cache Hit for " + element)
         return v2Resources[element][v2uuid]()
     elif element in ["light", "scene", "grouped_light"]:
@@ -394,6 +396,8 @@ class ClipV2ResourceId(Resource):
         elif resource == "geolocation":
             bridgeConfig["sensors"]["1"].protocol_cfg = {"lat": putDict["latitude"], "long": putDict["longitude"]}
             bridgeConfig["sensors"]["1"].config["configured"] = True
+        elif resource == "behavior_instance":
+            object.update_attr(putDict)
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
@@ -417,7 +421,8 @@ class ClipV2ResourceId(Resource):
         if "user" not in authorisation:
             return "", 403
         object = getObject(resource, resourceid)
-        if object:
+
+        if hasattr(object, 'getObjectPath'):
             del bridgeConfig[object.getObjectPath()["resource"]][object.getObjectPath()["id"]]
         else:
             del bridgeConfig[resource][resourceid]
