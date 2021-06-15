@@ -50,7 +50,7 @@ const Light = ({ api_key, id, light }) => {
           </div>
           <div className="slideContainer">
             <input type="range" min="1" max="254" defaultValue="50" className="slider"
-              onChange={(e) => switchLight({'bri': e.currentTarget.value})}
+              onChange={(e) => switchLight({'bri': parseInt(e.currentTarget.value)})}
             />
           </div>
         </div>

@@ -9,12 +9,9 @@ import {cieToRgb, colorTemperatureToRgb } from "../color";
 const Group = ({api_key, id, group, lights, scenes}) => {
 
   const [showContainer, setShowContainer] = useState('closed');
-  const [toggleState, setToggleState] = useState(group.state['any_on']);
-  const [briState, setBriState] = useState(group.action['bri']);
 
   const handleToggleChange = (state) => {
     const newState = {'on': state};
-    setToggleState(state);
     group.state['any_on'] = state;
     console.log('Apply state ' + JSON.stringify(newState));
     axios.put(`/api/${api_key}/groups/${id}/action`, newState);
@@ -22,7 +19,6 @@ const Group = ({api_key, id, group, lights, scenes}) => {
 
   const handleBriChange = (state) => {
     const newState = {'bri': state};
-    setBriState(state);
     group.action['bri'] = state;
     console.log('Apply state ' + JSON.stringify(newState));
     axios.put(`/api/${api_key}/groups/${id}/action`, newState);
@@ -78,7 +74,7 @@ const Group = ({api_key, id, group, lights, scenes}) => {
       <div className="switchContainer">
         <label className="switch">
           <input type="checkbox"
-            value={toggleState}
+            value={group.state['any_on']}
             checked={group.state['any_on']}
             onChange={(e) => handleToggleChange(e.target.checked)}
           />
@@ -93,7 +89,7 @@ const Group = ({api_key, id, group, lights, scenes}) => {
           value={group.action['bri']}
           step="1"
           className="slider"
-          onChange={(e) => handleBriChange(e.target.value)}
+          onChange={(e) => handleBriChange(parseInt(e.target.value))}
         />
       </div>
       <div className="dimmer">
