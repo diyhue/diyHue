@@ -486,6 +486,29 @@ class Group():
         result["type"] = "room"
         return result
 
+    def getV2Zone(self):
+        result = {"grouped_services": [], "services": []}
+        result["grouped_services"].append({
+            "rid": self.id_v2,
+            "rtype": "grouped_light"
+
+        })
+        result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zone'))
+        result["id_v1"] = "/groups/" + self.id_v1
+        result["metadata"] = {
+            "archetype": self.icon_class.replace(" ", "_").replace("'", "").lower(),
+            "name": self.name
+        }
+        for light in self.lights:
+            if light():
+                result["services"].append({
+                    "rid": light().id_v2,
+                    "rtype": "light"
+                })
+
+        result["type"] = "zone"
+        return result
+
     def getV2GroupedLight(self):
         result = {}
         result["id"] = self.id_v2

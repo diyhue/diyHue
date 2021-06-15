@@ -206,6 +206,8 @@ class ClipV2(Resource):
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Room":
                 data.append(group.getV2Room())
+            elif group.type == "Zone":
+                data.append(group.getV2Zone())
         # group
         for key, group in bridgeConfig["groups"].items():
             data.append(group.getV2GroupedLight())
@@ -237,7 +239,7 @@ class ClipV2Resource(Resource):
         elif resource == "zone":
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Zone":
-                    print("to be defined")
+                    response["data"].append(group.getV2Zone())
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
                 response["data"].append(group.getV2GroupedLight())
