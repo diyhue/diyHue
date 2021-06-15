@@ -69,7 +69,7 @@ const Mqtt = ({ API_KEY }) => {
               type='number'
               placeholder='MQTT port'
               value={mqttPort}
-              onChange={(e) => setMqttPort(e.target.value)}
+              onChange={(e) => setMqttPort(parseInt(e.target.value))}
             />
           </div>
           <div className='form-control'>

@@ -99,7 +99,7 @@ const Deconz = ({ API_KEY }) => {
               type='number'
               placeholder='Deconz port'
               value={deconzPort}
-              onChange={(e) => setDeconzPort(e.target.value)}
+              onChange={(e) => setDeconzPort(parseInt(e.target.value))}
             />
           </div>
           <div className='form-control'>
