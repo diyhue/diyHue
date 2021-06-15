@@ -391,3 +391,28 @@ class ElementParam(Resource):
         del bridgeConfig[resource][resourceid][param]
         return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
         configManager.bridgeConfig.save_config()
+
+class ElementParamId(Resource):
+    def get(self, username, resource, resourceid, param, paramid):
+        authorisation = authorize(username, resource, resourceid, param)
+        if "success" not in authorisation:
+            return authorisation
+        return bridgeConfig[resource][resourceid].getV1Api()[param][paramid]
+
+    def put(self, username, resource, resourceid, param, paramid):
+        authorisation = authorize(username, resource, resourceid, param)
+        if "success" not in authorisation:
+            return authorisation
+        putDict = request.get_json(force=True)
+        currentTime = datetime.now()
+        pprint(putDict)
+        responseList = []
+        responseLocation = "/" + resource + "/" + resourceid + "/" + param + "/" + paramid + "/"
+        for key, value in putDict.items():
+            responseList.append(
+                {"success": {responseLocation + key: value}})
+        if resource == "scenes" and param == "lightstates":
+            paramid = bridgeConfig["lights"][paramid]
+        bridgeConfig[resource][resourceid].update_attr({param: {paramid: putDict}})
+        pprint(responseList)
+        return responseList

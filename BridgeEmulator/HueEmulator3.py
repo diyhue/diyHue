@@ -9,7 +9,7 @@ import configManager
 import logManager
 import flask_login
 from flaskUI.core import User #dummy import for flaks_login module
-from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam
+from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
@@ -68,6 +68,8 @@ api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
 api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
 api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
+api.add_resource(ElementParamId, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/<string:paramid>/', strict_slashes=False)
+
 ### V2 API
 api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
 #api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
