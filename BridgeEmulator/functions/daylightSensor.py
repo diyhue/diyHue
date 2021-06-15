@@ -18,7 +18,7 @@ def runBackgroundSleep(instance, seconds):
 
 def daylightSensor(timezone, sensor):
     if sensor.config["configured"]:
-        localzone = LocationInfo('localzone', timezone.split("/")[1], timezone, sensor.protocol_cfg["lat"], sensor.protocol_cfg["long"])
+        localzone = LocationInfo('localzone', timezone.split("/")[1], timezone, float(sensor.protocol_cfg["lat"]), float(sensor.protocol_cfg["long"]))
         s = sun(localzone.observer, date=datetime.utcnow())
         deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.utcnow()
         deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.utcnow()
