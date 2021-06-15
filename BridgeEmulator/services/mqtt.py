@@ -257,7 +257,7 @@ def mqttServer():
     # ================= MQTT CLIENT Connection========================
     # Set user/password on client if supplied
 
-    if bridgeConfig["config"]["mqtt"]["mqttUser"] != "" and bridge_config["config"]["mqtt"]["mqttPassword"] != "":
+    if bridgeConfig["config"]["mqtt"]["mqttUser"] != "" and bridgeConfig["config"]["mqtt"]["mqttPassword"] != "":
         client.username_pw_set(bridgeConfig["config"]["mqtt"]["mqttUser"],bridgeConfig["config"]["mqtt"]["mqttPassword"])
 
     if bridgeConfig["config"]["mqtt"]['discoveryPrefix'] is not None:
