@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaHome, FaLightbulb, FaLink, FaCube, FaBraille, FaCog, FaSignOutAlt, FaInstagram } from "react-icons/fa";
+import { FaHome, FaLightbulb, FaLink, FaCube, FaBraille, FaCog, FaSignOutAlt, FaInstagram, FaMedapps } from "react-icons/fa"
 import { AiOutlineGateway } from "react-icons/ai";
 import { SiZigbee } from "react-icons/si";
 import { RiHomeWifiLine, RiAlarmWarningLine, RiMessage2Line, RiBubbleChartLine } from "react-icons/ri";
@@ -44,10 +44,13 @@ const TheSidebar = ({ showSidebar }) => {
           <li><FaInstagram style={{ color: '#8400FF' }} /> Hue Bridge</li>
         </a>
         <a href="#diyhue">
-          <li><FaInstagram style={{ color: '#84FFFF' }} /> DiyHue Bridge</li>
+          <li><SiZigbee style={{ color: '#CCCCCC' }} /> DiyHue Bridge</li>
         </a>
         <a href="#alarm">
           <li><RiAlarmWarningLine style={{ color: '#AE2D00' }} /> Alarm</li>
+        </a>
+        <a href="#settings">
+          <li><FaCog style={{ color: '#FFFF00' }} /> Settings</li>
         </a>
         <a href="/logout">
           <li><FaSignOutAlt style={{ color: '#fff' }} /> Logout</li>

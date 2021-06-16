@@ -1,4 +1,5 @@
 import { FaCaretLeft, FaList  ,  FaPalette, FaTint, FaCouch} from "react-icons/fa";
+import { BsFillHouseDoorFill } from "react-icons/bs"
 import { useState } from "react";
 import axios from "axios";
 import Scenes from "./Scenes"
@@ -66,7 +67,7 @@ const Group = ({api_key, id, group, lights, scenes}) => {
       </div>}
       <div className="overlayBtn" onClick={() => setShowContainer('colorPicker')}></div>
       <div className="iconContainer">
-        <FaCouch/>
+        { group["type"] === "Zone"? <FaCouch/> : <BsFillHouseDoorFill/>}
       </div>
       <div className="textContainer">
         <p>{group.name}</p>
