@@ -10,9 +10,10 @@ def runRemoteDiscover(config):
     url = 'https://discovery.diyhue.org'
     while True:
         try:
+            logging.debug("Discovery ping")
             payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress"],"macaddress": config["mac"],"name": config["name"]}
             response = requests.post(url, timeout=5, json=payload)
-            sleep(30)
+            sleep(60)
         except:
-                logging.debug("remote sever is down")
+                logging.debug("Remote sever is down")
                 sleep(60) # don't overload the remote server

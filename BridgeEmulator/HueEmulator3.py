@@ -102,7 +102,7 @@ def runHttp():
     app.run(host="0.0.0.0", port=80)
 
 if __name__ == '__main__':
-    from services import mqtt, deconz, ssdp, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer
+    from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
@@ -121,6 +121,7 @@ if __name__ == '__main__':
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=runHttps).start()
     Thread(target=eventStreamer.messageBroker).start()
