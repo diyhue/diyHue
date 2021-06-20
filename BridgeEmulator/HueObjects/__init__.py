@@ -338,7 +338,7 @@ class Light():
 class Group():
 
     def __init__(self, data):
-        self.name = data["name"]
+        self.name = data["name"] if "name" in data else "Group " + data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.icon_class = data["class"] if "class" in data else "Other"
