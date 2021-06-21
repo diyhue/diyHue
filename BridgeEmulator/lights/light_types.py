@@ -15,7 +15,7 @@ lightTypes["LCT015"]["device"] = {"certified": True,"manufacturer_name": "Signif
 lightTypes["LCT015"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
 lightTypes["LCT015"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional","startup":{"mode":"safety","configured": True}}
 
-lightTypes["LST002"] = {"v1_static": {"type": "Color light", "swversion": "1.50.2_r30933", "productname":"Hue lightstrip plus","swconfigid":"59F2C3A3","productid":"Philips-LST002-1-LedStripsv3"}}
+lightTypes["LST002"] = {"v1_static": {"type": "Color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.50.2_r30933", "productname":"Hue lightstrip plus","swconfigid":"59F2C3A3","productid":"Philips-LST002-1-LedStripsv3"}}
 lightTypes["LST002"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LST002"]["v1_static"]["capabilities"] = {"certified":True,"control":{"mindimlevel":40,"maxlumen":1600,"colorgamuttype":"C","colorgamut":[[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"ct":{"min":153,"max":500}},"streaming":{"renderer":True,"proxy":True}}
 lightTypes["LST002"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "hue_lightstrip", "product_name": "Hue lightstrip plus", "software_version": "1.76.6"}
@@ -29,7 +29,7 @@ lightTypes["LWB010"]["v1_static"]["capabilities"] = {"certified": True,"control"
 lightTypes["LWB010"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "classic_bulb", "product_name": "Color temperature light", "software_version": "1.76.6"}
 lightTypes["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
 
-lightTypes["LTW001"] = {"v1_static": {"type": "Color temperature light", "swversion": "1.50.2_r30933"}}
+lightTypes["LTW001"] = {"v1_static": {"type": "Color temperature light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.50.2_r30933"}}
 lightTypes["LTW001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LTW001"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 1000,"maxlumen": 806,"ct": {"min": 153,"max": 454}},"streaming": {"renderer": False,"proxy": False}}
 lightTypes["LTW001"]["config"] = {"archetype": "classicbulb","function": "functional","direction": "omnidirectional", "startup":{"mode":"safety","configured":True}}
