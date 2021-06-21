@@ -353,6 +353,10 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
+        if self.type == "Entertainment":
+            for light in self.lights:
+                self.locations[light] = [0,0,0]
+
     def __del__(self):
         logging.info(self.name + " group was destroyed.")
 
