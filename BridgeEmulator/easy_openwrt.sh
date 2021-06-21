@@ -90,7 +90,7 @@ chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
 chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
-/etc/init.d/hueemulatorWrt-service enable
+/etc/init.d/diyHueWrt-service enable
 wait
 echo -e "\033[32m modify http port 80 to 82: list listen_http 0.0.0.0:82, list listen_http [::]: 82 and server.port = 82.\033[0m"
 echo -e "\033[32m To save the changes you've made, press CTRL + O. To exit nano, press CTRL + X.\033[0m"
