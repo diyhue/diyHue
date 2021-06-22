@@ -35,7 +35,7 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker build --platform=${{ matrix.arch }} -t diyhue/diyhue:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+          docker build -t diyhue/diyhue:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
 
       - name: Save tarball
         run: |
@@ -57,7 +57,7 @@ jobs:
     steps:
       - name: Enable qemu
         run: |
-          docker run --platform=${{ matrix.arch }} --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Download container artifact
         uses: actions/download-artifact@v2
