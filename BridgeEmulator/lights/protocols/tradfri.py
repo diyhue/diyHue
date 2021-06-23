@@ -55,19 +55,19 @@ def set_light(light, data):
     check_output("./coap-client-linux -B 2 -m put -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["psk"] + "\" -e '{ \"3311\": [" + json.dumps(payload) + "] }' \"" + url + "\"", shell=True)
 
 def get_light_state(light):
+    state ={}
     light_data = json.loads(check_output("./coap-client-linux -B 5 -m get -u \"" + light.protocol_cfg["identity"] + "\" -k \"" + light.protocol_cfg["psk"] + "\" \"coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"]) +"\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
-    light.state["on"] = bool(light_data["3311"][0]["5850"])
-    light.state["bri"] = light_data["3311"][0]["5851"]
+    state["on"] = bool(light_data["3311"][0]["5850"])
+    state["bri"] = light_data["3311"][0]["5851"]
     if "5706" in light_data["3311"][0]:
         if light_data["3311"][0]["5706"] == "f5faf6":
-            light.state["ct"] = 170
+            state["ct"] = 170
         elif light_data["3311"][0]["5706"] == "f1e0b5":
-            light.state["ct"] = 320
+            state["ct"] = 320
         elif light_data["3311"][0]["5706"] == "efd275":
-            light.state["ct"] = 470
+            state["ct"] = 470
     else:
-        light.state["ct"] = 470
-    light.state["reachable"] = True
+        state["ct"] = 470
 
     return state
 

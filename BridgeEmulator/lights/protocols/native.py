@@ -1,4 +1,3 @@
-import json
 import requests
 
 def set_light(light, data):
@@ -13,7 +12,7 @@ def set_light(light, data):
 
 def get_light_state(light):
     state = requests.get("http://"+light.protocol_cfg["ip"]+"/get?light=" + str(light.protocol_cfg["light_nr"]), timeout=3)
-    return json.loads(state.text)
+    return state.json()
 
 
 def discover():

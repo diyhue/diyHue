@@ -210,4 +210,4 @@ def sendKelvinCmd(light, kelvin):
 	sendCmd(light, cmd)
 
 def get_light_state(light):
-	return {}
+	return 

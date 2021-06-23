@@ -102,7 +102,6 @@ def get_light_state(light):
         logging.warning(e)
         return { 'reachable': False }
 
-    light.state.update(state)
     return state
 
 class HyperionConnection(object):

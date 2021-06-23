@@ -52,5 +52,5 @@ def get_light_state(light):
     state = {}
 
     if 'ison' in light_data:
-        light.state['on'] = True if light_data["ison"] == "true" else False
+        state['on'] = True if light_data["ison"] == "true" else False
     return state

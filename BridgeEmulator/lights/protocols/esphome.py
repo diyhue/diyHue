@@ -236,5 +236,4 @@ def get_light_state(light):
             state['on'] = False
         elif toggle_device['state'] == 'ON':
             state['on'] = True
-    light.state.update(state)
     return state

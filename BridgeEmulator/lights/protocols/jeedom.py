@@ -25,7 +25,6 @@ def get_light_state(address, light):
     else:
          state["on"] = True
     state["bri"] = str(round(float(light_data)/100*255))
-    light.state.update(state)
     return state
 
 def discover():

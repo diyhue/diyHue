@@ -46,7 +46,6 @@ def get_light_state(light):
             state["sat"] = 255
         else:
             state["sat"] = int(light_data["saturation"] * 2.54)
-    light.state.update(state)
     return state
 
 def discover():

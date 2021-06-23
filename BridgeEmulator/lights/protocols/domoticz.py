@@ -60,7 +60,6 @@ def get_light_state(light):
     else:
          state["on"] = True
     state["bri"] = str(round(float(light_data["result"][0]["Level"])/100*255))
-    light.state.update(state)
     return state
 
 def discover():

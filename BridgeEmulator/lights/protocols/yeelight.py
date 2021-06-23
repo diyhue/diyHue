@@ -184,7 +184,6 @@ def get_light_state(light):
             state["sat"] = int(int(hue_data[1]) * 2.54)
             state["colormode"] = "hs"
     tcp_socket.close()
-    light.state.update(state)
     return state
 
 

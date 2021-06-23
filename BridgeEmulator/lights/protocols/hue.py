@@ -28,7 +28,7 @@ def set_light(light, data):
 
 def get_light_state(light):
     state = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/lights/" + light.protocol_cfg["id"], timeout=3)
-    return json.loads(state.text)["state"]
+    return state.json()["state"]
 
 def discover(detectedLights, credentials):
     if "hueUser" in credentials and len(credentials["hueUser"]) > 32:

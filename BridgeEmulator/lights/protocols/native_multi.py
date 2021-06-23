@@ -15,7 +15,7 @@ def set_light(light, data):
 
 def get_light_state(light):
     state = requests.get("http://"+light.protocol_cfg["ip"]+"/state?light=" + str(light.protocol_cfg["light_nr"]), timeout=3)
-    return json.loads(state.text)
+    return state.json()
 
 
 def generate_light_name(base_name, light_nr):
