@@ -136,9 +136,9 @@ class Light():
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
-        self.state = data["state"] if "state" in data else lightTypes[self.modelid]["state"].deepcopy()
+        self.state = data["state"] if "state" in data else deepcopy(lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
-        self.config = data["config"] if "config" in data else lightTypes[self.modelid]["config"].deepcopy()
+        self.config = data["config"] if "config" in data else deepcopy(lightTypes[self.modelid]["config"])
         self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
 
@@ -955,9 +955,9 @@ class Sensor():
             if "manufacturername" not in data:
                 data["manufacturername"] = sensorTypes[data["modelid"]][data["type"]]["static"]["manufacturername"]
             if "config" not in data:
-                data["config"] = sensorTypes[data["modelid"]][data["type"]]["config"].deepcopy()
+                data["config"] = deepcopy(sensorTypes[data["modelid"]][data["type"]]["config"])
             if "state" not in data:
-                data["state"] = sensorTypes[data["modelid"]][data["type"]]["state"].deepcopy()
+                data["state"] = deepcopy(sensorTypes[data["modelid"]][data["type"]]["state"])
             if "swversion" not in data:
                 data["swversion"] = sensorTypes[data["modelid"]][data["type"]]["static"]["swversion"]
         if "config" not in data:
