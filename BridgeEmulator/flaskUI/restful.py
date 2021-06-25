@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep, tzset
 from datetime import datetime
 from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest, switchScene
-from lights.discover import scanForLights
+from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
 from flask import request
@@ -125,14 +125,17 @@ class ResourceElements(Resource):
         authorisation = authorize(username, resource)
         if "success" not in authorisation:
             return authorisation
-        if (resource == "lights" or resource == "sensors") and request.get_data(as_text=True) == "":
+
+        if resource in ["lights", "sensors"] and request.get_data(as_text=True) == "":
             print("scan for light")
             # if was a request to scan for lights of sensors
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
-
         pprint(postDict)
+        if resource == "lights": # add light manually from the web interface
+            Thread(target=manualAddLight, args=[postDict["ip"], postDict["protocol"],postDict["config"]]).start()
+            return [{"success": {"/" + resource: "Searching for new devices"}}]
         v2Resource = "none"
         # find the first unused id for new object
         new_object_id = nextFreeId(bridgeConfig, resource)
