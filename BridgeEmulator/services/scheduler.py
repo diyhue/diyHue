@@ -60,20 +60,20 @@ def runScheduler():
                 if obj.enabled:
                     if "when" in obj.configuration:
                         if "recurrence_days" in  obj.configuration["when"]:
-                            if datetime.utcnow().strftime("%A").lower() not in obj.configuration["when"]["recurrence_days"]:
+                            if datetime.now().strftime("%A").lower() not in obj.configuration["when"]["recurrence_days"]:
                                 continue
                         if "time_point" in obj.configuration["when"] and obj.configuration["when"]["time_point"]["type"] == "time":
                             triggerTime = obj.configuration["when"]["time_point"]["time"]
-                            if datetime.utcnow().second == 0 and datetime.utcnow().minute == triggerTime["minute"] and datetime.utcnow().hour == triggerTime["hour"]:
+                            if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
                                 Thread(target=triggerScript, args=[obj]).start()
 
                     elif "when_extended" in obj.configuration:
                         if "recurrence_days" in  obj.configuration["when_extended"]:
-                            if datetime.utcnow().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
+                            if datetime.now().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
                                 continue
                             if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
                                 triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
-                                if datetime.utcnow().second == 0 and datetime.utcnow().minute == triggerTime["minute"] and datetime.utcnow().hour == triggerTime["hour"]:
+                                if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
                                     Thread(target=triggerScript, args=[obj]).start()
 
 
