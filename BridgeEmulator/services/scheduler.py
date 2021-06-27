@@ -3,7 +3,7 @@ import configManager
 import json
 from time import sleep
 from threading import Thread
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time, date
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
 from functions.scripts import triggerScript
@@ -64,7 +64,18 @@ def runScheduler():
                                 continue
                         if "time_point" in obj.configuration["when"] and obj.configuration["when"]["time_point"]["type"] == "time":
                             triggerTime = obj.configuration["when"]["time_point"]["time"]
-                            if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
+                            time_object = time(
+                                hour = triggerTime["hour"],
+                                minute = triggerTime["minute"],
+                                second = triggerTime["second"] if "second" in triggerTime else 0)
+                            if "fade_in_duration" in obj.configuration:
+                                fade_duration = obj.configuration["fade_in_duration"]
+                                delta = timedelta(
+                                    hours=fade_duration["hours"] if "hours" in fade_duration else 0,
+                                    minutes=fade_duration["minutes"] if "minutes" in fade_duration else 0,
+                                    seconds=fade_duration["seconds"] if "seconds" in fade_duration else 0)
+                                time_object = (datetime.combine(date(1,1,1),time_object) - delta).time()
+                            if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
                                 Thread(target=triggerScript, args=[obj]).start()
 
                     elif "when_extended" in obj.configuration:
@@ -73,7 +84,11 @@ def runScheduler():
                                 continue
                             if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
                                 triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
-                                if datetime.now().second == 0 and datetime.now().minute == triggerTime["minute"] and datetime.now().hour == triggerTime["hour"]:
+                                time_object = time(
+                                    hour = triggerTime["hour"],
+                                    minute = triggerTime["minute"],
+                                    second = triggerTime["second"] if "second" in triggerTime else 0)
+                                if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
                                     Thread(target=triggerScript, args=[obj]).start()
 
 

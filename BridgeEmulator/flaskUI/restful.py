@@ -237,6 +237,7 @@ class ResourceElements(Resource):
             responseList.append(
                 {"success": {response_location + key: value}})
         pprint(responseList)
+        configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return responseList
 
 

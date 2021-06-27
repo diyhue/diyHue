@@ -63,7 +63,9 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         return newLightID
     return False
 
-def manualAddLight(ip, protocol, modelid="LCT015", name="", config={}):
+def manualAddLight(ip, protocol, config={}):
+    modelid = config["lightModelID"] if "lightModelID" in config else "LCT015"
+    name = config["lightName"] if "lightName" in config else "New Light"
     if protocol == "auto":
         detectedLights = []
         native_multi.discover(detectedLights,[ip])
