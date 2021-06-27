@@ -19,7 +19,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                         logging.debug("fetch " + light.name)
                         newState = protocol.get_light_state(light)
                         logging.debug(newState)
-                        light.state.update(newState)                
+                        light.state.update(newState)
                         light.state["reachable"] = True
                     except Exception as e:
                         light.state["reachable"] = False
@@ -35,7 +35,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                 lu = user.last_use_date
                 try: #in case if last use is not a proper datetime
                     lu = datetime.strptime(lu, "%Y-%m-%dT%H:%M:%S")
-                    if abs(datetime.now() - lu) <= timedelta(seconds = 2):
+                    if abs(datetime.utcnow() - lu) <= timedelta(seconds = 2):
                         i = 300
                         break
                 except:
