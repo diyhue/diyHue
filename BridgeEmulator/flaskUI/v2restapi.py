@@ -46,6 +46,7 @@ def getObject(element, v2uuid):
 
 def authorizeV2(headers):
     if "hue-application-key" in headers and headers["hue-application-key"] in bridgeConfig["apiUsers"]:
+        bridgeConfig["apiUsers"][headers["hue-application-key"]].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
     return []
 
