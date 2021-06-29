@@ -25,7 +25,7 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 
 
 def authorize(username, resource='', resourceId='', resourceParam=''):
-    if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
+    if username not in bridgeConfig["apiUsers"]:
         return [{"error": {"type": 1, "address": "/" + resource + "/" + resourceId, "description": "unauthorized user"}}]
 
     if resourceId not in ["0", "new", "timezones"] and resourceId != '' and resourceId not in bridgeConfig[resource]:
@@ -33,8 +33,7 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
 
     if resourceId != "0" and resourceParam != '' and not hasattr(bridgeConfig[resource][resourceId], resourceParam):
         return [{"error": {"type": 3, "address": "/" + resource + "/" + resourceId + "/" + resourceParam, "description": "resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
-    if request.remote_addr != "127.0.0.1":
-        bridgeConfig["apiUsers"][username].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    bridgeConfig["apiUsers"][username].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     return ["success"]
 
 
@@ -104,7 +103,8 @@ class EntireConfig(Resource):
 
 class ResourceElements(Resource):
     def get(self, username, resource):
-        if username in bridgeConfig["apiUsers"]:
+        authorisation = authorize(username)
+        if "success" in authorisation:
             if resource == "capabilities":
                 return capabilities()
             else:
