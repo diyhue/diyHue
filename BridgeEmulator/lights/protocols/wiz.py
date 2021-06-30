@@ -48,7 +48,7 @@ def set_light(light, data):
 
 
 def get_light_state(light):
-    pass
+    return {}
 
 def translateRange(value, leftMin, leftMax, rightMin, rightMax):
     leftSpan = leftMax - leftMin

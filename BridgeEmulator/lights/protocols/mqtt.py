@@ -54,7 +54,7 @@ def set_light(light, data):
     publish.multiple(messages, hostname= light.protocol_cfg["mqtt_server"]["mqttServer"], port= light.protocol_cfg["mqtt_server"]["mqttPort"], auth=auth)
 
 def get_light_state(light):
-    pass
+    return {}
 
 def discover(mqtt_config):
     if mqtt_config["enabled"]:

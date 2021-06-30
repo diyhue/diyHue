@@ -37,7 +37,7 @@ def set_light(light, data):
         sock.sendto(msg, (light.protocol_cfg["ip"], 48899))
 
 def get_light_state(light):
-    return
+    return {}
 
 def discover():
     pass
