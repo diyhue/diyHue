@@ -39,7 +39,7 @@ def set_light(light, data):
                 payload["color_temp"] = value
             if key == "hue" or key == "sat":
                 colorFromHsv = True
-            if key == "alert":
+            if key == "alert" and value != "none":
                 payload['alert'] = value
             if key == "transitiontime":
                 payload['transition'] = value / 10
