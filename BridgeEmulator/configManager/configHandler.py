@@ -145,14 +145,15 @@ class Config:
             path = self.configDir + '/backup/'
             if not os.path.exists(path):
                 os.makedirs(path)
-        config = self.yaml_config["config"]
-        config["whitelist"] = {}
-        for user, obj in self.yaml_config["apiUsers"].items():
-            config["whitelist"][user] = obj.save()
-
         if resource in ["all", "config"]:
+            config = self.yaml_config["config"]
+            config["whitelist"] = {}
+            for user, obj in self.yaml_config["apiUsers"].items():
+                config["whitelist"][user] = obj.save()
             _write_yaml(path + "config.yaml", config)
             logging.debug("Dump config file " + path + "config.yaml")
+            if resource == "config":
+                return
         saveResources = []
         if resource == "all":
             saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance"]
