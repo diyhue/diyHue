@@ -11,6 +11,7 @@ from ws4py.client.threadedclient import WebSocketClient
 from sensors.discover import addHueMotionSensor
 from functions.core import nextFreeId
 from datetime import datetime
+from time import sleep
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -57,7 +58,7 @@ def scanDeconz():
             elif sensor["modelid"] == "lumi.sensor_motion.aq2":
                 if sensor["type"] == "ZHALightLevel":
                     logging.info("register new Xiaomi light sensor")
-                    lightSensor = {"name": "Hue ambient light " + name[:14], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLLightLevel", "protocol_cfg": {"deconzId": id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:]}
+                    lightSensor = {"name": "Hue ambient light " + sensor["name"][:14], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLLightLevel", "protocol_cfg": {"deconzId": id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:]}
                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(lightSensor)
                 elif sensor["type"] == "ZHAPresence":
                     logging.info("register new Xiaomi motion sensor")
