@@ -64,7 +64,7 @@ def scanDeconz():
                     motion_sensor = {"name": "Hue motion " + sensor["name"][:21], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLPresence", "protocol_cfg": {"deconzId": id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:]}
                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(motion_sensor)
                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                    temp_sensor = {"name": "Hue temperature " + sensor["name"][:16], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLTemperature", "protocol_cfg": {"deconzId": "none"}, "id_v1": new_sensor_id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:-1] + "2"}
+                    temp_sensor = {"name": "Hue temperature " + sensor["name"][:16], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLTemperature", "protocol_cfg": {"deconzId": "none", "id_v1": new_sensor_id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:-1] + "2"}
                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(temp_sensor)
             elif sensor["modelid"] not in ["PHDL00"]:
                 logging.info("register new sensor " + sensor["name"])
