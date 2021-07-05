@@ -55,11 +55,11 @@ def scanDeconz():
                 logging.info("register motion sensor as Philips Motion Sensor")
                 addHueMotionSensor(sensor["name"], "deconz", {"lightSensor": "on", "deconzId": id, "modelid": sensor["modelid"]})
             elif sensor["modelid"] == "lumi.sensor_motion.aq2":
-                if deconz_sensors[sensor]["type"] == "ZHALightLevel":
+                if sensor["type"] == "ZHALightLevel":
                     logging.info("register new Xiaomi light sensor")
                     lightSensor = {"name": "Hue ambient light " + name[:14], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLLightLevel", "protocol_cfg": {"deconzId": id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:]}
                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(lightSensor)
-                elif deconz_sensors[sensor]["type"] == "ZHAPresence":
+                elif sensor["type"] == "ZHAPresence":
                     logging.info("register new Xiaomi motion sensor")
                     motion_sensor = {"name": "Hue motion " + sensor["name"][:21], "id_v1": new_sensor_id, "protocol": "deconz", "modelid": "SML001", "type": "ZLLPresence", "protocol_cfg": {"deconzId": id}, "uniqueid": "00:17:88:01:02:" + sensor["uniqueid"][12:]}
                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(motion_sensor)
