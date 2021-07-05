@@ -35,7 +35,7 @@ def discover(detectedLights, credentials):
     if "deconzUser" in credentials and credentials["deconzUser"] != "":
         logging.debug("deconz: <discover> invoked!")
         try:
-            response = requests.get("http://" + credentials["deconzHost"] + ":" + credentials["deconzPort"] + "/api/" + credentials["deconzUser"] + "/lights", timeout=3)
+            response = requests.get("http://" + credentials["deconzHost"] + ":" + str(credentials["deconzPort"]) + "/api/" + credentials["deconzUser"] + "/lights", timeout=3)
             if response.status_code == 200:
                 logging.debug(response.text)
                 lights = json.loads(response.text)
@@ -47,6 +47,6 @@ def discover(detectedLights, credentials):
                         modelid = "LTW001"
                     elif light["type"] == "On/Off plug-in unit":
                         modelid = "LOM001"
-                    detectedLights.append({"protocol": "deconz", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["deconzHost"] + ":" + credentials["deconzPort"], "deconzUser": credentials["deconzUser"], "modelid": light["modelid"], "deconzId": id, "uniqueid": light["uniqueid"]}})
+                    detectedLights.append({"protocol": "deconz", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["deconzHost"] + ":" + str(credentials["deconzPort"]), "deconzUser": credentials["deconzUser"], "modelid": light["modelid"], "deconzId": id, "uniqueid": light["uniqueid"]}})
         except Exception as e:
             logging.info("Error connecting to Deconz: %s", e)
