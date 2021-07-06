@@ -1,48 +1,45 @@
-import React, { Suspense } from 'react'
-import {
-  Redirect,
-  Route,
-  Switch,
-  HashRouter
-} from 'react-router-dom'
-import { CFade } from '@coreui/react'
-
+import React, { Suspense } from "react";
+import { Redirect, Route, Switch, HashRouter } from "react-router-dom";
+import { CFade } from "@coreui/react";
 
 // routes config
-import routes from '../routes'
+import routes from "../routes";
 
 const loading = (
   <div className="pt-3 text-center">
     <div className="sk-spinner sk-spinner-pulse"></div>
   </div>
-)
+);
 
-const TheContent = ({API_KEY}) => {
+const TheContent = ({ HOST_IP, API_KEY }) => {
   return (
     <main className="container">
-        <Suspense fallback={loading}>
-          <HashRouter>
-            <Switch>
-              {routes.map((route, idx) => {
-                return route.component && (
+      <Suspense fallback={loading}>
+        <HashRouter>
+          <Switch>
+            {routes.map((route, idx) => {
+              return (
+                route.component && (
                   <Route
                     key={idx}
                     path={route.path}
                     exact={route.exact}
                     name={route.name}
-                    render={props => (
+                    render={(props) => (
                       <CFade>
-                        <route.component API_KEY={API_KEY} />
+                        <route.component API_KEY={API_KEY} HOST_IP={HOST_IP} />
                       </CFade>
-                    )} />
+                    )}
+                  />
                 )
-              })}
-              <Redirect from="/" to="/groups" />
-            </Switch>
-          </HashRouter>
-        </Suspense>
+              );
+            })}
+            <Redirect from="/" to="/groups" />
+          </Switch>
+        </HashRouter>
+      </Suspense>
     </main>
-  )
-}
+  );
+};
 
-export default React.memo(TheContent)
+export default React.memo(TheContent);

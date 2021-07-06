@@ -1,23 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Device from "../containers/Device";
-import Flash from "../containers/Flash"
+import Flash from "../containers/Flash";
 
-const Devices = ({ API_KEY }) => {
+const Devices = ({ HOST_IP, API_KEY }) => {
   const [devices, setDevices] = useState({});
-  const [type, setType] = useState('none');
-  const [message, setMessage] = useState('no message');
+  const [type, setType] = useState("none");
+  const [message, setMessage] = useState("no message");
 
   const fetchDevices = () => {
     if (API_KEY !== undefined) {
       axios
-        .get(`/sensors`)
+        .get(`${HOST_IP}/sensors`)
         .then((fetchedData) => {
           console.log(fetchedData.data);
           setDevices(fetchedData.data);
-        }).catch((error) => { console.error(error) });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     }
-  }
+  };
 
   useEffect(() => {
     fetchDevices();
@@ -29,7 +32,14 @@ const Devices = ({ API_KEY }) => {
 
   return (
     <div className="content">
-      {type !== 'none' && <Flash type={type} message={message} duration="5000" setType={setType} />}
+      {type !== "none" && (
+        <Flash
+          type={type}
+          message={message}
+          duration="5000"
+          setType={setType}
+        />
+      )}
       <div className="cardGrid">
         {Object.entries(devices).map(([id, device]) => (
           <Device
@@ -44,7 +54,6 @@ const Devices = ({ API_KEY }) => {
       </div>
     </div>
   );
-}
+};
 
-
-export default Devices
+export default Devices;
