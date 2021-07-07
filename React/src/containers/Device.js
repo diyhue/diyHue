@@ -1,4 +1,4 @@
-import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
+import { MdDeleteForever } from "react-icons/md";
 import {
   TiBatteryLow,
   TiBatteryMid,

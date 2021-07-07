@@ -24,7 +24,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [HOST_IP, API_KEY]);
 
   const onSubmit = (e) => {
     console.log("submit");

@@ -11,20 +11,6 @@ export default function Groups({ HOST_IP, API_KEY }) {
   const [message, setMessage] = useState("no message");
   const [lightForm, setLightForm] = useState(false);
 
-  const fetchLights = () => {
-    if (API_KEY !== undefined) {
-      axios
-        .get(`${HOST_IP}/lights`)
-        .then((fetchedData) => {
-          console.log(fetchedData.data);
-          setLights(fetchedData.data);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }
-  };
-
   const searchForLights = () => {
     if (API_KEY !== undefined) {
       axios
@@ -44,28 +30,42 @@ export default function Groups({ HOST_IP, API_KEY }) {
     }
   };
 
-  const fetchModelIds = () => {
-    if (API_KEY !== undefined) {
-      axios
-        .get(`${HOST_IP}/light-types`)
-        .then((fetchedData) => {
-          console.log(fetchedData.data);
-          setModelIds(fetchedData.data["result"]);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }
-  };
-
   useEffect(() => {
+    const fetchLights = () => {
+      if (API_KEY !== undefined) {
+        axios
+          .get(`${HOST_IP}/lights`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setLights(fetchedData.data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    };
+
+    const fetchModelIds = () => {
+      if (API_KEY !== undefined) {
+        axios
+          .get(`${HOST_IP}/light-types`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setModelIds(fetchedData.data["result"]);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    };
+
     fetchLights();
     fetchModelIds();
     const interval = setInterval(() => {
       fetchLights();
     }, 2000); // <<-- ⏱ 1000ms = 1s
     return () => clearInterval(interval);
-  }, [API_KEY]);
+  }, [HOST_IP, API_KEY]);
 
   return (
     <div className="content">
@@ -82,16 +82,18 @@ export default function Groups({ HOST_IP, API_KEY }) {
           Scan For Lights
           <div className="btn btn-block"></div>
         </div>
-        <a
+        <button
           onClick={() => setLightForm(!lightForm)}
           className="someClassWithCursorPointer"
+          style={{ all: "unset" }}
         >
           Add light manually
-        </a>
+        </button>
         {lightForm && <AddLight API_KEY={API_KEY}></AddLight>}
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}
+            HOST_IP={HOST_IP}
             api_key={API_KEY}
             id={id}
             light={light}

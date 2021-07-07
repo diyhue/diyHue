@@ -143,12 +143,18 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
       </div>
       <div className="dimmer">
         {showContainer === "scenes" && (
-          <Scenes api_key={api_key} groupId={id} scenes={scenes} />
+          <Scenes
+            HOST_IP={HOST_IP}
+            api_key={api_key}
+            groupId={id}
+            scenes={scenes}
+          />
         )}
         {showContainer === "lights" && (
           <div className="lightsContainer">
             {group.lights.map((light) => (
               <Light
+                HOST_IP={HOST_IP}
                 api_key={api_key}
                 key={light}
                 id={light}
@@ -159,6 +165,7 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
         )}
         {showContainer === "colorPicker" && (
           <ColorPicker
+            HOST_IP={HOST_IP}
             api_key={api_key}
             lights={lights}
             groupLights={group.lights}

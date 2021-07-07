@@ -23,7 +23,7 @@ const Tradfri = ({ HOST_IP, API_KEY }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [HOST_IP, API_KEY]);
 
   const pairTradfri = (e) => {
     e.preventDefault();
