@@ -41,6 +41,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
             <Group
               key={id}
               api_key={API_KEY}
+              HOST_IP={HOST_IP}
               id={id}
               group={group}
               lights={config.lights}

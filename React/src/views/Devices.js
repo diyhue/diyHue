@@ -44,6 +44,7 @@ const Devices = ({ HOST_IP, API_KEY }) => {
         {Object.entries(devices).map(([id, device]) => (
           <Device
             key={id}
+            HOST_IP={HOST_IP}
             api_key={API_KEY}
             id={id}
             device={device}

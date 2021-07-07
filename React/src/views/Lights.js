@@ -93,6 +93,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}
+            HOST_IP={HOST_IP}
             api_key={API_KEY}
             id={id}
             light={light}
