@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { RiAlertLine } from "react-icons/ri";
 import axios from "axios";
 import { cieToRgb, colorTemperatureToRgb } from "../color";

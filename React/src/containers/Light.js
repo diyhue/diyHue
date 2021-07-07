@@ -1,9 +1,7 @@
 import { FaLightbulb, FaCheck } from "react-icons/fa";
 import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
 import { RiAlertLine } from "react-icons/ri";
-import { useState } from "react";
 import axios from "axios";
-import { cieToRgb, colorTemperatureToRgb } from "../color";
 import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
 import { confirmAlert } from "react-confirm-alert"; // Import

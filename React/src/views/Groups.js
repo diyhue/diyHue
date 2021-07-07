@@ -10,27 +10,27 @@ export default function Groups({ HOST_IP, API_KEY }) {
     scenes: {},
   });
 
-  const fetchConfig = () => {
-    if (API_KEY !== undefined) {
-      axios
-        .get(`${HOST_IP}/api/${API_KEY}`)
-        .then((fetchedData) => {
-          console.log(fetchedData.data);
-          setConfig(fetchedData.data);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }
-  };
-
   useEffect(() => {
+    const fetchConfig = () => {
+      if (API_KEY !== undefined) {
+        axios
+          .get(`${HOST_IP}/api/${API_KEY}`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setConfig(fetchedData.data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    };
+
     fetchConfig();
     const interval = setInterval(() => {
       fetchConfig();
     }, 2000); // <<-- ⏱ 1000ms = 1s
     return () => clearInterval(interval);
-  }, [API_KEY]);
+  }, [HOST_IP, API_KEY]);
 
   return (
     <div className="content">

@@ -1,6 +1,5 @@
 import axios from "axios";
 import { useState } from "react";
-import { FaTimes } from "react-icons/fa";
 import Flash from "../containers/Flash";
 
 export default function LinkButton({ HOST_IP, API_KEY }) {

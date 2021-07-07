@@ -15,21 +15,21 @@ const Bridge = ({ HOST_IP, API_KEY }) => {
   const [timezones, setTimezones] = useState([]);
   const [readonlyConf, setReadonlyConf] = useState({});
 
-  const fetchTimezones = () => {
-    if (API_KEY !== undefined) {
-      axios
-        .get(`${HOST_IP}/api/${API_KEY}/info/timezones`)
-        .then((fetchedData) => {
-          console.log(fetchedData.data);
-          setTimezones(fetchedData.data);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }
-  };
-
   useEffect(() => {
+    const fetchTimezones = () => {
+      if (API_KEY !== undefined) {
+        axios
+          .get(`${HOST_IP}/api/${API_KEY}/info/timezones`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setTimezones(fetchedData.data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    };
+
     fetchTimezones();
     axios
       .get(`${HOST_IP}/api/${API_KEY}/config`)
@@ -44,7 +44,7 @@ const Bridge = ({ HOST_IP, API_KEY }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [HOST_IP, API_KEY]);
 
   const onSubmit = (e) => {
     console.log("submit");

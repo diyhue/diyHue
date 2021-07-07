@@ -18,7 +18,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [HOST_IP, API_KEY]);
 
   const pairBridge = (e) => {
     e.preventDefault();

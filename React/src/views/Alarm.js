@@ -18,7 +18,7 @@ const Alarm = ({ HOST_IP, API_KEY }) => {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [HOST_IP, API_KEY]);
 
   const toggleEnable = (e) => {
     setEnable(e);

@@ -27,7 +27,7 @@ export default function KelvinPicker({
   }, []);
 
   let colors = [];
-  for (const [index, light] of groupLights.entries()) {
+  for (const [light] of groupLights.entries()) {
     if ("xy" in lights[light]["state"]) {
       colors.push(
         cieToRgb(
@@ -65,6 +65,6 @@ export default function KelvinPicker({
       //console.log(picker.current.state.color.rgb)
       picker.current.on("input:end", onChange);
     }
-  }, [pickerRef.current]);
+  }, [onChange]);
   return <div ref={pickerRef} className={animation ? "hide" : "show"}></div>;
 }

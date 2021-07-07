@@ -7,26 +7,26 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
   const [group0State, setGroup0State] = useState(false);
 
   useEffect(() => {
+    const fetchGroups = () => {
+      if (API_KEY !== undefined) {
+        axios
+          .get(`${HOST_IP}/api/${API_KEY}/groups/0`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setGroup0State(fetchedData.data["state"]["any_on"]);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+    };
+
     fetchGroups();
     const interval = setInterval(() => {
       fetchGroups();
     }, 5000); // <<-- ⏱ 1000ms = 1s
     return () => clearInterval(interval);
-  }, [API_KEY]);
-
-  const fetchGroups = () => {
-    if (API_KEY !== undefined) {
-      axios
-        .get(`${HOST_IP}/api/${API_KEY}/groups/0`)
-        .then((fetchedData) => {
-          console.log(fetchedData.data);
-          setGroup0State(fetchedData.data["state"]["any_on"]);
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    }
-  };
+  }, [HOST_IP, API_KEY]);
 
   const handleToggleChange = (state) => {
     const newState = { on: state };
@@ -59,9 +59,11 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
           <span className="slider"></span>
         </label>
       </div>
+      {/*
       <div className="groupToggle">
         <i onClick="toggleLights(this)" className="fas fa-couch"></i>
       </div>
+      */}
     </div>
   );
 };
