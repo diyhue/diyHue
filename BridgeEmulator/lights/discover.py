@@ -72,9 +72,9 @@ def manualAddLight(ip, protocol, config={}):
         tasmota.discover(detectedLights,[ip])
         shelly.discover(detectedLights,[ip])
         esphome.discover(detectedLights,[ip])
-        if len(detectedLight) == 1:
+        if len(detectedLights) == 1:
             logging.info("Found light " + detectedLights[0]["protocol"] + " " + detectedLights[0]["name"])
-            addNewLight(detectedLight[0]["modelid"], detectedLight[0]["name"], detectedLight[0]["protocol"], detectedLight[0]["protocol_cfg"])
+            addNewLight(detectedLights[0]["modelid"], detectedLights[0]["name"], detectedLights[0]["protocol"], detectedLights[0]["protocol_cfg"])
     else:
         addNewLight(modelid, name, protocol, config)
 
