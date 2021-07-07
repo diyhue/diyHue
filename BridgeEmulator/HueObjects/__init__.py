@@ -236,7 +236,7 @@ class Light():
 
     def getV2Api(self):
         result = {}
-        if self.modelid in ["LST002", "LCT001", "LCT15", "LCX002"]: #color lights only
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002"]: #color lights only
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result = {
                 "color": {
