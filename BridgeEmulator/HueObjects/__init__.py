@@ -2,7 +2,7 @@ import uuid
 import logManager
 import random
 import weakref
-from lights.light_types import lightTypes
+from lights.light_types import lightTypes, archetype
 from sensors.sensor_types import sensorTypes
 from lights.protocols import protocols
 from datetime import datetime
@@ -266,9 +266,7 @@ class Light():
             }
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
-        result["metadata"] = {"name": self.name}
-        if "archetype" in self.config:
-            result["metadata"]["archetype"] = lightTypes[self.modelid]["device"]["product_archetype"]
+        result["metadata"] = {"name": self.name, "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
         result["on"] = {
             "on": self.state["on"]

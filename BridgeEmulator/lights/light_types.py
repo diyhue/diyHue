@@ -49,3 +49,41 @@ lightTypes["LOM001"]["v1_static"]["capabilities"] = {"certified": True,"control"
 lightTypes["LOM001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.76.10"}
 lightTypes["LOM001"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
 lightTypes["LOM001"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
+
+
+
+archetype = {"tableshade":"table_shade",
+    "flexiblelamp":"flexible_lamp",
+    "tablewash":"table_wash",
+    "christmastree":"christmas_tree",
+    "floorshade":"floor_shade",
+    "floorlantern":"floor_lantern",
+    "bollard":"bollard",
+    "groundspot":"ground_spot",
+    "recessedfloor":"recessed_floor",
+    "wallwasher":"wall_washer",
+    "pendantround":"pendant_round",
+    "pendantlong":"pendant_long",
+    "ceilinground":"ceiling_round",
+    "ceilingsquare":"ceiling_square",
+    "singlespot":"single_spot",
+    "doublespot":"double_spot",
+    "recessedceiling":"recessed_ceiling",
+    "walllantern":"wall_lantern",
+    "wallshade":"wall_shade",
+    "wallspot":"wall_spot",
+    "sultanbulb":"sultan_bulb",
+    "classicbulb":"classic_bulb",
+    "spotbulb":"spot_bulb",
+    "floodbulb":"flood_bulb",
+    "candlebulb":"candle_bulb",
+    "vintagebulb":"vintage_bulb",
+    "lusterbulb":"luster_bulb",
+    "huelightstrip":"hue_lightstrip",
+    "huego":"hue_go",
+    "hueplay":"hue_play",
+    "huebloom":"hue_bloom",
+    "hueiris":"hue_iris",
+    "plug":"plug",
+    "huecentris":"hue_centris"
+    }
