@@ -85,5 +85,6 @@ archetype = {"tableshade":"table_shade",
     "huebloom":"hue_bloom",
     "hueiris":"hue_iris",
     "plug":"plug",
-    "huecentris":"hue_centris"
+    "huecentris":"hue_centris",
+    "huelightstriptv":"hue_lightstrip_tv"
     }
