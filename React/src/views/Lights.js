@@ -4,7 +4,7 @@ import Light from "../containers/Light";
 import AddLight from "../containers/AddLight";
 import Flash from "../containers/Flash";
 
-export default function Groups({ HOST_IP, API_KEY }) {
+export default function Lights({ HOST_IP, API_KEY }) {
   const [lights, setLights] = useState({});
   const [modelIds, setModelIds] = useState([]);
   const [type, setType] = useState("none");
@@ -89,7 +89,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
         >
           Add light manually
         </button>
-        {lightForm && <AddLight API_KEY={API_KEY}></AddLight>}
+        {lightForm && <AddLight HOST_IP={HOST_IP} API_KEY={API_KEY}></AddLight>}
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}
