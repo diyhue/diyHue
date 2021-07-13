@@ -302,7 +302,7 @@ class ClipV2Resource(Resource):
             objCreation = {
                 "id_v1": new_object_id,
                 "name": postDict["metadata"]["name"],
-                "image": postDict["metadata"]["image"]["rid"],
+                "image": postDict["metadata"]["image"]["rid"] if "image" in postDict["metadata"] else None,
                 "owner": bridgeConfig["apiUsers"][request.headers["hue-application-key"]],
             }
             if "group" in postDict:
