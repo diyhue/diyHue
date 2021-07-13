@@ -76,6 +76,7 @@ def manualAddLight(ip, protocol, config={}):
             logging.info("Found light " + detectedLights[0]["protocol"] + " " + detectedLights[0]["name"])
             addNewLight(detectedLights[0]["modelid"], detectedLights[0]["name"], detectedLights[0]["protocol"], detectedLights[0]["protocol_cfg"])
     else:
+        config["ip"] = ip
         addNewLight(modelid, name, protocol, config)
 
 def scanForLights(): #scan for ESP8266 lights and strips
