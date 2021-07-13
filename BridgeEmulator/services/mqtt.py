@@ -21,6 +21,23 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 
 devices_ids = {}
 
+# Configuration stuff
+discoveryPrefix = "homeassistant"
+latestStates = {}
+discoveredDevices = {}
+
+
+motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "SML001"]
+standardSensors = {
+            "TRADFRI remote control": {
+                "dataConversion": {"rootKey": "action", "toggle": {"buttonevent": 1002}, "arrow_right_click": {"buttonevent": 5002}, "arrow_right_hold": {"buttonevent": 5001}, "arrow_left_click": {"buttonevent": 4002}, "arrow_left_hold": {"buttonevent": 4001}, "brightness_up_click": {"buttonevent": 2002}, "brightness_up_hold": {"buttonevent": 2001}, "brightness_down_click": {"buttonevent": 3002}, "brightness_down_hold": {"buttonevent": 3001}, "brightness_up_release": {"buttonevent": 2003},  "brightness_down_release": {"buttonevent": 3003}, "arrow_left_release": {"buttonevent": 4003}, "arrow_right_release": {"buttonevent": 5003}}},
+            "TRADFRI on/off switch": {
+                "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}},
+            "TRADFRI wireless dimmer": {
+                "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}},
+            "RWL021": {
+                "dataConversion": {"rootKey": "action", "on-press": {"buttonevent": 1000}, "up-press": {"buttonevent": 2000}, "up-hold": {"buttonevent": 2001}, "up-hold-release": {"buttonevent": 2002}, "down-press": {"buttonevent": 3000}, "down-hold": {"buttonevent": 3001}, "down-hold-release": {"buttonevent": 3002}, "off-press": {"buttonevent": 4000}}}
+            }
 
 def longPressButton(sensor, buttonevent):
     print("running.....")
@@ -57,22 +74,6 @@ def getObject(friendly_name):
         return False
 
 client = mqtt.Client()
-
-# Configuration stuff
-discoveryPrefix = "homeassistant"
-latestStates = {}
-discoveredDevices = {}
-
-
-motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "SML001"]
-standardSensors = {
-            "TRADFRI remote control": {
-                "dataConversion": {"rootKey": "action", "toggle": {"buttonevent": 1002}, "arrow_right_click": {"buttonevent": 5002}, "arrow_right_hold": {"buttonevent": 5001}, "arrow_left_click": {"buttonevent": 4002}, "arrow_left_hold": {"buttonevent": 4001}, "brightness_up_click": {"buttonevent": 2002}, "brightness_up_hold": {"buttonevent": 2001}, "brightness_down_click": {"buttonevent": 3002}, "brightness_down_hold": {"buttonevent": 3001}, "brightness_up_release": {"buttonevent": 2003},  "brightness_down_release": {"buttonevent": 3003}, "arrow_left_release": {"buttonevent": 4003}, "arrow_right_release": {"buttonevent": 5003}}},
-            "TRADFRI on/off switch": {
-                "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}},
-            "TRADFRI wireless dimmer": {
-                "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}}
-            }
 
 
 # Will get called zero or more times depending on how many lights are available for autodiscovery
