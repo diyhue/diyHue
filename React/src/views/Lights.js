@@ -89,7 +89,12 @@ export default function Lights({ HOST_IP, API_KEY }) {
         >
           Add light manually
         </button>
-        {lightForm && <AddLight HOST_IP={HOST_IP} API_KEY={API_KEY}></AddLight>}
+        {lightForm && <AddLight 
+                        setType={setType}
+                        setMessage={setMessage} 
+                        HOST_IP={HOST_IP} 
+                        API_KEY={API_KEY}>
+                      </AddLight>}
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}

@@ -3,7 +3,7 @@ import axios from "axios";
 import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
 
-const AddLight = ({ HOST_IP, API_KEY }) => {
+const AddLight = ({ setType, setMessage, HOST_IP, API_KEY }) => {
   const [lightData, setLightData] = useState({
     protocol: "auto",
   });
@@ -24,6 +24,9 @@ const AddLight = ({ HOST_IP, API_KEY }) => {
       config: rest,
     };
     axios.post(`${HOST_IP}/api/${API_KEY}/lights`, formattedData);
+    setMessage("Light added");
+    setType("none");
+    setType("success");
   };
 
   const protocols = [
