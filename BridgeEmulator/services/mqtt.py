@@ -169,8 +169,8 @@ def on_message(client, userdata, msg):
                 device = msg.topic.split("/")[1]
                 sensor = getObject(device)
                 if sensor != False:
-                    if "battery" in data:
-                        sensor.config["battery"] = int(data["battery"])
+                    if "battery" in data and isinstance(data["battery"], int):
+                        sensor.config["battery"] = data["battery"]
                     if sensor.config["on"] == False:
                         return
                     convertedPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
@@ -185,7 +185,7 @@ def on_message(client, userdata, msg):
                             tempSensor = findTempSensor(sensor)
                             tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
                         if "illuminance_lux" in data:
-                            hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"]))
+                            hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
                             if hue_lightlevel > lightSensor.config["tholddark"]:
                                 lightPayload["dark"] = True
                             else:
