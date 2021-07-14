@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from flask import Flask
 from flask.json import jsonify
-#from flask_cors import CORS
+from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
 import ssl
@@ -22,7 +22,7 @@ logging = logManager.logger.get_logger(__name__)
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
 api = Api(app)
-#cors = CORS(app, resources={r"*": {"origins": "*"}})
+cors = CORS(app, resources={r"*": {"origins": "*"}})
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
 api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}

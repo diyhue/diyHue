@@ -12,3 +12,4 @@ Werkzeug==1.0.1
 WTForms==2.3.3
 pyyaml==5.4.1
 zeroconf==0.28.6
+flask_cors
