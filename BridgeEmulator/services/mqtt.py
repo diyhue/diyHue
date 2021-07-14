@@ -138,26 +138,26 @@ def on_message(client, userdata, msg):
             logging.debug(msg.payload)
             if msg.topic.startswith(discoveryPrefix + "/light/"):
                 on_autodiscovery_light(msg)
-            elif msg.topic == "zigbee2mqtt/bridge/config/devices":
+            elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
-                    if "modelID" in key and (key["modelID"] in standardSensors or key["modelID"] in motionSensors): # Sensor is supported
+                    if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
                         if getObject(key["friendly_name"]) == False: ## Add the new sensor
                             logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
-                            if key["modelID"] in standardSensors:
+                            if key["model_id"] in standardSensors:
                                 new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                                sensor_type = list(sensorTypes[key["modelID"]].keys())[0]
-                                uniqueid = convertHexToMac(key["ieeeAddr"]) + "-01-1000"
-                                sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["modelID"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieeeAddr"], "model": key["model"]}, "id_v1": new_sensor_id}
+                                sensor_type = list(sensorTypes[key["model_id"]].keys())[0]
+                                uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
+                                sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
                                 bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(sensorData)
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
-                            elif key["modelID"] in motionSensors:
-                                    logging.info("MQTT: add new motion sensor " + key["modelID"])
-                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["modelID"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
+                            elif key["model_id"] in motionSensors:
+                                    logging.info("MQTT: add new motion sensor " + key["model_id"])
+                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
                             else:
-                                logging.info("MQTT: unsupported sensor " + key["modelID"])
-            elif msg.topic == "zigbee2mqtt/bridge/log":
+                                logging.info("MQTT: unsupported sensor " + key["model_id"])
+            elif msg.topic == "zigbee2mqtt/bridge/event":
                 if data["type"] == "device_announced":
-                    light = getObject(data["meta"]["friendly_name"])
+                    light = getObject(data["data"]["friendly_name"])
                     if light.config["startup"]["mode"] == "powerfail":
                         logging.info("set last state for " + light.name)
                         payload = {}
@@ -218,9 +218,8 @@ def on_message(client, userdata, msg):
                     rulesProcessor(sensor, current_time)
 
                 on_state_update(msg)
-        except:
-            traceback.print_exc()
-            #quit(0)
+        except Exception as e:
+            logging.info("MQTT Exception | " + str(e))
 
 def findLightSensor(sensor):
     lightSensorUID = sensor.uniqueid[:-1] + "0"
@@ -249,8 +248,8 @@ def on_connect(client, userdata, flags, rc):
     autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
     client.subscribe(autodiscoveryTopic)
     client.subscribe("zigbee2mqtt/+")
-    client.subscribe("zigbee2mqtt/bridge/config/devices")
-    client.subscribe("zigbee2mqtt/bridge/log")
+    client.subscribe("zigbee2mqtt/bridge/devices")
+    client.subscribe("zigbee2mqtt/bridge/event")
 
 def mqttServer():
 
