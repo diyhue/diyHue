@@ -1,6 +1,7 @@
 import logManager
 import configManager
 import json
+import math
 import weakref
 import HueObjects
 import paho.mqtt.client as mqtt
@@ -183,20 +184,22 @@ def on_message(client, userdata, msg):
                         if "temperature" in data:
                             tempSensor = findTempSensor(sensor)
                             tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                        if "illuminance" in data:
-                            if data["illuminance"] > 10:
-                                lightPayload["dark"] = False
-                            else:
+                        if "illuminance_lux" in data:
+                            hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"]))
+                            if hue_lightlevel > lightSensor.config["tholddark"]:
                                 lightPayload["dark"] = True
+                            else:
+                                lightPayload["dark"] = False
+                            lightPayload["lightlevel"] = hue_lightlevel
                         elif lightSensor.protocol_cfg["lightSensor"] == "on":
                             lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
+                            if  lightPayload["dark"]:
+                                lightPayload["lightlevel"] = 6000
+                            else:
+                                lightPayload["lightlevel"] = 25000
                         else: # is always dark
                             lightPayload["dark"] = True
-
-                        if  lightPayload["dark"]:
                             lightPayload["lightlevel"] = 6000
-                        else:
-                            lightPayload["lightlevel"] = 25000
                         lightPayload["daylight"] = not lightPayload["dark"]
                         if lightPayload["dark"] != lightSensor.state["dark"]:
                             lightSensor.dxState["dark"] = current_time
