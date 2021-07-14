@@ -187,9 +187,9 @@ def on_message(client, userdata, msg):
                         if "illuminance_lux" in data:
                             hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
                             if hue_lightlevel > lightSensor.config["tholddark"]:
-                                lightPayload["dark"] = True
-                            else:
                                 lightPayload["dark"] = False
+                            else:
+                                lightPayload["dark"] = True
                             lightPayload["lightlevel"] = hue_lightlevel
                         elif lightSensor.protocol_cfg["lightSensor"] == "on":
                             lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
