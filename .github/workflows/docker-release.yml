@@ -16,8 +16,6 @@ jobs:
             arch_friendly: armv7
           - arch: linux/arm64
             arch_friendly: arm64
-          - arch: linux/arm/v6
-            arch_friendly: armv6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -53,7 +51,7 @@ jobs:
     name: Test Image
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64, armv7, arm64]
     steps:
       - name: Enable qemu
         run: |
@@ -86,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64, armv7, arm64]
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
@@ -132,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64, armv7, arm64]
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
@@ -241,9 +239,7 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
             ${DOCKER_REPO}:amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+            ${DOCKER_REPO}:arm64-${{ github.run_number }}
           docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
@@ -255,9 +251,7 @@ jobs:
             ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
             ${DOCKER_REPO}:amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+            ${DOCKER_REPO}:arm64-${{ github.run_number }}
           docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
@@ -269,9 +263,7 @@ jobs:
             ${DOCKER_REPO}:latest \
             ${DOCKER_REPO}:amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+            ${DOCKER_REPO}:arm64-${{ github.run_number }}
           docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
@@ -283,9 +275,7 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
             ${DOCKER_REPO}:amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
+            ${DOCKER_REPO}:arm64-${{ github.run_number }}
           docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
@@ -297,9 +287,7 @@ jobs:
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
             ${DOCKER_REPO}:amd64-${{ github.run_number }} \
             ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
+            ${DOCKER_REPO}:arm64-${{ github.run_number }}
           docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
@@ -314,8 +302,6 @@ jobs:
         include:
           - version: v7l
             arch_friendly: armv7
-          - version: v6l
-            arch_friendly: armv6
     steps:
       - name: Set Docker Repository
         run: |
@@ -385,7 +371,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64, armv7, arm64]
     steps:
     - uses: geekyeggo/delete-artifact@v1
       with:
