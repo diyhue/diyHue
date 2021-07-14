@@ -37,7 +37,7 @@ standardSensors = {
             "TRADFRI wireless dimmer": {
                 "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}},
             "RWL021": {
-                "dataConversion": {"rootKey": "action", "on-press": {"buttonevent": 1002}, "on-hold": {"buttonevent": 1001}, "on-hold-release": {"buttonevent": 1003}, "up-press": {"buttonevent": 2000}, "up-hold": {"buttonevent": 2001}, "up-hold-release": {"buttonevent": 2002}, "down-press": {"buttonevent": 3000}, "down-hold": {"buttonevent": 3001}, "down-hold-release": {"buttonevent": 3002}, "off-press": {"buttonevent": 4000} }}
+                "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "off_press": {"buttonevent": 4000} }}
             }
 
 def longPressButton(sensor, buttonevent):
