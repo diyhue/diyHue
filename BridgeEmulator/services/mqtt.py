@@ -166,59 +166,70 @@ def on_message(client, userdata, msg):
                         client.publish(light.protocol_cfg['command_topic'], json.dumps(payload))
 
             else:
-                device = msg.topic.split("/")[1]
-                sensor = getObject(device)
-                if sensor != False:
-                    if "battery" in data and isinstance(data["battery"], int):
-                        sensor.config["battery"] = data["battery"]
-                    if sensor.config["on"] == False:
-                        return
-                    convertedPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                    if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
-                        return
-                    ### If is a motion sensor update the light level and temperature
-                    if sensor.modelid in motionSensors:
-                        convertedPayload["presence"] = data["occupancy"]
-                        lightPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                        lightSensor = findLightSensor(sensor)
-                        if "temperature" in data:
-                            tempSensor = findTempSensor(sensor)
-                            tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
-                        if "illuminance_lux" in data:
-                            hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
-                            if hue_lightlevel > lightSensor.config["tholddark"]:
-                                lightPayload["dark"] = False
-                            else:
+                device_friendlyname = msg.topic.split("/")[1]
+                device = getObject(device_friendlyname)
+                if device != False:
+                    if device.getObjectPath()["resource"] == "sensors":
+                        if "battery" in data and isinstance(data["battery"], int):
+                            device.config["battery"] = data["battery"]
+                        if device.config["on"] == False:
+                            return
+                        convertedPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
+                        if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
+                            return
+                        ### If is a motion sensor update the light level and temperature
+                        if device.modelid in motionSensors:
+                            convertedPayload["presence"] = data["occupancy"]
+                            lightPayload = {"lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
+                            lightSensor = findLightSensor(device)
+                            if "temperature" in data:
+                                tempSensor = findTempSensor(device)
+                                tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")}
+                            if "illuminance_lux" in data:
+                                hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
+                                if hue_lightlevel > lightSensor.config["tholddark"]:
+                                    lightPayload["dark"] = False
+                                else:
+                                    lightPayload["dark"] = True
+                                lightPayload["lightlevel"] = hue_lightlevel
+                            elif lightSensor.protocol_cfg["lightSensor"] == "on":
+                                lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
+                                if  lightPayload["dark"]:
+                                    lightPayload["lightlevel"] = 6000
+                                else:
+                                    lightPayload["lightlevel"] = 25000
+                            else: # is always dark
                                 lightPayload["dark"] = True
-                            lightPayload["lightlevel"] = hue_lightlevel
-                        elif lightSensor.protocol_cfg["lightSensor"] == "on":
-                            lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
-                            if  lightPayload["dark"]:
                                 lightPayload["lightlevel"] = 6000
+                            lightPayload["daylight"] = not lightPayload["dark"]
+                            if lightPayload["dark"] != lightSensor.state["dark"]:
+                                lightSensor.dxState["dark"] = current_time
+                            lightSensor.state.update(lightPayload)
+                            # send email if alarm is enabled:
+                            if data["occupancy"] and bridgeConfig["config"]["alarm"]["enabled"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
+                                logging.info("Alarm triggered, sending email...")
+                                requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": device.name}, timeout=10)
+                                bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
+                        elif device.modelid in standardSensors:
+                            convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
+                        for key in convertedPayload.keys():
+                            if device.state[key] != convertedPayload[key]:
+                                device.dxState[key] = current_time
+                        device.state.update(convertedPayload)
+                        logging.debug(convertedPayload)
+                        if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
+                            Thread(target=longPressButton, args=[device, convertedPayload["buttonevent"]]).start()
+                        rulesProcessor(device, current_time)
+                    elif device.getObjectPath()["resource"] == "lights":
+                        state = {}
+                        if "state" in data:
+                            if data["state"] == "ON":
+                                state["on"] = True
                             else:
-                                lightPayload["lightlevel"] = 25000
-                        else: # is always dark
-                            lightPayload["dark"] = True
-                            lightPayload["lightlevel"] = 6000
-                        lightPayload["daylight"] = not lightPayload["dark"]
-                        if lightPayload["dark"] != lightSensor.state["dark"]:
-                            lightSensor.dxState["dark"] = current_time
-                        lightSensor.state.update(lightPayload)
-                        # send email if alarm is enabled:
-                        if data["occupancy"] and bridgeConfig["config"]["alarm"]["enabled"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
-                            logging.info("Alarm triggered, sending email...")
-                            requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": sensor.name}, timeout=10)
-                            bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
-                    elif sensor.modelid in standardSensors:
-                        convertedPayload.update(standardSensors[sensor.modelid]["dataConversion"][data[standardSensors[sensor.modelid]["dataConversion"]["rootKey"]]])
-                    for key in convertedPayload.keys():
-                        if sensor.state[key] != convertedPayload[key]:
-                            sensor.dxState[key] = current_time
-                    sensor.state.update(convertedPayload)
-                    logging.debug(convertedPayload)
-                    if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
-                        Thread(target=longPressButton, args=[sensor, convertedPayload["buttonevent"]]).start()
-                    rulesProcessor(sensor, current_time)
+                                state["on"] = False
+                        if "brightness" in data:
+                            state["bri"] = data["brightness"]
+                        device.state.update(state)
 
                 on_state_update(msg)
         except Exception as e:
