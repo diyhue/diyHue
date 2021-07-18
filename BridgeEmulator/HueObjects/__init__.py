@@ -177,6 +177,11 @@ class Light():
             state = incProcess(self.state, state)
             self.updateLightState(state)
             self.state.update(state)
+            if "bri" in state:
+                if "min_bri" in self.protocol_cfg and  self.protocol_cfg["min_bri"] > state["bri"]:
+                    state["bri"] = self.protocol_cfg["min_bri"]
+                if "max_bri" in self.protocol_cfg and  self.protocol_cfg["max_bri"] < state["bri"]:
+                    state["bri"] = self.protocol_cfg["max_bri"]
 
         for protocol in protocols:
             if "lights.protocols." + self.protocol == protocol.__name__:
@@ -417,6 +422,13 @@ class Group():
             if light() and light().id_v1 in lightsState:  # apply only if the light belong to this group
                 light().state.update(lightsState[light().id_v1])
                 light().updateLightState(lightsState[light().id_v1])
+                ### apply max and min brightness limis
+                if "bri" in lightsState[light().id_v1]:
+                    if "min_bri" in light().protocol_cfg and light().protocol_cfg["min_bri"] > lightsState[light().id_v1]["bri"]:
+                        lightsState[light().id_v1]["bri"] =  light().protocol_cfg["min_bri"]
+                    if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
+                        lightsState[light().id_v1]["bri"] = light().protocol_cfg["max_bri"]
+                ### end limits
                 if light().protocol in ["native_multi", "mqtt"]:
                     if light().protocol_cfg["ip"] not in queueState:
                         queueState[light().protocol_cfg["ip"]] = {
