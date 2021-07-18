@@ -156,7 +156,7 @@ def on_message(client, userdata, msg):
                                     addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
-            elif msg.topic == "zigbee2mqtt/bridge/event":
+            elif msg.topic == "zigbee2mqtt/bridge/log":
                 if data["type"] == "device_announced":
                     light = getObject(data["data"]["friendly_name"])
                     if light.config["startup"]["mode"] == "powerfail":
@@ -263,7 +263,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(autodiscoveryTopic)
     client.subscribe("zigbee2mqtt/+")
     client.subscribe("zigbee2mqtt/bridge/devices")
-    client.subscribe("zigbee2mqtt/bridge/event")
+    client.subscribe("zigbee2mqtt/bridge/log")
 
 def mqttServer():
 
