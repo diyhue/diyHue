@@ -157,13 +157,15 @@ def on_message(client, userdata, msg):
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
             elif msg.topic == "zigbee2mqtt/bridge/log":
+                light = getObject(data["data"]["friendly_name"])
                 if data["type"] == "device_announced":
-                    light = getObject(data["data"]["friendly_name"])
                     if light.config["startup"]["mode"] == "powerfail":
                         logging.info("set last state for " + light.name)
                         payload = {}
                         payload["state"] = "ON" if light.state["on"] else "OFF"
                         client.publish(light.protocol_cfg['command_topic'], json.dumps(payload))
+                elif data["type"] == "zigbee_publish_error":
+                    light.state["reachable"] = False
 
             else:
                 device_friendlyname = msg.topic.split("/")[1]
