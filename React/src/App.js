@@ -13,7 +13,7 @@ const loading = (
 const App = () => {
   const [API_KEY, setAPI_KEY] = useState();
 
-  const HOST_IP = ""; // Pass the IP (http://x.x.x.x) of the diyHue Bridge, if running through npm start
+  const HOST_IP = "http://10.0.0.9"; // Pass the IP (http://x.x.x.x) of the diyHue Bridge, if running through npm start
 
   useEffect(() => {
     console.log(`${HOST_IP}/get-key`);
