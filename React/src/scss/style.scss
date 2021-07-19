@@ -839,8 +839,34 @@ input[type="range"]::-ms-fill-upper {
     background-position: 0% 50%;
   }
 }
-/* END Linkbutton */
+/* END linkbutton */
 
+
+/* Generic button */
+.btn.generic, button.generic{
+    display: inline-block;
+    background: rgba(52, 152, 219, 1);
+    margin: 10px;
+    padding: 20px;
+    text-align: center;
+    border-radius: 35px;
+    color: #eee;
+    font-size: 18px;
+    font-weight: 500;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+
+
+    &:hover,&:active,&:focus{
+      border: none;
+      background: rgb(61, 177, 255);
+    }
+}
+
+
+
+/* END generic button */
 
 
 /* forms */
