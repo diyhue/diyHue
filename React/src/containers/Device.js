@@ -1,4 +1,5 @@
 import { MdDeleteForever } from "react-icons/md";
+import { FaMagic } from "react-icons/fa";
 import {
   TiBatteryLow,
   TiBatteryMid,
@@ -81,7 +82,7 @@ const Device = ({ HOST_IP, api_key, id, device, setType, setMessage }) => {
   return (
     <div className="card device">
     <div className="row1">
-      <div className="icon"></div>
+      <div className="icon"><FaMagic/></div>
       <div className="text">{device["name"]}</div>
     
     </div>
