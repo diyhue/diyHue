@@ -103,7 +103,6 @@ const Device = ({ HOST_IP, api_key, id, device, setType, setMessage }) => {
       </div>
      <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} /></div>
     </div>
-    <div className="label">Offline</div> {/*only show if device is offline*/}
     </div>
   );
 };
