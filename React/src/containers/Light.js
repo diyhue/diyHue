@@ -108,9 +108,7 @@ const Light = ({
         </ul>
       </div>
 
-      {(light["state"]["reachable"] && <FaCheck title="Reachable" />) || (
-        <div className="label">Offline</div>
-      )}
+      {(light["state"]["reachable"] || <div className="label">Offline</div>)}
 
       </div> 
 
