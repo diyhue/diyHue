@@ -78,14 +78,14 @@ export default function Lights({ HOST_IP, API_KEY }) {
         />
       )}
       <div className="cardGrid">
-        <div className="linkbtn" onClick={() => searchForLights()}>
+        <div className="btn generic" onClick={() => searchForLights()}>
           Scan For Lights
           <div className="btn btn-block"></div>
         </div>
         <button
           onClick={() => setLightForm(!lightForm)}
-          className="someClassWithCursorPointer"
-          style={{ all: "unset" }}
+          className="generic"
+          style={{}}
         >
           Add light manually
         </button>
@@ -95,6 +95,8 @@ export default function Lights({ HOST_IP, API_KEY }) {
                         HOST_IP={HOST_IP} 
                         API_KEY={API_KEY}>
                       </AddLight>}
+                      </div>
+      <div className="cardGrid">
         {Object.entries(lights).map(([id, light]) => (
           <Light
             key={id}

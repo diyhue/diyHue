@@ -3,6 +3,9 @@ import axios from "axios";
 import TheLayout from "./containers/TheLayout";
 
 import "./scss/style.scss";
+import "./scss/forms.scss";
+import "./scss/flipswitch.scss";
+import "./scss/notifications.scss";
 
 const loading = (
   <div className="pt-3 text-center">
