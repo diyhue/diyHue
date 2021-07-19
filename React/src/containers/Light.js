@@ -85,29 +85,36 @@ const Light = ({
   };
 
   return (
-    <>
-      <div className="iconContainer">
-        <FaLightbulb onClick={() => alertLight()} />
+      <div className="card light expanded">
+      <div className="row1">
+        <div className="icon"><FaLightbulb onClick={() => alertLight()} /></div>
+        <div className="text">{light["name"]}{" "}</div>
+      
       </div>
-      {light["name"]}{" "}
-      {(light["state"]["reachable"] && <FaCheck title="Reachable" />) || (
-        <RiAlertLine title="Unrechable" />
-      )}
-      <br />
+      <div className="row3">
       <Dropdown
         options={modelIds}
         value={light["modelid"]}
         onChange={(e) => setModelId(e.value)}
         placeholder="Choose light modelid"
       />
-      Protocol: {light["protocol"]}
-      <br /> IP: {light["protocol_cfg"]["ip"]}
-      <br />
-      <MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}
-      <MdSystemUpdate title="Update" />
-      <br />
-      <br />
-    </>
+        <div className="btn blue"><MdSystemUpdate title="Update" /></div>
+        <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
+      </div>
+      <div className="row4">
+        <ul>
+          <li>Protocol: {light["protocol"]}</li>
+          <li>IP: {light["protocol_cfg"]["ip"]}</li>
+        </ul>
+      </div>
+
+      {(light["state"]["reachable"] && <FaCheck title="Reachable" />) || (
+        <div className="label">Offline</div>
+      )}
+
+      </div> 
+
+
   );
 };
 

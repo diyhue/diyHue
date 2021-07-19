@@ -79,8 +79,17 @@ const Device = ({ HOST_IP, api_key, id, device, setType, setMessage }) => {
   };
 
   return (
-    <>
-      {device["name"]} <br />
+    <div className="card device">
+    <div className="row1">
+      <div className="icon"></div>
+      <div className="text">{device["name"]}</div>
+    
+    </div>
+    <div className="row2">
+      <div className="text">{"battery" in device["config"] && batteryLevel()} Protocol: {device["protocol"]}</div>
+    </div>
+    <div className="row3">
+     <div className="dropdown"></div> {/* replace with dropdown form, (styling missing)*/}
       <div className="switchContainer">
         <label className="switch">
           <input
@@ -91,13 +100,10 @@ const Device = ({ HOST_IP, api_key, id, device, setType, setMessage }) => {
           <span className="slider"></span>
         </label>
       </div>
-      Protocol: {device["protocol"]}
-      <br />
-      {"battery" in device["config"] && batteryLevel()}
-      <MdDeleteForever title="Delete" onClick={() => deleteAlert()} />
-      <br />
-      <br />
-    </>
+     <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} /></div>
+    </div>
+    <div className="label">Offline</div> {/*only show if device is offline*/}
+    </div>
   );
 };
 
