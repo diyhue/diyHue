@@ -13,6 +13,8 @@ generate_certificate () {
   interfaces=("${temp_array[@]}")
   unset temp_array
 
+  echo "$interfaces"
+
   ### check if number of interfaces is more than 1
   if [ "${#interfaces[@]}" -gt "1" ]; then
     echo -e "\033[33mWARNING!\033[0m  "${#interfaces[@]}" network interfaces detected. A certificate will be generated based on the interface MAC address you select."
@@ -31,7 +33,7 @@ generate_certificate () {
 
     mac=`cat /sys/class/net/$answer/address`
   else
-    mac=`cat /sys/class/net/$interfaces[0]/address`
+    mac=`cat /sys/class/net/$interfaces/address`
   fi
 
   echo "Generating certificat for MAC $mac"
@@ -150,19 +152,27 @@ unzip -qo diyHue.zip
 cd diyHue-$branchSelection/BridgeEmulator/
 
 if [ -d "/opt/hue-emulator" ]; then
-  if [ -f "/opt/hue-emulator/cert.pem" ]; then
-    cp /opt/hue-emulator/cert.pem /tmp/cert.pem
-  else
-    generate_certificate
+  if [ $branchSelection != "beta" ]; then
+    if [ -f "/opt/hue-emulator/cert.pem" ]; then
+      cp /opt/hue-emulator/cert.pem /tmp/cert.pem
+    else
+      generate_certificate
+    fi
   fi
 
   systemctl stop hue-emulator.service
   echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
-  cp /opt/hue-emulator/config.json /tmp
-  rm -rf /opt/hue-emulator
-  mkdir /opt/hue-emulator
-  mv /tmp/config.json /opt/hue-emulator
-  mv /tmp/cert.pem /opt/hue-emulator
+  if [ $branchSelection != "beta" ]; then
+    cp /opt/hue-emulator/config.json /tmp
+    rm -rf /opt/hue-emulator
+    mkdir /opt/hue-emulator
+    mv /tmp/config.json /opt/hue-emulator
+    mv /tmp/cert.pem /opt/hue-emulator
+  else
+    cp -r /opt/hue-emulator/config /tmp/diyhue_backup
+    rm -rf /opt/hue-emulator/*
+    cp -r /tmp/diyhue_backup /opt/hue-emulator
+  fi
 
 else
   if cat /proc/net/tcp | grep -c "00000000:0050" > /dev/null; then
@@ -174,11 +184,19 @@ else
       exit 1
   fi
   mkdir /opt/hue-emulator
-  cp default-config.json /opt/hue-emulator/
 
+  if [ $branchSelection != "beta" ]; then
+    cp default-config.json /opt/hue-emulator/
+  fi
   generate_certificate
 fi
-cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
+
+if [ $branchSelection == "beta" ]; then
+  cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
+else
+  cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
+fi
+
 
 # Install correct binaries
 case $arch in
@@ -206,7 +224,6 @@ esac
 
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
-chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-$branchSelection
