@@ -56,6 +56,12 @@ generate_certificate () {
     cat public.crt >> /opt/hue-emulator/cert.pem
     rm private.key public.crt
   fi
+  if [ $branchSelection == "beta" ]; then
+    if [ ! -d "/opt/hue-emulator/config/" ]; then
+      mkdir /opt/hue-emulator/config/ -p
+    fi
+    cp /opt/hue-emulator/cert.pem /opt/hue-emulator/config/
+  fi
 
 }
 
