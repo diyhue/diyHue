@@ -34,6 +34,11 @@ def getObject(element, v2uuid):
                     v2Resources[element][v2uuid] =  weakref.ref(obj)
                     logging.debug("Cache Miss " + element)
                     return obj
+    elif element in ["entertainment"]:
+        for key, obj in bridgeConfig["lights"].items():
+            if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
+                v2Resources[element][v2uuid] =  weakref.ref(obj)
+                return obj
     else:
         for v1Element in ["lights", "groups", "scenes", "sensors"]:
             for key, obj in bridgeConfig[v1Element].items():
@@ -319,6 +324,23 @@ class ClipV2Resource(Resource):
         elif resource == "behavior_instance":
             newObject = HueObjects.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
+        elif resource == "entertainment_configuration":
+            new_object_id = nextFreeId(bridgeConfig, "groups")
+            objCreation = {
+                "id_v1": new_object_id,
+                "name": postDict["metadata"]["name"],
+                "type": "Entertainment",
+                "class": "TV"
+                }
+            newObject = HueObjects.Group(objCreation)
+            if "locations" in postDict:
+                from pprint import pprint
+                if "service_locations" in postDict["locations"]:
+                    for element in postDict["locations"]["service_locations"]:
+                        obj = getObject(element["service"]["rtype"], element["service"]["rid"])
+                        newObject.add_light(obj)
+                        newObject.locations[obj] = [element["positions"][0]["x"], element["positions"][0]["y"], element["positions"][0]["z"]]
+            bridgeConfig["groups"][new_object_id] = newObject
         # build stream message
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [{"id": newObject.id_v2, "type": resource}],

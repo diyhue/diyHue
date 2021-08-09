@@ -321,7 +321,6 @@ class Element(Resource):
         if "success" not in authorisation:
             return authorisation
         if resource == "resourcelinks":
-            pprint(bridgeConfig["resourcelinks"][resourceid].getV1Api())
             for link in bridgeConfig["resourcelinks"][resourceid].links:
                 try:
                     pices = link.split("/")
