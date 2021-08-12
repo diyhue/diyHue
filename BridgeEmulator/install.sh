@@ -89,11 +89,11 @@ case $userSelection in
         branchSelection="dev"
         echo -e "Dev selected"
         ;;
-	3)
+        3)
         branchSelection="beta"
         echo -e "Beta selected"
         ;;
-				*)
+                                *)
         branchSelection="master"
         echo -e "Master selected"
         ;;
@@ -103,11 +103,11 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip nmap python3 python3-requests python3-setuptools
+  apt-get install -y unzip python3 python3-pip
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
+  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat || exit 1
 else
   # Or assume that packages are already installed (possibly with user confirmation)?
   # Or check them?
@@ -115,47 +115,16 @@ else
   exit 1
 fi
 
-### installing astral library for sunrise/sunset routines
-echo -e "\033[36m Installing Python Astral.\033[0m"
-curl -sL https://codeload.github.com/sffjunkie/astral/zip/2.2 -o astral.zip
-unzip -qo astral.zip
-cd astral-2.2/
-python3 setup.py install
-cd ../
-rm -rf astral.zip astral-2.2/
-
-### installing paho-mqtt library
-echo -e "\033[36m Installing Python MQTT.\033[0m"
-curl -sL https://files.pythonhosted.org/packages/59/11/1dd5c70f0f27a88a3a05772cd95f6087ac479fac66d9c7752ee5e16ddbbc/paho-mqtt-1.5.0.tar.gz -o paho-mqtt-1.5.0.tar.gz
-tar zxvf paho-mqtt-1.5.0.tar.gz
-cd paho-mqtt-1.5.0/
-python3 setup.py install
-cd ../
-rm -rf paho-mqtt-1.5.0.tar.gz paho-mqtt-1.5.0/
-
-### installing WebSocket for Python
-echo -e "\033[36m Installing WebSocket for Python.\033[0m"
-curl -sL https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.4.zip -o ws4py.zip
-unzip -qo ws4py.zip
-cd WebSocket-for-Python-0.3.4/
-python3 setup.py install
-cd ../
-rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
-
-### installing zeroconf for Python
-echo -e "\033[36m Installing zeroconf for Python.\033[0m"
-curl -sL https://github.com/jstasiak/python-zeroconf/archive/0.28.6.zip -o zeroconf.zip
-unzip -qo zeroconf.zip
-cd python-zeroconf-0.28.6/
-python3 setup.py install
-cd ../
-rm -rf zeroconf.zip python-zeroconf-0.28.6/
-
-### installing hue emulator
+echo "https://github.com/diyhue/diyHue/archive/$branchSelection.zip"
+# installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-curl -sL https://github.com/diyhue/diyHue/archive/$branchSelection.zip -o diyHue.zip
+curl -sL "https://github.com/diyhue/diyHue/archive/$branchSelection.zip" -o diyHue.zip
 unzip -qo diyHue.zip
 cd diyHue-$branchSelection/BridgeEmulator/
+echo -e "\033[36m Installing Python Dependencies.\033[0m"
+
+pip install -r ../requirements.txt
+
 
 if [ -d "/opt/hue-emulator" ]; then
   if [ $branchSelection != "beta" ]; then
@@ -202,7 +171,6 @@ if [ $branchSelection == "beta" ]; then
 else
   cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
 fi
-
 
 # Install correct binaries
 case $arch in
