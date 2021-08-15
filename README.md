@@ -60,7 +60,7 @@ RaspberryPi 3B |  WS2812 Strip + Wemos D1 mini Board | [Hue Essentials (iOS & An
 ## Working diyHue features
 Functions | Devices  | Apps | Lights | Smarthome
 --------- | -------  | ---- | ------ | ---------
-Control lights (all functions) | Amazon Alexa (control only the lights) | [Hue Essentials](https://hueessentials.com) | WS2812B and SK6812 smart led strips| [Home Assistant](https://homeassistant.io) |
+Control lights (all functions) | Amazon Alexa (control only the lights) | [Hue Essentials](https://hueessentials.com) | WS2812B and SK6812 smart led strips| [Home Assistant](https://home-assistant.io) |
 Control groups (all functions) | Deconz (Conbee 1 & 2)  | Hue App| Phillips Hue | [Openhab](https://openhab.org)
 Scenes (all functions) | Trådfri Gateway | hueManic | Ikea Trådfri| Jeedom 
 Routines | Hue Bridge (original + other emulators) | Kodi Hue Ambilight|  Yeelight  |  Domoticz
