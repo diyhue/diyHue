@@ -15,6 +15,7 @@ const Light = ({
   modelIds,
   setType,
   setMessage,
+  lightsCatalog,
 }) => {
   const deleteAlert = () => {
     confirmAlert({
@@ -98,7 +99,7 @@ const Light = ({
           onChange={(e) => setModelId(e.value)}
           placeholder="Choose light modelid"
         />
-        <LightUpdate  light={light} />
+        <LightUpdate light={light} lightsCatalog={lightsCatalog} setMessage={setMessage} setType={setType} />
         <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
       </div>
       <div className="row4">

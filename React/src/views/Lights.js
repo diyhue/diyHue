@@ -6,6 +6,7 @@ import Flash from "../containers/Flash";
 
 export default function Lights({ HOST_IP, API_KEY }) {
   const [lights, setLights] = useState({});
+  const [lightsCatalog, setlightsCatalog] = useState({});
   const [modelIds, setModelIds] = useState([]);
   const [type, setType] = useState("none");
   const [message, setMessage] = useState("no message");
@@ -59,8 +60,22 @@ export default function Lights({ HOST_IP, API_KEY }) {
       }
     };
 
+    const fetchLightsCatalog = () => {
+        axios
+          .get(`https://raw.githubusercontent.com/diyhue/Lights/master/catalog.json`)
+          .then((fetchedData) => {
+            console.log(fetchedData.data);
+            setlightsCatalog(fetchedData.data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+    };
+
+
     fetchLights();
     fetchModelIds();
+    fetchLightsCatalog();
     const interval = setInterval(() => {
       fetchLights();
     }, 2000); // <<-- ⏱ 1000ms = 1s
@@ -107,6 +122,7 @@ export default function Lights({ HOST_IP, API_KEY }) {
             modelIds={modelIds}
             setType={setType}
             setMessage={setMessage}
+            lightsCatalog={lightsCatalog}
           />
         ))}
       </div>
