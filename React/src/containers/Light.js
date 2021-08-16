@@ -1,6 +1,6 @@
 import { FaLightbulb, FaCheck } from "react-icons/fa";
 import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
-import { RiAlertLine } from "react-icons/ri";
+import LightUpdate from "./LightUpdate";
 import axios from "axios";
 import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
@@ -85,20 +85,20 @@ const Light = ({
   };
 
   return (
-      <div className="card light expanded">
+    <div className="card light expanded">
       <div className="row1">
         <div className="icon"><FaLightbulb onClick={() => alertLight()} /></div>
         <div className="text">{light["name"]}{" "}</div>
-      
+
       </div>
       <div className="row3">
-      <Dropdown
-        options={modelIds}
-        value={light["modelid"]}
-        onChange={(e) => setModelId(e.value)}
-        placeholder="Choose light modelid"
-      />
-        <div className="btn blue"><MdSystemUpdate title="Update" /></div>
+        <Dropdown
+          options={modelIds}
+          value={light["modelid"]}
+          onChange={(e) => setModelId(e.value)}
+          placeholder="Choose light modelid"
+        />
+        <LightUpdate  light={light} />
         <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
       </div>
       <div className="row4">
@@ -110,7 +110,7 @@ const Light = ({
 
       {(light["state"]["reachable"] || <div className="label">Offline</div>)}
 
-      </div> 
+    </div>
 
 
   );

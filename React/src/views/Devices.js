@@ -42,6 +42,7 @@ const Devices = ({ HOST_IP, API_KEY }) => {
       )}
       <div className="cardGrid">
         {Object.entries(devices).map(([id, device]) => (
+          device["protocol"] !== "none" &&
           <Device
             key={id}
             HOST_IP={HOST_IP}

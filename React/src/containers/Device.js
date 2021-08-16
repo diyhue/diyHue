@@ -87,7 +87,11 @@ const Device = ({ HOST_IP, api_key, id, device, setType, setMessage }) => {
     
     </div>
     <div className="row2">
-      <div className="text">{"battery" in device["config"] && batteryLevel()} Protocol: {device["protocol"]}</div>
+      <div className="text">{"battery" in device["config"] && batteryLevel()}
+        ModelID: {device["modelid"]} <br/>
+        Type: {device["type"]} <br/>
+        Protocol: {device["protocol"]} <br/>
+      </div>
     </div>
     <div className="row3">
      <div className="dropdown"></div> {/* replace with dropdown form, (styling missing)*/}
