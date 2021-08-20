@@ -1,4 +1,4 @@
-import { FaLightbulb, FaCheck } from "react-icons/fa";
+import { FaLightbulb } from "react-icons/fa";
 import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
 import LightUpdate from "./LightUpdate";
 import axios from "axios";
