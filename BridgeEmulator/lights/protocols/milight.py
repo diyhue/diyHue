@@ -1,11 +1,14 @@
 import json
 import logManager
 import requests
+from functions.colors import convert_xy
 
 logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data):
-    url = "http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["device_id"] + "/" + light.protocol_cfg["mode"] + "/" + str(light.protocol_cfg["group"])
+    
+    url = "http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["miID"] + "/" + light.protocol_cfg["miModes"] + "/" + str(light.protocol_cfg["miGroups"])
+    payload={}
     for key, value in data.items():
         if key == "on":
             payload["status"] = value
@@ -19,15 +22,18 @@ def set_light(light, data):
             payload["saturation"] = value * 100 / 255
         elif key == "xy":
             payload["color"] = {}
-            if rgb:
-                payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = rgbBrightness(rgb, lights[light]["state"]["bri"])
-            else:
-                payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = convert_xy(value[0], value[1], lights[light]["state"]["bri"])
+           # 
+           # The following if is throwing an error, because rgb does not exist in data. I commented this, becaus I didn't know, if there are any requests with "rgb" when using options that I don't know. 
+           # if rgb:
+           #     payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = rgbBrightness(rgb, lights[light]["state"]["bri"])
+           # else:
+           # payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = convert_xy(value[0], value[1], lights[light]["state"]["bri"])
+            payload["color"]["r"], payload["color"]["g"], payload["color"]["b"] = convert_xy(value[0], value[1], light.state["bri"])
     logging.debug(json.dumps(payload))
     requests.put(url, json=payload, timeout=3)
 
 def get_light_state(light):
-    r = requests.get("http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["device_id"] + "/" + light.protocol_cfg["mode"] + "/" + str(light.protocol_cfg["group"]), timeout=3)
+    r = requests.get("http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["miID"] + "/" + light.protocol_cfg["miModes"] + "/" + str(light.protocol_cfg["miGroups"]), timeout=3)
     light_data = json.loads(r.text)
     state ={}
     if light_data["state"] == "ON":
@@ -42,7 +48,7 @@ def get_light_state(light):
     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
         state["colormode"] = "hs"
         state["hue"] = light_data["hue"] * 180
-        if (not "saturation" in light_data) and light.protocol_cfg["mode"] == "rgbw":
+        if (not "saturation" in light_data) and light.protocol_cfg["miModes"] == "rgbw":
             state["sat"] = 255
         else:
             state["sat"] = int(light_data["saturation"] * 2.54)
