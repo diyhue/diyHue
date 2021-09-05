@@ -4,6 +4,7 @@ from flask import Flask, Response, stream_with_context, Blueprint
 import json
 from time import sleep, time
 
+logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 stream = Blueprint('stream',__name__)
 
@@ -15,6 +16,7 @@ def messageBroker():
         if len(bridgeConfig["temp"]["eventstream"]) > 0:
             for event in bridgeConfig["temp"]["eventstream"]:
                 messages.append(event)
+                logging.debug(event)
             bridgeConfig["temp"]["eventstream"] = []
             sleep(0.6) # ensure all devices connected receive the events
             messages = []

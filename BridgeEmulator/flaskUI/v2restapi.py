@@ -19,7 +19,7 @@ logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
+v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
 
 def getObject(element, v2uuid):
     if element in ["behavior_instance"]:
@@ -131,7 +131,7 @@ def v2BridgeDevice():
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": "1.45.1945091050"
+        "software_version": "1.46." + bridgeConfig["config"]["swversion"]
     }
     result["services"] = [
         {
@@ -350,7 +350,6 @@ class ClipV2Resource(Resource):
         streamMessage["id_v1"] = "/" + newObject.getObjectPath()["resource"] + "/" + newObject.getObjectPath()["id"] if  hasattr(newObject, 'getObjectPath') else ""
         streamMessage["data"][0].update(postDict)
         bridgeConfig["temp"]["eventstream"].append(streamMessage)
-        logging.debug(streamMessage)
         return {"data": [{
                     "rid": newObject.id_v2,
                     "rtype": resource}

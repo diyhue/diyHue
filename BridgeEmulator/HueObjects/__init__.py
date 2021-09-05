@@ -197,9 +197,8 @@ class Light():
                 return
 
     def getDevice(self):
-        result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL,
-                                       self.id_v2 + 'device')), "type": "device"}
-        result["id_v1"] = self.id_v1
+        result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
+        result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {
             "archetype": lightTypes[self.modelid]["device"]["product_archetype"],
             "name": self.name
@@ -221,6 +220,7 @@ class Light():
                 "rtype": "entertainment"
             }
         ]
+        result["type"] = "device"
         return result
 
     def getZigBee(self):
@@ -246,9 +246,9 @@ class Light():
             result = {
                 "color": {
                     "gamut": {
-                        "blue":  {"x": colorgamut[0][0], "y": colorgamut[0][1]},
+                        "blue":  {"x": colorgamut[2][0], "y": colorgamut[2][1]},
                         "green": {"x": colorgamut[1][0], "y": colorgamut[1][1]},
-                        "red":   {"x": colorgamut[2][0], "y": colorgamut[2][1]}
+                        "red":   {"x": colorgamut[0][0], "y": colorgamut[0][1]}
                     },
                     "gamut_type": lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamuttype"],
                     "xy": {
@@ -259,15 +259,20 @@ class Light():
             }
         if "ct" in self.state:
             result["color_temperature"] = {
-                "mirek": self.state["ct"]
-            }
+                "mirek": self.state["ct"],
+                "mirek_schema": {
+                    "mirek_maximum": 500,
+                    "mirek_minimum": 153
+                    }
+                }
+            result["color_temperature"]["mirek_valid"] = True if self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
             result["dimming"] = {
                 "brightness": self.state["bri"] / 2.54
             }
         result["dynamics"] = {
             "status": "none",
-            "status_values": ["none"]
+            "status_values": ["none", "dynamic_palette"]
             }
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
@@ -640,6 +645,7 @@ class Scene():
         self.recycle = data["recycle"] if "recycle" in data else False
         self.lastupdated = data["lastupdated"] if "lastupdated" in data else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         self.lightstates = weakref.WeakKeyDictionary()
+        self.palette = data["palette"] if "palette" in data else {}
         self.group = data["group"] if "group" in data else None
         self.lights = data["lights"] if "lights" in data else []
         if "group" in data:
@@ -726,6 +732,7 @@ class Scene():
                 v2State["color_temperature"] = {
                     "mirek": state["ct"]}
 
+
             result["actions"].append(
                 {
                     "action": v2State,
@@ -750,6 +757,8 @@ class Scene():
         result["id"] = self.id_v2
         result["id_v1"] = "/scenes/" + self.id_v1
         result["type"] = "scene"
+        if self.palette:
+            result["palette"] = self.palette
         return result
 
     def storelightstate(self):

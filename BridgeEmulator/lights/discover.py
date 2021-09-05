@@ -2,6 +2,7 @@ import logManager
 import configManager
 import socket
 import json
+import uuid
 from time import sleep
 from datetime import datetime
 from services.deconz import scanDeconz
@@ -48,6 +49,51 @@ def find_hosts(port):
 
     return validHosts
 
+
+
+
+def streamMessages(light):
+    # entertainment
+    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "data": [{"id":str(uuid.uuid5(
+            uuid.NAMESPACE_URL, light.id_v2 + 'entertainment')), "type": "entertainent"}],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+            }
+    streamMessage["id_v1"] = "/lights/" + light.id_v1
+    streamMessage["data"][0].update(light.getV2Entertainment())
+    bridgeConfig["temp"]["eventstream"].append(streamMessage)
+    #zigbee_connectivity
+    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "data": [{"id":str(uuid.uuid5(
+            uuid.NAMESPACE_URL, light.id_v2 + 'zigbee_connectivity')), "type": "zigbee_connectivity"}],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+            }
+    streamMessage["id_v1"] = "/lights/" + light.id_v1
+    streamMessage["data"][0].update(light.getZigBee())
+    bridgeConfig["temp"]["eventstream"].append(streamMessage)
+    # light
+    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "data": [{"id": light.id_v2, "type": "light"}],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+            }
+    streamMessage["id_v1"] = "/lights/" + light.id_v1
+    streamMessage["data"][0].update(light.getV2Api())
+    bridgeConfig["temp"]["eventstream"].append(streamMessage)
+    #device
+    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "data": [{"id":str(uuid.uuid5(
+            uuid.NAMESPACE_URL, light.id_v2 + 'device')), "type": "device"}],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+            }
+    streamMessage["id_v1"] = "/lights/" + light.id_v1
+    streamMessage["data"][0].update(light.getDevice())
+    bridgeConfig["temp"]["eventstream"].append(streamMessage)
+
+
 def addNewLight(modelid, name, protocol, protocol_cfg):
     newLightID = nextFreeId(bridgeConfig, "lights")
     if modelid in lightTypes:
@@ -57,9 +103,11 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         light["modelid"] = modelid
         light["protocol"] = protocol
         light["protocol_cfg"] = protocol_cfg
-        bridgeConfig["lights"][newLightID] = HueObjects.Light(light)
-        bridgeConfig["groups"]["0"].add_light(bridgeConfig["lights"][newLightID])
+        newObject = HueObjects.Light(light)
+        bridgeConfig["lights"][newLightID] = newObject
+        bridgeConfig["groups"]["0"].add_light(newObject)
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
+        streamMessages(newObject)
         return newLightID
     return False
 
