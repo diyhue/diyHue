@@ -46,7 +46,7 @@ class Config:
                 del config["whitelist"]
                 self.yaml_config["config"] = config
             else:
-                self.yaml_config["config"] = {"Remote API enabled": False, "Hue Essentials key": str(uuid.uuid1()).replace('-', ''), "mqtt":{"enabled":False},"deconz":{"enabled":False},"alarm":{"enabled": False, "lasttriggered": 0},"apiUsers":{},"apiversion":"1.44.0","name":"DiyHue Bridge","netmask":"255.255.255.0","swversion":"1945091050","timezone":"Europe/London","linkbutton":{"lastlinkbuttonpushed": 1599398980},"users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}}, "hue": {}, "tradfri": {}}
+                self.yaml_config["config"] = {"Remote API enabled": False, "Hue Essentials key": str(uuid.uuid1()).replace('-', ''), "mqtt":{"enabled":False},"deconz":{"enabled":False},"alarm":{"enabled": False, "lasttriggered": 0},"apiUsers":{},"apiversion":"1.46.0","name":"DiyHue Bridge","netmask":"255.255.255.0","swversion":"1946157000","timezone":"Europe/London","linkbutton":{"lastlinkbuttonpushed": 1599398980},"users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}}, "hue": {}, "tradfri": {}}
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")

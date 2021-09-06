@@ -3,11 +3,14 @@ import logManager
 import random
 import weakref
 from lights.light_types import lightTypes, archetype
+from lights.dynamic_scenes import dynamicScenes
 from sensors.sensor_types import sensorTypes
 from lights.protocols import protocols
+from threading import Thread
 from datetime import datetime
 from pprint import pprint
 from copy import deepcopy
+from time import sleep
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -141,6 +144,7 @@ class Light():
         self.config = data["config"] if "config" in data else deepcopy(lightTypes[self.modelid]["config"])
         self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
+        self.dynamics = 'none'
 
     def __del__(self):
         logging.info(self.name + " light was destroyed.")
@@ -271,7 +275,7 @@ class Light():
                 "brightness": self.state["bri"] / 2.54
             }
         result["dynamics"] = {
-            "status": "none",
+            "status": self.dynamics,
             "status_values": ["none", "dynamic_palette"]
             }
         result["id"] = self.id_v2
@@ -337,6 +341,32 @@ class Light():
 
     def getObjectPath(self):
         return {"resource": "lights", "id": self.id_v1}
+
+    def dynamicScenePlay(self, palette, index):
+        logging.debug("Start Dynamic scene play for " + self.name)
+        self.dynamics = "dynamic_palette"
+        counter = 0
+        while self.dynamics == "dynamic_palette":
+            if counter == 0:
+                if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002"]:
+                    if index == len(palette["color"]):
+                        index = 0
+                    xy = [palette["color"][index]["color"]["xy"]["x"], palette["color"][index]["color"]["xy"]["y"]]
+                    bri = int(palette["color"][index]["dimming"]["brightness"] * 2.54)
+                    self.setV1State({"xy": xy, "bri": bri, "transitiontime": 300})
+                elif self.modelid == "LTW001":
+                    if index == len(palette["color_temperature"]):
+                        index = 0
+                    self.setV1State({"ct": palette["color_temperature"][index]["color_temperature"]["mirek"],"bri": int(palette["color_temperature"][index]["dimming"]["brightness"] * 2.54), "transitiontime": 300})
+                else:
+                    if index == len(palette["dimming"]):
+                        index = 0
+                    self.setV1State({"bri": int(palette["color_temperature"][index]["dimming"]["brightness"] * 2.54), "transitiontime": 300})
+            counter += 1
+            if counter == 30:
+                counter = 0
+                index += 1
+            sleep(1)
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "modelid": self.modelid, "uniqueid": self.uniqueid,
@@ -659,10 +689,22 @@ class Scene():
         self.lights.append(light)
 
     def activate(self, data):
+        if "recall" in data and data["recall"]["action"] == "dynamic_palette": # activate dynamic scene
+            if self.image in dynamicScenes:
+                lightIndex = 0
+                for light in self.lights:
+                    if light():
+                        Thread(target=light().dynamicScenePlay, args=[dynamicScenes[self.image]["palette"], lightIndex]).start()
+                        lightIndex += 1
+
+            return
         queueState = {}
         for light, state in self.lightstates.items():
             light.state.update(state)
             light.updateLightState(state)
+            if light.dynamics == "dynamic_palette":
+                light.dynamics = "none"
+                logging.debug("Stop Dynamic scene play for " + light.name)
             if len(data) > 0:
                 state["transitiontime"] = 0
                 if "seconds" in data:
