@@ -2,6 +2,7 @@
 [![Discourse](https://img.shields.io/discourse/users?server=https%3A%2F%2Fdiyhue.discourse.group)](https://diyhue.discourse.group) [![JoinSlack](https://img.shields.io/badge/Join%20us-on%20Slack-green.svg)](https://join.slack.com/t/diyhue/shared_invite/enQtNzAwNDE1NDY2MzQxLTljNGMwZmE0OWRhNDIwM2FjOGM1ZTcxNjNmYjc5ZmE3MjZlNmNjMmUzYmRkZjhhOGNjOTc4NzA0MGVkYzE2NWM)  [![Build Status](https://github.com/diyhue/diyHue/workflows/diyHue%20CI%20Build/badge.svg)](https://github.com/diyhue/diyHue/actions)
 
 
+
 <!--[![Build Status](https://travis-ci.com/diyhue/diyHue.svg?branch=master)](https://travis-ci.com/diyhue/diyHue)-->
 <br></br>
 ![diyHueLogo](https://diyhue.org/cdn/img/diyHue-Logo.png)
@@ -198,6 +199,15 @@ If you are experienced in
 
 We highly appreciate your support, making diyHue even better!
 
+## Support
+
+diyHue is and will be Free to use. However it does take a lot of time to maintain the code etc etc.
+
+Long story short.... you can support us at Ko-Fi
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R6R54Y1LF)
+
+Thank you very much!
 
 ## Credits
 
