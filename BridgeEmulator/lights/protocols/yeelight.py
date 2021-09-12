@@ -134,15 +134,27 @@ def hex_to_rgb(value):
     tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
     return list(tup)
 
+def data_to_result(data):
+    return json.loads(data[:-2].decode("utf8"))["result"]
+
+def get_prop_data(tcp_socket, params: list["str"]):
+    params = list(params)
+    msg_dict = {"id": 1, "method": "get_prop", "params": params}
+    msg=json.dumps(msg_dict) + "\r\n"
+    tcp_socket.send(msg.encode())
+    data = tcp_socket.recv(16 * 1024)
+    return data
+
 def get_light_state(light):
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
     tcp_socket.connect((light.protocol_cfg["ip"], int(55443)))
-    msg=json.dumps({"id": 1, "method": "get_prop", "params":["power","bright"]}) + "\r\n"
+    msg_dict = {"id": 1, "method": "get_prop", "params":["power","bright"]}
+    msg=json.dumps(msg_dict) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
-    light_data = json.loads(data[:-2].decode("utf8"))["result"]
+    light_data = data_to_result(data)
     if light_data[0] == "on": #powerstate
         state['on'] = True
     else:
@@ -150,37 +162,42 @@ def get_light_state(light):
     state["bri"] = int(int(light_data[1]) * 2.54)
     #if ip[:-3] == "201" or ip[:-3] == "202":
     if light.name.find("desklamp") > 0:
-        msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+        msg_dict["params"] = ["ct"]
+        msg_ct=json.dumps(msg_dict) + "\r\n"
         tcp_socket.send(msg_ct.encode())
         data = tcp_socket.recv(16 * 1024)
-        tempval = int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+        tempval = int(-(347/4800) * int(data_to_result(data)[0]) +(2989900/4800))
         if tempval > 369: tempval = 369
-        state["ct"] = tempval # int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+        state["ct"] = tempval # int(-(347/4800) * int(data_to_result(data)[0]) +(2989900/4800))
         state["colormode"] = "ct"
     else:
         msg_mode=json.dumps({"id": 1, "method": "get_prop", "params":["color_mode"]}) + "\r\n"
         tcp_socket.send(msg_mode.encode())
         data = tcp_socket.recv(16 * 1024)
-        if json.loads(data[:-2].decode("utf8"))["result"][0] == "1": #rgb mode
-            msg_rgb=json.dumps({"id": 1, "method": "get_prop", "params":["rgb"]}) + "\r\n"
+        light_mode = data_to_result(data)[0]
+        if light_mode == "1": #rgb mode
+            msg_dict["params"] = ["rgb"]
+            msg_rgb=json.dumps(msg_dict) + "\r\n"
             tcp_socket.send(msg_rgb.encode())
             data = tcp_socket.recv(16 * 1024)
-            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
-            hex_rgb = "%6x" % int(json.loads(data[:-2].decode("utf8"))["result"][0])
+            hue_data = data_to_result(data)
+            hex_rgb = "%06x" % int(data_to_result(data)[0])
             rgb=hex_to_rgb(hex_rgb)
             state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
             state["colormode"] = "xy"
-        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "2": #ct mode
-            msg_ct=json.dumps({"id": 1, "method": "get_prop", "params":["ct"]}) + "\r\n"
+        elif light_mode == "2": #ct mode
+            msg_dict["params"] = ["ct"]
+            msg_ct=json.dumps(msg_dict) + "\r\n"
             tcp_socket.send(msg_ct.encode())
             data = tcp_socket.recv(16 * 1024)
-            state["ct"] =  int(-(347/4800) * int(json.loads(data[:-2].decode("utf8"))["result"][0]) +(2989900/4800))
+            state["ct"] =  int(-(347/4800) * int(data_to_result(data)[0]) +(2989900/4800))
             state["colormode"] = "ct"
-        elif json.loads(data[:-2].decode("utf8"))["result"][0] == "3": #hs mode
-            msg_hsv=json.dumps({"id": 1, "method": "get_prop", "params":["hue","sat"]}) + "\r\n"
+        elif light_mode == "3": #hs mode
+            msg_dict["params"] = ["hue","sat"]
+            msg_hsv=json.dumps(msg_dict) + "\r\n"
             tcp_socket.send(msg_hsv.encode())
             data = tcp_socket.recv(16 * 1024)
-            hue_data = json.loads(data[:-2].decode("utf8"))["result"]
+            hue_data = data_to_result(data)
             state["hue"] = int(int(hue_data[0]) * 182)
             state["sat"] = int(int(hue_data[1]) * 2.54)
             state["colormode"] = "hs"
