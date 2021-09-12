@@ -177,7 +177,7 @@ def get_light_state(address, light):
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
     #if ip[:-3] == "201" or ip[:-3] == "202":
-    if light.name.find("desklamp") > 0:
+    if light["name"].find("desklamp") > 0:
         data = get_prop_data(tcp_socket, ["ct"])
         tempval = calculate_color_temp(data_to_result(data)[0])
         state["ct"] = min(tempval, 369)
