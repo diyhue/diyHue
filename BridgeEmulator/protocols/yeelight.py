@@ -164,11 +164,11 @@ def get_prop_data(tcp_socket, params):
 def calculate_color_temp(value):
     return int(-(347/4800) * int(value) +(2989900/4800))
 
-def get_light_state(light):
+def get_light_state(address, light):
     state = {}
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
-    tcp_socket.connect((light.protocol_cfg["ip"], int(55443)))
+    tcp_socket.connect((address["ip"], int(55443)))
     data = get_prop_data(tcp_socket, ["power", "bright"])
     light_data = data_to_result(data)
     if light_data[0] == "on": #powerstate
@@ -177,7 +177,7 @@ def get_light_state(light):
         state['on'] = False
     state["bri"] = int(int(light_data[1]) * 2.54)
     #if ip[:-3] == "201" or ip[:-3] == "202":
-    if light.name.find("desklamp") > 0:
+    if light["name"].find("desklamp") > 0:
         data = get_prop_data(tcp_socket, ["ct"])
         tempval = calculate_color_temp(data_to_result(data)[0])
         state["ct"] = min(tempval, 369)
