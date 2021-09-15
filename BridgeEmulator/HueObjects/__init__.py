@@ -587,6 +587,9 @@ class Group():
             "locations": {
                 "service_locations": []
             },
+            "metadata": {
+                "name": self.name
+            },
             "name": self.name,
             "status": "active" if self.stream["active"] else "inactive",
             "stream_proxy": {
@@ -633,6 +636,11 @@ class Group():
                             "y": gradienStripPositions[x][1] if gradientStrip else self.locations[light()][1],
                             "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
                         },
+                        "positions": [{
+                            "x": gradienStripPositions[x][0] if gradientStrip else self.locations[light()][0],
+                            "y": gradienStripPositions[x][1] if gradientStrip else self.locations[light()][1],
+                            "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
+                        }],
                         "service": {
                             "rid": entertainmentUuid,
                             "rtype": "entertainment"
