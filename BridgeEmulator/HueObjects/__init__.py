@@ -169,18 +169,20 @@ class Light():
 
     def updateLightState(self, state):
 
-        if "xy" in state:
+        if "xy" in state and "xy" in self.state:
             self.state["colormode"] = "xy"
-        elif "ct" in state:
+        elif "ct" in state and "ct" in self.state:
             self.state["colormode"] = "ct"
-        elif "hue" in state or "sat" in state:
+        elif ("hue" in state or "sat" in state) and "hue" in self.state:
             self.state["colormode"] = "hs"
 
     def setV1State(self, state, rgb=None):
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
-            self.state.update(state)
+            for key, value in state.items():
+                if key in self.state:
+                    self.state[key] = value
             if "bri" in state:
                 if "min_bri" in self.protocol_cfg and  self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
@@ -455,7 +457,9 @@ class Group():
         queueState = {}
         for light in self.lights:
             if light() and light().id_v1 in lightsState:  # apply only if the light belong to this group
-                light().state.update(lightsState[light().id_v1])
+                for key, value in lightsState[light().id_v1].items():
+                    if key in light().state:
+                        light().state[key] = value
                 light().updateLightState(lightsState[light().id_v1])
                 ### apply max and min brightness limis
                 if "bri" in lightsState[light().id_v1]:
