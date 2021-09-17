@@ -31,7 +31,7 @@ const LightUpdate = ({ light, lightsCatalog, setMessage, setType }) => {
   return (
     <>
       {['native_single', 'native_multi'].includes(light["protocol"]) &&
-        light["protocol_cfg"]["type"] !== 'undefined' &&
+        lightsCatalog.lenght > 2 &&
         light["protocol_cfg"]["version"] === lightsCatalog[light["protocol_cfg"]["type"]]["version"] &&
         <div className="btn blue"><MdSystemUpdate title="Update available" onClick={() => updateAlert()} /></div>
       }

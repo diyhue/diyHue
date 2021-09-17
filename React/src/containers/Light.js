@@ -86,19 +86,21 @@ const Light = ({
   };
 
   return (
-    <div className="card light expanded">
+    <div className="devicecard light">
       <div className="row1">
         <div className="icon"><FaLightbulb onClick={() => alertLight()} /></div>
         <div className="text">{light["name"]}{" "}</div>
 
       </div>
       <div className="row3">
+        <div className="form-control">
         <Dropdown
           options={modelIds}
           value={light["modelid"]}
           onChange={(e) => setModelId(e.value)}
           placeholder="Choose light modelid"
         />
+        </div>
         <LightUpdate light={light} lightsCatalog={lightsCatalog} setMessage={setMessage} setType={setType} />
         <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
       </div>
