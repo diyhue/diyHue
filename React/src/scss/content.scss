@@ -1,0 +1,15 @@
+.contentContainer {
+    backdrop-filter: blur(30px);
+    background: rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    box-sizing: border-box;
+    padding: 20px;
+    width: 100%;
+
+
+    .headline{
+        font-size: 20px;
+        color: #ccc;
+        margin-bottom: 25px;
+    }
+}

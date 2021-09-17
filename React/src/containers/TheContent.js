@@ -13,7 +13,7 @@ const loading = (
 
 const TheContent = ({ HOST_IP, API_KEY }) => {
   return (
-    <main className="container">
+    <div className="content">
       <Suspense fallback={loading}>
         <HashRouter>
           <Switch>
@@ -38,7 +38,7 @@ const TheContent = ({ HOST_IP, API_KEY }) => {
           </Switch>
         </HashRouter>
       </Suspense>
-    </main>
+    </div>
   );
 };
 

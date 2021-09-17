@@ -2,10 +2,16 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import TheLayout from "./containers/TheLayout";
 
-import "./scss/style.scss";
+import "./scss/mainframe.scss";
+import "./scss/components.scss";
+import "./scss/content.scss";
 import "./scss/forms.scss";
-import "./scss/flipswitch.scss";
-import "./scss/notifications.scss";
+import "./scss/groups.scss";
+import "./scss/light.scss";
+import "./scss/notification.scss";
+import "./scss/modal.scss";
+import "./scss/scenepicker.scss";
+import "./scss/device.scss";
 
 const loading = (
   <div className="pt-3 text-center">
@@ -37,9 +43,7 @@ const App = () => {
 
   return (
     <React.Suspense fallback={loading}>
-      <div className="flexContainer">
         <TheLayout HOST_IP={HOST_IP} API_KEY={API_KEY} />
-      </div>
     </React.Suspense>
   );
 };

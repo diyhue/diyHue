@@ -55,7 +55,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -65,6 +65,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
+      <div class="headline">Pair original Hue Bridge</div>
         <form className="add-form" onSubmit={(e) => pairBridge(e)}>
           <div className="form-control">
             <label>Bridge Ip</label>

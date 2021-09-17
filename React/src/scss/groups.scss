@@ -1,0 +1,146 @@
+.cardGrid{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.groupCard {
+  flex-shrink: 0;
+  width: 400px;
+  backdrop-filter: blur(30px);
+  background: rgba(255, 255, 255, 0.09);
+  background: linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 100%);
+  border-radius: 20px;
+  margin-bottom: 20px;
+  margin-right: 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  &.light{
+    width: 100%;
+    border-radius: 14px;
+  }
+
+  
+
+  .row {
+    display: flex;
+
+    &.top {
+      padding: 20px 0 20px 0;
+    }
+
+    &.background {
+      background: rgba(0, 0, 0, 0.2);
+      border-top-right-radius: 12px;
+      border-top-left-radius: 12px;
+    }
+    &.bottom {
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+    &.colorpicker{
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gradient {
+      flex: 0 0 auto;
+      width: 50px;
+      height: 50px;
+      margin-left: 20px;
+      background: rgb(131, 58, 180);
+      background: linear-gradient(
+        45deg,
+        rgba(0,0,0,.1) 0%,
+        rgba(0,0,0,.3) 100%
+      );
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 5px 5px 15px -1px rgba(0, 0, 0, 0.6);
+      text-align: center;
+
+      svg {
+        fill: #ddd;
+        font-size: 25px;
+        margin-top: 11px;
+      }
+    }
+
+    .lights{
+      width: 100%;
+      padding: 20px;
+    }
+
+    .text {
+      margin: 0 20px;
+      flex: 1 1 auto;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      p {
+        &.name {
+          color: #fff;
+          font-size: 18px;
+        }
+
+        &.subtext {
+          color: #aaa;
+          margin-top: 5px;
+          font-size: 14px;
+        }
+      }
+    }
+
+    .switchContainer {
+      width: 50px;
+      margin-right: 20px;
+      padding-top: 10px;
+    }
+
+    .show{
+      padding: 20px;
+    }
+
+    .expandbtn {
+      text-align: center;
+      font-size: 20px;
+      padding: 5px 30px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .scenebtn {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      width: 20px;
+      font-size: 20px;
+      padding: 5px;
+    }
+
+    .lightbtn {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      width: 20px;
+      font-size: 20px;
+      padding: 5px;
+    }
+
+    
+
+    
+
+  }
+}
+
+@media screen and (max-width: 750px) {
+}
+
+@-moz-document url-prefix() {
+  .groupCard {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}

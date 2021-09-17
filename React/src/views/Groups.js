@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Group from "../containers/Group";
 
+
 export default function Groups({ HOST_IP, API_KEY }) {
   const [config, setConfig] = useState({
     config: {},
@@ -33,7 +34,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
   }, [HOST_IP, API_KEY]);
 
   return (
-    <div className="content">
+    <div className="inner">
       <div className="cardGrid">
         {Object.entries(config.groups)
           .filter((group) => group[1].type !== "Entertainment")

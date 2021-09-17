@@ -1,0 +1,30 @@
+.sidebar {
+  height: 100%;
+
+  ul {
+    li {
+      padding: 20px;
+      color: #eee;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+
+      svg{
+        width: 30px;
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
+
+      p{
+        flex-shrink: 0;
+      }
+    }
+
+    a {
+      text-decoration: none;
+    }
+  }
+}
+
+@media screen and (max-width: 750px) {
+}

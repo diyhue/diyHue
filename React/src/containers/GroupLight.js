@@ -28,32 +28,21 @@ const Light = ({ HOST_IP, api_key, id, light }) => {
   };
 
   return (
-    <div
-      className={`lightContainer ${
-        light["state"]["on"] ? "textDark" : "textLight"
-      }`}
-      style={getStyle()}
-    >
-      <div className="iconContainer">
-        <FaLightbulb />
-      </div>
-      <div className="textContainer">
-        <p>
-          {light.name}{" "}
-          {light["state"]["reachable"] || <RiAlertLine title="Unrechable" />}
-        </p>
-      </div>
-      <div className="switchContainer">
-        <label className="switch">
+    <div className="groupCard light">
+      <div className="row top">
+        <div className="gradient" style={getStyle()}><FaLightbulb /></div>
+        <div className="text"><p className="name">{light.name}{" "}
+          {light["state"]["reachable"] || <RiAlertLine title="Unrechable" />}</p></div>
+        <div className="switchContainer"><label className="switch">
           <input
             type="checkbox"
             defaultChecked={light["state"]["on"]}
             onChange={(e) => switchLight({ on: e.currentTarget.checked })}
           />
-          <span className="slider"></span>
-        </label>
+          <span className="slider">
+          </span></label></div>
       </div>
-      <div className="slideContainer">
+      <div className="row"><div className="sliderContainer">
         <input
           type="range"
           min="1"
@@ -64,9 +53,14 @@ const Light = ({ HOST_IP, api_key, id, light }) => {
             switchLight({ bri: parseInt(e.currentTarget.value) })
           }
         />
-      </div>
+      </div></div>
     </div>
+
   );
 };
+
+
+
+
 
 export default Light;

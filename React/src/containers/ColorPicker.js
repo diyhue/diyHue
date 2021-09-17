@@ -27,7 +27,8 @@ export default function KelvinPicker({
   }, []);
 
   let colors = [];
-  for (const [light] of groupLights.entries()) {
+  for (const [index, light] of groupLights.entries()) {
+    console.log(light);
     if ("xy" in lights[light]["state"]) {
       colors.push(
         cieToRgb(

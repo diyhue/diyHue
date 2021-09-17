@@ -36,34 +36,22 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
   };
 
   return (
-    <div className="topbar">
-      <img src={logo} alt="diyHue Logo" />
-      <button
-        type="button"
-        id="sidebarCollapse"
-        className="sidebarToggle"
-        onClick={() => setShowSidebar(!showSidebar)}
-      >
-        <FaBars />
-        <span></span>
-      </button>
-      <div className="switchContainer">
-        <p>Turn all {group0State ? "off" : "on"}</p>
-        <label className="switch">
-          <input
-            type="checkbox"
-            value={group0State}
-            checked={group0State}
-            onChange={(e) => handleToggleChange(e.target.checked)}
-          />
-          <span className="slider"></span>
-        </label>
+
+
+    <div className="topbarRight">
+      <div className="onbtn">
+        <p>All lights on/off</p>
+        <div className="switchContainer">
+          <label className="switch">
+            <input
+              type="checkbox"
+              value={group0State}
+              onChange={(e) => handleToggleChange(e.target.checked)}
+              checked={group0State} />
+            <span className="slider"></span>
+          </label>
+        </div>
       </div>
-      {/*
-      <div className="groupToggle">
-        <i onClick="toggleLights(this)" className="fas fa-couch"></i>
-      </div>
-      */}
     </div>
   );
 };

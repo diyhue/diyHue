@@ -52,7 +52,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -62,6 +62,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
+      <div class="headline">ZigBee2MQTT config</div>
         <form className="add-form" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">

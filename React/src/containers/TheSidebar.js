@@ -6,6 +6,8 @@ import {
   FaCog,
   FaSignOutAlt,
   FaInstagram,
+  FaBars,
+  FaRing
 } from "react-icons/fa";
 import { SiZigbee } from "react-icons/si";
 import {
@@ -17,78 +19,87 @@ import {
 import { MdSettingsRemote } from "react-icons/md";
 import { IoEllipsisVerticalCircleOutline } from "react-icons/io5";
 
+import logo from "../static/images/logo.svg";
+import "../scss/sidebar.scss";
+
 const TheSidebar = ({ showSidebar }) => {
   return (
-    <div className={`sidebar ${showSidebar ? "" : "active"}`}>
+    <div id="left" className={`column ${showSidebar ? "" : "active"}`}>
+      <div className="topbarLeft">
+        <div className="logo"><img src={logo} alt="diyHue Logo" /></div>
+        <div className="headline">DiyHue</div>
+        <div className="hamburger"><FaBars/></div>
+      </div>
+      <div className="sidebar">
       <ul>
-        <li className="iconBox"></li>
         <a href="#home">
           <li>
-            <FaHome style={{ color: "#0092FF" }} /> Home
+            <FaHome style={{ color: "#0092FF" }} /> <p>Home</p>
           </li>
         </a>
         <a href="#lights">
           <li>
-            <FaLightbulb style={{ color: "#FF9E00" }} /> Lights
+            <FaLightbulb style={{ color: "#FF9E00" }} /> <p>Lights</p>
           </li>
         </a>
         <a href="#linkbutton">
           <li>
-            <FaLink style={{ color: "#FF92FF" }} /> Link Button
+            <FaLink style={{ color: "#9b59b6" }} /> <p>Link Button</p>
           </li>
         </a>
         <a href="#bridge">
           <li>
-            <MdSettingsRemote style={{ color: "#92FFFF" }} /> Bridge
+            <FaRing style={{ color: "#92FFFF" }} /> <p>Bridge</p>
           </li>
         </a>
         <a href="#devices">
           <li>
-            <RiBubbleChartLine style={{ color: "#764600" }} /> Devices
+            <MdSettingsRemote style={{ color: "#7f8c8d" }} /> <p>Devices</p>
           </li>
         </a>
         <a href="#mqtt">
           <li>
-            <RiMessage2Line style={{ color: "#0084FF" }} /> MQTT
+            <RiMessage2Line style={{ color: "#0084FF" }} /> <p>MQTT</p>
           </li>
         </a>
         <a href="#deconz">
           <li>
-            <RiHomeWifiLine style={{ color: "#42A138" }} /> Deconz
+            <RiHomeWifiLine style={{ color: "#42A138" }} /> <p>Deconz</p>
           </li>
         </a>
         <a href="#tradfri">
           <li>
             <IoEllipsisVerticalCircleOutline style={{ color: "#CCA138" }} />{" "}
-            Tradfri
+            <p>Tradfri</p>
           </li>
         </a>
         <a href="#hue">
           <li>
-            <FaInstagram style={{ color: "#8400FF" }} /> Hue Bridge
+            <FaInstagram style={{ color: "#8400FF" }} /> <p>Hue Bridge</p>
           </li>
         </a>
         <a href="#diyhue">
           <li>
-            <SiZigbee style={{ color: "#CCCCCC" }} /> DiyHue Bridge
+            <SiZigbee style={{ color: "#16a085" }} /> <p>DiyHue Bridge</p>
           </li>
         </a>
         <a href="#alarm">
           <li>
-            <RiAlarmWarningLine style={{ color: "#AE2D00" }} /> Alarm
+            <RiAlarmWarningLine style={{ color: "#c0392b" }} /> <p>Alarm</p>
           </li>
         </a>
         <a href="#settings">
           <li>
-            <FaCog style={{ color: "#FFFF00" }} /> Settings
+            <FaCog style={{ color: "#bdc3c7" }} /> <p>Settings</p>
           </li>
         </a>
         <a href="/logout">
           <li>
-            <FaSignOutAlt style={{ color: "#fff" }} /> Logout
+            <FaSignOutAlt style={{ color: "#fff" }} /> <p>Logout</p>
           </li>
         </a>
       </ul>
+    </div>
     </div>
   );
 };

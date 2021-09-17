@@ -1,20 +1,27 @@
 import {
-  FaCaretLeft,
-  FaList,
-  FaPalette,
-  FaTint,
   FaCouch,
+  FaChevronDown,
+  FaChevronUp,
+  FaImages,
+  FaLightbulb,
+  FaPalette
+
 } from "react-icons/fa";
 import { BsFillHouseDoorFill } from "react-icons/bs";
+import { MdInvertColors } from "react-icons/md";
 import { useState } from "react";
 import axios from "axios";
 import Scenes from "./Scenes";
 import Light from "./GroupLight";
 import ColorPicker from "./ColorPicker";
+import ColorTempPicker from "./ColorTempPicker";
+import debounce from 'lodash.debounce';
 import { cieToRgb, colorTemperatureToRgb } from "../color";
+
 
 const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   const [showContainer, setShowContainer] = useState("closed");
+  const [sceneModal, setSceneModal] = useState(false);
 
   const handleToggleChange = (state) => {
     const newState = { on: state };
@@ -30,9 +37,18 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
     axios.put(`${HOST_IP}/api/${api_key}/groups/${id}/action`, newState);
   };
 
+  const onlineLights = () => {
+    let counter = 0;
+    for (const [index, light] of group.lights.entries()) {
+      if (lights[light]["state"]["reachable"] === true)
+        counter = counter + 1;
+    }
+    return counter;
+  }
+
   const getStyle = () => {
     if (group.state["any_on"]) {
-      let lightBg = "linear-gradient(90deg, ";
+      let lightBg = "linear-gradient(45deg, ";
       let step = 100 / group["lights"].length;
       for (const [index, light] of group.lights.entries()) {
         if (lights[light]["state"]["colormode"] === "xy") {
@@ -75,83 +91,64 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   };
 
   return (
-    <div
-      className={`groupContainer ${
-        group.state["any_on"] ? "textDark" : "textLight"
-      } ${showContainer !== "closed" ? "expanded" : ""}`}
-      style={getStyle()}
-    >
-      {showContainer !== "closed" && (
-        <div className="header">
-          <div onClick={() => setShowContainer("closed")}>
-            <div className="icon">
-              <FaCaretLeft />
-            </div>
-            <div className="text">close</div>
-          </div>
-          <div
-            className={`tab ${showContainer === "lights" ? "active" : ""}`}
-            onClick={() => setShowContainer("lights")}
-          >
-            <FaList />
-          </div>
-          <div
-            className={`tab ${showContainer === "scenes" ? "active" : ""}`}
-            onClick={() => setShowContainer("scenes")}
-          >
-            <FaPalette />
-          </div>
-          <div
-            className={`tab ${showContainer === "colorPicker" ? "active" : ""}`}
-            onClick={() => setShowContainer("colorPicker")}
-          >
-            <FaTint />
-          </div>
+    <div className="groupCard">
+      <Scenes
+        HOST_IP={HOST_IP}
+        api_key={api_key}
+        groupId={id}
+        scenes={scenes}
+        sceneModal={sceneModal}
+        setSceneModal={setSceneModal}
+      />
+      <div className="row top">
+        <div className="gradient" style={getStyle()} >{group["type"] === "Zone" ? <FaCouch style={{ color: "#8400FF" }}/> : <BsFillHouseDoorFill style={{ color: "#8400FF" }}/>}</div>
+        <div className="text">
+          <p className="name">{group.name}</p>
+          <p className="subtext">{onlineLights()} lamps online</p></div>
+        <div className="switchContainer">
+          <label className="switch">
+            <input
+              type="checkbox"
+              value={group.state["any_on"]}
+              checked={group.state["any_on"]}
+              onChange={(e) => handleToggleChange(e.target.checked)}
+            />
+            <span className="slider"></span>
+          </label>
         </div>
-      )}
-      <div
-        className="overlayBtn"
-        onClick={() => setShowContainer("colorPicker")}
-      ></div>
-      <div className="iconContainer">
-        {group["type"] === "Zone" ? <FaCouch /> : <BsFillHouseDoorFill />}
       </div>
-      <div className="textContainer">
-        <p>{group.name}</p>
-      </div>
-      <div className="switchContainer">
-        <label className="switch">
+      <div className="row background">
+        <div className="sliderContainer">
           <input
-            type="checkbox"
-            value={group.state["any_on"]}
-            checked={group.state["any_on"]}
-            onChange={(e) => handleToggleChange(e.target.checked)}
+            type="range"
+            min="1"
+            max="254"
+            value={group.action["bri"]}
+            step="1"
+            className="slider"
+            onChange={(e) => handleBriChange(parseInt(e.target.value))}
           />
-          <span className="slider"></span>
-        </label>
+        </div>
       </div>
-      <div className="slideContainer">
-        <input
-          type="range"
-          min="1"
-          max="254"
-          value={group.action["bri"]}
-          step="1"
-          className="slider"
-          onChange={(e) => handleBriChange(parseInt(e.target.value))}
-        />
-      </div>
-      <div className="dimmer">
-        {showContainer === "scenes" && (
-          <Scenes
+      <div className="row colorpicker">
+        {showContainer === "colorPicker" && (
+          <ColorPicker
+            HOST_IP={HOST_IP}
+            api_key={api_key}
+            lights={lights}
+            groupLights={group.lights}
+          />
+        )}
+        {showContainer === "colorTempPicker" && (
+          <ColorTempPicker
             HOST_IP={HOST_IP}
             api_key={api_key}
             groupId={id}
-            scenes={scenes}
+            group={group}
           />
         )}
         {showContainer === "lights" && (
-          <div className="lightsContainer">
+          <div className="lights">
             {group.lights.map((light) => (
               <Light
                 HOST_IP={HOST_IP}
@@ -161,19 +158,42 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
                 light={lights[light]}
               />
             ))}
+
           </div>
         )}
-        {showContainer === "colorPicker" && (
-          <ColorPicker
-            HOST_IP={HOST_IP}
-            api_key={api_key}
-            lights={lights}
-            groupLights={group.lights}
-          />
-        )}
       </div>
+
+      {showContainer === "closed" && (
+        <div className="row bottom">
+          <div className="expandbtn"><FaChevronDown
+            onClick={() => setShowContainer("colorPicker")}
+          /></div>
+        </div>) ||
+        (<div className="row bottom">
+          <div className="expandbtn"><FaPalette 
+          onClick={() => setShowContainer("colorPicker")}/>
+          </div>
+          <div className="expandbtn"><FaImages
+            onClick={() => setSceneModal(true)}
+          /></div>
+          <div className="expandbtn"><FaChevronUp
+            onClick={() => setShowContainer("closed")}
+          /></div>
+          <div className="expandbtn"><FaLightbulb
+            onClick={() => setShowContainer("lights")}
+          /></div>
+          <div className="expandbtn"><MdInvertColors
+            onClick={() => setShowContainer("colorTempPicker")}
+          /></div>
+        </div>)}
+
+
+
     </div>
   );
 };
 
 export default Group;
+
+
+

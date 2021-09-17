@@ -32,6 +32,9 @@ const Devices = ({ HOST_IP, API_KEY }) => {
 
   return (
     <div className="content">
+      <div className="inner">
+        <div className="devicecontainer">
+            
       {type !== "none" && (
         <Flash
           type={type}
@@ -40,7 +43,7 @@ const Devices = ({ HOST_IP, API_KEY }) => {
           setType={setType}
         />
       )}
-      <div className="cardGrid">
+      <div className="devicecard">
         {Object.entries(devices).map(([id, device]) => (
           device["protocol"] !== "none" &&
           <Device
@@ -54,6 +57,8 @@ const Devices = ({ HOST_IP, API_KEY }) => {
           />
         ))}
       </div>
+    </div>
+    </div>
     </div>
   );
 };

@@ -59,7 +59,7 @@ const Tradfri = ({ HOST_IP, API_KEY }) => {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -69,6 +69,7 @@ const Tradfri = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
+      <div class="headline">IKIEA Tradfri Gateway</div>
         <form className="add-form" onSubmit={(e) => pairTradfri(e)}>
           <div className="form-control">
             <label>Tradfri Gateway IP</label>
