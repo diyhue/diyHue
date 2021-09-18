@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { cieToRgb, rgbToCie } from "../color";
 import iro from "@jaames/iro";
 import axios from "axios";
+import { motion } from "framer-motion"
 
 export default function KelvinPicker({
   HOST_IP,
@@ -45,8 +46,7 @@ export default function KelvinPicker({
     console.log(newState.rgb);
     console.log("Apply state " + JSON.stringify(newState));
     axios.put(
-      `${HOST_IP}/api/${api_key}/lights/${
-        groupLights[newState["index"]]
+      `${HOST_IP}/api/${api_key}/lights/${groupLights[newState["index"]]
       }/state`,
       { xy: rgbToCie(rgb["r"], rgb["g"], rgb["b"]) }
     );
@@ -67,5 +67,11 @@ export default function KelvinPicker({
       picker.current.on("input:end", onChange);
     }
   }, [onChange]);
-  return <div ref={pickerRef} className={animation ? "hide" : "show"}></div>;
+  return <motion.div
+    layout
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    ref={pickerRef}>
+  </motion.div>;
 }

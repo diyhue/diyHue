@@ -24,11 +24,10 @@ import "../scss/sidebar.scss";
 
 const TheSidebar = ({ showSidebar }) => {
   return (
-    <div id="left" className={`column ${showSidebar ? "" : "active"}`}>
+    <div className={`columnLeft ${showSidebar ? "" : "active"}`}>
       <div className="topbarLeft">
         <div className="logo"><img src={logo} alt="diyHue Logo" /></div>
         <div className="headline">DiyHue</div>
-        <div className="hamburger"><FaBars/></div>
       </div>
       <div className="sidebar">
       <ul>

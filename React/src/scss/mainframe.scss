@@ -35,20 +35,24 @@ body {
   overflow: hidden;
 }
 
-.column {
+.columnLeft {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-#left {
   flex-shrink: 0;
-  width: 200px;
+  width: 0;
   backdrop-filter: blur(20px);
   background: rgba(0, 0, 0, 0.2);
+
+  &.active{
+    width: 200px;
+  }
 }
 
-#right {
+.columnRight {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -78,19 +82,14 @@ body {
     letter-spacing: 5px;
   }
 
-  .hamburger {
-    display: flex;
-    color: #ccc;
-    flex: 0 0 auto;
-    margin: 12px 10px 0 0;
-    font-size: 25px;
-  }
+  
 }
 
 .topbarRight {
   flex-shrink: 0;
   display: inline-flex;
-  justify-content: right;
+  justify-content: flex-end;
+  align-items: center;
   height: 50px;
   width: 100%;
   backdrop-filter: blur(20px);
@@ -98,6 +97,7 @@ body {
 
   .onbtn {
     display: flex;
+    align-items: center;
 
     p {
       color: #ccc;
@@ -105,10 +105,28 @@ body {
     }
 
     .switchContainer {
-      margin: 8px 20px 0 0;
+      margin-right: 20px;
       width: 60px;
+      height: 35px;
     }
   }
+
+  .hamburger {
+    display: flex;
+    color: #ccc;
+    align-items: center;
+    font-size: 25px;
+    margin-right: auto;
+    margin-left: 10px;
+    transition: color 0.1s ease;
+
+    &:hover{
+      color: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+  }
+
 }
 
 .content {
@@ -123,6 +141,25 @@ body {
 @media screen and (max-width: 750px) {
   body {
     background-image: url("../static/images/mobile_background.png");
+  }
+  .columnLeft{
+    &.active{
+      position: absolute;
+      top:0;
+      left:0;
+      z-index: 9000;
+    }
+  }
+
+  .content .inner{
+    padding: 20px 0 0 0;
+  }
+
+  .hamburger{
+    position: absolute;
+    top:10px;
+      left:200px;
+      z-index: 9001;
   }
 }
 

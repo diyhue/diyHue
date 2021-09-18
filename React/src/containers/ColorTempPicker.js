@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { colorTemperatureToRgb, rgbToCie } from "../color";
 import iro from "@jaames/iro";
 import axios from "axios";
+import { motion } from "framer-motion"
 
 export default function KelvinPicker({
   HOST_IP,
@@ -28,7 +29,7 @@ export default function KelvinPicker({
 
   const onChange = (newState) => {
     let kelvin = newState.kelvin;
-    let mirek = Math.floor( (11000 - kelvin) / 25.5 + 153);
+    let mirek = Math.floor((11000 - kelvin) / 25.5 + 153);
     console.log("#########");
     console.log(mirek);
     console.log(colorTemperatureToRgb(group["action"]["ct"]));
@@ -55,5 +56,11 @@ export default function KelvinPicker({
       picker.current.on("input:end", onChange);
     }
   }, [onChange]);
-  return <div ref={pickerRef} className={animation ? "hide" : "show"}></div>;
+  return <motion.div
+    layout
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    ref={pickerRef}>
+  </motion.div>;
 }

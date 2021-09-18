@@ -16,6 +16,7 @@ import Light from "./GroupLight";
 import ColorPicker from "./ColorPicker";
 import ColorTempPicker from "./ColorTempPicker";
 import debounce from 'lodash.debounce';
+import { motion, AnimateSharedLayout, AnimatePresence } from "framer-motion"
 import { cieToRgb, colorTemperatureToRgb } from "../color";
 
 
@@ -101,7 +102,7 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
         setSceneModal={setSceneModal}
       />
       <div className="row top">
-        <div className="gradient" style={getStyle()} >{group["type"] === "Zone" ? <FaCouch style={{ color: "#8400FF" }}/> : <BsFillHouseDoorFill style={{ color: "#8400FF" }}/>}</div>
+        <div className="gradient" style={getStyle()} >{group["type"] === "Zone" ? <FaCouch style={{ color: "#8400FF" }} /> : <BsFillHouseDoorFill style={{ color: "#8400FF" }} />}</div>
         <div className="text">
           <p className="name">{group.name}</p>
           <p className="subtext">{onlineLights()} lamps online</p></div>
@@ -130,39 +131,41 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
           />
         </div>
       </div>
-      <div className="row colorpicker">
-        {showContainer === "colorPicker" && (
-          <ColorPicker
-            HOST_IP={HOST_IP}
-            api_key={api_key}
-            lights={lights}
-            groupLights={group.lights}
-          />
-        )}
-        {showContainer === "colorTempPicker" && (
-          <ColorTempPicker
-            HOST_IP={HOST_IP}
-            api_key={api_key}
-            groupId={id}
-            group={group}
-          />
-        )}
-        {showContainer === "lights" && (
-          <div className="lights">
-            {group.lights.map((light) => (
-              <Light
+      <AnimateSharedLayout>
+        <motion.div className="row colorpicker">
+          <AnimatePresence>
+            {showContainer === "colorPicker" && (
+              <ColorPicker
                 HOST_IP={HOST_IP}
                 api_key={api_key}
-                key={light}
-                id={light}
-                light={lights[light]}
+                lights={lights}
+                groupLights={group.lights}
               />
-            ))}
-
-          </div>
-        )}
-      </div>
-
+            )}
+            {showContainer === "colorTempPicker" && (
+              <ColorTempPicker
+                HOST_IP={HOST_IP}
+                api_key={api_key}
+                groupId={id}
+                group={group}
+              />
+            )}
+            {showContainer === "lights" && (
+              <div className="lights">
+                {group.lights.map((light) => (
+                  <Light
+                    HOST_IP={HOST_IP}
+                    api_key={api_key}
+                    key={light}
+                    id={light}
+                    light={lights[light]}
+                  />
+                ))}
+              </div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </AnimateSharedLayout>
       {showContainer === "closed" && (
         <div className="row bottom">
           <div className="expandbtn"><FaChevronDown
@@ -170,19 +173,19 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
           /></div>
         </div>) ||
         (<div className="row bottom">
-          <div className="expandbtn"><FaPalette 
-          onClick={() => setShowContainer("colorPicker")}/>
+          <div className="btn"><FaPalette
+            onClick={() => setShowContainer("colorPicker")} />
           </div>
-          <div className="expandbtn"><FaImages
+          <div className="btn"><FaImages
             onClick={() => setSceneModal(true)}
           /></div>
           <div className="expandbtn"><FaChevronUp
             onClick={() => setShowContainer("closed")}
           /></div>
-          <div className="expandbtn"><FaLightbulb
+          <div className="btn"><FaLightbulb
             onClick={() => setShowContainer("lights")}
           /></div>
-          <div className="expandbtn"><MdInvertColors
+          <div className="btn"><MdInvertColors
             onClick={() => setShowContainer("colorTempPicker")}
           /></div>
         </div>)}

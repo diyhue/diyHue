@@ -1,5 +1,6 @@
 .sidebar {
   height: 100%;
+  overflow: hidden;
 
   ul {
     li {
@@ -27,4 +28,5 @@
 }
 
 @media screen and (max-width: 750px) {
+  
 }

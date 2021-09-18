@@ -2,9 +2,21 @@ import { useState, useEffect } from "react";
 import { FaBars } from "react-icons/fa";
 import axios from "axios";
 import logo from "../static/images/logo.svg";
+import { motion } from "framer-motion";
 
 const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
   const [group0State, setGroup0State] = useState(false);
+
+  const iconVariants = {
+    opened: {
+      rotate: 90,
+      //scale: 2
+    },
+    closed: {
+      rotate: 0,
+      //scale: 1
+    }
+  }
 
   useEffect(() => {
     const fetchGroups = () => {
@@ -39,6 +51,12 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
 
 
     <div className="topbarRight">
+      <motion.div className="hamburger"
+        initial={false}
+        variants={iconVariants}
+        animate={showSidebar? "opened" : "closed"}
+        onClick={() => setShowSidebar(!showSidebar)}>
+        <FaBars /></motion.div>
       <div className="onbtn">
         <p>All lights on/off</p>
         <div className="switchContainer">

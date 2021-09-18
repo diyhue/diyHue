@@ -153,6 +153,14 @@
 
 
 @media screen and (max-width: 750px) {
+  .devicecard {
+    width: 100%;
+  
+    &.light{
+      margin-right: 0;
+    }
+  }
+
 }
 
 @-moz-document url-prefix() {
