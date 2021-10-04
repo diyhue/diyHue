@@ -308,6 +308,23 @@ class ClipV2Resource(Resource):
                 objCreation["lights"] = objLights
             newObject = HueObjects.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
+            if "actions" in postDict:
+                for action in postDict["actions"]:
+                    if "target" in action:
+                        if action["target"]["rtype"] == "light":
+                            lightObj = getObject("light",  action["target"]["rid"])
+                            sceneState = {}
+                            scene = action["action"]
+                            if "on" in scene:
+                                sceneState["on"] = scene["on"]["on"]
+                            if "dimming" in scene:
+                                sceneState["bri"] = int(scene["dimming"]["brightness"] * 2.54)
+                            if "color" in scene:
+                                if "xy" in state["color"]:
+                                    sceneState["xy"] = [scene["color"]["xy"]["x"], scene["color"]["xy"]["y"]]
+                            if "gradient" in scene:
+                                sceneState["gradient"] = scene["gradient"]
+                            newObject.lightstates[lightObj] = sceneState
         elif resource == "behavior_instance":
             newObject = HueObjects.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject

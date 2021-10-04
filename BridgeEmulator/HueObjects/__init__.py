@@ -776,19 +776,23 @@ class Scene():
             return
         queueState = {}
         for light, state in self.lightstates.items():
+            logging.warning(state)
             light.state.update(state)
             light.updateLightState(state)
             if light.dynamics == "dynamic_palette":
                 light.dynamics = "none"
                 logging.debug("Stop Dynamic scene play for " + light.name)
             if len(data) > 0:
-                state["transitiontime"] = 0
+                transitiontime = 0
                 if "seconds" in data:
-                    state["transitiontime"] += data["seconds"] * 10
+                    transitiontime += data["seconds"] * 10
                 if "minutes" in data:
-                    state["transitiontime"] += data["minutes"] * 600
+                    transitiontime += data["minutes"] * 600
+                if transitiontime > 0:
+                    state["transitiontime"] = transitiontime
                 if "recall" in data and "duration" in data["recall"]:
                     state["transitiontime"] = int(data["recall"]["duration"] / 100)
+
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:
                     queueState[light.protocol_cfg["ip"]] = {
@@ -798,6 +802,7 @@ class Scene():
                 elif light.protocol == "mqtt":
                     queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["command_topic"]] = state
             else:
+                logging.warning(state)
                 light.setV1State(state)
         for device, state in queueState.items():
             state["object"].setV1State(state)
@@ -849,8 +854,6 @@ class Scene():
             if "ct" in state:
                 v2State["color_temperature"] = {
                     "mirek": state["ct"]}
-
-
             result["actions"].append(
                 {
                     "action": v2State,
