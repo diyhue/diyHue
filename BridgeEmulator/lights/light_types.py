@@ -27,7 +27,7 @@ lightTypes["LWB010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinsta
 lightTypes["LWB010"]["config"] = {"archetype": "classicbulb", "function": "mixed", "direction": "omnidirectional", "startup":{"mode":"safety","configured":True}}
 lightTypes["LWB010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 5000, "maxlumen": 806}, "streaming": {"renderer": False, "proxy": False}}
 lightTypes["LWB010"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "classic_bulb", "product_name": "Color temperature light", "software_version": "1.90.1"}
-lightTypes["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "reachable": True}
+lightTypes["LWB010"]["state"] = {"on": False, "bri": 254,"alert": "none", "mode": "homeautomation", "reachable": True}
 
 lightTypes["LTW001"] = {"v1_static": {"type": "Color temperature light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.90.1"}}
 lightTypes["LTW001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
@@ -40,7 +40,7 @@ lightTypes["LCX002"] = {"v1_static": {"type": "Extended color light", "manufactu
 lightTypes["LCX002"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-11-02T19:46:12"}
 lightTypes["LCX002"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
 lightTypes["LCX002"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.","model_id": "LCX002","product_archetype": "hue_lightstrip_tv","product_name": "Hue play gradient lightstrip","software_version": "1.90.1"}
-lightTypes["LCX002"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True}
+lightTypes["LCX002"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
 lightTypes["LCX002"]["config"] = {"archetype": "huelightstriptv","function": "mixed","direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
 
 lightTypes["LOM001"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}

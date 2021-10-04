@@ -149,19 +149,6 @@ def v2BridgeDevice():
     ]
     return result
 
-def convertV2StateToV1(state):
-    v1State = {}
-    if "dimming" in state:
-        v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
-    if "on" in state:
-        v1State["on"] =  state["on"]["on"]
-    if "color_temperature" in state:
-        v1State["ct"] =  state["color_temperature"]["mirek"]
-    if "color" in state:
-        if "xy" in state["color"]:
-            v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
-    return v1State
-
 class AuthV1(Resource):
     def get(self):
         authorisation = authorizeV2(request.headers)
@@ -394,15 +381,7 @@ class ClipV2ResourceId(Resource):
         logging.debug(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
-            v1Request = convertV2StateToV1(putDict)
-            if object.modelid in ["LCX001", "LCX002", "LCX003"]:
-                if object.id_v1 not in bridgeConfig["temp"]["gradientStripLights"] or bridgeConfig["temp"]["gradientStripLights"][object.id_v1] > 7:
-                    bridgeConfig["temp"]["gradientStripLights"][object.id_v1] = 1
-                object.setV1State(state={"lights": {bridgeConfig["temp"]["gradientStripLights"][object.id_v1]: v1Request}})
-                bridgeConfig["temp"]["gradientStripLights"][object.id_v1] += 1
-            else:
-                object.setV1State(state=v1Request)
-
+            object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
                 if putDict["action"] == "start":
@@ -415,8 +394,7 @@ class ClipV2ResourceId(Resource):
         elif resource == "scene":
             object.activate(putDict)
         elif resource == "grouped_light":
-            v1Request = convertV2StateToV1(putDict)
-            object.setV1Action(state=v1Request)
+            object.setV2Action(putDict)
         elif resource == "geolocation":
             bridgeConfig["sensors"]["1"].protocol_cfg = {"lat": putDict["latitude"], "long": putDict["longitude"]}
             bridgeConfig["sensors"]["1"].config["configured"] = True

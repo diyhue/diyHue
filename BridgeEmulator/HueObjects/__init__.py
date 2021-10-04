@@ -65,7 +65,7 @@ class BehaviorInstance():
     def __init__(self, data):
         self.id_v2 = data["id"] if "id" in data else genV2Uuid()
         self.id_v1 = self.id_v2 # used for config save
-        self.name = data["metadata"]["name"]
+        self.name = data["metadata"]["name"] if "name" in data["metadata"] else None
         self.configuration = data["configuration"]
         self.enabled = data["enabled"] if "enabled" in data else False
         self.script_id = data["script_id"] if "script_id" in data else ""
@@ -78,7 +78,6 @@ class BehaviorInstance():
           "id_v1": "",
           "last_error": "",
           "metadata": {
-            "name": self.name,
             "type": "InstanceMetadata"
           },
           "migrated_from": "",
@@ -86,6 +85,9 @@ class BehaviorInstance():
           "status": "running",
           "type": "behavior_instance"
         }
+
+        if self.name != None:
+            result["metadata"]["name"] = self.name
 
         for resource in self.configuration["where"]:
             result["dependees"].append({"level": "critical",
@@ -114,6 +116,9 @@ class BehaviorInstance():
     def save(self):
         result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled,
                   "script_id": self.script_id}
+        if self.name != None:
+            result["metadata"] = {"name": self.name}
+
         return result
 
 
@@ -161,7 +166,21 @@ class Light():
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
         result["config"] = self.config
-        result["state"] = self.state
+        result["state"] = {"on": self.state["on"]}
+        if "bri" in self.state and self.modelid not in ["LOM001"]:
+            result["state"]["bri"] = self.state["bri"]
+        if "ct" in self.state and self.modelid not in ["LOM001", "LTW001"]:
+            result["state"]["ct"] = self.state["ct"]
+            result["state"]["colormode"] = self.state["colormode"]
+        if "xy" in self.state and self.modelid not in ["LOM001", "LTW001", "LWB010"]:
+            result["state"]["xy"] = self.state["xy"]
+            result["state"]["hue"] = self.state["hue"]
+            result["state"]["sat"] = self.state["sat"]
+            result["state"]["colormode"] = self.state["colormode"]
+        result["state"]["alert"] = self.state["alert"]
+        if "mode" in  self.state:
+            result["state"]["mode"] = self.state["mode"]
+        result["state"]["reachable"] = self.state["reachable"]
         result["modelid"] = self.modelid
         result["name"] = self.name
         result["uniqueid"] = self.uniqueid
@@ -176,13 +195,12 @@ class Light():
         elif ("hue" in state or "sat" in state) and "hue" in self.state:
             self.state["colormode"] = "hs"
 
-    def setV1State(self, state, rgb=None):
+    def setV1State(self, state):
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
             for key, value in state.items():
-                if key in self.state:
-                    self.state[key] = value
+                self.state[key] = value
             if "bri" in state:
                 if "min_bri" in self.protocol_cfg and  self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
@@ -192,15 +210,29 @@ class Light():
         for protocol in protocols:
             if "lights.protocols." + self.protocol == protocol.__name__:
                 try:
-                    if self.protocol in ["mi_box", "esphome", "tasmota"]:
-                        protocol.set_light(self, state, rgb)
-                    else:
-                        protocol.set_light(self, state)
+                    protocol.set_light(self, state)
                     self.state["reachable"] = True
                 except Exception as e:
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
                 return
+
+    def setV2State(self, state):
+        v1State = {}
+        if "dimming" in state:
+            v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
+        if "on" in state:
+            v1State["on"] =  state["on"]["on"]
+        if "color_temperature" in state:
+            v1State["ct"] =  state["color_temperature"]["mirek"]
+        if "color" in state:
+            if "xy" in state["color"]:
+                v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
+        if "gradient" in state:
+            v1State["gradient"] = state["gradient"]
+        if "transitiontime" in state: # to be replaced once api will be public
+            v1State["transitiontime"] = state["transitiontime"]
+        self.setV1State(v1State)
 
     def getDevice(self):
         result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
@@ -247,10 +279,14 @@ class Light():
 
     def getV2Api(self):
         result = {}
+        result["alert"] = {"action_values": ["breathe"]}
+        if self.modelid.startswith("LCX"):
+            result["gradient"] = {"points": self.state["gradient"]["points"],
+            "points_capable": self.protocol_cfg["points_capable"]}
+
         if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002"]: #color lights only
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
-            result = {
-                "color": {
+            result["color"] = {
                     "gamut": {
                         "blue":  {"x": colorgamut[2][0], "y": colorgamut[2][1]},
                         "green": {"x": colorgamut[1][0], "y": colorgamut[1][1]},
@@ -261,17 +297,16 @@ class Light():
                         "x": self.state["xy"][0],
                         "y": self.state["xy"][1]
                     }
-                }
             }
         if "ct" in self.state:
             result["color_temperature"] = {
-                "mirek": self.state["ct"],
+                "mirek": self.state["ct"] if self.state["colormode"] == "ct" else None,
                 "mirek_schema": {
                     "mirek_maximum": 500,
                     "mirek_minimum": 153
                     }
                 }
-            result["color_temperature"]["mirek_valid"] = True if self.state["ct"] < 500 and self.state["ct"] > 153 else False
+            result["color_temperature"]["mirek_valid"] = True if self.state["ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
             result["dimming"] = {
                 "brightness": self.state["bri"] / 2.54
@@ -353,21 +388,36 @@ class Light():
                 if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002"]:
                     if index == len(palette["color"]):
                         index = 0
-                    xy = [palette["color"][index]["color"]["xy"]["x"], palette["color"][index]["color"]["xy"]["y"]]
-                    bri = int(palette["color"][index]["dimming"]["brightness"] * 2.54)
-                    self.setV1State({"xy": xy, "bri": bri, "transitiontime": 300})
+                    points = []
+                    if self.modelid.startswith("LCX"):
+                        gradientIndex = index
+                        for x in range(self.protocol_cfg["points_capable"]): # for gradient lights
+                            points.append(palette["color"][gradientIndex])
+                            gradientIndex += 1
+                            if gradientIndex == len(palette["color"]):
+                                gradientIndex = 0
+                        self.setV2State({"gradient": {"points": points}, "transitiontime": 300})
+                    else:
+                        lightState = palette["color"][index]
+                        lightState["transitiontime"] = 300 # based on youtube videos, the transition is slow
+                        self.setV2State(lightState)
                 elif self.modelid == "LTW001":
                     if index == len(palette["color_temperature"]):
                         index = 0
-                    self.setV1State({"ct": palette["color_temperature"][index]["color_temperature"]["mirek"],"bri": int(palette["color_temperature"][index]["dimming"]["brightness"] * 2.54), "transitiontime": 300})
+                    lightState = palette["color_temperature"][index]
+                    lightState["transitiontime"] = 300
+                    self.setV2State(lightState)
                 else:
                     if index == len(palette["dimming"]):
                         index = 0
-                    self.setV1State({"bri": int(palette["color_temperature"][index]["dimming"]["brightness"] * 2.54), "transitiontime": 300})
+                    lightState = palette["dimming"][index]
+                    lightState["transitiontime"] = 300
+                    self.setV2State(lightState)
             counter += 1
             if counter == 30:
                 counter = 0
                 index += 1
+                logging.debug("Step forward dynamic scene " + self.name)
             sleep(1)
 
     def save(self):
@@ -430,6 +480,20 @@ class Group():
                 else:
                     all_on = False
         return {"all_on": all_on, "any_on": any_on}
+
+
+    def setV2Action(self, state):
+        v1State = {}
+        if "dimming" in state:
+            v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
+        if "on" in state:
+            v1State["on"] =  state["on"]["on"]
+        if "color_temperature" in state:
+            v1State["ct"] =  state["color_temperature"]["mirek"]
+        if "color" in state:
+            if "xy" in state["color"]:
+                v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
+        self.setV1Action(v1State)
 
     def setV1Action(self, state, scene=None):
         lightsState = {}
