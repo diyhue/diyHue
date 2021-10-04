@@ -81,64 +81,70 @@ const Bridge = ({ HOST_IP, API_KEY }) => {
           setType={setType}
         />
       )}
-      <div className="contentContainer">
-      <div class="headline">Bridge Config</div>
-        <form className="add-form" onSubmit={(e) => onSubmit(e)}>
-          <div className="form-control">
-            <label>Bridge Name</label>
-            <input
-              type="text"
-              placeholder="Bridge Name"
-              value={bridgeName}
-              onChange={(e) => setBridgeName(e.target.value)}
-            />
-          </div>
-          <div className="form-control">
-            <label>Software Version</label>
-            <input
-              type="text"
-              placeholder="swversion"
-              value={swversion}
-              onChange={(e) => setSwversion(e.target.value)}
-            />
-            <p>
-              <a href="https://www.philips-hue.com/en-gb/support/release-notes/bridge">
-                check here for last versions
-              </a>
-            </p>
-          </div>
-          <div className="form-control">
-            <label>API Version</label>
-            <input
-              type="text"
-              placeholder="apiversion"
-              value={apiVersion}
-              onChange={(e) => setApiVersion(e.target.value)}
-            />
-          </div>
-          <div className="form-control">
-            <label>Timezone</label>
-            <Dropdown
-              options={timezones}
-              value={timezone}
-              onChange={(e) => setTimezone(e.value)}
-              placeholder="Choose light modelid"
-            />
-          </div>
-          <div className="switchContainer">
-            <p>Remote API </p>
-            <label className="switch">
+      <div className="contentContainer spacer">
+        <div className="headline">Bridge Config</div>
+          <form className="add-form" onSubmit={(e) => onSubmit(e)}>
+            <div className="form-control">
+              <label>Bridge Name</label>
               <input
-                type="checkbox"
-                value={remoteApi}
-                checked={remoteApi}
-                onChange={(e) => setRemoteApi(e.target.checked)}
+                type="text"
+                placeholder="Bridge Name"
+                value={bridgeName}
+                onChange={(e) => setBridgeName(e.target.value)}
               />
-              <span className="slider"></span>
-            </label>
-          </div>
-          <br></br>
-          <p>Readonly fields:</p>
+            </div>
+            <div className="form-control">
+              <label>Software Version</label>
+              <input
+                type="text"
+                placeholder="swversion"
+                value={swversion}
+                onChange={(e) => setSwversion(e.target.value)}
+              />
+              <p>
+                <a href="https://www.philips-hue.com/en-gb/support/release-notes/bridge">
+                  check here for last versions
+                </a>
+              </p>
+            </div>
+            <div className="form-control">
+              <label>API Version</label>
+              <input
+                type="text"
+                placeholder="apiversion"
+                value={apiVersion}
+                onChange={(e) => setApiVersion(e.target.value)}
+              />
+            </div>
+            <div className="form-control">
+              <label>Timezone</label>
+              <Dropdown
+                options={timezones}
+                value={timezone}
+                onChange={(e) => setTimezone(e.value)}
+                placeholder="Choose light modelid"
+              />
+            </div>
+            <div className="switchContainer">
+              <p>Remote API </p>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  value={remoteApi}
+                  checked={remoteApi}
+                  onChange={(e) => setRemoteApi(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+            <div className="form-control">
+              <input type="submit" value="Save" className="btn btn-block" />
+            </div>
+          </form>
+      </div>
+
+      <div className="contentContainer">
+        <div className="headline">Readonly Config</div>
           <div className="form-control">
             <label>BridgeID</label>
             <input
@@ -175,12 +181,11 @@ const Bridge = ({ HOST_IP, API_KEY }) => {
               value={Date(readonlyConf["localtime"])}
             />
           </div>
-          <div className="form-control">
-            <input type="submit" value="Save" className="btn btn-block" />
-          </div>
-        </form>
+
       </div>
     </div>
+    
+ 
   );
 };
 

@@ -1,14 +1,15 @@
 .sidebar {
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
 
   ul {
     li {
-      padding: 20px;
+      padding: 17px 20px;
       color: #eee;
       font-size: 18px;
       display: flex;
       align-items: center;
+      transition: all .15s ease-in-out;
 
       svg{
         width: 30px;
@@ -24,6 +25,16 @@
     a {
       text-decoration: none;
     }
+
+    li:hover{
+      transform: scale(1.1);
+    }
+
+    li.active{
+      background: rgba(255,255,255,.2);
+      border-radius: 15px;
+    }
+
   }
 }
 

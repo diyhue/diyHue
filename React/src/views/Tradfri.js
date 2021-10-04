@@ -69,7 +69,7 @@ const Tradfri = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div class="headline">IKIEA Tradfri Gateway</div>
+      <div className="headline">IKEA Tradfri Gateway</div>
         <form className="add-form" onSubmit={(e) => pairTradfri(e)}>
           <div className="form-control">
             <label>Tradfri Gateway IP</label>

@@ -42,10 +42,11 @@ body {
   flex-shrink: 0;
   width: 0;
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   background: rgba(0, 0, 0, 0.2);
 
   &.active{
-    width: 200px;
+    width: 180px;
   }
 }
 
@@ -64,9 +65,9 @@ body {
   .logo {
     display: flex;
     flex: 0 0 auto;
-    height: 50px;
-    margin: 10px 15px 15px 15px;
-    width: auto;
+    height: 30px;
+    margin: 10px 10px 15px 10px;
+    width: 30px;
 
     img {
       max-height: 30px;
@@ -148,6 +149,8 @@ body {
       top:0;
       left:0;
       z-index: 9000;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
   }
 
@@ -155,16 +158,16 @@ body {
     padding: 20px 0 0 0;
   }
 
-  .hamburger{
+  /*.hamburger{
     position: absolute;
     top:10px;
       left:200px;
       z-index: 9001;
-  }
+  }*/
 }
 
-@-moz-document url-prefix() {
-  #left,
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+  .columnLeft,
   .topbarRight {
     background: rgba(0, 0, 0, 0.5);
   }

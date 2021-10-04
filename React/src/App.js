@@ -7,7 +7,6 @@ import "./scss/components.scss";
 import "./scss/content.scss";
 import "./scss/forms.scss";
 import "./scss/groups.scss";
-import "./scss/light.scss";
 import "./scss/notification.scss";
 import "./scss/modal.scss";
 import "./scss/scenepicker.scss";

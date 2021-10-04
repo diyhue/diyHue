@@ -2,7 +2,6 @@ import { RiAlertLine } from "react-icons/ri";
 import axios from "axios";
 import { cieToRgb, colorTemperatureToRgb } from "../color";
 import { FaLightbulb } from "react-icons/fa";
-import { motion } from "framer-motion"
 
 const Light = ({ HOST_IP, api_key, id, light }) => {
   const switchLight = (newState) => {
@@ -29,10 +28,7 @@ const Light = ({ HOST_IP, api_key, id, light }) => {
   };
 
   return (
-    <motion.div className="groupCard light"
-      layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}>
+    <div className="groupCard light">
       <div className="row top">
         <div className="gradient" style={getStyle()}><FaLightbulb /></div>
         <div className="text"><p className="name">{light.name}{" "}
@@ -51,14 +47,14 @@ const Light = ({ HOST_IP, api_key, id, light }) => {
           type="range"
           min="1"
           max="254"
-          defaultValue="50"
+          defaultValue={light["state"]["bri"]}
           className="slider"
           onChange={(e) =>
             switchLight({ bri: parseInt(e.currentTarget.value) })
           }
         />
       </div></div>
-    </motion.div>
+    </div>
 
   );
 };

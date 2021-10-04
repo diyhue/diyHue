@@ -96,7 +96,8 @@ export default function Lights({ HOST_IP, API_KEY }) {
           setType={setType}
         />
       )}
-      <div className="cardGrid">
+      <div className="contentContainer lights">
+        <div className="headline">Light Configuration</div>
         <div className="btn generic" onClick={() => searchForLights()}>
           Scan For Lights
           <div className="btn btn-block"></div>

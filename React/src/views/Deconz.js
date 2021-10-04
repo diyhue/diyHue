@@ -94,7 +94,7 @@ const Deconz = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-        <div class="headline">Deconz Config</div>
+        <div className="headline">Deconz Config</div>
         <form className="add-form" onSubmit={(e) => pairDeconz(e)}>
           <div className="switchContainer">
             <label className="switch">

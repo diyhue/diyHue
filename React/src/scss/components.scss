@@ -121,5 +121,26 @@ input[type="range"]::-ms-fill-upper {
 }
 /* END Light intensity slider */
 
+
+/* scrollbar */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
 @media screen and (max-width: 750px) {
 }
+

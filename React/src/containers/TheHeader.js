@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaBars } from "react-icons/fa";
 import axios from "axios";
-import logo from "../static/images/logo.svg";
 import { motion } from "framer-motion";
 
 const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
@@ -58,7 +57,7 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
         onClick={() => setShowSidebar(!showSidebar)}>
         <FaBars /></motion.div>
       <div className="onbtn">
-        <p>All lights on/off</p>
+        <p>Turn all lights {group0State? "off" : "on"}</p>
         <div className="switchContainer">
           <label className="switch">
             <input

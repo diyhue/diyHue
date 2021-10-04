@@ -62,7 +62,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div class="headline">ZigBee2MQTT config</div>
+      <div className="headline">ZigBee2MQTT config</div>
         <form className="add-form" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">

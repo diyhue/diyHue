@@ -58,6 +58,8 @@ const AddLight = ({ setType, setMessage, HOST_IP, API_KEY }) => {
 
   return (
     <form onSubmit={(e) => handleForm(e)} className="add-form">
+      <div className="form-control">
+      <label>Protocol:</label>
       <Dropdown
         options={protocols}
         value={lightData.protocol}
@@ -65,8 +67,9 @@ const AddLight = ({ setType, setMessage, HOST_IP, API_KEY }) => {
         onChange={(e) => handleChange("protocol", e.value)}
         placeholder="Choose light protocol"
       />
+      </div>
       <div className="form-control">
-        <label>Light Ip</label>
+        <label>Light IP Address:</label>
         <input
           type="text"
           placeholder="192.168.x.x"

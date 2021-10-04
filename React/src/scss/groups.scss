@@ -6,15 +6,17 @@
 
 .groupCard {
   flex-shrink: 0;
-  width: 400px;
+  width: 380px;
   backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   background: rgba(255, 255, 255, 0.09);
-  background: linear-gradient(45deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 100%);
+  background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
   border-radius: 20px;
   margin-bottom: 20px;
   margin-right: 20px;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /*border: 1px solid rgba(255, 255, 255, 0.05);*/
+  overflow: hidden;
 
   &.light{
     width: 100%;
@@ -28,6 +30,7 @@
 
     &.top {
       padding: 20px 0 20px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     &.background {
@@ -42,9 +45,49 @@
       justify-content: center;
       align-items: center;
     }
+
     &.colorpicker{
       align-items: center;
       justify-content: center;
+
+      section{
+        padding: 20px;
+      }
+    }
+
+    &.buttons{
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      display: flex;
+      justify-content: center;
+
+      .btn {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.6);
+        margin-right: 10px;
+        margin-left: 10px;
+        font-size: 20px;
+        padding: 5px;
+        transition: color 0.1s ease;
+  
+        &.active{
+          color: rgba(4, 154, 255, 0.8);
+        }
+  
+        &:hover{
+          color: rgba(255, 255, 255, 0.9);
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+  
+        &.disabled{
+          color: rgba(255, 255, 255, 0.4);
+          cursor: not-allowed;
+          pointer-events: all !important;
+        }
+      }      
     }
 
     .gradient {
@@ -67,7 +110,13 @@
         fill: #ddd;
         font-size: 25px;
         margin-top: 11px;
+      
+      &.dark{
+        fill: #222;
       }
+      }
+
+
     }
 
     .lights{
@@ -162,8 +211,27 @@
 
 }
 
-@-moz-document url-prefix() {
+
+
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
   .groupCard {
-    background: rgba(0, 0, 0, 0.5);
+    position: relative;
+    background: rgba(255, 255, 255, 0.25);
   }
+
+  .groupCard:after{
+    content: '';
+    background: url(../static/images/background.jpg) no-repeat 50%;
+    background-size: cover;
+    filter: blur(30px);
+    transform: scale(1.1);
+    display: flex;
+    position: absolute; 
+    height: 100%;
+    width: 100%;
+    top:0;
+    left:0;
+    z-index: -1;
+  }
+
 }

@@ -4,12 +4,13 @@ import { TheContent, TheSidebar, TheHeader } from "./index";
 
 const TheLayout = ({ HOST_IP, API_KEY }) => {
   const isMobile = useMediaQuery({ query: `(max-width: 760px)` });
-  const [showSidebar, setShowSidebar] = useState(isMobile);
+  const [showSidebar, setShowSidebar] = useState(!isMobile);
+
 
   return (
     <>
       <TheSidebar showSidebar={showSidebar} />
-      <div className="columnRight">
+    <div className="columnRight">
       <TheHeader
         HOST_IP={HOST_IP}
         API_KEY={API_KEY}
@@ -17,7 +18,7 @@ const TheLayout = ({ HOST_IP, API_KEY }) => {
         setShowSidebar={setShowSidebar}
       />
       <TheContent HOST_IP={HOST_IP} API_KEY={API_KEY} />
-      </div>
+    </div>
     </>
   );
 };

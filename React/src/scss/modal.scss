@@ -9,11 +9,12 @@
       backdrop-filter: blur(30px);
       -webkit-backdrop-filter: blur(30px);
       background: rgba(255, 255, 255, 0.09) !important;
+      background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
       border-radius: 20px !important;
       box-sizing: border-box;
       padding: 20px;
       inset: 60px !important;
-      border: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
 
       .header {
         display: flex;
@@ -48,12 +49,11 @@
 @media screen and (max-width: 750px) {
 }
 
-@-moz-document url-prefix() {
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
 
-    .ReactModalPortal {
-        .ReactModal__Overlay {
+  .ReactModal__Content--after-open{
           
-          background-color: rgba(252, 8, 8, .5);
+          background: rgba(252, 8, 8, .5) !important;
         }
-    }
+    
 }

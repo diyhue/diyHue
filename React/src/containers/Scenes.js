@@ -60,15 +60,16 @@ const Scenes = ({ HOST_IP, api_key, groupId, scenes, sceneModal, setSceneModal }
           .map(([id, scene]) => (
             <div className="scene" style={{ background: `url(${nightsky})`, backgroundSize: 'cover', }} onClick={() => applyScene(id)}>
               <div className="dimmer">
-              {Object.entries(scene.lightstates)
-                .map(([light, state]) => (
-                  <div className="color"
-                    style={{ background: `${getStyle(state)}` }}
-                    onClick={() => applyLightState(light, state)}
-                  >
-                  </div>
-                ))}
-              <div className="name">{scene.name}</div>
+                {Object.entries(scene.lightstates)
+                  .filter((item, index) => (index < 5))
+                  .map(([light, state]) => (
+                        <div className="color"
+                          style={{ background: `${getStyle(state)}` }}
+                          onClick={() => applyLightState(light, state)}
+                        >
+                        </div>
+                  ))}
+                <div className="name">{scene.name}</div>
               </div>
               <div className="dynamiccontrol"><i className="far fa-play-circle"></i></div>
             </div>

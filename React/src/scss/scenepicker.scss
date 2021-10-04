@@ -19,6 +19,12 @@
       background-size: cover;
     }
 
+    &:hover {
+      border: 2px solid #ddd;
+      background-size: cover;
+      
+    }
+
     .dimmer{
       display: flex;
       background: rgba(0, 0, 0, 0.5);
@@ -68,8 +74,4 @@
 @media screen and (max-width: 750px) {
 }
 
-@-moz-document url-prefix() {
-  .name {
-    color: red;
-  }
-}
+

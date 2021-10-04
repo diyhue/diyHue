@@ -65,7 +65,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div class="headline">Pair original Hue Bridge</div>
+      <div className="headline">Pair original Hue Bridge</div>
         <form className="add-form" onSubmit={(e) => pairBridge(e)}>
           <div className="form-control">
             <label>Bridge Ip</label>

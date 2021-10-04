@@ -5,21 +5,29 @@
       margin: 10px 0 10px 5px;
       display: block;
       font-size: 14px;
-      color: #ccc;
+      color: #eee;
     }
   
-    input, .Dropdown-control{
+    input, .Dropdown-control, textarea{
       padding: 15px;
       border: none;
       background: rgba(255, 255, 255, 0.2);
       border-radius: 15px;
-      color: #ccc;
+      color: #eee;
       font-size: 17px;
       border: 1px solid rgba(255, 255, 255, 0.2);
       width: 300px;
     }
   
+    input:read-only{
+      background: none;
+    }
   
+    textarea{
+      font-size: 12px;
+      
+    }
+
     .Dropdown-root.is-open {
       .Dropdown-control {
         border-bottom-right-radius: 0;
@@ -28,15 +36,25 @@
     }
   
     .Dropdown-menu {
-      background: #272727;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(20px);
       border: none;
       box-shadow: 0px 0px 10px 1px rgba(0, 0, 0, 0.5);
       border-bottom-right-radius: 8px;
       border-bottom-left-radius: 8px;
-      color: #ccc;
+      color: #333;
+      width: 300px;
+      
+
       .Dropdown-option {
-        color: #ccc;
+        color: #333;
+       
+      
+        &:hover{
+          background: rgba(255, 255, 255, 0.5);
+        }
       }
+
     }
   
     .Dropdown-placeholder {
@@ -48,6 +66,10 @@
       margin-right: 10px;
     }
   
+    input::placeholder {
+      color: #bbb;
+    }
+
     input:focus {
       border-color: rgba(52, 152, 219, 1);
     }
@@ -95,7 +117,7 @@
   .btn.generic, button.generic{
       display: inline-block;
       background: rgba(52, 152, 219, 1);
-      margin: 10px;
+      margin-right: 10px;
       padding: 20px;
       text-align: center;
       border-radius: 35px;

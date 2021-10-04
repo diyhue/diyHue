@@ -69,7 +69,7 @@ const Alarm = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div class="headline">Motion notifications alarm</div>
+      <div className="headline">Motion notifications alarm</div>
         <form className="add-form" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">
