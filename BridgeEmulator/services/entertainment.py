@@ -41,7 +41,6 @@ def entertainmentService(group, user):
     logging.debug("Key: " + user.client_key)
     lights_v2 = []
     lights_v1 = {}
-    group.stream.update({"active": True, "owner": user.username, "proxymode": "auto", "proxynode": "/bridge"})
     channel = 0
     for light in group.lights:
         light().state["mode"] = "streaming"
@@ -59,13 +58,13 @@ def entertainmentService(group, user):
     try:
         while group.stream["active"]:
             if not init:
-                line = p.stdout.read(120)
+                line = p.stdout.read(150)
                 frameBites = line[1:].find(b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d') + 1
                 print("frameBites: " + str(frameBites))
-                if frameBites > 60:
-                    p.stdout.read(frameBites - (120 - frameBites)) # sync streaming bytes
+                if frameBites > 75:
+                    p.stdout.read(frameBites - (150 - frameBites)) # sync streaming bytes
                 else:
-                    p.stdout.read(frameBites - (120 - frameBites * 2)) # sync streaming bytes
+                    p.stdout.read(frameBites - (150 - frameBites * 2)) # sync streaming bytes
                 init = True
             else:
                 data = p.stdout.read(frameBites)
