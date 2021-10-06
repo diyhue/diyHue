@@ -407,7 +407,8 @@ class ClipV2ResourceId(Resource):
                     sleep(3)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
-                    Popen(["killall", "entertain-srv"])
+                    object.stream["active"] = False
+                    Popen(["killall", "openssl"])
         elif resource == "scene":
             object.activate(putDict)
         elif resource == "grouped_light":
