@@ -75,14 +75,12 @@ class BehaviorInstance():
           "dependees": [],
           "enabled": self.enabled,
           "id": self.id_v2,
-          "id_v1": "",
           "last_error": "",
           "metadata": {
             "type": "InstanceMetadata"
           },
-          "migrated_from": "",
           "script_id": self.script_id,
-          "status": "running",
+          "status": "running" if self.enabled else "disabled",
           "type": "behavior_instance"
         }
 

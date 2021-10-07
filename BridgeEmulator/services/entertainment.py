@@ -43,7 +43,6 @@ def entertainmentService(group, user):
     lights_v1 = {}
     channel = 0
     for light in group.lights:
-        light().state["mode"] = "streaming"
         lights_v1[int(light().id_v1)] = light()
         lights_v2.append(light())
         channel += 1
@@ -223,13 +222,12 @@ def entertainmentService(group, user):
                             udpdata = bytes(udphead+color)
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             sock.sendto(udpdata, (ip, 21324))
-
+                else:
+                    logging.info("HueStream was missing in the frame")
+                    p.kill()
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
-        group.stream.update({"active": False, "owner": None})
-        for light in group.lights:
-            light().state["mode"] = "homeautomation"
-    p.kill()
+        p.kill()
 
 
 def enableMusic(ip, host_ip):
