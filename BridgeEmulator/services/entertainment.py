@@ -57,13 +57,15 @@ def entertainmentService(group, user):
     try:
         while group.stream["active"]:
             if not init:
-                line = p.stdout.read(150)
+                line = p.stdout.read(200)
                 frameBites = line[1:].find(b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d') + 1
                 print("frameBites: " + str(frameBites))
-                if frameBites > 75:
-                    p.stdout.read(frameBites - (150 - frameBites)) # sync streaming bytes
+                if frameBites > 100:
+                    p.stdout.read(frameBites - (200 - frameBites)) # sync streaming bytes
+                elif frameBites > 67:
+                    p.stdout.read(frameBites - (200 - frameBites * 2)) # sync streaming bytes
                 else:
-                    p.stdout.read(frameBites - (150 - frameBites * 2)) # sync streaming bytes
+                    p.stdout.read(frameBites - (200 - frameBites * 3)) # sync streaming bytes
                 init = True
             else:
                 data = p.stdout.read(frameBites)
