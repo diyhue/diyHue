@@ -89,7 +89,7 @@ const HA = ({ HOST_IP, API_KEY }) => {
             />
           </div>
           <div className="form-control">
-            <label>MQTT port</label>
+            <label>HA port</label>
             <input
               type="number"
               placeholder="HA port"
@@ -98,7 +98,7 @@ const HA = ({ HOST_IP, API_KEY }) => {
             />
           </div>
           <div className="form-control">
-            <label>MQTT username</label>
+            <label>HA token</label>
             <input
               type="text"
               placeholder="HA token"
