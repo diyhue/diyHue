@@ -32,8 +32,7 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   };
 
   const inspectLightsCapabilities = () => {
-    for (var light of group.lights.entries()) {
-      light = light[1];
+    for (const light of group.lights) {
       if (
         "xy" in lights[light]["state"] &&
         !lightsCapabilities.includes("xy")
@@ -87,8 +86,7 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   const statusLights = () => {
     let onLights = 0;
     let offLights = 0;
-    for (var light of group.lights.entries()) {
-      light = light[1];
+    for (const light of group.lights) {
       if (lights[light]["state"]["on"] === true) onLights = onLights + 1;
       else offLights = offLights + 1;
     }
