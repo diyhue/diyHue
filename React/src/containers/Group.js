@@ -28,46 +28,50 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
     },
     closed: {
       opacity: 0,
-    }
-  }
+    },
+  };
 
   const inspectLightsCapabilities = () => {
-    for (const [index, light] of group.lights.entries()) {
-      if ("xy" in lights[light]["state"] && !lightsCapabilities.includes('xy')) {
+    for (var light of group.lights.entries()) {
+      light = light[1];
+      if (
+        "xy" in lights[light]["state"] &&
+        !lightsCapabilities.includes("xy")
+      ) {
         setLightsCapabilities([...lightsCapabilities, "xy"]);
       }
-      if ("ct" in lights[light]["state"] && !lightsCapabilities.includes('ct')) {
+      if (
+        "ct" in lights[light]["state"] &&
+        !lightsCapabilities.includes("ct")
+      ) {
         setLightsCapabilities([...lightsCapabilities, "ct"]);
       }
-    };
-  }
+    }
+  };
   inspectLightsCapabilities();
-  console.log(lightsCapabilities);
+  //lightsCapabilities);
 
   const defaultContainerView = () => {
     if (showContainer === "closed") {
-      if (lightsCapabilities.includes('xy')) {
+      if (lightsCapabilities.includes("xy")) {
         setShowContainer("colorPicker");
-      }
-      else if (lightsCapabilities.includes('ct')) {
+      } else if (lightsCapabilities.includes("ct")) {
         setShowContainer("colorTempPicker");
-      }
-      else {
+      } else {
         setShowContainer("lights");
       }
     } else {
       setShowContainer("closed");
     }
-  }
+  };
 
   const handleToggleChange = (state) => {
     const newState = {
       on: state,
     };
     group.state["any_on"] = state;
-    if (!state)
-      setShowContainer("closed");
-    console.log("Apply state " + JSON.stringify(newState));
+    if (!state) setShowContainer("closed");
+    //console.log("Apply state " + JSON.stringify(newState));
     axios.put(`${HOST_IP}/api/${api_key}/groups/${id}/action`, newState);
   };
 
@@ -76,23 +80,24 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
     const newState = {
       bri: state,
     };
-    console.log("Apply state " + JSON.stringify(newState));
+    //console.log("Apply state " + JSON.stringify(newState));
     axios.put(`${HOST_IP}/api/${api_key}/groups/${id}/action`, newState);
   };
 
   const statusLights = () => {
     let onLights = 0;
     let offLights = 0;
-    for (const [index, light] of group.lights.entries()) {
+    for (var light of group.lights.entries()) {
+      light = light[1];
       if (lights[light]["state"]["on"] === true) onLights = onLights + 1;
-      else  offLights = offLights + 1;
+      else offLights = offLights + 1;
     }
     if (onLights === 0) {
-      return "All lights off"
-    } else if ( offLights === 0) {
-        return "All lights on"
+      return "All lights off";
+    } else if (offLights === 0) {
+      return "All lights on";
     } else {
-       return onLights + " lights on"
+      return onLights + " lights on";
     }
   };
 
@@ -159,18 +164,19 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
       />
       <div className="row top">
         <div className="gradient" style={getStyle()}>
-
           {group["type"] === "Zone" ? (
-            <BsFillHouseDoorFill style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }} />
+            <BsFillHouseDoorFill
+              style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
+            />
           ) : (
-              <FaCouch style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }} />
-            )}
+            <FaCouch
+              style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
+            />
+          )}
         </div>
         <div className="text">
           <p className="name"> {group.name} </p>
-          <p className="subtext">
-            {statusLights()}
-          </p>
+          <p className="subtext">{statusLights()}</p>
         </div>
         <div className="switchContainer">
           <label className="switch">
@@ -186,9 +192,9 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
       </div>
       <div className="row background">
         <AnimatePresence initial={false}>
-
           {group.state["any_on"] && (
-            <motion.div className="sliderContainer"
+            <motion.div
+              className="sliderContainer"
               initial="collapsed"
               animate="open"
               exit="collapsed"
@@ -213,7 +219,9 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
                 defaultValue={group.action["bri"]}
                 step="1"
                 className="slider"
-                onChange={(e) => debouncedChangeHandler(parseInt(e.target.value))}
+                onChange={(e) =>
+                  debouncedChangeHandler(parseInt(e.target.value))
+                }
               />
             </motion.div>
           )}
@@ -221,37 +229,61 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
       </div>
       <AnimateSharedLayout>
         {showContainer !== "closed" && (
-          <motion.div className="row buttons"
+          <motion.div
+            className="row buttons"
             initial="closed"
             animate={showContainer === "closed" ? "closed" : "opened"}
-            variants={barIconVariants}>
-            <motion.div className={`btn ${lightsCapabilities.includes('xy') ? "" : "disabled"}`}
+            variants={barIconVariants}
+          >
+            <motion.div
+              className={`btn ${
+                lightsCapabilities.includes("xy") ? "" : "disabled"
+              }`}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
-              variants={barIconVariants}>
-              <FaPalette onClick={lightsCapabilities.includes('xy') ? () => setShowContainer("colorPicker") : false} />
+              variants={barIconVariants}
+            >
+              <FaPalette
+                onClick={
+                  lightsCapabilities.includes("xy")
+                    ? () => setShowContainer("colorPicker")
+                    : false
+                }
+              />
             </motion.div>
-            <motion.div className={`btn ${lightsCapabilities.includes('ct') ? "" : "disabled"}`}
+            <motion.div
+              className={`btn ${
+                lightsCapabilities.includes("ct") ? "" : "disabled"
+              }`}
               whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}>
-              <MdInvertColors onClick={lightsCapabilities.includes('ct') ? () => setShowContainer("colorTempPicker") : false} />
+              whileTap={{ scale: 0.9 }}
+            >
+              <MdInvertColors
+                onClick={
+                  lightsCapabilities.includes("ct")
+                    ? () => setShowContainer("colorTempPicker")
+                    : false
+                }
+              />
             </motion.div>
-            <motion.div className="btn"
+            <motion.div
+              className="btn"
               whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}>
+              whileTap={{ scale: 0.9 }}
+            >
               <FaImages onClick={() => setSceneModal(true)} />
             </motion.div>
-            <motion.div className="btn"
+            <motion.div
+              className="btn"
               whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}>
+              whileTap={{ scale: 0.9 }}
+            >
               <FaLightbulb onClick={() => setShowContainer("lights")} />
             </motion.div>
-
-          </motion.div >
-      )}
-  <motion.div className="row colorpicker">
+          </motion.div>
+        )}
+        <motion.div className="row colorpicker">
           <AnimatePresence initial={false} exitBeforeEnter>
-
             {showContainer === "colorPicker" && (
               <motion.section
                 key="content"
@@ -266,7 +298,7 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
                   },
                   collapsed: {
                     opacity: 0,
-                    scale: .5,
+                    scale: 0.5,
                     height: 0,
                   },
                 }}
@@ -331,7 +363,6 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
                   duration: 0.3,
                 }}
               >
-
                 {group.lights.map((light) => (
                   <Light
                     HOST_IP={HOST_IP}
@@ -345,32 +376,32 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
             )}
           </AnimatePresence>
         </motion.div>
-      </AnimateSharedLayout >
+      </AnimateSharedLayout>
       <AnimatePresence>
         <div className="row bottom">
-          <motion.div className="expandbtn"
+          <motion.div
+            className="expandbtn"
             initial="collapsed"
             animate={showContainer === "closed" ? "collapsed" : "open"}
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
             variants={{
               open: {
-                rotate: 180
+                rotate: 180,
               },
               collapsed: {
-                rotate: 0
+                rotate: 0,
               },
             }}
             transition={{
               duration: 0.3,
             }}
           >
-
             <FaChevronDown onClick={() => defaultContainerView()} />
           </motion.div>
         </div>
       </AnimatePresence>
-    </div >
+    </div>
   );
 };
 

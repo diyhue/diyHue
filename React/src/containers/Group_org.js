@@ -19,14 +19,14 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   const handleToggleChange = (state) => {
     const newState = { on: state };
     group.state["any_on"] = state;
-    console.log("Apply state " + JSON.stringify(newState));
+    //console.log("Apply state " + JSON.stringify(newState));
     axios.put(`${HOST_IP}/api/${api_key}/groups/${id}/action`, newState);
   };
 
   const handleBriChange = (state) => {
     const newState = { bri: state };
     group.action["bri"] = state;
-    console.log("Apply state " + JSON.stringify(newState));
+    //console.log("Apply state " + JSON.stringify(newState));
     axios.put(`${HOST_IP}/api/${api_key}/groups/${id}/action`, newState);
   };
 
