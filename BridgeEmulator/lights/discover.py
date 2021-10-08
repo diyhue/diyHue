@@ -5,8 +5,8 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime
-from services.deconz import scanDeconz
 from lights.protocols import wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from services.homeAssistantWS import discover
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -146,6 +146,8 @@ def scanForLights():  # scan for ESP8266 lights and strips
         mqtt.discover(bridgeConfig["config"]["mqtt"])
     if bridgeConfig["config"]["deconz"]["enabled"]:
         deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
+    if bridgeConfig["config"]["homeassistant"]["enabled"]:
+        discover(detectedLights)
     yeelight.discover(detectedLights)
     # native_multi probe all esp8266 lights with firmware from diyhue repo
     native_multi.discover(detectedLights, device_ips)
@@ -191,6 +193,9 @@ def scanForLights():  # scan for ESP8266 lights and strips
                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["segmentId"] == light["protocol_cfg"]["segmentId"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        lightIsNew = False
+                elif light["protocol"] == "homeassistant_ws":
+                    if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"]:
                         lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])

@@ -102,7 +102,7 @@ def runHttp():
     app.run(host="0.0.0.0", port=80)
 
 if __name__ == '__main__':
-    from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer
+    from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
@@ -115,6 +115,8 @@ if __name__ == '__main__':
         Thread(target=deconz.websocketClient).start()
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         Thread(target=mqtt.mqttServer).start()
+    if bridgeConfig["config"]["homeassistant"]["enabled"]:
+        homeAssistantWS.create_ws_client(bridgeConfig)
 #    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
     Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
