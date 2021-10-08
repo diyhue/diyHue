@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Group from "../containers/Group";
 
-
 export default function Groups({ HOST_IP, API_KEY }) {
   const [config, setConfig] = useState({
     config: {},
@@ -17,7 +16,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
         axios
           .get(`${HOST_IP}/api/${API_KEY}`)
           .then((fetchedData) => {
-            console.log(fetchedData.data);
+            //console.log(fetchedData.data);
             setConfig(fetchedData.data);
           })
           .catch((error) => {

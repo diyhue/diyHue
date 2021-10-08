@@ -14,8 +14,8 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
     closed: {
       rotate: 0,
       //scale: 1
-    }
-  }
+    },
+  };
 
   useEffect(() => {
     const fetchGroups = () => {
@@ -23,7 +23,7 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
         axios
           .get(`${HOST_IP}/api/${API_KEY}/groups/0`)
           .then((fetchedData) => {
-            console.log(fetchedData.data);
+            //console.log(fetchedData.data);
             setGroup0State(fetchedData.data["state"]["any_on"]);
           })
           .catch((error) => {
@@ -47,24 +47,26 @@ const TheHeader = ({ HOST_IP, showSidebar, setShowSidebar, API_KEY }) => {
   };
 
   return (
-
-
     <div className="topbarRight">
-      <motion.div className="hamburger"
+      <motion.div
+        className="hamburger"
         initial={false}
         variants={iconVariants}
-        animate={showSidebar? "opened" : "closed"}
-        onClick={() => setShowSidebar(!showSidebar)}>
-        <FaBars /></motion.div>
+        animate={showSidebar ? "opened" : "closed"}
+        onClick={() => setShowSidebar(!showSidebar)}
+      >
+        <FaBars />
+      </motion.div>
       <div className="onbtn">
-        <p>Turn all lights {group0State? "off" : "on"}</p>
+        <p>Turn all lights {group0State ? "off" : "on"}</p>
         <div className="switchContainer">
           <label className="switch">
             <input
               type="checkbox"
               value={group0State}
               onChange={(e) => handleToggleChange(e.target.checked)}
-              checked={group0State} />
+              checked={group0State}
+            />
             <span className="slider"></span>
           </label>
         </div>

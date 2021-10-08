@@ -1,5 +1,5 @@
 import { FaLightbulb } from "react-icons/fa";
-import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
+import { MdDeleteForever } from "react-icons/md";
 import LightUpdate from "./LightUpdate";
 import axios from "axios";
 import Dropdown from "react-dropdown";
@@ -88,21 +88,29 @@ const Light = ({
   return (
     <div className="devicecard light">
       <div className="row1">
-        <div className="icon"><FaLightbulb onClick={() => alertLight()} /></div>
-        <div className="text">{light["name"]}{" "}</div>
-
+        <div className="icon">
+          <FaLightbulb onClick={() => alertLight()} />
+        </div>
+        <div className="text">{light["name"]} </div>
       </div>
       <div className="row3">
         <div className="form-control">
-        <Dropdown
-          options={modelIds}
-          value={light["modelid"]}
-          onChange={(e) => setModelId(e.value)}
-          placeholder="Choose light modelid"
-        />
+          <Dropdown
+            options={modelIds}
+            value={light["modelid"]}
+            onChange={(e) => setModelId(e.value)}
+            placeholder="Choose light modelid"
+          />
         </div>
-        <LightUpdate light={light} lightsCatalog={lightsCatalog} setMessage={setMessage} setType={setType} />
-        <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
+        <LightUpdate
+          light={light}
+          lightsCatalog={lightsCatalog}
+          setMessage={setMessage}
+          setType={setType}
+        />
+        <div className="btn red">
+          <MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}
+        </div>
       </div>
       <div className="row4">
         <ul>
@@ -111,11 +119,8 @@ const Light = ({
         </ul>
       </div>
 
-      {(light["state"]["reachable"] || <div className="label">Offline</div>)}
-
+      {light["state"]["reachable"] || <div className="label">Offline</div>}
     </div>
-
-
   );
 };
 

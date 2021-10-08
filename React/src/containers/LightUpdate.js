@@ -1,5 +1,4 @@
 import { MdSystemUpdate } from "react-icons/md";
-import axios from "axios";
 import { confirmAlert } from "react-confirm-alert"; // Import
 import "react-confirm-alert/src/react-confirm-alert.css"; // Import css
 
@@ -24,20 +23,22 @@ const LightUpdate = ({ light, lightsCatalog, setMessage, setType }) => {
     setMessage("Begin light firmware update");
     setType("none");
     setType("success");
-  }
-
-
+  };
 
   return (
     <>
-      {['native_single', 'native_multi'].includes(light["protocol"]) &&
+      {["native_single", "native_multi"].includes(light["protocol"]) &&
         lightsCatalog.lenght > 2 &&
-        light["protocol_cfg"]["version"] === lightsCatalog[light["protocol_cfg"]["type"]]["version"] &&
-        <div className="btn blue"><MdSystemUpdate title="Update available" onClick={() => updateAlert()} /></div>
-      }
+        light["protocol_cfg"]["version"] ===
+          lightsCatalog[light["protocol_cfg"]["type"]]["version"] && (
+          <div className="btn blue">
+            <MdSystemUpdate
+              title="Update available"
+              onClick={() => updateAlert()}
+            />
+          </div>
+        )}
     </>
-
-
   );
 };
 
