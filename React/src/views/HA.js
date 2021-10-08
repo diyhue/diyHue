@@ -80,28 +80,28 @@ const HA = ({ HOST_IP, API_KEY }) => {
             </label>
           </div>
           <div className="form-control">
-            <label>HA server</label>
+            <label>Home Assistant IP</label>
             <input
               type="text"
-              placeholder="HA server"
+              placeholder="IP or hostname"
               value={homeAssistantIp}
               onChange={(e) => setHomeAssistantIp(e.target.value)}
             />
           </div>
           <div className="form-control">
-            <label>HA port</label>
+            <label>Home Assistant port</label>
             <input
               type="number"
-              placeholder="HA port"
+              placeholder="8123"
               value={homeAssistantPort}
               onChange={(e) => setHomeAssistantPort(e.target.value)}
             />
           </div>
           <div className="form-control">
-            <label>HA token</label>
+            <label>Home Assistant token</label>
             <input
               type="text"
-              placeholder="HA token"
+              placeholder="Token"
               value={homeAssistantToken}
               onChange={(e) => setHomeAssistantToken(e.target.value)}
             />
