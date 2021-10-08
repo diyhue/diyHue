@@ -9,6 +9,7 @@ import {
   FaInfoCircle,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import { SiHomeassistant } from "react-icons/si";
 import { MdSettingsRemote } from "react-icons/md";
 import { Bridge } from "../icons/Bridge"
 import { Zigbee } from "../icons/Zigbee"
@@ -68,6 +69,12 @@ const TheSidebar = ({ showSidebar }) => {
                 <li className={`${currentElement === "mqtt" ? "active" : ""}`}
                   onClick={() => setCurrentElement("mqtt")}>
                   <Zigbee style={{ color: "#FCEE86" }} /> <p>MQTT</p>
+                </li>
+              </a>
+              <a href="#ha">
+                <li className={`${currentElement === "ha" ? "active" : ""}`}
+                  onClick={() => setCurrentElement("ha")}>
+                  <SiHomeassistant style={{ color: "#0FFEFB" }} /> <p>HA</p>
                 </li>
               </a>
               <a href="#deconz">

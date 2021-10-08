@@ -3,6 +3,7 @@ import React from 'react';
 const Groups = React.lazy(() => import('./views/Groups'));
 const Lights = React.lazy(() => import('./views/Lights'));
 const LinkButton = React.lazy(() => import('./views/LinkButton'));
+const HA = React.lazy(() => import('./views/HA'));
 const Mqtt = React.lazy(() => import('./views/Mqtt'));
 const Deconz = React.lazy(() => import('./views/Deconz'));
 const Tradfri = React.lazy(() => import('./views/Tradfri'));
@@ -18,6 +19,7 @@ const routes = [
   { path: '/groups', exact: true, name: 'Groups', component: Groups },
   { path: '/lights', exact: true, name: 'Lights', component: Lights },
   { path: '/linkbutton', exact: true, name: 'LinkButton', component: LinkButton },
+  { path: '/ha', exact: true, name: 'HA', component: HA },
   { path: '/mqtt', exact: true, name: 'MQTT', component: Mqtt },
   { path: '/deconz', exact: true, name: 'Deconz', component: Deconz },
   { path: '/alarm', exact: true, name: 'Alarm', component: Alarm },
