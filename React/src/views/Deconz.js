@@ -15,9 +15,12 @@ const Deconz = ({ HOST_IP, API_KEY }) => {
       .get(`${HOST_IP}/api/${API_KEY}/config/deconz`)
       .then((result) => {
         setEnable(result.data["enabled"]);
-        setDeconzHost(result.data["deconzHost"]);
-        setDeconzPort(result.data["deconzPort"]);
-        setDeconzUser(result.data["deconzUser"]);
+        if ("deconzHost" in result.data)
+          setDeconzHost(result.data["deconzHost"]);
+        if ("deconzPort" in result.data)
+          setDeconzPort(result.data["deconzPort"]);
+        if ("deconzUser" in result.data)
+          setDeconzUser(result.data["deconzUser"]);
       })
       .catch((error) => {
         console.error(error);

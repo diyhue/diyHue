@@ -17,12 +17,17 @@ const HA = ({ HOST_IP, API_KEY }) => {
       .get(`${HOST_IP}/api/${API_KEY}/config/homeassistant`)
       .then((result) => {
         setEnable(result.data["enabled"]);
-        setHomeAssistantIp(result.data["homeAssistantIp"]);
-        setHomeAssistantPort(result.data["homeAssistantPort"]);
-        setHomeAssistantToken(result.data["homeAssistantToken"]);
-        setHomeAssistantIncludeByDefault(result.data["homeAssistantIncludeByDefault"]);
-        setHomeAssistantUseHttps(result.data["homeAssistantUseHttps"]);
-        
+        if ("homeAssistantIp" in result.data)
+          setHomeAssistantIp(result.data["homeAssistantIp"]);
+        if ("homeAssistantPort" in result.data)
+          setHomeAssistantPort(result.data["homeAssistantPort"]);
+        if ("homeAssistantToken" in result.data)
+          setHomeAssistantToken(result.data["homeAssistantToken"]);
+        if ("homeAssistantIncludeByDefault" in result.data)
+          setHomeAssistantIncludeByDefault(result.data["homeAssistantIncludeByDefault"]);
+        if ("homeAssistantUseHttps" in result.data)
+          setHomeAssistantUseHttps(result.data["homeAssistantUseHttps"]);
+
       })
       .catch((error) => {
         console.error(error);
@@ -66,7 +71,7 @@ const HA = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div className="headline">Home Assistant config</div>
+        <div className="headline">Home Assistant config</div>
         <form className="add-form" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">
@@ -107,7 +112,7 @@ const HA = ({ HOST_IP, API_KEY }) => {
             />
           </div>
           <div className="switchContainer">
-          <p>Included by default</p>
+            <p>Included by default</p>
             <label className="switch">
               <input
                 type="checkbox"
@@ -119,7 +124,7 @@ const HA = ({ HOST_IP, API_KEY }) => {
             </label>
           </div>
           <div className="switchContainer">
-          <p>enable HTTPS</p>
+            <p>enable HTTPS</p>
             <label className="switch">
               <input
                 type="checkbox"

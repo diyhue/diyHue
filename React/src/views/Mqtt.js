@@ -16,10 +16,14 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
       .get(`${HOST_IP}/api/${API_KEY}/config/mqtt`)
       .then((result) => {
         setEnable(result.data["enabled"]);
-        setMqttServer(result.data["mqttServer"]);
-        setMqttPort(result.data["mqttPort"]);
-        setMqttUser(result.data["mqttUser"]);
-        setMqttPass(result.data["mqttPassword"]);
+        if ("mqttServer" in result.data)
+          setMqttServer(result.data["mqttServer"]);
+        if ("mqttPort" in result.data)
+          setMqttPort(result.data["mqttPort"]);
+        if ("mqttUser" in result.data)
+          setMqttUser(result.data["mqttUser"]);
+        if ("mqttPassword" in result.data)
+          setMqttPass(result.data["mqttPassword"]);
       })
       .catch((error) => {
         console.error(error);
@@ -62,8 +66,8 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-      <div className="headline">ZigBee2MQTT config</div>
-        <form className="add-form" onSubmit={(e) => onSubmit(e)}>
+        <div className="headline">ZigBee2MQTT config</div>
+        <form className="add-form" method="POST" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">
               <input
