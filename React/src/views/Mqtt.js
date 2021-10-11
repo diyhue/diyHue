@@ -10,6 +10,8 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
   const [mqttPort, setMqttPort] = useState(1883);
   const [mqttUser, setMqttUser] = useState("");
   const [mqttPass, setMqttPass] = useState("");
+  const [mqttPass, setMqttPass] = useState("");
+  const [discoveryPrefix, setDiscoveryPrefix] = useState("homeassistant");
 
   useEffect(() => {
     axios
@@ -24,6 +26,8 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
           setMqttUser(result.data["mqttUser"]);
         if ("mqttPassword" in result.data)
           setMqttPass(result.data["mqttPassword"]);
+        if ("discoveryPrefix" in result.data)
+          setDiscoveryPrefix(result.data["discoveryPrefix"]);
       })
       .catch((error) => {
         console.error(error);
@@ -41,6 +45,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
           mqttPort: mqttPort,
           mqttUser: mqttUser,
           mqttPassword: mqttPass,
+          discoveryPrefix: discoveryPrefix,
         },
       })
       .then((fetchedData) => {
@@ -113,6 +118,15 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
               placeholder="MQTT password"
               value={mqttPass}
               onChange={(e) => setMqttPass(e.target.value)}
+            />
+          </div>
+          <div className="form-control">
+            <label>Discovery Prefix</label>
+            <input
+              type="text"
+              placeholder="Discovery prefix"
+              value={mqttUser}
+              onChange={(e) => setDiscoveryPrefix(e.target.value)}
             />
           </div>
           <div className="form-control">
