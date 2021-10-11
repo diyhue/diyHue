@@ -10,7 +10,6 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
   const [mqttPort, setMqttPort] = useState(1883);
   const [mqttUser, setMqttUser] = useState("");
   const [mqttPass, setMqttPass] = useState("");
-  const [mqttPass, setMqttPass] = useState("");
   const [discoveryPrefix, setDiscoveryPrefix] = useState("homeassistant");
 
   useEffect(() => {
