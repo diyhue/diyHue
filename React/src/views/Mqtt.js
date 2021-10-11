@@ -124,7 +124,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
             <input
               type="text"
               placeholder="Discovery prefix"
-              value={mqttUser}
+              value={discoveryPrefix}
               onChange={(e) => setDiscoveryPrefix(e.target.value)}
             />
           </div>
