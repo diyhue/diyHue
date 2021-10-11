@@ -70,7 +70,7 @@ class NewUser(Resource):
                 client_key = None
                 if "generateclientkey" in postDict and postDict["generateclientkey"]:
                     client_key = str(uuid.uuid4()).replace('-', '').upper()
-                    #client_key = "321c0c2ebfa7361e55491095b2f5f9db"
+                    # client_key = "321c0c2ebfa7361e55491095b2f5f9db"
 
                     response[0]["success"]["clientkey"] = client_key
                 bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(
@@ -143,7 +143,7 @@ class ResourceElements(Resource):
             Thread(target=manualAddLight, args=[
                    postDict["ip"], postDict["protocol"], postDict["config"]]).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
-        v2Resource = "none"
+        v2Resource = None
         # find the first unused id for new object
         new_object_id = nextFreeId(bridgeConfig, resource)
         postDict["id_v1"] = new_object_id
@@ -221,7 +221,15 @@ class ResourceElements(Resource):
                              "id": str(uuid.uuid4()),
                              "type": "add"
                              }
-            streamMessage["data"].append(newObject.getV2Room())
+            if resource == "groups":
+                if v2Resource == "room":
+                    streamMessage["data"].append(newObject.getV2Room())
+                elif v2Resource == "zone":
+                    streamMessage["data"].append(newObject.getV2Zone())
+                else:
+                    streamMessage["data"].append(newObject.getV2GroupedLight())
+            else:
+                streamMessage["data"].append(newObject.getV2Api())
             bridgeConfig["temp"]["eventstream"].append(streamMessage)
             logging.debug(streamMessage)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
@@ -358,7 +366,29 @@ class Element(Resource):
                     if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
 
-        del bridgeConfig[resource][resourceid]
+        # build stream message
+        type = None
+        id_v2 = None
+        object = bridgeConfig[resource][resourceid]
+        if resource == "groups":
+            if object.type == "Zone":
+                id_v2 = object.getV2Zone()["id"]
+                type = object.getV2Zone()["type"]
+            else:
+                id_v2 = object.getV2Room()["id"]
+                type = object.getV2Room()["type"]
+        else:
+            id_v2 = object.id_v2
+            type = object.getV2Api()["type"]
+
+
+        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [{"id": id_v2, "type": type}],
+                         "id": str(uuid.uuid4()),
+                         "type": "delete"
+                         }
+        bridgeConfig["temp"]["eventstream"].append(streamMessage)
+        del object
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 

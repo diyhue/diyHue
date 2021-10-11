@@ -64,7 +64,7 @@ def incProcess(state, data):
 class BehaviorInstance():
     def __init__(self, data):
         self.id_v2 = data["id"] if "id" in data else genV2Uuid()
-        self.id_v1 = self.id_v2 # used for config save
+        self.id_v1 = self.id_v2  # used for config save
         self.name = data["metadata"]["name"] if "name" in data["metadata"] else None
         self.configuration = data["configuration"]
         self.enabled = data["enabled"] if "enabled" in data else False
@@ -72,30 +72,30 @@ class BehaviorInstance():
 
     def getV2Api(self):
         result = {"configuration": self.configuration,
-          "dependees": [],
-          "enabled": self.enabled,
-          "id": self.id_v2,
-          "last_error": "",
-          "metadata": {
-            "type": "InstanceMetadata"
-          },
-          "script_id": self.script_id,
-          "status": "running" if self.enabled else "disabled",
-          "type": "behavior_instance"
-        }
+                  "dependees": [],
+                  "enabled": self.enabled,
+                  "id": self.id_v2,
+                  "last_error": "",
+                  "metadata": {
+                      "type": "InstanceMetadata"
+                  },
+                  "script_id": self.script_id,
+                  "status": "running" if self.enabled else "disabled",
+                  "type": "behavior_instance"
+                  }
 
         if self.name != None:
             result["metadata"]["name"] = self.name
 
         for resource in self.configuration["where"]:
             result["dependees"].append({"level": "critical",
-              "target": {
-                "rid": resource[list(resource.keys())[0]]["rid"],
-                "rtype": resource[list(resource.keys())[0]]["rtype"],
-                "type": "ResourceIdentifier"
-              },
-              "type": "ResourceDependee"
-            })
+                                        "target": {
+                                            "rid": resource[list(resource.keys())[0]]["rid"],
+                                            "rtype": resource[list(resource.keys())[0]]["rtype"],
+                                            "type": "ResourceIdentifier"
+                                        },
+                                        "type": "ResourceDependee"
+                                        })
 
         return result
 
@@ -141,11 +141,15 @@ class Light():
         self.modelid = data["modelid"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
-        self.state = data["state"] if "state" in data else deepcopy(lightTypes[self.modelid]["state"])
+        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id(
+        )
+        self.state = data["state"] if "state" in data else deepcopy(
+            lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
-        self.config = data["config"] if "config" in data else deepcopy(lightTypes[self.modelid]["config"])
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
+        self.config = data["config"] if "config" in data else deepcopy(
+            lightTypes[self.modelid]["config"])
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
+        }
         self.streaming = False
         self.dynamics = 'none'
 
@@ -176,7 +180,7 @@ class Light():
             result["state"]["sat"] = self.state["sat"]
             result["state"]["colormode"] = self.state["colormode"]
         result["state"]["alert"] = self.state["alert"]
-        if "mode" in  self.state:
+        if "mode" in self.state:
             result["state"]["mode"] = self.state["mode"]
         result["state"]["reachable"] = self.state["reachable"]
         result["modelid"] = self.modelid
@@ -200,9 +204,9 @@ class Light():
             for key, value in state.items():
                 self.state[key] = value
             if "bri" in state:
-                if "min_bri" in self.protocol_cfg and  self.protocol_cfg["min_bri"] > state["bri"]:
+                if "min_bri" in self.protocol_cfg and self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
-                if "max_bri" in self.protocol_cfg and  self.protocol_cfg["max_bri"] < state["bri"]:
+                if "max_bri" in self.protocol_cfg and self.protocol_cfg["max_bri"] < state["bri"]:
                     state["bri"] = self.protocol_cfg["max_bri"]
 
         for protocol in protocols:
@@ -220,20 +224,22 @@ class Light():
         if "dimming" in state:
             v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
         if "on" in state:
-            v1State["on"] =  state["on"]["on"]
+            v1State["on"] = state["on"]["on"]
         if "color_temperature" in state:
-            v1State["ct"] =  state["color_temperature"]["mirek"]
+            v1State["ct"] = state["color_temperature"]["mirek"]
         if "color" in state:
             if "xy" in state["color"]:
-                v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
+                v1State["xy"] = [state["color"]["xy"]
+                                 ["x"], state["color"]["xy"]["y"]]
         if "gradient" in state:
             v1State["gradient"] = state["gradient"]
-        if "transitiontime" in state: # to be replaced once api will be public
+        if "transitiontime" in state:  # to be replaced once api will be public
             v1State["transitiontime"] = state["transitiontime"]
         self.setV1State(v1State)
 
     def getDevice(self):
-        result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
+        result = {"id": str(uuid.uuid5(
+            uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {
             "archetype": lightTypes[self.modelid]["device"]["product_archetype"],
@@ -280,21 +286,21 @@ class Light():
         result["alert"] = {"action_values": ["breathe"]}
         if self.modelid.startswith("LCX"):
             result["gradient"] = {"points": self.state["gradient"]["points"],
-            "points_capable": self.protocol_cfg["points_capable"]}
+                                  "points_capable": self.protocol_cfg["points_capable"]}
 
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002"]: #color lights only
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002"]:  # color lights only
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
-                    "gamut": {
-                        "blue":  {"x": colorgamut[2][0], "y": colorgamut[2][1]},
-                        "green": {"x": colorgamut[1][0], "y": colorgamut[1][1]},
-                        "red":   {"x": colorgamut[0][0], "y": colorgamut[0][1]}
-                    },
-                    "gamut_type": lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamuttype"],
-                    "xy": {
-                        "x": self.state["xy"][0],
-                        "y": self.state["xy"][1]
-                    }
+                "gamut": {
+                    "blue":  {"x": colorgamut[2][0], "y": colorgamut[2][1]},
+                    "green": {"x": colorgamut[1][0], "y": colorgamut[1][1]},
+                    "red":   {"x": colorgamut[0][0], "y": colorgamut[0][1]}
+                },
+                "gamut_type": lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamuttype"],
+                "xy": {
+                    "x": self.state["xy"][0],
+                    "y": self.state["xy"][1]
+                }
             }
         if "ct" in self.state:
             result["color_temperature"] = {
@@ -302,9 +308,10 @@ class Light():
                 "mirek_schema": {
                     "mirek_maximum": 500,
                     "mirek_minimum": 153
-                    }
                 }
-            result["color_temperature"]["mirek_valid"] = True if self.state["ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
+            }
+            result["color_temperature"]["mirek_valid"] = True if self.state[
+                "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
             result["dimming"] = {
                 "brightness": self.state["bri"] / 2.54
@@ -312,10 +319,11 @@ class Light():
         result["dynamics"] = {
             "status": self.dynamics,
             "status_values": ["none", "dynamic_palette"]
-            }
+        }
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
-        result["metadata"] = {"name": self.name, "archetype": archetype[self.config["archetype"]]}
+        result["metadata"] = {"name": self.name,
+                              "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
         result["on"] = {
             "on": self.state["on"]
@@ -389,15 +397,18 @@ class Light():
                     points = []
                     if self.modelid.startswith("LCX"):
                         gradientIndex = index
-                        for x in range(self.protocol_cfg["points_capable"]): # for gradient lights
+                        # for gradient lights
+                        for x in range(self.protocol_cfg["points_capable"]):
                             points.append(palette["color"][gradientIndex])
                             gradientIndex += 1
                             if gradientIndex == len(palette["color"]):
                                 gradientIndex = 0
-                        self.setV2State({"gradient": {"points": points}, "transitiontime": 300})
+                        self.setV2State(
+                            {"gradient": {"points": points}, "transitiontime": 300})
                     else:
                         lightState = palette["color"][index]
-                        lightState["transitiontime"] = 300 # based on youtube videos, the transition is slow
+                        # based on youtube videos, the transition is slow
+                        lightState["transitiontime"] = 300
                         self.setV2State(lightState)
                 elif self.modelid == "LTW001":
                     if index == len(palette["color_temperature"]):
@@ -427,7 +438,8 @@ class Light():
 class Group():
 
     def __init__(self, data):
-        self.name = data["name"] if "name" in data else "Group " + data["id_v1"]
+        self.name = data["name"] if "name" in data else "Group " + \
+            data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.icon_class = data["class"] if "class" in data else "Other"
@@ -444,7 +456,7 @@ class Group():
 
         if self.type == "Entertainment":
             for light in self.lights:
-                self.locations[light] = [0,0,0]
+                self.locations[light] = [0, 0, 0]
 
     def __del__(self):
         logging.info(self.name + " group was destroyed.")
@@ -479,18 +491,18 @@ class Group():
                     all_on = False
         return {"all_on": all_on, "any_on": any_on}
 
-
     def setV2Action(self, state):
         v1State = {}
         if "dimming" in state:
             v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
         if "on" in state:
-            v1State["on"] =  state["on"]["on"]
+            v1State["on"] = state["on"]["on"]
         if "color_temperature" in state:
-            v1State["ct"] =  state["color_temperature"]["mirek"]
+            v1State["ct"] = state["color_temperature"]["mirek"]
         if "color" in state:
             if "xy" in state["color"]:
-                v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
+                v1State["xy"] = [state["color"]["xy"]
+                                 ["x"], state["color"]["xy"]["y"]]
         self.setV1Action(v1State)
 
     def setV1Action(self, state, scene=None):
@@ -523,21 +535,25 @@ class Group():
                     if key in light().state:
                         light().state[key] = value
                 light().updateLightState(lightsState[light().id_v1])
-                ### apply max and min brightness limis
+                # apply max and min brightness limis
                 if "bri" in lightsState[light().id_v1]:
                     if "min_bri" in light().protocol_cfg and light().protocol_cfg["min_bri"] > lightsState[light().id_v1]["bri"]:
-                        lightsState[light().id_v1]["bri"] =  light().protocol_cfg["min_bri"]
+                        lightsState[light().id_v1]["bri"] = light(
+                        ).protocol_cfg["min_bri"]
                     if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
-                        lightsState[light().id_v1]["bri"] = light().protocol_cfg["max_bri"]
-                ### end limits
+                        lightsState[light().id_v1]["bri"] = light(
+                        ).protocol_cfg["max_bri"]
+                # end limits
                 if light().protocol in ["native_multi", "mqtt"]:
                     if light().protocol_cfg["ip"] not in queueState:
                         queueState[light().protocol_cfg["ip"]] = {
                             "object": light(), "lights": {}}
                     if light().protocol == "native_multi":
-                        queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["light_nr"]] = lightsState[light().id_v1]
+                        queueState[light().protocol_cfg["ip"]]["lights"][light(
+                        ).protocol_cfg["light_nr"]] = lightsState[light().id_v1]
                     elif light().protocol == "mqtt":
-                        queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["command_topic"]] = lightsState[light().id_v1]
+                        queueState[light().protocol_cfg["ip"]]["lights"][light(
+                        ).protocol_cfg["command_topic"]] = lightsState[light().id_v1]
                 else:
                     light().setV1State(lightsState[light().id_v1])
         for device, state in queueState.items():
@@ -627,6 +643,11 @@ class Group():
 
     def getV2GroupedLight(self):
         result = {}
+        result["alert"]: {
+            "action_values": [
+                "breathe"
+            ]
+        }
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
@@ -747,7 +768,8 @@ class Scene():
         self.picture = data["picture"] if "picture" in data else ""
         self.image = data["image"] if "image" in data else None
         self.recycle = data["recycle"] if "recycle" in data else False
-        self.lastupdated = data["lastupdated"] if "lastupdated" in data else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        self.lastupdated = data["lastupdated"] if "lastupdated" in data else datetime.utcnow(
+        ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lightstates = weakref.WeakKeyDictionary()
         self.palette = data["palette"] if "palette" in data else {}
         self.group = data["group"] if "group" in data else None
@@ -763,12 +785,14 @@ class Scene():
         self.lights.append(light)
 
     def activate(self, data):
-        if "recall" in data and data["recall"]["action"] == "dynamic_palette": # activate dynamic scene
+        # activate dynamic scene
+        if "recall" in data and data["recall"]["action"] == "dynamic_palette":
             if self.image in dynamicScenes:
                 lightIndex = 0
                 for light in self.lights:
                     if light():
-                        Thread(target=light().dynamicScenePlay, args=[dynamicScenes[self.image]["palette"], lightIndex]).start()
+                        Thread(target=light().dynamicScenePlay, args=[
+                               dynamicScenes[self.image]["palette"], lightIndex]).start()
                         lightIndex += 1
 
             return
@@ -789,16 +813,19 @@ class Scene():
                 if transitiontime > 0:
                     state["transitiontime"] = transitiontime
                 if "recall" in data and "duration" in data["recall"]:
-                    state["transitiontime"] = int(data["recall"]["duration"] / 100)
+                    state["transitiontime"] = int(
+                        data["recall"]["duration"] / 100)
 
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:
                     queueState[light.protocol_cfg["ip"]] = {
                         "object": light, "lights": {}}
                 if light.protocol == "native_multi":
-                    queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["light_nr"]] = state
+                    queueState[light.protocol_cfg["ip"]
+                               ]["lights"][light.protocol_cfg["light_nr"]] = state
                 elif light.protocol == "mqtt":
-                    queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["command_topic"]] = state
+                    queueState[light.protocol_cfg["ip"]
+                               ]["lights"][light.protocol_cfg["command_topic"]] = state
             else:
                 logging.warning(state)
                 light.setV1State(state)
@@ -848,7 +875,8 @@ class Scene():
                 v2State["dimming"] = {
                     "brightness": state["bri"] / 2.54}
             if "xy" in state:
-                v2State["color"] = {"xy": {"x": state["xy"][0], "y": state["xy"][1]}}
+                v2State["color"] = {
+                    "xy": {"x": state["xy"][0], "y": state["xy"][1]}}
             if "ct" in state:
                 v2State["color_temperature"] = {
                     "mirek": state["ct"]}
@@ -871,7 +899,7 @@ class Scene():
         result["metadata"] = {}
         if self.image != None:
             result["metadata"]["image"] = {"rid": self.image,
-                "rtype": "public_image"}
+                                           "rtype": "public_image"}
         result["metadata"]["name"] = self.name
         result["id"] = self.id_v2
         result["id_v1"] = "/scenes/" + self.id_v1
@@ -927,7 +955,7 @@ class Scene():
             if light():
                 result["lights"].append(light().id_v1)
         lightstates = list(self.lightstates.items())
-        for light,state in lightstates:
+        for light, state in lightstates:
             result["lightstates"][light.id_v1] = state
         if self.type == "GroupScene":
             result["group"] = self.group().id_v1
@@ -943,7 +971,8 @@ class Rule():
         self.owner = data["owner"]
         self.status = data["status"] if "status" in data else "enabled"
         self.recycle = data["recycle"] if "recycle" in data else False
-        self.created = data["created"] if "created" in data else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        self.created = data["created"] if "created" in data else datetime.utcnow(
+        ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lasttriggered = data["lasttriggered"] if "lasttriggered" in data else "none"
         self.timestriggered = data["timestriggered"] if "timestriggered" in data else 0
 
@@ -985,7 +1014,6 @@ class Rule():
         return self.getV1Api()
 
 
-
 class ResourceLink():
     def __init__(self, data):
         self.name = data["name"]
@@ -1000,7 +1028,8 @@ class ResourceLink():
         logging.info(self.name + " ResourceLink was destroyed.")
 
     def add_link(self, link):
-        self.links.append("/" + link.getObjectPath()["resource"] + "/" + link.getObjectPath()["id"])
+        self.links.append("/" + link.getObjectPath()
+                          ["resource"] + "/" + link.getObjectPath()["id"])
 
     def getObjectPath(self):
         return {"resource": "resourcelinks", "id": self.id_v1}
@@ -1067,7 +1096,6 @@ class Schedule():
         result["recycle"] = self.recycle
         return result
 
-
     def update_attr(self, newdata):
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
@@ -1091,13 +1119,17 @@ class Sensor():
     def __init__(self, data):
         if data["modelid"] in sensorTypes:
             if "manufacturername" not in data:
-                data["manufacturername"] = sensorTypes[data["modelid"]][data["type"]]["static"]["manufacturername"]
+                data["manufacturername"] = sensorTypes[data["modelid"]
+                                                       ][data["type"]]["static"]["manufacturername"]
             if "config" not in data:
-                data["config"] = deepcopy(sensorTypes[data["modelid"]][data["type"]]["config"])
+                data["config"] = deepcopy(
+                    sensorTypes[data["modelid"]][data["type"]]["config"])
             if "state" not in data:
-                data["state"] = deepcopy(sensorTypes[data["modelid"]][data["type"]]["state"])
+                data["state"] = deepcopy(
+                    sensorTypes[data["modelid"]][data["type"]]["state"])
             if "swversion" not in data:
-                data["swversion"] = sensorTypes[data["modelid"]][data["type"]]["static"]["swversion"]
+                data["swversion"] = sensorTypes[data["modelid"]
+                                                ][data["type"]]["static"]["swversion"]
         if "config" not in data:
             data["config"] = {}
         if "reachable" not in data["config"]:
@@ -1106,7 +1138,7 @@ class Sensor():
             data["config"]["on"] = True
         if "state" not in data:
             data["state"] = {}
-        if "lastupdated" not in  data["state"]:
+        if "lastupdated" not in data["state"]:
             data["state"]["lastupdated"] = "none"
         self.name = data["name"]
         self.id_v1 = data["id_v1"]
@@ -1115,12 +1147,13 @@ class Sensor():
         self.modelid = data["modelid"]
         self.manufacturername = data["manufacturername"] if "manufacturername" in data else "Philips"
         self.protocol = data["protocol"] if "protocol" in data else "none"
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
+        }
         self.type = data["type"]
         self.state = data["state"]
         dxstate = {}
         for state in data["state"].keys():
-            dxstate[state] =  datetime.now()
+            dxstate[state] = datetime.now()
         self.dxState = dxstate
         self.swversion = data["swversion"] if "swversion" in data else None
         self.recycle = data["recycle"] if "recycle" in data else False
@@ -1143,7 +1176,7 @@ class Sensor():
             return {
                 "rid": self.id_v2,
                 "rtype": rtype
-                }
+            }
         return False
 
     def getV1Api(self):
@@ -1222,10 +1255,11 @@ class Sensor():
         return result
 
     def update_attr(self, newdata):
-        if self.id_v1 == "1" and "config" in newdata: # manage daylight sensor
+        if self.id_v1 == "1" and "config" in newdata:  # manage daylight sensor
             if "long" in newdata["config"] and "lat" in newdata["config"]:
                 self.config["configured"] = True
-                self.protocol_cfg = {"long": float(newdata["config"]["long"][:-1]), "lat": float(newdata["config"]["lat"][:-1])}
+                self.protocol_cfg = {"long": float(
+                    newdata["config"]["long"][:-1]), "lat": float(newdata["config"]["lat"][:-1])}
                 return
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
@@ -1234,7 +1268,6 @@ class Sensor():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-
 
     def save(self):
         result = {}
