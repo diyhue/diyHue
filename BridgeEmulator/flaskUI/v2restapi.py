@@ -337,7 +337,7 @@ class ClipV2Resource(Resource):
                                 sceneState["bri"] = int(
                                     scene["dimming"]["brightness"] * 2.54)
                             if "color" in scene:
-                                if "xy" in state["color"]:
+                                if "xy" in scene["color"]:
                                     sceneState["xy"] = [
                                         scene["color"]["xy"]["x"], scene["color"]["xy"]["y"]]
                             if "gradient" in scene:
