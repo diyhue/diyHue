@@ -13,6 +13,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime
+from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -356,7 +357,6 @@ class ClipV2Resource(Resource):
             }
             newObject = HueObjects.Group(objCreation)
             if "locations" in postDict:
-                from pprint import pprint
                 if "service_locations" in postDict["locations"]:
                     for element in postDict["locations"]["service_locations"]:
                         obj = getObject(
@@ -425,7 +425,7 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [v2Bridge()]}
 
     def put(self, resource, resourceid):
-        # logging.debug(request.headers)
+        logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
