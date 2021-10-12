@@ -388,7 +388,7 @@ class Element(Resource):
                          "type": "delete"
                          }
         bridgeConfig["temp"]["eventstream"].append(streamMessage)
-        del object
+        del bridgeConfig[resource][resourceid]
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 
