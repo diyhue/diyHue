@@ -14,11 +14,9 @@ from sensors.sensor_types import sensorTypes
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 
-
-from pprint import pprint
-
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
+client = mqtt.Client()
 
 devices_ids = {}
 
@@ -41,6 +39,9 @@ standardSensors = {
             "RWL022": {
                 "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "off_press": {"buttonevent": 4000} }}
             }
+
+def getClient():
+    return client
 
 def longPressButton(sensor, buttonevent):
     print("running.....")
@@ -75,9 +76,6 @@ def getObject(friendly_name):
                         return device
         logging.debug("Device not found for " + friendly_name)
         return False
-
-client = mqtt.Client()
-
 
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):

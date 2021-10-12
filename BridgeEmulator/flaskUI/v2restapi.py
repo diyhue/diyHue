@@ -135,7 +135,7 @@ def v2BridgeDevice():
     result["id_v1"] = ""
     result["metadata"] = {
         "archetype": "bridge_v2",
-        "name": "Philips hue"  # bridgeConfig["config"]["name"]
+        "name": bridgeConfig["config"]["name"]
     }
     result["product_data"] = {
         "certified": True,
@@ -171,7 +171,7 @@ class AuthV1(Resource):
 
         else:
             logging.debug("Auth 403")
-            return "", 403
+            return '', 403
 
 
 class ClipV2(Resource):
