@@ -62,5 +62,8 @@ def discover(mqtt_config):
         auth = None
         if mqtt_config["mqttUser"] != "" and mqtt_config["mqttPassword"] != "":
             auth = {'username': mqtt_config["mqttUser"], 'password': mqtt_config["mqttPassword"]}
-        publish.single("zigbee2mqtt/bridge/request/permit_join", {"value": True, "time": 120}, hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
-        publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
+        try:
+            publish.single("zigbee2mqtt/bridge/request/permit_join", json.dumps({"value": True, "time": 120}), hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
+            publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
+        except Exception as e:
+            print (str(e))
