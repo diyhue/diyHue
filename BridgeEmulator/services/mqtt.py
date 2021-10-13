@@ -165,6 +165,7 @@ def on_message(client, userdata, msg):
                         payload["state"] = "ON" if light.state["on"] else "OFF"
                         client.publish(light.protocol_cfg['command_topic'], json.dumps(payload))
                 elif data["type"] == "zigbee_publish_error":
+                    logging.info(light.name + " is unreachable")
                     light.state["reachable"] = False
 
             else:
