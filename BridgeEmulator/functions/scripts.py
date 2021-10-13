@@ -10,10 +10,10 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 def findScene(element):
     for scene, obj in bridgeConfig["scenes"].items():
         if element["group"]["rtype"] == "room":
-            if obj.image == element["recall"]["rid"] and obj.group().getV2Room()["id"] == element["group"]["rid"]:
+            if obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Room()["id"] == element["group"]["rid"]:
                 return obj
         elif element["group"]["rtype"] == "zone":
-            if obj.image == element["recall"]["rid"] and obj.group().getV2Zone()["id"] == element["group"]["rid"]:
+            if obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Zone()["id"] == element["group"]["rid"]:
                 return obj
 
 def findGroup(id_v2):

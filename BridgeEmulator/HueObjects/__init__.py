@@ -893,8 +893,8 @@ class Scene():
         if self.type == "GroupScene":
             if self.group():
                 result["group"] = {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.group().id_v2 + 'room')),
-                    "rtype": "room"
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.group().id_v2 + self.group().type.lower())),
+                    "rtype": self.group().type.lower()
                 }
         result["metadata"] = {}
         if self.image != None:
