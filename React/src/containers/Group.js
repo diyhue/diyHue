@@ -16,7 +16,6 @@ import ColorTempPicker from "./ColorTempPicker";
 import debounce from "lodash.debounce";
 import { motion, AnimateSharedLayout, AnimatePresence } from "framer-motion";
 import { cieToRgb, colorTemperatureToRgb } from "../color";
-import { getIcon } from "../icons/hass-hue-icons"
 
 const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   const [showContainer, setShowContainer] = useState("closed");
@@ -163,9 +162,15 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
       />
       <div className="row top">
         <div className="gradient" style={getStyle()}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getIcon("room-laundry")} />
-          </svg>
+          {group["type"] === "Zone" ? (
+            <BsFillHouseDoorFill
+              style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
+            />
+          ) : (
+            <FaCouch
+              style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
+            />
+          )}
         </div>
         <div className="text">
           <p className="name"> {group.name} </p>
@@ -229,8 +234,9 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
             variants={barIconVariants}
           >
             <motion.div
-              className={`btn ${lightsCapabilities.includes("xy") ? "" : "disabled"
-                }`}
+              className={`btn ${
+                lightsCapabilities.includes("xy") ? "" : "disabled"
+              }`}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
               variants={barIconVariants}
@@ -244,8 +250,9 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
               />
             </motion.div>
             <motion.div
-              className={`btn ${lightsCapabilities.includes("ct") ? "" : "disabled"
-                }`}
+              className={`btn ${
+                lightsCapabilities.includes("ct") ? "" : "disabled"
+              }`}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
             >
