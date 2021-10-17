@@ -45,7 +45,12 @@
             width: 30px;
             height: auto;
             margin: 10px 20px 0 0;
+        
+            &:hover{
+                color: #eee;
+            }
         }
+
     }
 
     .coffee{
@@ -67,17 +72,17 @@
 .creditGrid{
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
     margin-top: 20px;
 
-    .headline{
-
-    }
+    
 
 
     .contactCard{
         display: flex;
         flex-direction: column;
         margin-right: 20px;
+        margin-bottom: 20px;
         width: 300px;
         -webkit-backdrop-filter: blur(30px);
         backdrop-filter: blur(30px);
@@ -115,6 +120,10 @@
 
             svg{
                 margin-right: 20px;
+
+                &:hover{
+                    color: #eee;
+                }
             }
         }
 

@@ -3,6 +3,7 @@ import axios from "axios";
 import Device from "../containers/Device";
 import Flash from "../containers/Flash";
 
+
 const Devices = ({ HOST_IP, API_KEY }) => {
   const [devices, setDevices] = useState({});
   const [type, setType] = useState("none");
@@ -59,6 +60,7 @@ const Devices = ({ HOST_IP, API_KEY }) => {
       </div>
     </div>
     </div>
+
     </div>
   );
 };
