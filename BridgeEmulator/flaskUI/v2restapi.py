@@ -5,7 +5,6 @@ import uuid
 import json
 import weakref
 from subprocess import Popen
-from lights.manage import sendLightRequest
 from flask_restful import Resource
 from flask import request
 from services.entertainment import entertainmentService

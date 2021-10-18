@@ -3,7 +3,6 @@ import configManager
 import socket, json
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
-from lights.manage import sendLightRequest
 import paho.mqtt.publish as publish
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config

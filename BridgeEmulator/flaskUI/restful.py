@@ -10,7 +10,6 @@ from subprocess import Popen
 from threading import Thread
 from time import sleep, tzset
 from datetime import datetime
-from lights.manage import updateGroupStats, splitLightsToDevices, groupZero, sendLightRequest, switchScene
 from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
