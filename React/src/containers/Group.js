@@ -16,6 +16,7 @@ import ColorTempPicker from "./ColorTempPicker";
 import debounce from "lodash.debounce";
 import { motion, AnimateSharedLayout, AnimatePresence } from "framer-motion";
 import { cieToRgb, colorTemperatureToRgb } from "../color";
+import { HueIcons } from "../icons/hass-hue-icons"
 
 const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
   const [showContainer, setShowContainer] = useState("closed");
@@ -167,8 +168,9 @@ const Group = ({ HOST_IP, api_key, id, group, lights, scenes }) => {
               style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
             />
           ) : (
-            <FaCouch
-              style={{ fill: group.state["any_on"] ? "#3a3a3a" : "#ddd" }}
+            <HueIcons
+              type = { "room-" + group.class }
+              color={ group.state["any_on"] ? "#3a3a3a" : "#ddd" }
             />
           )}
         </div>
