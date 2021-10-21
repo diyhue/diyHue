@@ -29,6 +29,15 @@
       font-size: 35px;
       flex: 0 0 60px;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 25px;
+        height: 25px;
+        transform: scale(1.5);
+      }
     }
 
     .text {

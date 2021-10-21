@@ -6,6 +6,7 @@ import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
 import { confirmAlert } from "react-confirm-alert"; // Import
 import "react-confirm-alert/src/react-confirm-alert.css"; // Import css
+import { HueIcons } from "../icons/hass-hue-icons"
 
 const Light = ({
   HOST_IP,
@@ -89,8 +90,12 @@ const Light = ({
     <div className="devicecard light">
       <div className="row1">
         <div className="icon">
-          <FaLightbulb onClick={() => alertLight()} />
+          <HueIcons
+          type = {"light-" + light["config"]["archetype"]}
+          color= "#eeeeee"
+          onClick={() => alertLight()} />
         </div>
+
         <div className="text">{light["name"]} </div>
       </div>
       <div className="row3">
