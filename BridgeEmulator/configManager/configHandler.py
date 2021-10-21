@@ -1,6 +1,5 @@
 from configManager import configInit
 from datetime import datetime
-from time import tzset
 import os
 import json
 import logManager
@@ -8,6 +7,11 @@ import yaml
 import uuid
 import weakref
 from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+try:
+    from time import tzset
+except ImportError:
+    tzset = None
+
 logging = logManager.logger.get_logger(__name__)
 
 class NoAliasDumper(yaml.SafeDumper):

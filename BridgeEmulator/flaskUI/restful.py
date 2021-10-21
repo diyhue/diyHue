@@ -8,7 +8,7 @@ import os
 import requests
 from subprocess import Popen
 from threading import Thread
-from time import sleep, tzset
+from time import sleep
 from datetime import datetime
 from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
@@ -16,6 +16,11 @@ from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
 from services.entertainment import entertainmentService
+
+try:
+    from time import tzset
+except ImportError:
+    tzset = None
 
 from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
