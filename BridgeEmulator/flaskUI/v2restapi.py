@@ -220,7 +220,7 @@ class ClipV2(Resource):
         # entertainment_configuration
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Entertainment":
-                data.append(group.getV2EntertainmentConfig())
+                data.append(group.getV2Api())
         # bridge home
         data.append(v2BridgeHome())
         return {"errors": [], "data": data}
@@ -267,7 +267,7 @@ class ClipV2Resource(Resource):
         elif resource == "entertainment_configuration":
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Entertainment":
-                    response["data"].append(group.getV2EntertainmentConfig())
+                    response["data"].append(group.getV2Api())
         elif resource == "device":
             for key, light in bridgeConfig["lights"].items():
                 response["data"].append(light.getDevice())
@@ -350,11 +350,10 @@ class ClipV2Resource(Resource):
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
                 "id_v1": new_object_id,
-                "name": postDict["metadata"]["name"],
-                "type": "Entertainment",
-                "class": "TV"
+                "name": postDict["metadata"]["name"]
             }
-            newObject = HueObjects.Group(objCreation)
+            objCreation.update(postDict)
+            newObject = HueObjects.EntertainmentConfiguration(objCreation)
             if "locations" in postDict:
                 if "service_locations" in postDict["locations"]:
                     for element in postDict["locations"]["service_locations"]:
@@ -378,7 +377,7 @@ class ClipV2Resource(Resource):
             streamMessage["data"][0].update(newObject.getV2GroupedLight())
         elif resource == "entertainment_configuration":
             streamMessage["data"][0].update(
-                newObject.getV2EntertainmentConfig())
+                newObject.getV2Api())
         else:
             streamMessage["data"][0].update(newObject.getV2Api())
         bridgeConfig["temp"]["eventstream"].append(streamMessage)
@@ -419,7 +418,7 @@ class ClipV2ResourceId(Resource):
         elif resource == "entertainment":
             return {"errors": [], "data": [object.getV2Entertainment()]}
         elif resource == "entertainment_configuration":
-            return {"errors": [], "data": [object.getV2EntertainmentConfig()]}
+            return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "bridge":
             return {"errors": [], "data": [v2Bridge()]}
 

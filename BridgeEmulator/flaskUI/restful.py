@@ -156,9 +156,13 @@ class ResourceElements(Resource):
             if "type" in postDict:
                 if postDict["type"] == "Zone":
                     v2Resource = "zone"
-                else:
+                    bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
+                elif postDict["type"] == "Room":
                     v2Resource = "room"
-            bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
+                    bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
+                elif postDict["type"] == "Entertainment":
+                    v2Resource = "entertainment_configuration"
+                    bridgeConfig[resource][new_object_id] = HueObjects.EntertainmentConfiguration(postDict)
             if "locations" in postDict:
                 for light, location in postDict["locations"].items():
                     bridgeConfig[resource][new_object_id].locations[bridgeConfig["lights"]
@@ -249,7 +253,8 @@ class ResourceElements(Resource):
         # apply timezone OS variable
         if resource == "config" and "timezone" in putDict:
             os.environ['TZ'] = putDict["timezone"]
-            tzset()
+            if tzset is not None:
+                tzset()
 
         for key, value in putDict.items():
             if isinstance(value, dict):
@@ -327,7 +332,7 @@ class Element(Resource):
                                bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
                     else:
                         logging.info("stop hue entertainent")
-                        Popen(["killall", "entertain-srv"])
+                        Popen(["killall", "openssl"])
             if "action" in putDict:
                 bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
             # lights where removed from group, delete scenes

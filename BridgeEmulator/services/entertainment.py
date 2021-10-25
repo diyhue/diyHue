@@ -84,7 +84,7 @@ def entertainmentService(group, user):
                     elif data[9] == 2: #api version 1
                         i = 52
                         apiVersion = 2
-                        counter = len(group.getV2EntertainmentConfig()["channels"]) * 7 + 52
+                        counter = len(group.getV2Api()["channels"]) * 7 + 52
                     channels = {}
                     while (i < counter):
                         light = None

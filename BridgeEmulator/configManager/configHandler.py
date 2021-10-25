@@ -6,7 +6,7 @@ import logManager
 import yaml
 import uuid
 import weakref
-from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
 try:
     from time import tzset
 except ImportError:
@@ -72,14 +72,17 @@ class Config:
                 groups = _open_yaml(self.configDir + "/groups.yaml")
                 for group, data in groups.items():
                     data["id_v1"] = group
-                    self.yaml_config["groups"][group] = Group(data)
+                    if data["type"] == "Entertainment":
+                        self.yaml_config["groups"][group] = EntertainmentConfiguration(data)
+                        if "locations" in data:
+                            for light, location in data["locations"].items():
+                                lightObj = self.yaml_config["lights"][light]
+                                self.yaml_config["groups"][group].locations[lightObj] = location
+                    else:
+                        self.yaml_config["groups"][group] = Group(data)
                     #   Reference lights objects instead of id's
                     for light in data["lights"]:
                         self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
-                    if "locations" in data:
-                        for light, location in data["locations"].items():
-                            lightObj = self.yaml_config["lights"][light]
-                            self.yaml_config["groups"][group].locations[lightObj] = location
             #scenes
             if os.path.exists(self.configDir + "/scenes.yaml"):
                 scenes = _open_yaml(self.configDir + "/scenes.yaml")
