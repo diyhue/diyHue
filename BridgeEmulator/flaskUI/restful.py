@@ -234,9 +234,11 @@ class ResourceElements(Resource):
                     streamMessage["data"].append(newObject.getV2Room())
                 elif v2Resource == "zone":
                     streamMessage["data"].append(newObject.getV2Zone())
+                elif  v2Resource == "entertainment_configuration":
+                    streamMessage["data"].append(newObject.getV2Api())
                 else:
                     streamMessage["data"].append(newObject.getV2GroupedLight())
-            else:
+            elif asattr(newObject, 'getV2Api'):
                 streamMessage["data"].append(newObject.getV2Api())
             bridgeConfig["temp"]["eventstream"].append(streamMessage)
             logging.debug(streamMessage)
