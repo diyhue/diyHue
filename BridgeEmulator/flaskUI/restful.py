@@ -238,7 +238,7 @@ class ResourceElements(Resource):
                     streamMessage["data"].append(newObject.getV2Api())
                 else:
                     streamMessage["data"].append(newObject.getV2GroupedLight())
-            elif asattr(newObject, 'getV2Api'):
+            elif hasattr(newObject, 'getV2Api'):
                 streamMessage["data"].append(newObject.getV2Api())
             bridgeConfig["temp"]["eventstream"].append(streamMessage)
             logging.debug(streamMessage)
