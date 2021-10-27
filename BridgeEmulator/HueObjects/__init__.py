@@ -519,6 +519,15 @@ class EntertainmentConfiguration():
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
 
+    def update_attr(self, newdata):
+        for key, value in newdata.items():
+            updateAttribute = getattr(self, key)
+            if isinstance(updateAttribute, dict):
+                updateAttribute.update(value)
+                setattr(self, key, updateAttribute)
+            else:
+                setattr(self, key, value)
+
     def update_state(self):
         all_on = True
         any_on = False
