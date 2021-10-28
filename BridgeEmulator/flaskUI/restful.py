@@ -388,17 +388,17 @@ class Element(Resource):
             else:
                 id_v2 = object.getV2Room()["id"]
                 type = object.getV2Room()["type"]
-        else:
+        elif hasattr(object, "getV2Api"):
             id_v2 = object.id_v2
             type = object.getV2Api()["type"]
 
-
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        if type != None:
+            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": id_v2, "type": type}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
+            bridgeConfig["temp"]["eventstream"].append(streamMessage)
         del bridgeConfig[resource][resourceid]
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
