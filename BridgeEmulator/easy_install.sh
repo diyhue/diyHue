@@ -23,7 +23,7 @@ case $userSelection in
         branchSelection="dev"
         echo -e "Dev selected"
         ;;
-				*)
+	*)
         branchSelection="master"
         echo -e "Master selected"
         ;;
