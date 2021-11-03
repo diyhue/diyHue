@@ -88,7 +88,7 @@ app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
 
-def runHttps():
+def runHttps(BIND_IP):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ctx.load_cert_chain(certfile="config/cert.pem")
     ctx.options |= ssl.OP_NO_TLSv1
@@ -96,10 +96,10 @@ def runHttps():
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
     ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256')
     ctx.set_ecdh_curve('prime256v1')
-    app.run(host="0.0.0.0", port=443, ssl_context=ctx)
+    app.run(host=BIND_IP, port=443, ssl_context=ctx)
 
-def runHttp():
-    app.run(host="0.0.0.0", port=80)
+def runHttp(BIND_IP):
+    app.run(host=BIND_IP, port=80)
 
 if __name__ == '__main__':
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS
@@ -125,6 +125,6 @@ if __name__ == '__main__':
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
     Thread(target=scheduler.runScheduler).start()
-    Thread(target=runHttps).start()
     Thread(target=eventStreamer.messageBroker).start()
-    runHttp()
+    Thread(target=runHttps, args=[BIND_IP]).start()
+    runHttp(BIND_IP)

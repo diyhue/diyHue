@@ -68,7 +68,7 @@ def parse_arguments():
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True
 
-    bind_ip = ''
+    bind_ip = '0.0.0.0'
     if args.bind_ip:
         bind_ip = args.bind_ip
     elif get_environment_variable('BIND_IP'):
@@ -79,7 +79,7 @@ def parse_arguments():
         host_ip = args.ip
     elif get_environment_variable('IP'):
         host_ip = get_environment_variable('IP')
-    elif bind_ip:
+    elif bind_ip != '0.0.0.0':
         host_ip = bind_ip
     else:
         host_ip = getIpAddress()
