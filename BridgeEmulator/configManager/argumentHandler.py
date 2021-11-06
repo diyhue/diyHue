@@ -44,6 +44,7 @@ def parse_arguments():
     ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
     ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
     ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
+    ap.add_argument("--https-port", help="The port to listen on for HTTPS (Docker)", type=int)
     ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
     ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
     ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
@@ -85,15 +86,22 @@ def parse_arguments():
         host_ip = getIpAddress()
     argumentDict["HOST_IP"] = host_ip
 
-    if args.http_port:  # should be depreciated
+    if args.http_port:  
         host_http_port = args.http_port
     elif get_environment_variable('HTTP_PORT'):
-        host_http_port = get_environment_variable('HTTP_PORT')
+        host_http_port = int(get_environment_variable('HTTP_PORT'))
     else:
         host_http_port = 80
-    host_https_port = 443
     argumentDict["HTTP_PORT"] = host_http_port
+
+    if args.https_port:
+        host_https_port = args.https_port
+    elif get_environment_variable('HTTPS_PORT'):
+        host_https_port = int(get_environment_variable('HTTPS_PORT'))
+    else:
+        host_https_port = 443
     argumentDict["HTTPS_PORT"] = host_https_port
+
     logging.info("Using Host %s:%s" % (host_ip, host_http_port))
 
     if args.mac:
