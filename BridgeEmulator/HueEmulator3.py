@@ -88,7 +88,7 @@ app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
 
-def runHttps(BIND_IP):
+def runHttps(BIND_IP, HOST_HTTPS_PORT):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ctx.load_cert_chain(certfile="config/cert.pem")
     ctx.options |= ssl.OP_NO_TLSv1
@@ -96,10 +96,10 @@ def runHttps(BIND_IP):
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
     ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256')
     ctx.set_ecdh_curve('prime256v1')
-    app.run(host=BIND_IP, port=443, ssl_context=ctx)
+    app.run(host=BIND_IP, port=HOST_HTTPS_PORT, ssl_context=ctx)
 
-def runHttp(BIND_IP):
-    app.run(host=BIND_IP, port=80)
+def runHttp(BIND_IP, HOST_HTTP_PORT):
+    app.run(host=BIND_IP, port=HOST_HTTP_PORT)
 
 if __name__ == '__main__':
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS
@@ -108,6 +108,7 @@ if __name__ == '__main__':
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
     mac = configManager.runtimeConfig.arg["MAC"]
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
+    HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
@@ -126,5 +127,5 @@ if __name__ == '__main__':
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    Thread(target=runHttps, args=[BIND_IP]).start()
-    runHttp(BIND_IP)
+    Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT]).start()
+    runHttp(BIND_IP, HOST_HTTP_PORT)
