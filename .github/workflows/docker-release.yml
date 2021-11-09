@@ -17,6 +17,9 @@ jobs:
           - arch: linux/arm64
             arch_friendly: arm64
     steps:
+      - name: Cleanup Disk
+        uses: curoky/cleanup-disk-action@v2.0
+
       - name: Checkout
         uses: actions/checkout@v2
 
