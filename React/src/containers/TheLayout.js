@@ -9,7 +9,10 @@ const TheLayout = ({ HOST_IP, API_KEY }) => {
 
   return (
     <>
-      <TheSidebar showSidebar={showSidebar} />
+      <TheSidebar 
+      showSidebar={showSidebar}
+      setShowSidebar={setShowSidebar}
+      isMobile={isMobile} />
     <div className="columnRight">
       <TheHeader
         HOST_IP={HOST_IP}
