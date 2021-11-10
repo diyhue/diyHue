@@ -143,7 +143,7 @@ def v2BridgeDevice():
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": "1.46." + bridgeConfig["config"]["swversion"]
+        "software_version": bridgeConfig["config"]["apiversion"] + bridgeConfig["config"]["swversion"]
     }
     result["services"] = [
         {
@@ -315,12 +315,14 @@ class ClipV2Resource(Resource):
                 objCreation["group"] = weakref.ref(
                     getObject(postDict["group"]["rtype"], postDict["group"]["rid"]))
                 objCreation["type"] = "GroupScene"
+                del postDict["group"]
             elif "lights" in postDict:
                 objCreation["type"] = "LightScene"
                 objLights = []
                 for light in postDict["lights"]:
                     objLights.append(getObject(light["rtype"], light["rid"]))
                 objCreation["lights"] = objLights
+            objCreation.update(postDict)
             newObject = HueObjects.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
             if "actions" in postDict:
@@ -450,7 +452,14 @@ class ClipV2ResourceId(Resource):
                         light().state["mode"] = "homeautomation"
                     Popen(["killall", "openssl"])
         elif resource == "scene":
-            object.activate(putDict)
+            if "recall" in putDict:
+                object.activate(putDict)
+            if "speed" in putDict:
+                object.speed = putDict["speed"]
+            if "palette" in putDict:
+                object.palette = putDict["palette"]
+            if "metadata" in putDict:
+                object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
             object.setV2Action(putDict)
         elif resource == "geolocation":

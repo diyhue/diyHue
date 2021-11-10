@@ -208,7 +208,7 @@ class Light():
         self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
         }
         self.streaming = False
-        self.dynamics = 'none'
+        self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
 
     def __del__(self):
         logging.info(self.name + " light was destroyed.")
@@ -292,6 +292,8 @@ class Light():
             v1State["gradient"] = state["gradient"]
         if "transitiontime" in state:  # to be replaced once api will be public
             v1State["transitiontime"] = state["transitiontime"]
+        if "dynamics" in state and "speed" in state["dynamics"]:
+            self.dynamics["speed"] = state["dynamics"]["speed"]
         self.setV1State(v1State)
 
     def getDevice(self):
@@ -373,10 +375,7 @@ class Light():
             result["dimming"] = {
                 "brightness": self.state["bri"] / 2.54
             }
-        result["dynamics"] = {
-            "status": self.dynamics,
-            "status_values": ["none", "dynamic_palette"]
-        }
+        result["dynamics"] = self.dynamics
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {"name": self.name,
@@ -444,47 +443,46 @@ class Light():
 
     def dynamicScenePlay(self, palette, index):
         logging.debug("Start Dynamic scene play for " + self.name)
-        self.dynamics = "dynamic_palette"
-        counter = 0
-        while self.dynamics == "dynamic_palette":
-            if counter == 0:
-                if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002"]:
-                    if index == len(palette["color"]):
-                        index = 0
-                    points = []
-                    if self.modelid.startswith("LCX"):
-                        gradientIndex = index
-                        # for gradient lights
-                        for x in range(self.protocol_cfg["points_capable"]):
-                            points.append(palette["color"][gradientIndex])
-                            gradientIndex += 1
-                            if gradientIndex == len(palette["color"]):
-                                gradientIndex = 0
-                        self.setV2State(
-                            {"gradient": {"points": points}, "transitiontime": 300})
-                    else:
-                        lightState = palette["color"][index]
-                        # based on youtube videos, the transition is slow
-                        lightState["transitiontime"] = 300
-                        self.setV2State(lightState)
-                elif self.modelid == "LTW001":
-                    if index == len(palette["color_temperature"]):
-                        index = 0
-                    lightState = palette["color_temperature"][index]
-                    lightState["transitiontime"] = 300
-                    self.setV2State(lightState)
+        if "dynamic_palette" in self.dynamics["status_values"]:
+            self.dynamics["status"] = "dynamic_palette"
+        while self.dynamics["status"] == "dynamic_palette":
+            transition = int(30 / self.dynamics["speed"])
+            logging.debug("using transistiontime " + str(transition))
+            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002"]:
+                if index == len(palette["color"]):
+                    index = 0
+                points = []
+                if self.modelid.startswith("LCX"):
+                    gradientIndex = index
+                    # for gradient lights
+                    for x in range(self.protocol_cfg["points_capable"]):
+                        points.append(palette["color"][gradientIndex])
+                        gradientIndex += 1
+                        if gradientIndex == len(palette["color"]):
+                            gradientIndex = 0
+                    self.setV2State(
+                        {"gradient": {"points": points}, "transitiontime": transition})
                 else:
-                    if index == len(palette["dimming"]):
-                        index = 0
-                    lightState = palette["dimming"][index]
-                    lightState["transitiontime"] = 300
+                    lightState = palette["color"][index]
+                    # based on youtube videos, the transition is slow
+                    lightState["transitiontime"] = transition
                     self.setV2State(lightState)
-            counter += 1
-            if counter == 30:
-                counter = 0
-                index += 1
-                logging.debug("Step forward dynamic scene " + self.name)
-            sleep(1)
+            elif self.modelid == "LTW001":
+                if index == len(palette["color_temperature"]):
+                    index = 0
+                lightState = palette["color_temperature"][index]
+                lightState["transitiontime"] = transition
+                self.setV2State(lightState)
+            else:
+                if index == len(palette["dimming"]):
+                    index = 0
+                lightState = palette["dimming"][index]
+                lightState["transitiontime"] = transition
+                self.setV2State(lightState)
+            sleep(transition / 10)
+            index += 1
+            logging.debug("Step forward dynamic scene " + self.name)
+        logging.debug("Dynamic Scene " + self.name + " stopped.")
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "modelid": self.modelid, "uniqueid": self.uniqueid,
@@ -882,6 +880,7 @@ class Scene():
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lightstates = weakref.WeakKeyDictionary()
         self.palette = data["palette"] if "palette" in data else {}
+        self.speed = data["speed"] if "speed" in data else 0.6269841194152832
         self.group = data["group"] if "group" in data else None
         self.lights = data["lights"] if "lights" in data else []
         if "group" in data:
@@ -901,18 +900,18 @@ class Scene():
                 lightIndex = 0
                 for light in self.lights:
                     if light():
-                        Thread(target=light().dynamicScenePlay, args=[
-                               dynamicScenes[self.image]["palette"], lightIndex]).start()
+                        light().dynamics["speed"] = self.speed
+                        Thread(target=light().dynamicScenePlay, args=[self.palette, lightIndex]).start()
                         lightIndex += 1
 
             return
         queueState = {}
         for light, state in self.lightstates.items():
-            logging.warning(state)
+            logging.debug(state)
             light.state.update(state)
             light.updateLightState(state)
-            if light.dynamics == "dynamic_palette":
-                light.dynamics = "none"
+            if light.dynamics["status"] == "dynamic_palette":
+                light.dynamics["status"] = "none"
                 logging.debug("Stop Dynamic scene play for " + light.name)
             if len(data) > 0:
                 transitiontime = 0
@@ -937,7 +936,7 @@ class Scene():
                     queueState[light.protocol_cfg["ip"]
                                ]["lights"][light.protocol_cfg["command_topic"]] = state
             else:
-                logging.warning(state)
+                logging.debug(state)
                 light.setV1State(state)
         for device, state in queueState.items():
             state["object"].setV1State(state)
@@ -1016,6 +1015,8 @@ class Scene():
         result["type"] = "scene"
         if self.palette:
             result["palette"] = self.palette
+            if self.speed != 1:
+                result["speed"] = self.speed
         return result
 
     def storelightstate(self):
@@ -1061,6 +1062,10 @@ class Scene():
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "appdata": self.appdata, "owner": self.owner.username, "type": self.type, "picture": self.picture,
                   "image": self.image, "recycle": self.recycle, "lastupdated": self.lastupdated, "lights": [], "lightstates": {}}
+        if self.palette != None:
+            result["palette"] = self.palette
+        if self.speed != None:
+            result["speed"] = self.speed
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)
