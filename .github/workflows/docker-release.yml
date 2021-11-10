@@ -12,6 +12,8 @@ jobs:
         include:
           - arch: linux/amd64
             arch_friendly: amd64
+          - arch: linux/arm/v6
+            arch_friendly: armv6
           - arch: linux/arm/v7
             arch_friendly: armv7
           - arch: linux/arm64
