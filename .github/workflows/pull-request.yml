@@ -1,11 +1,8 @@
 name: PR Build Test
 
 on:
-  pull_request
-    debug_enabled:
-      description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
-      required: false
-      default: true
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -36,9 +33,8 @@ jobs:
           docker logs diyHue
 
       - name: Setup tmate session for debug
-      uses: mxschmitt/action-tmate@v3
-      if: ${{ github.event_name == 'pull_request' && github.event.inputs.debug_enabled }}
-      timeout-minutes: 15
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
 
       - name: Cleanup
         run: |
