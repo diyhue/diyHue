@@ -2,6 +2,10 @@ name: PR Build Test
 
 on:
   pull_request
+    debug_enabled:
+      description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
+      required: false
+      default: true
 
 jobs:
   test:
@@ -30,6 +34,11 @@ jobs:
           docker run -d --name diyHue --network=host -v /mnt/hue-emulator/export:/opt/hue-emulator/export -e MAC=b8:27:eb:d4:dc:11 -e IP=192.168.1.123 -e DECONZ=192.168.1.111 -e IP_RANGE=5,6 -e DEBUG=true diyhue/core:ci
           sleep 15
           docker logs diyHue
+
+      - name: Setup tmate session for debug
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'pull_request' && github.event.inputs.debug_enabled }}
+      timeout-minutes: 15
 
       - name: Cleanup
         run: |
