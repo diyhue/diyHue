@@ -43,7 +43,8 @@ class Config:
             if os.path.exists(self.configDir + "/config.yaml"):
                 config = _open_yaml(self.configDir + "/config.yaml")
                 os.environ['TZ'] = config["timezone"]
-                tzset()
+                if tzset is not None:
+                    tzset()
                 config["apiUsers"] = {}
                 for user, data in config["whitelist"].items():
                     self.yaml_config["apiUsers"][user] = ApiUser(user, data["name"], data["client_key"], data["create_date"], data["last_use_date"])
@@ -51,6 +52,11 @@ class Config:
                 # updgrade config
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
+
+                if int(config["swversion"]) < 1948086000:
+                    config["swversion"] = "1948086000"
+                if config["apiversion"] != "1.47.0":
+                    config["apiversion"] = "1.47.0"
 
                 self.yaml_config["config"] = config
             else:

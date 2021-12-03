@@ -794,7 +794,15 @@ class Group():
         return result
 
     def getV2Room(self):
-        result = {"grouped_services": [], "services": []}
+        result = {"children": [], "grouped_services": [], "services": []}
+        for light in self.lights:
+            if light():
+                result["children"].append({
+                    "rid": str(uuid.uuid5(
+                        uuid.NAMESPACE_URL, light().id_v2 + 'device')),
+                    "rtype": "device"
+                })
+
         result["grouped_services"].append({
             "rid": self.id_v2,
             "rtype": "grouped_light"
@@ -812,6 +820,11 @@ class Group():
                     "rid": light().id_v2,
                     "rtype": "light"
                 })
+
+        result["services"].append({
+            "rid": self.id_v2,
+            "rtype": "grouped_light"
+        })
 
         result["type"] = "room"
         return result

@@ -72,8 +72,13 @@ def v2BridgeEntertainment():
 def v2HomeKit():
     return {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'homekit')),
             "status": "unpaired",
-            "type": "homekit"
-            }
+            "status_values": [
+                "pairing",
+                "paired",
+                "unpaired"
+            ],
+        "type": "homekit"
+    }
 
 
 def v2BridgeZigBee():
@@ -116,6 +121,15 @@ def v2Bridge():
         "bridge_id": bridgeConfig["config"]["bridgeid"].lower(),
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
         "id_v1": "",
+        "owner": {
+            "rid": str(uuid.uuid5(
+                uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+            "rtype": "device"
+        },
+        "time_zone": {
+            "time_zone": bridgeConfig["config"]["timezone"]
+        },
+
         "type": "bridge"
     }
 
@@ -280,6 +294,8 @@ class ClipV2Resource(Resource):
             response["data"].append(v2Bridge())
         elif resource == "bridge_home":
             response["data"].append(v2BridgeHome())
+        elif resource == "homekit":
+            response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
             response["type"] = "ClipMessageGeolocation"
