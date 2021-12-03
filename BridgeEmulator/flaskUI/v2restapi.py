@@ -298,13 +298,9 @@ class ClipV2Resource(Resource):
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
-            response["type"] = "ClipMessageGeolocation"
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
-            response["type"] = "ClipMessageBehaviorInstance"
-        elif resource == "geofence_client":
-            response["type"] = "ClipMessageGeofenceClient"
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
