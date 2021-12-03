@@ -841,7 +841,7 @@ class Group():
                         uuid.NAMESPACE_URL, light().id_v2 + 'device')),
                     "rtype": "device"
                 })
-                
+
         result["grouped_services"].append({
             "rid": self.id_v2,
             "rtype": "grouped_light"
@@ -859,6 +859,11 @@ class Group():
                     "rid": light().id_v2,
                     "rtype": "light"
                 })
+
+        result["services"].append({
+            "rid": self.id_v2,
+            "rtype": "grouped_light"
+        })
 
         result["type"] = "zone"
         return result
