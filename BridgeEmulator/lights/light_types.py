@@ -55,7 +55,7 @@ lightTypes["LOM001"]["v1_static"]["capabilities"] = {"certified": True,"control"
 lightTypes["LOM001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.90.1"}
 lightTypes["LOM001"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
 lightTypes["LOM001"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
-lightTypes["LCX002"]["dynamics"] = {"status": "none", "status_values": ["none"]}
+lightTypes["LOM001"]["dynamics"] = {"status": "none", "status_values": ["none"]}
 
 
 archetype = {"tableshade":"table_shade",
