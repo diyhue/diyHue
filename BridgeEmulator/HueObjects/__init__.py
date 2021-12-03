@@ -384,6 +384,10 @@ class Light():
         result["on"] = {
             "on": self.state["on"]
         }
+        result["owner"] = {
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+            "rtype": "device"
+        }
         result["type"] = "light"
         return result
 
@@ -541,7 +545,7 @@ class EntertainmentConfiguration():
 
     def getV2GroupedLight(self):
         result = {}
-        result["alert"]: {
+        result["alert"] = {
             "action_values": [
                 "breathe"
             ]
@@ -700,7 +704,6 @@ class EntertainmentConfiguration():
         return result
 
 
-
 class Group():
 
     def __init__(self, data):
@@ -830,7 +833,15 @@ class Group():
         return result
 
     def getV2Zone(self):
-        result = {"grouped_services": [], "services": []}
+        result = {"children": [], "grouped_services": [], "services": []}
+        for light in self.lights:
+            if light():
+                result["children"].append({
+                    "rid": str(uuid.uuid5(
+                        uuid.NAMESPACE_URL, light().id_v2 + 'device')),
+                    "rtype": "device"
+                })
+                
         result["grouped_services"].append({
             "rid": self.id_v2,
             "rtype": "grouped_light"
@@ -854,7 +865,7 @@ class Group():
 
     def getV2GroupedLight(self):
         result = {}
-        result["alert"]: {
+        result["alert"] = {
             "action_values": [
                 "breathe"
             ]
@@ -862,7 +873,7 @@ class Group():
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
-        result["type"] = "grouped_light"
+        result["type"] = "grouped_lights"
         return result
 
     def getObjectPath(self):
@@ -914,7 +925,8 @@ class Scene():
                 for light in self.lights:
                     if light():
                         light().dynamics["speed"] = self.speed
-                        Thread(target=light().dynamicScenePlay, args=[self.palette, lightIndex]).start()
+                        Thread(target=light().dynamicScenePlay, args=[
+                               self.palette, lightIndex]).start()
                         lightIndex += 1
 
             return
