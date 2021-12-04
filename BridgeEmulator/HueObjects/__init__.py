@@ -512,14 +512,14 @@ class EntertainmentConfiguration():
                        "proxynode": "/bridge", "active": False, "owner": None}
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
-        for light in self.lights:
-            self.locations[light] = [0, 0, 0]
+
 
     def __del__(self):
         logging.info(self.name + " entertainment area was destroyed.")
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
+        self.locations[light] = [0, 0, 0]
 
     def update_attr(self, newdata):
         for key, value in newdata.items():
