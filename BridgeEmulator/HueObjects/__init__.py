@@ -837,9 +837,8 @@ class Group():
         for light in self.lights:
             if light():
                 result["children"].append({
-                    "rid": str(uuid.uuid5(
-                        uuid.NAMESPACE_URL, light().id_v2 + 'device')),
-                    "rtype": "device"
+                    "rid": light().id_v2,
+                    "rtype": "light"
                 })
 
         result["grouped_services"].append({
