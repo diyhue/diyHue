@@ -223,7 +223,7 @@ def on_message(client, userdata, msg):
                             Thread(target=longPressButton, args=[device, convertedPayload["buttonevent"]]).start()
                         rulesProcessor(device, current_time)
                     elif device.getObjectPath()["resource"] == "lights":
-                        state = {}
+                        state = {"reachable": True}
                         if "state" in data:
                             if data["state"] == "ON":
                                 state["on"] = True
