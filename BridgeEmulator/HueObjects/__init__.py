@@ -3,7 +3,6 @@ import logManager
 import random
 import weakref
 from lights.light_types import lightTypes, archetype
-from lights.dynamic_scenes import dynamicScenes
 from sensors.sensor_types import sensorTypes
 from lights.protocols import protocols
 from threading import Thread
@@ -924,14 +923,13 @@ class Scene():
     def activate(self, data):
         # activate dynamic scene
         if "recall" in data and data["recall"]["action"] == "dynamic_palette":
-            if self.image in dynamicScenes:
-                lightIndex = 0
-                for light in self.lights:
-                    if light():
-                        light().dynamics["speed"] = self.speed
-                        Thread(target=light().dynamicScenePlay, args=[
-                               self.palette, lightIndex]).start()
-                        lightIndex += 1
+            lightIndex = 0
+            for light in self.lights:
+                if light():
+                    light().dynamics["speed"] = self.speed
+                    Thread(target=light().dynamicScenePlay, args=[
+                           self.palette, lightIndex]).start()
+                    lightIndex += 1
 
             return
         queueState = {}
