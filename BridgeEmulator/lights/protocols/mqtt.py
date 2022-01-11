@@ -32,8 +32,7 @@ def set_light(light, data):
             if key == "on":
                 payload['state'] = "ON" if value == True else "OFF"
             if key == "bri":
-                if light.state["on"] or "on" in lightsData[topic]:
-                    payload['brightness'] = value
+                payload['brightness'] = value
             if key == "xy":
                 payload['color'] = {'x': value[0], 'y': value[1]}
             if key == "ct":
