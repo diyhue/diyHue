@@ -27,6 +27,14 @@ logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
+def GroupZeroMessage():
+    rooms = []
+    lights = []
+    for group, obj in bridgeConfig["groups"].items():
+        rooms.append(obj.id_v2)
+    for light, obj in bridgeConfig["lights"].items():
+        lights.append(obj.id_v2)
+    bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
 
 def authorize(username, resource='', resourceId='', resourceParam=''):
     if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
@@ -171,6 +179,8 @@ class ResourceElements(Resource):
                 for light in postDict["lights"]:
                     bridgeConfig[resource][new_object_id].add_light(
                         bridgeConfig["lights"][light])
+            # trigger stream messages
+            GroupZeroMessage()
         elif resource == "scenes":
             v2Resource = "scene"
             if "group" in postDict:
@@ -308,7 +318,7 @@ class Element(Resource):
         if "group" in putDict:
             putDict["group"] = weakref.ref(
                 bridgeConfig["groups"][putDict["group"]])
-        if "lights" in putDict:
+        if resource == "scenes" and "lights" in putDict:
             objList = []
             for light in putDict["lights"]:
                 objList.append(weakref.ref(bridgeConfig["lights"][light]))
@@ -326,6 +336,9 @@ class Element(Resource):
                 ).strftime("%Y-%m-%dT%H:%M:%S")
                 bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
         elif resource == "groups":
+            if "lights" in putDict:
+                for light in putDict["lights"]:
+                    bridgeConfig["groups"][resourceid].add_light(bridgeConfig["lights"][light])
             if "stream" in putDict:
                 if "active" in putDict["stream"]:
                     if putDict["stream"]["active"]:
@@ -371,35 +384,17 @@ class Element(Resource):
             for sensor in list(bridgeConfig["sensors"].keys()):
                 if bridgeConfig["sensors"][sensor].uniqueid != None and bridgeConfig["sensors"][sensor].uniqueid[:-1] == bridgeConfig["sensors"][resourceid].uniqueid[:-1] and bridgeConfig["sensors"][sensor].id_v1 != resourceid:
                     del bridgeConfig["sensors"][sensor]
+        # delete the object
+        del bridgeConfig[resource][resourceid]
+        # clean scenes
         if resource == "groups":
             for scene in list(bridgeConfig["scenes"].keys()):
                 if bridgeConfig["scenes"][scene].type == "GroupScene":
                     if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
-
-        # build stream message
-        type = None
-        id_v2 = None
-        object = bridgeConfig[resource][resourceid]
-        if resource == "groups":
-            if object.type == "Zone":
-                id_v2 = object.getV2Zone()["id"]
-                type = object.getV2Zone()["type"]
-            else:
-                id_v2 = object.getV2Room()["id"]
-                type = object.getV2Room()["type"]
-        elif hasattr(object, "getV2Api"):
-            id_v2 = object.id_v2
-            type = object.getV2Api()["type"]
-
-        if type != None:
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": id_v2, "type": type}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
-            bridgeConfig["temp"]["eventstream"].append(streamMessage)
-        del bridgeConfig[resource][resourceid]
+        if resource in ["groups", "lights"]:
+            # trigger stream messages
+            GroupZeroMessage()
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 

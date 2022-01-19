@@ -16,7 +16,6 @@ from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
 
-
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
@@ -93,10 +92,7 @@ def v2BridgeZigBee():
 
 def v2BridgeHome():
     result = {}
-    # result["grouped_services"] = [{
-    #      "rid": bridgeConfig["groups"]["0"].id_v2,
-    #      "rtype": "grouped_light"
-    #    }]
+    result["children"] = []
     result["grouped_services"] = []
     if len(bridgeConfig["lights"]) > 0:
         result["grouped_services"].append({
@@ -104,12 +100,16 @@ def v2BridgeHome():
             "rtype": "grouped_light"
         })
     result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
-                                  bridgeConfig["config"]["bridgeid"] + 'bridge_home'))
+                                  bridgeConfig["groups"]["0"].id_v2 + 'bridge_home'))
     result["id_v1"] = "/groups/0"
     result["services"] = []
     result["type"] = "bridge_home"
     for key, light in bridgeConfig["lights"].items():
         result["services"].append(light.getBridgeHome())
+        result["children"].append({"rid": light.getDevice()["id"], "rtype": "device"})
+    for key, group in bridgeConfig["groups"].items():
+        if group.type == "Room":
+            result["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
     for key, sensor in bridgeConfig["sensors"].items():
         if sensor.getBridgeHome():
             result["services"].append(sensor.getBridgeHome())
@@ -377,24 +377,6 @@ class ClipV2Resource(Resource):
                         newObject.locations[obj] = [
                             element["positions"][0]["x"], element["positions"][0]["y"], element["positions"][0]["z"]]
             bridgeConfig["groups"][new_object_id] = newObject
-        # build stream message
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": newObject.id_v2, "type": resource}],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
-        if resource == "room":
-            streamMessage["data"][0].update(newObject.getV2Room())
-        elif resource == "zone":
-            streamMessage["data"][0].update(newObject.getV2Zone())
-        elif resource == "grouped_light":
-            streamMessage["data"][0].update(newObject.getV2GroupedLight())
-        elif resource == "entertainment_configuration":
-            streamMessage["data"][0].update(
-                newObject.getV2Api())
-        else:
-            streamMessage["data"][0].update(newObject.getV2Api())
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
 
         # return message
         returnMessage = {"data": [{
@@ -485,16 +467,6 @@ class ClipV2ResourceId(Resource):
             "rtype": resource
         }]}
 
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": resourceid, "type": resource}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
-        streamMessage["id_v1"] = "/" + object.getObjectPath()["resource"] + "/" + \
-            object.getObjectPath()["id"] if hasattr(
-                object, 'getObjectPath') else ""
-        streamMessage["data"][0].update(putDict)
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
         return response
 
     def delete(self, resource, resourceid):
@@ -514,14 +486,4 @@ class ClipV2ResourceId(Resource):
             "rid": resourceid,
             "rtype": resource
         }]}
-
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": resourceid, "type": resource}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
-        streamMessage["id_v1"] = "/" + object.getObjectPath()["resource"] + "/" + \
-            object.getObjectPath()["id"] if hasattr(
-                object, 'getObjectPath') else ""
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
         return response
