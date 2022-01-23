@@ -1,4 +1,5 @@
 from configManager import configInit
+from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
 import json
@@ -29,8 +30,7 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    projectDir = '/opt/hue-emulator'
-    configDir = projectDir + '/config'
+    configDir = parse_arguments()["CONFIG_PATH"]
 
     def __init__(self):
         if not os.path.exists(self.configDir):

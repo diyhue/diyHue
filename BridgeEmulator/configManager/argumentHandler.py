@@ -16,10 +16,10 @@ def get_environment_variable(var, boolean=False):
     return value
 
 
-def generate_certificate(mac):
+def generate_certificate(mac, path):
     logging.info("Generating certificate")
     serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
-    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial])
+    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial, path])
     logging.info("Certificate created")
 
 
@@ -30,7 +30,7 @@ def process_arguments(configDir, args):
     else:
         logging.info("Debug logging enabled!")
     if not path.isfile(configDir + "/cert.pem"):
-        generate_certificate(args["MAC"])
+        generate_certificate(args["MAC"], configDir)
 
 
 def parse_arguments():
@@ -41,6 +41,7 @@ def parse_arguments():
     # Arguements can also be passed as Environment Variables.
     ap.add_argument("--debug", action='store_true', help="Enables debug output")
     ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
+    ap.add_argument("--config_path", help="Set certificate and config files location", type=str)
     ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
     ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
     ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
@@ -69,6 +70,13 @@ def parse_arguments():
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True
 
+    config_path = '/opt/hue-emulator/config'
+    if args.config_path:
+        config_path = args.config_path
+    elif get_environment_variable('CONFIG_PATH'):
+        config_path = get_environment_variable('CONFIG_PATH')
+    argumentDict["CONFIG_PATH"] = config_path
+
     bind_ip = '0.0.0.0'
     if args.bind_ip:
         bind_ip = args.bind_ip
@@ -86,7 +94,7 @@ def parse_arguments():
         host_ip = getIpAddress()
     argumentDict["HOST_IP"] = host_ip
 
-    if args.http_port:  
+    if args.http_port:
         host_http_port = args.http_port
     elif get_environment_variable('HTTP_PORT'):
         host_http_port = int(get_environment_variable('HTTP_PORT'))

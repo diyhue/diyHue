@@ -17,7 +17,6 @@ from functions.daylightSensor import daylightSensor
 from pprint import pprint
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
-newLights = configManager.runtimeConfig.newLights
 logging = logManager.logger.get_logger(__name__)
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
@@ -88,9 +87,9 @@ app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
 
-def runHttps(BIND_IP, HOST_HTTPS_PORT):
+def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ctx.load_cert_chain(certfile="config/cert.pem")
+    ctx.load_cert_chain(certfile=CONFIG_PATH + "/cert.pem")
     ctx.options |= ssl.OP_NO_TLSv1
     ctx.options |= ssl.OP_NO_TLSv1_1
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
@@ -109,6 +108,7 @@ if __name__ == '__main__':
     mac = configManager.runtimeConfig.arg["MAC"]
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
     HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
+    CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
@@ -127,5 +127,5 @@ if __name__ == '__main__':
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT]).start()
+    Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
     runHttp(BIND_IP, HOST_HTTP_PORT)
