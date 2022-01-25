@@ -139,7 +139,7 @@ def data_to_result(data):
 
 def get_prop_data(tcp_socket, params):
     params = list(params)
-    msg_dict = {"id": 1, "method": "get_prop", "params": params}
+    msg_dict = {"id": self._id, "method": "get_prop", "params": params}
     msg=json.dumps(msg_dict) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
@@ -205,6 +205,7 @@ class YeelightConnection(object):
         self._socket.settimeout(5)
         self._socket.connect((self._ip, int(55443)))
         self._connected = True
+        self._id = 0
 
     def disconnect(self):
         self._connected = False
@@ -233,7 +234,7 @@ class YeelightConnection(object):
 
     def command(self, api_method, param):
         try:
-            msg = json.dumps({"id": 1, "method": api_method, "params": param}) + "\r\n"
+            msg = json.dumps({"id": self._id, "method": api_method, "params": param}) + "\r\n"
             self.send(msg.encode())
         except Exception as e:
             logging.warning("Yeelight command error: %s", e)

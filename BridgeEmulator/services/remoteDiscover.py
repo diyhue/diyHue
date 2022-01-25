@@ -10,7 +10,6 @@ def runRemoteDiscover(config):
     url = 'https://discovery.diyhue.org'
     while True:
         try:
-            logging.debug("Discovery ping")
             payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress"],"macaddress": config["mac"],"name": config["name"]}
             response = requests.post(url, timeout=5, json=payload)
             sleep(60)
