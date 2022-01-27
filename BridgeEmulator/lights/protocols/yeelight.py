@@ -137,9 +137,9 @@ def hex_to_rgb(value):
 def data_to_result(data):
     return json.loads(data[:-2].decode("utf8"))["result"]
 
-def get_prop_data(tcp_socket, params):
+def get_prop_data(light, tcp_socket, params):
     params = list(params)
-    msg_dict = {"id": self._id, "method": "get_prop", "params": params}
+    msg_dict = {"id": light._id, "method": "get_prop", "params": params}
     msg=json.dumps(msg_dict) + "\r\n"
     tcp_socket.send(msg.encode())
     data = tcp_socket.recv(16 * 1024)
@@ -153,7 +153,7 @@ def get_light_state(light):
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.settimeout(5)
     tcp_socket.connect((light.protocol_cfg["ip"], int(55443)))
-    data = get_prop_data(tcp_socket, ["power", "bright"])
+    data = get_prop_data(light, tcp_socket, ["power", "bright"])
     light_data = data_to_result(data)
     if light_data[0] == "on": #powerstate
         state['on'] = True
