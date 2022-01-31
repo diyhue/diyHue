@@ -171,14 +171,15 @@ class ResourceElements(Resource):
                 elif postDict["type"] == "Entertainment":
                     v2Resource = "entertainment_configuration"
                     bridgeConfig[resource][new_object_id] = HueObjects.EntertainmentConfiguration(postDict)
-            if "locations" in postDict:
-                for light, location in postDict["locations"].items():
-                    bridgeConfig[resource][new_object_id].locations[bridgeConfig["lights"]
-                                                                    [light]] = location
+
             if "lights" in postDict:
                 for light in postDict["lights"]:
                     bridgeConfig[resource][new_object_id].add_light(
                         bridgeConfig["lights"][light])
+            if "locations" in postDict:
+                for light, location in postDict["locations"].items():
+                    bridgeConfig[resource][new_object_id].locations[bridgeConfig["lights"]
+                                                                    [light]] = location
             # trigger stream messages
             GroupZeroMessage()
         elif resource == "scenes":
@@ -337,6 +338,7 @@ class Element(Resource):
                 bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
         elif resource == "groups":
             if "lights" in putDict:
+                bridgeConfig["groups"][resourceid].lights = [] #empty the list
                 for light in putDict["lights"]:
                     bridgeConfig["groups"][resourceid].add_light(bridgeConfig["lights"][light])
             if "stream" in putDict:

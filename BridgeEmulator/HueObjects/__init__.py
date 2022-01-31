@@ -34,7 +34,8 @@ def setGroupAction(group, state, scene=None):
     else:
         state = incProcess(group.action, state)
         for light in group.lights:
-            lightsState[light().id_v1] = state
+            if light():
+                lightsState[light().id_v1] = state
         if "xy" in state:
             group.action["colormode"] = "xy"
         elif "ct" in state:
@@ -651,6 +652,10 @@ class EntertainmentConfiguration():
         self.locations[light] = [0, 0, 0]
 
     def update_attr(self, newdata):
+        if "lights" in newdata: # update of the lights must be done using add_light function
+            del newdata["lights"]
+        if "locations" in newdata: # update of the locations must be done directly from restful
+            del newdata["locations"]
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
             if isinstance(updateAttribute, dict):
@@ -930,6 +935,8 @@ class Group():
         self.sensors.append(weakref.ref(sensor))
 
     def update_attr(self, newdata):
+        if "lights" in newdata: # update of the lights must be done using add_light function
+            del newdata["lights"]
         if "class" in newdata:
             newdata["icon_class"] = newdata.pop("class")
         for key, value in newdata.items():
