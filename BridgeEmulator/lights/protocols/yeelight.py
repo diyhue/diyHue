@@ -3,7 +3,6 @@ import logManager
 import yeelight
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
 from time import sleep
-from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
 Connections = {}
@@ -11,8 +10,6 @@ Connections = {}
 
 def discover(detectedLights):
     discover = yeelight.discover_bulbs()
-    pprint(discover)
-
     for light in discover:
         logging.info("Found YeeLight: " + light["capabilities"]["id"])
         modelid = "LWB010"
@@ -95,7 +92,6 @@ def get_light_state(light):
     prefix = ''
     if light.protocol_cfg["backlight"]:
         prefix = "bg_"
-    pprint(light_data)
     if light_data[prefix + "power"] == "on": #powerstate
         state['on'] = True
     else:

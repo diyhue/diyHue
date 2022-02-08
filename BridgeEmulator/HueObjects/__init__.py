@@ -1527,8 +1527,7 @@ class Sensor():
         self.modelid = data["modelid"]
         self.manufacturername = data["manufacturername"] if "manufacturername" in data else "Philips"
         self.protocol = data["protocol"] if "protocol" in data else "none"
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.type = data["type"]
         self.state = data["state"]
         dxstate = {}
