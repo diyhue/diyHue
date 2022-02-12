@@ -1,0 +1,199 @@
+.devicecard {
+  width: 380px;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  background: rgba(255, 255, 255, 0.09);
+  background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
+  border-radius: 20px;
+  margin-bottom: 20px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ddd;
+  padding: 20px;
+
+  &.light {
+    margin-right: 20px;
+  }
+
+  .row1 {
+    /*outline: 1px solid green;*/
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    height: 50px;
+    vertical-align: middle;
+    align-items: center;
+
+    .icon {
+      font-size: 35px;
+      flex: 0 0 60px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 25px;
+        height: 25px;
+        transform: scale(1.5);
+      }
+    }
+
+    .text {
+      flex: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      font-size: 18px;
+    }
+  }
+
+  .row2 {
+    /*outline: 1px solid red;*/
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+
+    .text {
+      flex: 1;
+      text-align: right;
+    }
+  }
+
+  .row3 {
+    /*outline: 1px solid blue;*/
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    height: 100px;
+    margin-top: 15px;
+    height: 50px;
+    align-items: center;
+    /*justify-content: center;*/
+    justify-content: flex-end;
+
+    .form-control{
+      margin: 0;
+      flex: 1;
+      width: 100%;
+      margin-right: 20px;
+
+      .Dropdown-control{
+        width: 100%;
+      }
+    }
+
+    .switchContainer {
+      flex: 0 0 60px;
+      margin-top: -10px;
+      margin-right: 20px;
+    }
+
+    .btn {
+      flex: 0 0 40px;
+      height: 40px;
+      width: 40px;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+
+      svg {
+        height: 1.5em;
+        width: 1.5em;
+        margin-top: 4px;
+      }
+
+      &.red {
+        background: #881a3a;
+
+        &:hover,
+        &:active {
+          background: #af234a;
+        }
+      }
+
+      &.blue {
+        background: #1a5088;
+        margin-right: 20px;
+
+        &:hover,
+        &:active {
+          background: #2872c2;
+        }
+      }
+    }
+  }
+
+  .label {
+    position: absolute;
+    height: 15px;
+    width: 30px;
+    top: -6px;
+    right: -20px;
+    border-bottom: 15px solid rgba(223, 16, 16, 0.3);
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    transform: rotateY(0deg) rotate(45deg);
+    text-align: center;
+    line-height: 45px;
+    font-size: 11px;
+  }
+
+  .row4 {
+    /*outline: 1px solid red;*/
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    margin-top: 10px;
+
+    li {
+      list-style: none;
+      margin-left: 0px;
+    }
+  }
+}
+
+.contentContainer{
+
+  &.lights{
+    margin-bottom: 20px;
+  }
+}
+
+
+@media screen and (max-width: 750px) {
+  .devicecard {
+    width: 100%;
+  
+    &.light{
+      margin-right: 0;
+    }
+  }
+
+}
+
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+  .devicecard {
+    position: relative;
+    background: rgba(255, 255, 255, 0.20);
+  }
+
+  .devicecard:after{
+    content: '';
+    background: url(../static/images/background.jpg) no-repeat 50%;
+    background-size: cover;
+    filter: blur(30px);
+    transform: scale(1.1);
+    display: flex;
+    position: absolute; 
+    height: 100%;
+    width: 100%;
+    top:0;
+    left:0;
+    z-index: -1;
+  }
+
+}

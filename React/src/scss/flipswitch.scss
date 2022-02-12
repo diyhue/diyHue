@@ -1,0 +1,55 @@
+.switchContainer .switch {
+  vertical-align: middle;
+  position: relative;
+  width: 57px;
+  height: 30px;
+}
+
+.switchContainer .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switchContainer .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+  border-radius: 40px;
+  width: 57px;
+  height: 32px;
+}
+
+.switchContainer .slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 2px;
+  bottom: 3px;
+  background-color: #aaa;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.switchContainer input:checked + .slider {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.switchContainer input:focus + .slider {
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.9);
+}
+
+.switchContainer input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+  background-color: #fff;
+}

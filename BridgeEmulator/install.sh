@@ -13,6 +13,8 @@ generate_certificate () {
   interfaces=("${temp_array[@]}")
   unset temp_array
 
+  echo "$interfaces"
+
   ### check if number of interfaces is more than 1
   if [ "${#interfaces[@]}" -gt "1" ]; then
     echo -e "\033[33mWARNING!\033[0m  "${#interfaces[@]}" network interfaces detected. A certificate will be generated based on the interface MAC address you select."
@@ -31,7 +33,7 @@ generate_certificate () {
 
     mac=`cat /sys/class/net/$answer/address`
   else
-    mac=`cat /sys/class/net/$interfaces[0]/address`
+    mac=`cat /sys/class/net/$interfaces/address`
   fi
 
   echo "Generating certificat for MAC $mac"
@@ -47,12 +49,18 @@ generate_certificate () {
       echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
       exit 1
     fi
-    curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
+    curl "https://certgen.lightningdark.com/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
   else
     touch /opt/hue-emulator/cert.pem
     cat private.key > /opt/hue-emulator/cert.pem
     cat public.crt >> /opt/hue-emulator/cert.pem
     rm private.key public.crt
+  fi
+  if [ $branchSelection == "beta" ]; then
+    if [ ! -d "/opt/hue-emulator/config/" ]; then
+      mkdir /opt/hue-emulator/config/ -p
+    fi
+    cp /opt/hue-emulator/cert.pem /opt/hue-emulator/config/
   fi
 
 }
@@ -66,6 +74,7 @@ echo -e "\033[36mPlease choose a Branch to install\033[0m"
 echo -e "\033[33mSelect Branch by entering the corresponding Number: [Default: Master]\033[0m  "
 echo -e "[1] Master Branch - most stable Release "
 echo -e "[2] Developer Branch - test latest features and fixes - Work in Progress!"
+echo -e "[3] Beta Branch - Work with Hue App 4.0 - Work in Progress!"
 echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
 echo -n "I go with Nr.: "
 
@@ -80,6 +89,10 @@ case $userSelection in
         branchSelection="dev"
         echo -e "Dev selected"
         ;;
+	3)
+        branchSelection="beta"
+        echo -e "Beta selected"
+        ;;
 				*)
         branchSelection="master"
         echo -e "Master selected"
@@ -90,11 +103,11 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip nmap python3 python3-requests python3-setuptools
+  apt-get install -y unzip python3 python3-pip
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip nmap python3 python-pip gnu-netcat || exit 1
+  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat || exit 1
 else
   # Or assume that packages are already installed (possibly with user confirmation)?
   # Or check them?
@@ -102,62 +115,40 @@ else
   exit 1
 fi
 
-### installing astral library for sunrise/sunset routines
-echo -e "\033[36m Installing Python Astral.\033[0m"
-curl -sL https://codeload.github.com/sffjunkie/astral/zip/2.2 -o astral.zip
-unzip -qo astral.zip
-cd astral-2.2/
-python3 setup.py install
-cd ../
-rm -rf astral.zip astral-2.2/
-
-### installing paho-mqtt library
-echo -e "\033[36m Installing Python MQTT.\033[0m"
-curl -sL https://files.pythonhosted.org/packages/59/11/1dd5c70f0f27a88a3a05772cd95f6087ac479fac66d9c7752ee5e16ddbbc/paho-mqtt-1.5.0.tar.gz -o paho-mqtt-1.5.0.tar.gz
-tar zxvf paho-mqtt-1.5.0.tar.gz
-cd paho-mqtt-1.5.0/
-python3 setup.py install
-cd ../
-rm -rf paho-mqtt-1.5.0.tar.gz paho-mqtt-1.5.0/
-
-### installing WebSocket for Python
-echo -e "\033[36m Installing WebSocket for Python.\033[0m"
-curl -sL https://github.com/Lawouach/WebSocket-for-Python/archive/v0.3.4.zip -o ws4py.zip
-unzip -qo ws4py.zip
-cd WebSocket-for-Python-0.3.4/
-python3 setup.py install
-cd ../
-rm -rf ws4py.zip WebSocket-for-Python-0.3.4/
-
-### installing zeroconf for Python
-echo -e "\033[36m Installing zeroconf for Python.\033[0m"
-curl -sL https://github.com/jstasiak/python-zeroconf/archive/0.28.6.zip -o zeroconf.zip
-unzip -qo zeroconf.zip
-cd python-zeroconf-0.28.6/
-python3 setup.py install
-cd ../
-rm -rf zeroconf.zip python-zeroconf-0.28.6/
-
-### installing hue emulator
+echo "https://github.com/diyhue/diyHue/archive/$branchSelection.zip"
+# installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
 curl -sL https://github.com/diyhue/diyHue/archive/$branchSelection.zip -o diyHue.zip
 unzip -qo diyHue.zip
 cd diyHue-$branchSelection/BridgeEmulator/
 
+echo -e "\033[36m Installing Python Dependencies.\033[0m"
+
+pip install -t requirements.txt
+
+
 if [ -d "/opt/hue-emulator" ]; then
-  if [ -f "/opt/hue-emulator/cert.pem" ]; then
-    cp /opt/hue-emulator/cert.pem /tmp/cert.pem
-  else
-    generate_certificate
+  if [ $branchSelection != "beta" ]; then
+    if [ -f "/opt/hue-emulator/cert.pem" ]; then
+      cp /opt/hue-emulator/cert.pem /tmp/cert.pem
+    else
+      generate_certificate
+    fi
   fi
 
   systemctl stop hue-emulator.service
   echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
-  cp /opt/hue-emulator/config.json /tmp
-  rm -rf /opt/hue-emulator
-  mkdir /opt/hue-emulator
-  mv /tmp/config.json /opt/hue-emulator
-  mv /tmp/cert.pem /opt/hue-emulator
+  if [ $branchSelection != "beta" ]; then
+    cp /opt/hue-emulator/config.json /tmp
+    rm -rf /opt/hue-emulator
+    mkdir /opt/hue-emulator
+    mv /tmp/config.json /opt/hue-emulator
+    mv /tmp/cert.pem /opt/hue-emulator
+  else
+    cp -r /opt/hue-emulator/config /tmp/diyhue_backup
+    rm -rf /opt/hue-emulator/*
+    cp -r /tmp/diyhue_backup /opt/hue-emulator
+  fi
 
 else
   if cat /proc/net/tcp | grep -c "00000000:0050" > /dev/null; then
@@ -169,11 +160,18 @@ else
       exit 1
   fi
   mkdir /opt/hue-emulator
-  cp default-config.json /opt/hue-emulator/
 
+  if [ $branchSelection != "beta" ]; then
+    cp default-config.json /opt/hue-emulator/
+  fi
   generate_certificate
 fi
-cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
+
+if [ $branchSelection == "beta" ]; then
+  cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
+else
+  cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
+fi
 
 # Install correct binaries
 case $arch in
@@ -201,7 +199,6 @@ esac
 
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
-chmod +x /opt/hue-emulator/check_updates.sh
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-$branchSelection
@@ -211,3 +208,4 @@ systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
+
