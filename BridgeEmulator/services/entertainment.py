@@ -54,7 +54,7 @@ def entertainmentService(group, user):
     fremeID = 1
     host_ip = bridgeConfig["config"]["ipaddress"]
     try:
-        while group.stream["active"]:
+        while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
                 line = p.stdout.read(200)
                 frameBites = line[1:].find(b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d') + 1
@@ -229,6 +229,9 @@ def entertainmentService(group, user):
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
         p.kill()
+
+    logging.info("Entertainment service stopped")
+
 
 
 def enableMusic(ip, host_ip):
