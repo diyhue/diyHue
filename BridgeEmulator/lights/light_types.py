@@ -49,10 +49,19 @@ lightTypes["LCX002"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,
 lightTypes["LCX002"]["config"] = {"archetype": "huelightstriptv","function": "mixed","direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
 lightTypes["LCX002"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
+
+lightTypes["915005987201"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue play gradient lightstrip","swversion": "1.94.2","swconfigid": "DC0A18AF","productid": "4422-9482-0441_HG01_PSU03"}}
+lightTypes["915005987201"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2022-01-13T22:54:51"}
+lightTypes["915005987201"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
+lightTypes["915005987201"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "915005987201","product_archetype": "hue_signe","product_name": "Signe gradient floor","software_version": "1.94.2"}
+lightTypes["915005987201"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
+lightTypes["915005987201"]["config"] = {"archetype": "huesigne","function": "decorative","direction": "horizontal","startup": {"mode": "safety","configured": False}}
+lightTypes["915005987201"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+
 lightTypes["LOM001"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}
 lightTypes["LOM001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
 lightTypes["LOM001"]["v1_static"]["capabilities"] = {"certified": True,"control": {},"streaming": {"renderer": False,"proxy": False}}
-lightTypes["LOM001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.90.1"}
+lightTypes["LOM001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "model_id": "LOM001", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.90.1"}
 lightTypes["LOM001"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
 lightTypes["LOM001"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
 lightTypes["LOM001"]["dynamics"] = {"status": "none", "status_values": ["none"]}
@@ -92,5 +101,6 @@ archetype = {"tableshade":"table_shade",
     "hueiris":"hue_iris",
     "plug":"plug",
     "huecentris":"hue_centris",
-    "huelightstriptv":"hue_lightstrip_tv"
+    "huelightstriptv":"hue_lightstrip_tv",
+    "huesigne":"hue_signe"
     }
