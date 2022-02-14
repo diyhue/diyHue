@@ -228,8 +228,7 @@ def entertainmentService(group, user):
                     p.kill()
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
-        p.kill()
-
+    p.kill()
     logging.info("Entertainment service stopped")
 
 

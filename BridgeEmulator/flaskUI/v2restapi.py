@@ -113,6 +113,7 @@ def v2BridgeHome():
     for key, sensor in bridgeConfig["sensors"].items():
         if sensor.getBridgeHome():
             result["services"].append(sensor.getBridgeHome())
+    result["services"].append({"rid": bridgeConfig["groups"]["0"].id_v2 ,"rtype": "grouped_light"})
     return result
 
 
@@ -427,7 +428,7 @@ class ClipV2ResourceId(Resource):
         logging.debug(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
-            object.setV2State(putDict)
+            object.setVactive2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
                 if putDict["action"] == "start":
@@ -438,7 +439,7 @@ class ClipV2ResourceId(Resource):
                            object, authorisation["user"]]).start()
                     for light in object.lights:
                         light().state["mode"] = "streaming"
-                    sleep(3)
+                    sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     object.stream["active"] = False
