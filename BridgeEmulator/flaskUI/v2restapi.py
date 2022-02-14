@@ -428,7 +428,7 @@ class ClipV2ResourceId(Resource):
         logging.debug(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
-            object.setVactive2State(putDict)
+            object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
                 if putDict["action"] == "start":

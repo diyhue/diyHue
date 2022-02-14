@@ -403,6 +403,7 @@ class Light():
         result = {"id": str(uuid.uuid5(
             uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
         result["id_v1"] = "/lights/" + self.id_v1
+        result["identify"] = {}
         result["metadata"] = {
             "archetype": lightTypes[self.modelid]["device"]["product_archetype"],
             "name": self.name
@@ -450,11 +451,24 @@ class Light():
     def getV2Api(self):
         result = {}
         result["alert"] = {"action_values": ["breathe"]}
-        if self.modelid.startswith("LCX"):
+        if self.modelid in ["LCX002", "915005987201"]:
+            result["effects"] = {
+                "effect_values": [
+                    "no_effect",
+                    "candle",
+                    "fire"
+                ],
+                "status": "no_effect",
+                "status_values": [
+                    "no_effect",
+                    "candle",
+                    "fire"
+                ]
+            }
             result["gradient"] = {"points": self.state["gradient"]["points"],
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002"]:  # color lights only
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201"]:  # color lights only
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -507,11 +521,13 @@ class Light():
             "proxy": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["proxy"],
             "renderer": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["renderer"]
         }
+        result["owner"] = {
+        "rid": self.getDevice()["id"],"rtype": "device"}
         result["segments"] = {
-            "configurable": False,
-            "max_segments": 1
+            "configurable": False
         }
-        if self.modelid in ["LCX001", "LCX002", "LCX003"]:
+        if self.modelid == "LCX002":
+            result["segments"]["max_segments"] = 7
             result["segments"]["segments"] = [
                 {
                     "length": 2,
@@ -541,7 +557,24 @@ class Light():
                     "length": 2,
                     "start": 18
                 }]
+        elif self.modelid == "915005987201":
+            result["segments"]["max_segments"] = 10
+            result["segments"]["segments"] = [
+                    {
+                        "length": 3,
+                        "start": 0
+                    },
+                    {
+                        "length": 4,
+                        "start": 3
+                    },
+                    {
+                        "length": 3,
+                        "start": 7
+                    }
+                ]
         else:
+            result["segments"]["max_segments"] = 1
             result["segments"]["segments"] = [{
                 "length": 1,
                 "start": 0

@@ -29,7 +29,7 @@ def skipSimilarFrames(light, color, brightness):
 
 def findGradientStrip(group):
     for light in group.lights:
-        if light().modelid in ["LCX001", "LCX002", "LCX003"]:
+        if light().modelid in ["LCX001", "LCX002", "LCX003", "915005987201"]:
             return light()
     return "not found"
 
@@ -57,6 +57,7 @@ def entertainmentService(group, user):
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
                 line = p.stdout.read(200)
+                logging.debug(",".join('{:02x}'.format(x) for x in line))
                 frameBites = line[1:].find(b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d') + 1
                 print("frameBites: " + str(frameBites))
                 if frameBites > 100:
@@ -137,7 +138,7 @@ def entertainmentService(group, user):
                             if light.protocol_cfg["ip"] not in nativeLights:
                                 nativeLights[light.protocol_cfg["ip"]] = {}
                             if apiVersion == 1:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201"]:
                                     if data[i] == 1: # individual strip address
                                         nativeLights[light.protocol_cfg["ip"]][data[i+1] * 256 + data[i+2]] = [r, g, b]
                                     elif data[i] == 0: # individual strip address
@@ -147,7 +148,7 @@ def entertainmentService(group, user):
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
 
                             elif apiVersion == 2:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201"]:
                                     nativeLights[light.protocol_cfg["ip"]][channels[data[i]]] = [r, g, b]
                                 else:
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
