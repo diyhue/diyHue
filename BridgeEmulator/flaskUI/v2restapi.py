@@ -355,6 +355,9 @@ class ClipV2Resource(Resource):
                                 if "xy" in scene["color"]:
                                     sceneState["xy"] = [
                                         scene["color"]["xy"]["x"], scene["color"]["xy"]["y"]]
+                            if "color_temperature" in scene:
+                                if "mirek" in scene["color_temperature"]:
+                                    sceneState["ct"] = scene["color_temperature"]["mirek"]
                             if "gradient" in scene:
                                 sceneState["gradient"] = scene["gradient"]
                             newObject.lightstates[lightObj] = sceneState
