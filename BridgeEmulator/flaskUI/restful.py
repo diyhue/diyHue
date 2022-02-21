@@ -179,7 +179,7 @@ class ResourceElements(Resource):
             if "locations" in postDict:
                 for light, location in postDict["locations"].items():
                     bridgeConfig[resource][new_object_id].locations[bridgeConfig["lights"]
-                                                                    [light]] = location
+                                                                    [light]] = [{"x": location[0], "y": location[1], "z": location[2]}]
             # trigger stream messages
             GroupZeroMessage()
         elif resource == "scenes":
@@ -359,13 +359,11 @@ class Element(Resource):
                         if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                             del bridgeConfig["scenes"][scene]
             if "locations" in putDict:
-                locations = weakref.WeakKeyDictionary()
                 for light, location in putDict["locations"].items():
-                    locations[bridgeConfig["lights"][light]] = location
-                putDict["locations"] = locations
+                    bridgeConfig["groups"][resourceid].locations[bridgeConfig["lights"][light]] = [{"x": location[0], "y": location[1], "z": location[2]}]
         bridgeConfig[resource][resourceid].update_attr(putDict)
         rulesProcessor(bridgeConfig[resource][resourceid], currentTime)
-        pprint(responseList)
+        logging.debug(responseList)
         return responseList
 
     def delete(self, username, resource, resourceid):

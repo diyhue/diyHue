@@ -375,8 +375,7 @@ class ClipV2Resource(Resource):
                         obj = getObject(
                             element["service"]["rtype"], element["service"]["rid"])
                         newObject.add_light(obj)
-                        newObject.locations[obj] = [
-                            element["positions"][0]["x"], element["positions"][0]["y"], element["positions"][0]["z"]]
+                        newObject.locations[obj] = element["positions"]
             bridgeConfig["groups"][new_object_id] = newObject
 
         # return message

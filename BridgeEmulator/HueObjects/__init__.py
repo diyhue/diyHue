@@ -15,6 +15,7 @@ logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
 
+
 def genV2Uuid():
     return str(uuid.uuid4())
 
@@ -283,7 +284,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
-        ## Zigbee Connectivity
+        # Zigbee Connectivity
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
                          "id": str(uuid.uuid4()),
@@ -291,7 +292,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
-        ## Entertainment
+        # Entertainment
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
                          "id": str(uuid.uuid4()),
@@ -451,7 +452,7 @@ class Light():
     def getV2Api(self):
         result = {}
         result["alert"] = {"action_values": ["breathe"]}
-        if self.modelid in ["LCX002", "915005987201"]:
+        if self.modelid in ["LCX002", "915005987201", "915005106701"]:
             result["effects"] = {
                 "effect_values": [
                     "no_effect",
@@ -468,7 +469,8 @@ class Light():
             result["gradient"] = {"points": self.state["gradient"]["points"],
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201"]:  # color lights only
+        # color lights only
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "915005106701"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -522,7 +524,7 @@ class Light():
             "renderer": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["renderer"]
         }
         result["owner"] = {
-        "rid": self.getDevice()["id"],"rtype": "device"}
+            "rid": self.getDevice()["id"], "rtype": "device"}
         result["segments"] = {
             "configurable": False
         }
@@ -557,22 +559,22 @@ class Light():
                     "length": 2,
                     "start": 18
                 }]
-        elif self.modelid == "915005987201":
+        elif self.modelid in ["915005987201", "915005106701"]:
             result["segments"]["max_segments"] = 10
             result["segments"]["segments"] = [
-                    {
-                        "length": 3,
-                        "start": 0
-                    },
-                    {
-                        "length": 4,
-                        "start": 3
-                    },
-                    {
-                        "length": 3,
-                        "start": 7
-                    }
-                ]
+                {
+                    "length": 3,
+                    "start": 0
+                },
+                {
+                    "length": 4,
+                    "start": 3
+                },
+                {
+                    "length": 3,
+                    "start": 7
+                }
+            ]
         else:
             result["segments"]["max_segments"] = 1
             result["segments"]["segments"] = [{
@@ -596,7 +598,7 @@ class Light():
                 if index == len(palette["color"]):
                     index = 0
                 points = []
-                if self.modelid.startswith("LCX"):
+                if self.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "915005106701"]:
                     gradientIndex = index
                     # for gradient lights
                     for x in range(self.protocol_cfg["points_capable"]):
@@ -660,9 +662,8 @@ class EntertainmentConfiguration():
                          }
         eventstream.append(streamMessage)
 
-
     def __del__(self):
-        ### Groupper light
+        # Groupper light
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light"}],
                          "id": str(uuid.uuid4()),
@@ -682,12 +683,12 @@ class EntertainmentConfiguration():
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
-        self.locations[light] = [0, 0, 0]
+        self.locations[light] = [{"x": 0, "y": 0, "z": 0}]
 
     def update_attr(self, newdata):
-        if "lights" in newdata: # update of the lights must be done using add_light function
+        if "lights" in newdata:  # update of the lights must be done using add_light function
             del newdata["lights"]
-        if "locations" in newdata: # update of the locations must be done directly from restful
+        if "locations" in newdata:  # update of the locations must be done directly from restful
             del newdata["locations"]
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
@@ -755,57 +756,69 @@ class EntertainmentConfiguration():
         locations = list(self.locations.items())
         for light, location in locations:
             if light.id_v1 in lights:
-                result["locations"][light.id_v1] = location
+                result["locations"][light.id_v1] = [
+                    location[0]["x"], location[0]["y"], location[0]["z"]]
         result["stream"] = self.stream
         return result
 
     def getV2Api(self):
 
-        gradienStripPositions = [[-0.4000000059604645, 0.800000011920929, -0.4000000059604645],
-                                 [-0.4000000059604645, 0.800000011920929, 0.0],
-                                 [-0.4000000059604645, 0.800000011920929,
-                                     0.4000000059604645],
-                                 [0.0, 0.800000011920929, 0.4000000059604645],
-                                 [0.4000000059604645, 0.800000011920929,
-                                     0.4000000059604645],
-                                 [0.4000000059604645, 0.800000011920929, 0.0],
-                                 [0.4000000059604645, 0.800000011920929, -0.4000000059604645]]
+        gradienStripPositions = [{"x": -0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645},
+                                 {"x": -0.4000000059604645,
+                                     "y": 0.800000011920929, "z": 0.0},
+                                 {"x": -0.4000000059604645, "y": 0.800000011920929,
+                                     "z": 0.4000000059604645},
+                                 {"x": 0.0, "y": 0.800000011920929,
+                                     "z": 0.4000000059604645},
+                                 {"x": 0.4000000059604645, "y": 0.800000011920929,
+                                     "z": 0.4000000059604645},
+                                 {"x": 0.4000000059604645,
+                                     "y": 0.800000011920929, "z": 0.0},
+                                 {"x": 0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645}]
 
         result = {
-            "channels": [],
             "configuration_type": self.configuration_type,
-            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment_configuration')),
-            "id_v1": "/groups/" + self.id_v1,
             "locations": {
                 "service_locations": []
             },
             "metadata": {
                 "name": self.name
             },
-            "name": self.name,
-            "status": "active" if self.stream["active"] else "inactive",
+            "id_v1": "/groups/" + self.id_v1,
             "stream_proxy": {
                 "mode": "auto",
                 "node": {
-                    "rid": "57a9ebc9-406d-4a29-a4ff-42acee9e9be9",
+                    "rid": str(uuid.uuid5(
+                        uuid.NAMESPACE_URL, self.lights[0]().id_v2 + 'entertainment')) if len(self.lights) > 0 else None,
                     "rtype": "entertainment"
                 }
             },
-            "type": "entertainment_configuration"
+            "light_services": [],
+            "channels": [],
+            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment_configuration')),
+            "type": "entertainment_configuration",
+            "name": self.name,
+            "status": "active" if self.stream["active"] else "inactive"
 
         }
         channel_id = 0
         for light in self.lights:
             if light():
-                loops = 1
+                result["light_services"].append(
+                    {"rtype": "light", "rid": light().id_v2})
                 entertainmentUuid = str(uuid.uuid5(
                     uuid.NAMESPACE_URL, light().id_v2 + 'entertainment'))
+                result["locations"]["service_locations"].append({"positions": self.locations[light()],
+                                                                 "service": {"rid": entertainmentUuid, "rtype": "entertainment"}, "position": self.locations[light()][0]})
+
+                loops = 1
                 gradientStrip = False
                 if light().modelid in ["LCX001", "LCX002", "LCX003"]:
-                    loops = 7
-                    gradientStrip = True
+                    loops = len(gradienStripPositions)
+                elif light().modelid in ["915005987201", "915005106701"]:
+                    loops = 3
                 for x in range(loops):
-                    result["channels"].append({
+                    channel = {
                         "channel_id": channel_id,
                         "members": [
                             {
@@ -815,31 +828,22 @@ class EntertainmentConfiguration():
                                     "rtype": "entertainment"
                                 }
                             }
-                        ],
-                        "position": {
-                            "x": gradienStripPositions[x][0] if gradientStrip else self.locations[light()][0],
-                            "y": gradienStripPositions[x][1] if gradientStrip else self.locations[light()][1],
-                            "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
-                        }
-                    })
-                    result["locations"]["service_locations"].append({
-                        "position": {
-                            "x": gradienStripPositions[x][0] if gradientStrip else self.locations[light()][0],
-                            "y": gradienStripPositions[x][1] if gradientStrip else self.locations[light()][1],
-                            "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
-                        },
-                        "positions": [{
-                            "x": gradienStripPositions[x][0] if gradientStrip else self.locations[light()][0],
-                            "y": gradienStripPositions[x][1] if gradientStrip else self.locations[light()][1],
-                            "z": gradienStripPositions[x][2] if gradientStrip else self.locations[light()][2]
-                        }],
-                        "service": {
-                            "rid": entertainmentUuid,
-                            "rtype": "entertainment"
-                        }
+                        ]
+                    }
+                    if light().modelid in ["LCX001", "LCX002", "LCX003"]:
+                        channel["position"] = {"x": gradienStripPositions[x]["x"], "y": gradienStripPositions[x]["y"], "z": gradienStripPositions[x]["z"]}
+                    elif light().modelid in ["915005987201", "915005106701"]:
+                        if x == 0:
+                            channel["position"] = {"x": self.locations[light()][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
+                        elif x == 2:
+                            channel["position"] = {"x": self.locations[light()][1]["x"], "y": self.locations[light()][1]["y"], "z": self.locations[light()][1]["z"]}
+                        else:
+                            channel["position"] = {"x": (self.locations[light()][0]["x"] + self.locations[light()][1]["x"]) / 2, "y": (self.locations[light()][0]["y"] + self.locations[light()][1]["y"]) / 2, "z": (self.locations[light()][0]["z"] + self.locations[light()][1]["z"]) / 2}
+                    else:
+                        channel["position"] = {"x": self.locations[light()][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
 
-                    })
-                channel_id += 1
+                    result["channels"].append(channel)
+                    channel_id += 1
 
         return result
 
@@ -856,7 +860,6 @@ class EntertainmentConfiguration():
                 v1State["xy"] = [state["color"]["xy"]
                                  ["x"], state["color"]["xy"]["y"]]
         setGroupAction(self, v1State)
-
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
@@ -903,30 +906,33 @@ class Group():
 
     def groupZeroStream(self, rooms, lights):
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children":[], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
+                         "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         for room in rooms:
-            streamMessage["data"][0]["children"].append({"rid":room,"rtype":"room"})
+            streamMessage["data"][0]["children"].append(
+                {"rid": room, "rtype": "room"})
         for light in lights:
-            streamMessage["data"][0]["children"].append({"rid":light,"rtype":"light"})
+            streamMessage["data"][0]["children"].append(
+                {"rid": light, "rtype": "light"})
         eventstream.append(streamMessage)
 
     def __del__(self):
-        ### Groupper light
+        # Groupper light
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2,  "id_v1":"/groups/" + self.id_v1, "type": "grouped_light"}],
+                         "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         eventstream.append(streamMessage)
         ### room / zone ####
-        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room(
+        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": elementId,  "id_v1":"/groups/" + self.id_v1, "type": elementType}],
+                         "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
@@ -935,16 +941,17 @@ class Group():
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
-        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room(
+        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"alert":{"action_values":["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on":self.action["on"]}, "type": "grouped_light",}],
+                         "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
         eventstream.append(streamMessage)
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"grouped_services":[{"rid":self.id_v2,"rtype":"grouped_light"}],"id":elementId,"id_v1":"/groups/" + self.id_v1, "type":elementType}],
+                         "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
@@ -954,11 +961,12 @@ class Group():
         groupServices = []
         for light in self.lights:
             if light():
-                groupChildrens.append({"rid":light().getDevice()["id"],"rtype":"device"})
-                groupServices.append({"rid":light().id_v2,"rtype":"light"})
-        groupServices.append({"rid":self.id_v2,"rtype":"grouped_light"})
+                groupChildrens.append(
+                    {"rid": light().getDevice()["id"], "rtype": "device"})
+                groupServices.append({"rid": light().id_v2, "rtype": "light"})
+        groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children":groupChildrens,"id": elementId, "id_v1": "/groups/" + self.id_v1, "services":groupServices, "type": elementType}],
+                         "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
@@ -968,7 +976,7 @@ class Group():
         self.sensors.append(weakref.ref(sensor))
 
     def update_attr(self, newdata):
-        if "lights" in newdata: # update of the lights must be done using add_light function
+        if "lights" in newdata:  # update of the lights must be done using add_light function
             del newdata["lights"]
         if "class" in newdata:
             newdata["icon_class"] = newdata.pop("class")
@@ -1016,7 +1024,7 @@ class Group():
         for light in self.lights:
             if light():
                 streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner":{"rid": light().getDevice()["id"],"rtype":"device"}, "type": "light"}],
+                                 "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner": {"rid": light().getDevice()["id"], "rtype":"device"}, "type": "light"}],
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
@@ -1560,7 +1568,8 @@ class Sensor():
         self.modelid = data["modelid"]
         self.manufacturername = data["manufacturername"] if "manufacturername" in data else "Philips"
         self.protocol = data["protocol"] if "protocol" in data else "none"
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
+        }
         self.type = data["type"]
         self.state = data["state"]
         dxstate = {}
