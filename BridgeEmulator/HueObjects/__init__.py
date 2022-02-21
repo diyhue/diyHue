@@ -594,11 +594,11 @@ class Light():
         while self.dynamics["status"] == "dynamic_palette":
             transition = int(30 / self.dynamics["speed"])
             logging.debug("using transistiontime " + str(transition))
-            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002"]:
+            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "915005106701"]:
                 if index == len(palette["color"]):
                     index = 0
                 points = []
-                if self.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "915005106701"]:
+                if self.modelid in ["LCX002", "915005987201", "915005106701"]:
                     gradientIndex = index
                     # for gradient lights
                     for x in range(self.protocol_cfg["points_capable"]):
