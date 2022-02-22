@@ -1,6 +1,8 @@
+from time import sleep
 import logManager
 import configManager
 import socket, json
+import requests
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
 import paho.mqtt.publish as publish
@@ -33,6 +35,18 @@ def findGradientStrip(group):
             return light()
     return "not found"
 
+def get_hue_entertainment_group(light, groupname):
+    group = requests.get("http://" + light.protocol_cfg["ip"] + "/api/" + light.protocol_cfg["hueUser"] + "/groups/", timeout=3)
+    #logging.debug("Returned Groups: " + group.text)
+    groups = json.loads(group.text)
+    out = -1
+    for i, grp in groups.items():
+        #logging.debug("Group "  + i + " has Name " + grp["name"] + " and type " + grp["type"])
+        if (grp["name"] == groupname) and (grp["type"] == "Entertainment") and (light.protocol_cfg["id"] in grp["lights"]):
+            out = i
+            logging.debug("Found Corresponding entertainment group with id " + out + " for light " + light.name)
+    return int(out)
+
 YeelightConnections = {}
 
 def entertainmentService(group, user):
@@ -40,15 +54,27 @@ def entertainmentService(group, user):
     logging.debug("Key: " + user.client_key)
     lights_v2 = []
     lights_v1 = {}
+    hueGroup  = -1
+    hueGroupLights = {}
     channel = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
         lights_v2.append(light())
+        if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
+            hueGroup = get_hue_entertainment_group(light(), group.name)
+            hueGroupLights[int(light().protocol_cfg["id"])] = [] # Add light id to list
         channel += 1
+        
     logging.debug(lights_v1)
     logging.debug(lights_v2)
     opensslCmd = ['openssl', 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
+        h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
+        h.connect(hueGroup, hueGroupLights)
+        if h._connected == False:
+            hueGroupLights = {} # on a failed connection, empty the list
+
     init = False
     frameBites = 10
     fremeID = 1
@@ -180,6 +206,8 @@ def entertainmentService(group, user):
                                            ]["ledCount"] = light.protocol_cfg["ledCount"]
                             wledLights[light.protocol_cfg["ip"]
                                        ]["color"] = [r, g, b]
+                        elif proto == "hue" and int(light.protocol_cfg["id"]) in hueGroupLights:
+                            hueGroupLights[int(light.protocol_cfg["id"])] = [r,g,b]
                         else:
                             if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
                                 operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
@@ -223,12 +251,18 @@ def entertainmentService(group, user):
                             udpdata = bytes(udphead+color)
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             sock.sendto(udpdata, (ip, 21324))
+                    if len(hueGroupLights) != 0:
+                        h.send(hueGroupLights)
                 else:
                     logging.info("HueStream was missing in the frame")
                     p.kill()
+                    if h != None:
+                        h.disconnect()
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
         p.kill()
+        if h != None:
+            h.disconnect()
 
 
 def enableMusic(ip, host_ip):
@@ -346,3 +380,63 @@ class YeelightConnection(object):
             self.send(msg.encode())
         except Exception as e:
             logging.warning("Yeelight command error: %s", e)
+
+
+class HueConnection(object):
+    _connected = False
+    _ip = ""
+    _entGroup = -1
+    _connection = ""
+    _hueLights = []
+
+    def __init__(self, ip):
+        self._ip = ip
+    
+    def connect(self, hueGroup, *lights):
+        self._entGroup = hueGroup
+        self._hueLights = lights
+        self.disconnect()
+
+        url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
+        r = requests.put(url, json={"stream":{"active":True}})
+        logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
+        try:
+            _opensslCmd = ['openssl', 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
+            self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=None) # Open a dtls connection to the Hue bridge
+            self._connected = True
+            sleep(1) # Wait a bit to catch errors
+            err = self._connection.poll()
+            if err != None:
+                raise ConnectionError(err)
+        except Exception as e:
+            logging.info("Error connecting to Hue bridge for entertainment. Is a proper hueKey set? openssl connection returned: %s", e)
+            self.disconnect()
+
+    def disconnect(self):
+        url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
+        if self._connected:
+            self._connection.kill()
+        requests.put(url, data={"stream":{"active":False}})
+        self._connected = False
+
+    def send(self, lights):
+        arr = bytearray("HueStream", 'ascii')
+        msg = [
+                1, 0,     #Api version
+                0,        #Sequence number, not needed
+                0, 0,     #Zeroes
+                0,        #0: RGB Color space, 1: XY Brightness
+                0,        #Zero
+              ]
+        for id in lights:
+            r, g, b = lights[id]
+            msg.extend([    0,      #Type: Light
+                            0, id,  #Light id (v1-type), 16 Bit
+                            r, r,   #Red (or X) as 16 (2 * 8) bit value
+                            g, g,   #Green (or Y)
+                            b, b,   #Blue (or Brightness)
+                            ])
+        arr.extend(msg)
+        logging.debug("Outgoing data to other Hue Bridge: " + arr.hex(','))
+        self._connection.stdin.write(arr)
+        self._connection.stdin.flush()
