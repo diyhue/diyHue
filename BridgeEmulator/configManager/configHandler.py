@@ -1,4 +1,5 @@
 from configManager import configInit
+from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
 import json
@@ -29,8 +30,7 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    projectDir = '/opt/hue-emulator'
-    configDir = projectDir + '/config'
+    configDir = parse_arguments()["CONFIG_PATH"]
 
     def __init__(self):
         if not os.path.exists(self.configDir):
@@ -53,10 +53,10 @@ class Config:
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
 
-                if int(config["swversion"]) < 1948086000:
-                    config["swversion"] = "1948086000"
-                if config["apiversion"] != "1.47.0":
-                    config["apiversion"] = "1.47.0"
+                if int(config["swversion"]) < 1949203030:
+                    config["swversion"] = "1949203030"
+                if config["apiversion"] != "1.48.0":
+                    config["apiversion"] = "1.48.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -80,15 +80,17 @@ class Config:
                     data["id_v1"] = group
                     if data["type"] == "Entertainment":
                         self.yaml_config["groups"][group] = EntertainmentConfiguration(data)
+                        for light in data["lights"]:
+                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
                         if "locations" in data:
                             for light, location in data["locations"].items():
                                 lightObj = self.yaml_config["lights"][light]
                                 self.yaml_config["groups"][group].locations[lightObj] = location
                     else:
                         self.yaml_config["groups"][group] = Group(data)
-                    #   Reference lights objects instead of id's
-                    for light in data["lights"]:
-                        self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                        for light in data["lights"]:
+                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+
             #scenes
             if os.path.exists(self.configDir + "/scenes.yaml"):
                 scenes = _open_yaml(self.configDir + "/scenes.yaml")

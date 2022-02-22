@@ -1,7 +1,7 @@
 import logManager
 import configManager
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from threading import Thread
 from time import sleep, strftime
 import requests

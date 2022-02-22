@@ -35,5 +35,6 @@ def addHueSwitch(uniqueid, sensorsType):
             uniqueid += "0" + new_sensor_id + ":4d:c6-02-fc00"
         else:
             uniqueid += new_sensor_id + ":4d:c6-02-fc00"
-    bridgeConfig["sensors"][new_sensor_id] = {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if sensorsType == "ZLLSwitch" else "Tap Switch", "type": sensorsType, "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "", "uniqueid": uniqueid}
-    return(new_sensor_id)
+    deviceData = {"id_v1": new_sensor_id, "state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Dimmer Switch" if sensorsType == "ZLLSwitch" else "Tap Switch", "type": sensorsType, "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH", "manufacturername": "Philips", "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "", "uniqueid": uniqueid}
+    bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(deviceData)
+    return(bridgeConfig["sensors"][new_sensor_id])

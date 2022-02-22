@@ -5,7 +5,7 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime
-from lights.protocols import wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
 from services.homeAssistantWS import discover
 import HueObjects
 from functions.core import nextFreeId
@@ -54,48 +54,6 @@ def find_hosts(port):
     return validHosts
 
 
-def streamMessages(light):
-    # entertainment
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                     "data": [{"id": str(uuid.uuid5(
-                         uuid.NAMESPACE_URL, light.id_v2 + 'entertainment')), "type": "entertainent"}],
-                     "id": str(uuid.uuid4()),
-                     "type": "add"
-                     }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getV2Entertainment())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    # zigbee_connectivity
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                     "data": [{"id": str(uuid.uuid5(
-                         uuid.NAMESPACE_URL, light.id_v2 + 'zigbee_connectivity')), "type": "zigbee_connectivity"}],
-                     "id": str(uuid.uuid4()),
-                     "type": "add"
-                     }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getZigBee())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    # light
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                     "data": [{"id": light.id_v2, "type": "light"}],
-                     "id": str(uuid.uuid4()),
-                     "type": "add"
-                     }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getV2Api())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    # device
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                     "data": [{"id": str(uuid.uuid5(
-                         uuid.NAMESPACE_URL, light.id_v2 + 'device')), "type": "device"}],
-                     "id": str(uuid.uuid4()),
-                     "type": "add"
-                     }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getDevice())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-
-
 def addNewLight(modelid, name, protocol, protocol_cfg):
     newLightID = nextFreeId(bridgeConfig, "lights")
     if modelid in lightTypes:
@@ -108,8 +66,16 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         newObject = HueObjects.Light(light)
         bridgeConfig["lights"][newLightID] = newObject
         bridgeConfig["groups"]["0"].add_light(newObject)
+        # trigger stream messages
+        rooms = []
+        lights = []
+        for group, obj in bridgeConfig["groups"].items():
+            rooms.append(obj.id_v2)
+        for light, obj in bridgeConfig["lights"].items():
+            lights.append(obj.id_v2)
+        bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
-        streamMessages(newObject)
+
         return newLightID
     return False
 
@@ -158,6 +124,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
     esphome.discover(detectedLights, device_ips)
     tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
     hyperion.discover(detectedLights)
+    tpkasa.discover(detectedLights)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
         "%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
@@ -171,7 +138,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                         break
-                elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion"]:
+                elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion", "tpkasa"]:
                     if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
