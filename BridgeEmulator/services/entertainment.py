@@ -38,7 +38,7 @@ def getObject(v2uuid):
 
 def findGradientStrip(group):
     for light in group.lights:
-        if light().modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "915005106701"]:
+        if light().modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
             return light()
     return "not found"
 
@@ -173,7 +173,7 @@ def entertainmentService(group, user):
                             if light.protocol_cfg["ip"] not in nativeLights:
                                 nativeLights[light.protocol_cfg["ip"]] = {}
                             if apiVersion == 1:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "915005106701"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
                                     if data[i] == 1: # individual strip address
                                         nativeLights[light.protocol_cfg["ip"]][data[i+1] * 256 + data[i+2]] = [r, g, b]
                                     elif data[i] == 0: # individual strip address
@@ -183,7 +183,7 @@ def entertainmentService(group, user):
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
 
                             elif apiVersion == 2:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "915005106701"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
                                     nativeLights[light.protocol_cfg["ip"]][lights_v2[data[i]]["lightNr"]] = [r, g, b]
                                 else:
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
@@ -270,7 +270,7 @@ def entertainmentService(group, user):
                         h.disconnect()
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
-        
+
     p.kill()
     if h != None:
         h.disconnect()
@@ -405,7 +405,7 @@ class HueConnection(object):
 
     def __init__(self, ip):
         self._ip = ip
-    
+
     def connect(self, hueGroup, *lights):
         self._entGroup = hueGroup
         self._hueLights = lights

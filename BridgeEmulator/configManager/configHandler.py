@@ -65,6 +65,8 @@ class Config:
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")
                 for light, data in lights.items():
+                    if data["modelid"] == "915005106701":
+                        data["modelid"] = "LCX004"
                     data["id_v1"] = light
                     self.yaml_config["lights"][light] = Light(data)
                     #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])

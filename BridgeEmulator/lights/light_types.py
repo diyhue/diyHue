@@ -65,13 +65,13 @@ lightTypes["915005987201"]["config"] = {"archetype": "huesigne","function": "dec
 lightTypes["915005987201"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
 ## Hue Gradient Lightstrip
-lightTypes["915005106701"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue gradient lightstrip","swversion": "1.86.7","swconfigid": "DC0A18AF","productid": "4422-9482-0441_HG01_PSU03"}}
-lightTypes["915005106701"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2022-01-13T22:54:51"}
-lightTypes["915005106701"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
-lightTypes["915005106701"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "915005106701","product_archetype": "hue_lightstrip","product_name": "Hue gradient lightstrip","software_version": "1.86.7"}
-lightTypes["915005106701"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
-lightTypes["915005106701"]["config"] = {"archetype": "huelightstrip", "function": "mixed", "direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
-lightTypes["915005106701"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+lightTypes["LCX004"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue gradient lightstrip","swversion": "1.94.2","swconfigid": "DC0A18AF","productid": "4422-9482-0441_HG01_PSU03"}}
+lightTypes["LCX004"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2022-01-13T22:54:51"}
+lightTypes["LCX004"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
+lightTypes["LCX004"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "LCX004","product_archetype": "hue_lightstrip","product_name": "Hue gradient lightstrip","software_version": "1.94.2"}
+lightTypes["LCX004"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
+lightTypes["LCX004"]["config"] = {"archetype": "huelightstrip", "function": "mixed", "direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
+lightTypes["LCX004"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
 ## Hue Plug
 lightTypes["LOM001"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}

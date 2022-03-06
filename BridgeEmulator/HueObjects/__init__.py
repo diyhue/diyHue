@@ -452,7 +452,7 @@ class Light():
     def getV2Api(self):
         result = {}
         result["alert"] = {"action_values": ["breathe"]}
-        if self.modelid in ["LCX002", "915005987201", "915005106701"]:
+        if self.modelid in ["LCX002", "915005987201", "LCX004"]:
             result["effects"] = {
                 "effect_values": [
                     "no_effect",
@@ -470,7 +470,7 @@ class Light():
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "915005106701"]:
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -496,7 +496,8 @@ class Light():
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
             result["dimming"] = {
-                "brightness": self.state["bri"] / 2.54
+                "brightness": self.state["bri"] / 2.54,
+                "min_dim_level": 0.10000000149011612
             }
         result["dynamics"] = self.dynamics
         result["id"] = self.id_v2
@@ -559,7 +560,7 @@ class Light():
                     "length": 2,
                     "start": 18
                 }]
-        elif self.modelid in ["915005987201", "915005106701"]:
+        elif self.modelid in ["915005987201", "LCX004"]:
             result["segments"]["max_segments"] = 10
             result["segments"]["segments"] = [
                 {
@@ -594,11 +595,11 @@ class Light():
         while self.dynamics["status"] == "dynamic_palette":
             transition = int(30 / self.dynamics["speed"])
             logging.debug("using transistiontime " + str(transition))
-            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "915005106701"]:
+            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "LCX004"]:
                 if index == len(palette["color"]):
                     index = 0
                 points = []
-                if self.modelid in ["LCX002", "915005987201", "915005106701"]:
+                if self.modelid in ["LCX002", "915005987201", "LCX004"]:
                     gradientIndex = index
                     # for gradient lights
                     for x in range(self.protocol_cfg["points_capable"]):
@@ -815,7 +816,7 @@ class EntertainmentConfiguration():
                 gradientStrip = False
                 if light().modelid in ["LCX001", "LCX002", "LCX003"]:
                     loops = len(gradienStripPositions)
-                elif light().modelid in ["915005987201", "915005106701"]:
+                elif light().modelid in ["915005987201", "LCX004"]:
                     loops = 3
                 for x in range(loops):
                     channel = {
@@ -832,7 +833,7 @@ class EntertainmentConfiguration():
                     }
                     if light().modelid in ["LCX001", "LCX002", "LCX003"]:
                         channel["position"] = {"x": gradienStripPositions[x]["x"], "y": gradienStripPositions[x]["y"], "z": gradienStripPositions[x]["z"]}
-                    elif light().modelid in ["915005987201", "915005106701"]:
+                    elif light().modelid in ["915005987201", "LCX004"]:
                         if x == 0:
                             channel["position"] = {"x": self.locations[light()][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
                         elif x == 2:
