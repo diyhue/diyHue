@@ -234,6 +234,7 @@ class Light():
         }
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
+        self.effect = "no_effect"
         # entertainment
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": str(uuid.uuid5(
@@ -385,6 +386,9 @@ class Light():
                                  ["x"], state["color"]["xy"]["y"]]
         if "gradient" in state:
             v1State["gradient"] = state["gradient"]
+        if "effects" in state:
+            v1State["effect"] = state["effects"]["effect"]
+            self.effect = v1State["effect"]
         if "transitiontime" in state:  # to be replaced once api will be public
             v1State["transitiontime"] = state["transitiontime"]
         if "dynamics" in state and "speed" in state["dynamics"]:
@@ -459,7 +463,7 @@ class Light():
                     "candle",
                     "fire"
                 ],
-                "status": "no_effect",
+                "status": self.effect,
                 "status_values": [
                     "no_effect",
                     "candle",
