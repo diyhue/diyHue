@@ -55,8 +55,8 @@ class Config:
 
                 if int(config["swversion"]) < 1949203030:
                     config["swversion"] = "1949203030"
-                if config["apiversion"] != "1.48.0":
-                    config["apiversion"] = "1.48.0"
+                if float(config["apiversion"][:3]) < 1.49:
+                    config["apiversion"] = "1.49.0"
 
                 self.yaml_config["config"] = config
             else:
