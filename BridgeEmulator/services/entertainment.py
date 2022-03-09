@@ -262,18 +262,22 @@ def entertainmentService(group, user):
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                             sock.sendto(udpdata, (ip, 21324))
                     if len(hueGroupLights) != 0:
-                        h.send(hueGroupLights)
+                        h.send(hueGroupLights, hueGroup)
                 else:
                     logging.info("HueStream was missing in the frame")
                     p.kill()
-                    if h != None:
+                    try:
                         h.disconnect()
+                    except UnboundLocalError:
+                        pass
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
 
     p.kill()
-    if h != None:
+    try:
         h.disconnect()
+    except UnboundLocalError:
+        pass
     bridgeConfig["groups"][group.id_v1].stream["active"] = False
     for light in group.lights:
          bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
@@ -427,13 +431,16 @@ class HueConnection(object):
             self.disconnect()
 
     def disconnect(self):
-        url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
-        if self._connected:
-            self._connection.kill()
-        requests.put(url, data={"stream":{"active":False}})
-        self._connected = False
+        try:
+            url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
+            if self._connected:
+                self._connection.kill()
+            requests.put(url, data={"stream":{"active":False}})
+            self._connected = False
+        except:
+            pass
 
-    def send(self, lights):
+    def send(self, lights, hueGroup):
         arr = bytearray("HueStream", 'ascii')
         msg = [
                 1, 0,     #Api version
@@ -452,5 +459,10 @@ class HueConnection(object):
                             ])
         arr.extend(msg)
         logging.debug("Outgoing data to other Hue Bridge: " + arr.hex(','))
-        self._connection.stdin.write(arr)
-        self._connection.stdin.flush()
+        try:
+            self._connection.stdin.write(arr)
+            self._connection.stdin.flush()
+        except:
+            logging.debug("Reconnecting to Hue bridge to sync. This is normal.") #Reconnect if the connection timed out
+            self.disconnect()
+            self.connect(hueGroup)
