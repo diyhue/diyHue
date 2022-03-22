@@ -12,29 +12,33 @@ RUN chmod +x ./select.sh && \
     mkdir out && \
     ./select.sh
 
-# ============================ Actual image from here ==================== # try buster instead of stable
-FROM debian:buster-slim as prod 
+# ============================ Actual image from here ====================
+#FROM debian:stable-slim as prod
+FROM debian@sha256:457715c656bf1b14ae3790853c1a4bde13a7e740c510b9c029d38012be78d8c6 as prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
 COPY requirements.txt ./
 
 ## Install requirements  
-RUN apt-get update && apt-get install -y apt-utils \
-    && apt-get install --no-install-recommends -y \
-    python3-minimal python3-pip python3-setuptools \
+RUN apt update && apt install --no-install-recommends -y \
+    python3-minimal python3-pip python3-dev python3-setuptools gcc \
     openssl nmap psmisc iproute2 \
     && pip3 install -r requirements.txt --no-cache-dir \
-    && dpkg --add-architecture armhf && apt-get update \
-    && apt-get purge -y python3-pip python3-setuptools \
-    && apt-get autoremove -y \
+    && apt purge -y python3-pip python3-setuptools python3-dev gcc \
+    && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 ## Install diyHue
-COPY ./BridgeEmulator/web-ui/ /opt/hue-emulator/web-ui/
+COPY ./BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
 COPY ./BridgeEmulator/functions/ /opt/hue-emulator/functions/
-COPY ./BridgeEmulator/protocols/ /opt/hue-emulator/protocols/
-COPY ./BridgeEmulator/HueEmulator3.py ./BridgeEmulator/debug/clip.html /opt/hue-emulator/
+COPY ./BridgeEmulator/lights/ /opt/hue-emulator/lights/
+COPY ./BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
+COPY ./BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
+COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
+COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
+COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
+COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/
