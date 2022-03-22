@@ -119,7 +119,7 @@ cd diyHue-$branchSelection/BridgeEmulator/
 
 echo -e "\033[36m Installing Python Dependencies.\033[0m"
 
-pip3 install -r requirements.txt
+pip3 install -r ../requirements.txt
 
 
 if [ -d "/opt/hue-emulator" ]; then
