@@ -4,11 +4,7 @@ echo -e "\033[32m Updating repository.\033[0m"
 opkg update
 wait
 echo -e "\033[32m Installing dependencies.\033[0m"
-opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools
-wait
-opkg install curl coap-client unzip coreutils-nohup openssl-util
-wait
-opkg install python3-requests python3-astral python3-pytz python3-paho-mqtt
+opkg install gcc make automake ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client
 wait
 export LC_ALL=C
 echo -e "\033[32m Creating directories.\033[0m"
@@ -19,7 +15,7 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install ws4py zeroconf
+python3 -m pip install requests ws4py paho-mqtt
 wait
 cd /opt/tmp
 echo -e "\033[32m Downloading diyHue.\033[0m"
@@ -87,7 +83,7 @@ cat private.key > /opt/hue-emulator/cert.pem
 cat public.crt >> /opt/hue-emulator/cert.pem
 rm private.key public.crt
 echo -e "\033[32m Changing permissions.\033[0m"
-chmod +x /etc/init.d/diyHueWrt-service
+chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
 chmod +x /opt/hue-emulator/protocols
@@ -100,7 +96,7 @@ chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
 chmod +x /opt/hue-emulator
 echo -e "\033[32m Enable startup service.\033[0m"
-/etc/init.d/diyHueWrt-service enable
+/etc/init.d/hueemulatorWrt-service enable
 wait
 echo -e "\033[32m Installation completed. run: nano /etc/config/uhttpd and mod htpp port 80 for 82, run: nano /etc/lighttpd/lighttpd.conf and mod server.port = 80 for 82. For save changes ctrl +x, y, and enter..\033[0m"
 sleep 15s

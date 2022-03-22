@@ -49,19 +49,19 @@ generate_certificate () {
       echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
       exit 1
     fi
-    curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
+    curl "https://certgen.lightningdark.com/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
   else
     touch /opt/hue-emulator/cert.pem
     cat private.key > /opt/hue-emulator/cert.pem
     cat public.crt >> /opt/hue-emulator/cert.pem
     rm private.key public.crt
   fi
-  if [ $branchSelection == "beta" ]; then
-    if [ ! -d "/opt/hue-emulator/config/" ]; then
-      mkdir /opt/hue-emulator/config/ -p
-    fi
-    cp /opt/hue-emulator/cert.pem /opt/hue-emulator/config/
+
+  if [ ! -d "/opt/hue-emulator/config/" ]; then
+    mkdir /opt/hue-emulator/config/ -p
   fi
+  cp /opt/hue-emulator/cert.pem /opt/hue-emulator/config/
+
 
 }
 
@@ -74,7 +74,6 @@ echo -e "\033[36mPlease choose a Branch to install\033[0m"
 echo -e "\033[33mSelect Branch by entering the corresponding Number: [Default: Master]\033[0m  "
 echo -e "[1] Master Branch - most stable Release "
 echo -e "[2] Developer Branch - test latest features and fixes - Work in Progress!"
-echo -e "[3] Beta Branch - Work with Hue App 4.0 - Work in Progress!"
 echo -e "\033[36mNote: Please report any Bugs or Errors with Logs to our GitHub, Discourse or Slack. Thank you!\033[0m"
 echo -n "I go with Nr.: "
 
@@ -89,11 +88,7 @@ case $userSelection in
         branchSelection="dev"
         echo -e "Dev selected"
         ;;
-        3)
-        branchSelection="beta"
-        echo -e "Beta selected"
-        ;;
-                                *)
+				*)
         branchSelection="master"
         echo -e "Master selected"
         ;;
@@ -103,7 +98,7 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip python3 python3-pip
+  apt-get install -y unzip python3 python3-pip openssl
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
@@ -118,36 +113,23 @@ fi
 echo "https://github.com/diyhue/diyHue/archive/$branchSelection.zip"
 # installing hue emulator
 echo -e "\033[36m Installing Hue Emulator.\033[0m"
-curl -sL "https://github.com/diyhue/diyHue/archive/$branchSelection.zip" -o diyHue.zip
+curl -sL https://github.com/diyhue/diyHue/archive/$branchSelection.zip -o diyHue.zip
 unzip -qo diyHue.zip
 cd diyHue-$branchSelection/BridgeEmulator/
+
 echo -e "\033[36m Installing Python Dependencies.\033[0m"
 
-pip3 install -r ../requirements.txt
+pip3 install -t requirements.txt
 
 
 if [ -d "/opt/hue-emulator" ]; then
-  if [ $branchSelection != "beta" ]; then
-    if [ -f "/opt/hue-emulator/cert.pem" ]; then
-      cp /opt/hue-emulator/cert.pem /tmp/cert.pem
-    else
-      generate_certificate
-    fi
-  fi
 
   systemctl stop hue-emulator.service
   echo -e "\033[33m Existing installation found, performing upgrade.\033[0m"
-  if [ $branchSelection != "beta" ]; then
-    cp /opt/hue-emulator/config.json /tmp
-    rm -rf /opt/hue-emulator
-    mkdir /opt/hue-emulator
-    mv /tmp/config.json /opt/hue-emulator
-    mv /tmp/cert.pem /opt/hue-emulator
-  else
-    cp -r /opt/hue-emulator/config /tmp/diyhue_backup
-    rm -rf /opt/hue-emulator/*
-    cp -r /tmp/diyhue_backup /opt/hue-emulator
-  fi
+
+  cp -r /opt/hue-emulator/config /tmp/diyhue_backup
+  rm -rf /opt/hue-emulator/*
+  cp -r /tmp/diyhue_backup /opt/hue-emulator/config
 
 else
   if cat /proc/net/tcp | grep -c "00000000:0050" > /dev/null; then
@@ -160,37 +142,27 @@ else
   fi
   mkdir /opt/hue-emulator
 
-  if [ $branchSelection != "beta" ]; then
-    cp default-config.json /opt/hue-emulator/
-  fi
   generate_certificate
 fi
 
-if [ $branchSelection == "beta" ]; then
-  cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
-else
-  cp -r web-ui functions protocols HueEmulator3.py check_updates.sh debug /opt/hue-emulator/
-fi
+
+cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
 # Install correct binaries
 case $arch in
     x86_64|i686|aarch64)
-        cp entertainment-$arch /opt/hue-emulator/entertain-srv
         cp coap-client-$arch /opt/hue-emulator/coap-client-linux
        ;;
     arm64)
-        cp entertainment-aarch64 /opt/hue-emulator/entertain-srv
         cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
        ;;
     armv*)
-        cp entertainment-arm /opt/hue-emulator/entertain-srv
         cp coap-client-arm /opt/hue-emulator/coap-client-linux
        ;;
     *)
         echo -e "\033[0;31m-------------------------------------------------------------------------------"
         echo -e "ERROR: Unsupported architecture $arch!"
-        echo -e "You will need to manually compile the entertain-srv binary, "
-        echo -e "and install your own coap-client\033[0m"
+        echo -e "You will need to manually compile the coap-client binary\033[0m"
         echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
         echo -e "Once installed, open this script and manually run the last 10 lines."
         exit 1
@@ -207,3 +179,4 @@ systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
+

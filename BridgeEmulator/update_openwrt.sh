@@ -1,25 +1,28 @@
 #!/bin/bash
 
-echo -e "\033[32m Disable diyHueWrt startup service.\033[0m"
+echo -e "\033[32m Disable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service disable
-/etc/init.d/diyHueWrt-service disable
 echo -e "\033[32m Create directory for backup configuration.\033[0m"
 mkdir /tmp/diyHue-config
 echo -e "\033[32m Copying configuration file.\033[0m"
 cp /opt/hue-emulator/config.json /tmp/diyHue-config/config.json.bak
 cp /opt/hue-emulator/cert.pem /tmp/diyHue-config/cert.pem.bak
-echo -e "\033[32m Deleting directories and files.\033[0m"
+echo -e "\033[32m Deleting directories.\033[0m"
 rm -Rf /opt/hue-emulator
 rm -Rf /etc/init.d/hueemulatorWrt-service
-rm -Rf /etc/init.d/diyHueWrt-service
 echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 echo -e "\033[32m Updating pip dependencies.\033[0m"
+python3 -m pip install --upgrade requests
+wait
+python3 -m pip install --upgrade astral
+wait
+python3 -m pip install --upgrade pytz
 wait
 python3 -m pip install --upgrade ws4py
 wait
-python3 -m pip install --upgrade zeroconf
+python3 -m pip install --upgrade paho-mqtt
 wait
 echo -e "\033[32m Creating directories.\033[0m"
 mkdir /opt
@@ -52,7 +55,7 @@ wait
 echo -e "\033[32m Copying startup service.\033[0m"
 cp /opt/tmp/diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
 echo -e "\033[32m Changing permissions.\033[0m"
-chmod +x /etc/init.d/diyHueWrt-service
+chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/debug
 chmod +x /opt/hue-emulator/protocols
@@ -64,7 +67,7 @@ chmod +x /opt/hue-emulator/default-config.json
 chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/functions/network.py
 echo -e "\033[32m Enable startup service.\033[0m"
-/etc/init.d/diyHueWrt-service enable
+/etc/init.d/hueemulatorWrt-service enable
 wait
 echo -e "\033[32m Update completed.\033[0m"
 rm -Rf /opt/tmp
