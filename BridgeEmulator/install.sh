@@ -119,7 +119,7 @@ cd diyHue-$branchSelection/BridgeEmulator/
 
 echo -e "\033[36m Installing Python Dependencies.\033[0m"
 
-pip3 install -t requirements.txt
+pip3 install -r requirements.txt
 
 
 if [ -d "/opt/hue-emulator" ]; then
@@ -168,7 +168,6 @@ case $arch in
         exit 1
 esac
 
-chmod +x /opt/hue-emulator/entertain-srv
 chmod +x /opt/hue-emulator/coap-client-linux
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
