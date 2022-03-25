@@ -1495,7 +1495,7 @@ class Schedule():
         self.created = data["created"] if "created" in data else datetime.utcnow(
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.status = data["status"] if "status" in data else "disabled"
-        self.autodelete = data["autodelete"] if "autodelete" in data else None
+        self.autodelete = data["autodelete"] if "autodelete" in data else False
         starttime = None
         if data["localtime"].startswith("PT") or data["localtime"].startswith("R"):
             starttime = self.created
