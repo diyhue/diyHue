@@ -1,0 +1,144 @@
+.contentContainer {
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    background: rgba(255, 255, 255, 0.09);
+    background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
+    border-radius: 20px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    width: 100%;
+
+    &.spacer{
+        margin-bottom: 20px;
+    }
+
+    .headline{
+        font-size: 20px;
+        color: #ccc;
+        margin-bottom: 25px;
+    }
+
+    a{
+        color:#aaa;
+        margin-left: 5px;   
+    }
+
+    .switchContainer{
+        height: 55px;
+        margin: 20px 0 0 5px;
+
+        p{
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+    }
+
+    p{
+        color: #eee;
+    }
+
+    .supportsection{
+        margin-top: 20px;
+
+        svg{
+            width: 30px;
+            height: auto;
+            margin: 10px 20px 0 0;
+        
+            &:hover{
+                color: #eee;
+            }
+        }
+
+    }
+
+    .coffee{
+        height: 30px;
+        width: 100%;
+        margin: 20px 0 30px 0;
+        
+        p{
+
+        }
+        
+        img{
+            margin-top: 10px;
+            height: 100%;
+        }
+    }
+}
+
+.creditGrid{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20px;
+
+    
+
+
+    .contactCard{
+        display: flex;
+        flex-direction: column;
+        margin-right: 20px;
+        margin-bottom: 20px;
+        width: 300px;
+        -webkit-backdrop-filter: blur(30px);
+        backdrop-filter: blur(30px);
+        background: rgba(255, 255, 255, 0.09);
+        border-radius: 20px;
+        box-sizing: border-box;
+        padding: 20px;
+        text-align: center;
+        color: #fff;
+
+        a{
+            color:#bbb;
+        }
+    
+        .name{
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 25px;
+            letter-spacing: 5px;
+        }
+    
+        .position{
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    
+        .about{
+            width: 100%;
+        }
+
+        .iconbox{
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+
+            svg{
+                margin-right: 20px;
+
+                &:hover{
+                    color: #eee;
+                }
+            }
+        }
+
+        
+    }
+}
+
+
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+    .contentContainer{
+        background: rgba(0, 0, 0, .6);
+    }
+
+    .contactCard{
+        background: rgba(0, 0, 0, .6) !important;
+    }
+  
+  }

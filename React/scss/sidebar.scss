@@ -1,0 +1,43 @@
+.sidebar {
+  height: 100%;
+  overflow-y: auto;
+
+  ul {
+    li {
+      padding: 17px 20px;
+      color: #eee;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      transition: all .15s ease-in-out;
+
+      svg{
+        width: 30px;
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
+
+      p{
+        flex-shrink: 0;
+      }
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    li:hover{
+      transform: scale(1.1);
+    }
+
+    li.active{
+      background: rgba(255,255,255,.2);
+      border-radius: 15px;
+    }
+
+  }
+}
+
+@media screen and (max-width: 750px) {
+  
+}

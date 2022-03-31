@@ -1,0 +1,59 @@
+.ReactModalPortal {
+  .ReactModal__Overlay {
+    
+    background-color: rgba(255, 255, 255, 0) !important;
+  }
+
+  .ReactModal__Content {
+    &.ReactModal__Content--after-open {
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      background: rgba(255, 255, 255, 0.09) !important;
+      background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
+      border-radius: 20px !important;
+      box-sizing: border-box;
+      padding: 20px;
+      inset: 60px !important;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
+
+      .header {
+        display: flex;
+        font-size: 20px;
+        color: #ccc;
+
+        .headline {
+          flex: 1 1 auto;
+        }
+
+        .iconbox {
+          flex: 0 0 auto;
+
+          button {
+            background: none;
+            width: 25px;
+            height: 25px;
+            border: none;
+
+            svg {
+              color: #ccc;
+              height: 100%;
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 750px) {
+}
+
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+
+  .ReactModal__Content--after-open{
+          
+          background: rgba(252, 8, 8, .5) !important;
+        }
+    
+}

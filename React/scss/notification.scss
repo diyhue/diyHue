@@ -1,0 +1,66 @@
+.notificationContainer {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 0);
+    z-index: 1000;
+  
+    .notification {
+      position: relative;
+      height: 75px;
+      border-radius: 50px;
+      margin-bottom: 10px;
+      line-height: 75px;
+  
+      p {
+        margin-left: 25px;
+        margin-right: 75px;
+      }
+  
+      .icon {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 75px;
+        height: 75px;
+      }
+  
+      .icon:hover,
+      .icon:active {
+        svg {
+          fill: rgba(255, 255, 255, 0.9);
+          -webkit-transition: all 0.3s;
+          transition: all 0.3s;
+        }
+      }
+  
+      svg {
+        position: absolute;
+        top: 25px;
+        right: 25px;
+        fill: rgba(255, 255, 255, 0.5);
+        width: 25px;
+        height: 25px;
+        -webkit-transition: all 0.3s;
+        transition: all 0.3s;
+      }
+  
+      &.success {
+        background: linear-gradient(160deg, #a1ee59, #59ee80);
+        box-shadow: 2px 2px 15px 2px hsla(91, 81%, 20%, 0.2),
+          2px 2px 15px 2px hsla(136, 81%, 20%, 0.2);
+      }
+  
+      &.warning {
+        background: linear-gradient(130deg, #eecb59, #f1ee49);
+        box-shadow: 2px 2px 15px 2px hsla(46, 81%, 44%, 0.2),
+          2px 2px 15px 2px hsla(59, 86%, 42%, 0.2);
+      }
+  
+      &.error {
+        background: linear-gradient(170deg, #ee7759, #ee5b59);
+        box-shadow: 2px 2px 15px 2px hsla(1, 81%, 44%, 0.2),
+          2px 2px 15px 2px hsla(4, 81%, 44%, 0.2);
+      }
+    }
+  }
