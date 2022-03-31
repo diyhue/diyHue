@@ -13,7 +13,7 @@ def dockerSetup(mac):
     else:
         print("Generating certificate")
         serial = mac[:6] + "fffe" + mac[-6:]
-        call(["/opt/hue-emulator/genCert.sh", serial])
+        call(["/opt/hue-emulator/genCert.sh", serial.lower()])
         copyfile("/opt/hue-emulator/cert.pem", "/opt/hue-emulator/export/cert.pem")
         print("Certificate created")
 
