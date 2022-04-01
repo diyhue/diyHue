@@ -130,7 +130,7 @@ class BehaviorInstance():
         self.script_id = data["script_id"] if "script_id" in data else ""
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api],
+                         "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
@@ -239,7 +239,7 @@ class Light():
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": str(uuid.uuid5(
                              uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
-                         "id": self.id_v2,
+                         "id": str(uuid.uuid4()),
                          "type": "add"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
