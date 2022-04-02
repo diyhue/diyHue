@@ -185,7 +185,7 @@ class BehaviorInstance():
             else:
                 setattr(self, key, value)
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api],
+                         "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
