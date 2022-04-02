@@ -77,6 +77,7 @@ def runScheduler():
                                     seconds=fade_duration["seconds"] if "seconds" in fade_duration else 0)
                                 time_object = (datetime.combine(date(1,1,1),time_object) - delta).time()
                             if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
+                                logging.info("execute timmer: " + obj.name)
                                 Thread(target=triggerScript, args=[obj]).start()
 
                     elif "when_extended" in obj.configuration:
@@ -90,6 +91,7 @@ def runScheduler():
                                     minute = triggerTime["minute"],
                                     second = triggerTime["second"] if "second" in triggerTime else 0)
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
+                                    logging.info("execute timmer: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
 
 
