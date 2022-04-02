@@ -12,6 +12,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime
+from functions.scripts import behaviorScripts
 from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
@@ -90,6 +91,16 @@ def v2BridgeZigBee():
     return result
 
 
+def v2GeofenceClient():
+    user = authorizeV2(request.headers)
+    result = {
+      "id": str(uuid.uuid5(uuid.NAMESPACE_URL, request.headers["hue-application-key"])),
+      "name": user["user"].name,
+      "type": "geofence_client"
+    }
+    return result
+
+
 def v2BridgeHome():
     result = {}
     result["children"] = []
@@ -138,7 +149,6 @@ def v2Bridge():
 def geoLocation():
     return {
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'geolocation')),
-        "id_v1": "",
         "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
         "type": "geolocation"
     }
@@ -238,6 +248,9 @@ class ClipV2(Resource):
                 data.append(group.getV2Api())
         # bridge home
         data.append(v2BridgeHome())
+        data.append(v2GeofenceClient())
+        for script in behaviorScripts():
+            data.append(script)
         return {"errors": [], "data": data}
 
 
@@ -302,6 +315,11 @@ class ClipV2Resource(Resource):
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
+        elif resource == "geofence_client":
+            response["data"].append(v2GeofenceClient())
+        elif resource == "behavior_script":
+            for script in behaviorScripts():
+                response["data"].append(script)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]

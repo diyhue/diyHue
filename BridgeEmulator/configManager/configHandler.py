@@ -54,9 +54,9 @@ class Config:
                     config["homeassistant"] = {"enabled": False}
 
                 if int(config["swversion"]) < 1949203030:
-                    config["swversion"] = "1949203030"
-                if float(config["apiversion"][:3]) < 1.49:
-                    config["apiversion"] = "1.49.0"
+                    config["swversion"] = "1950111030"
+                if float(config["apiversion"][:3]) < 1.50:
+                    config["apiversion"] = "1.50.0"
 
                 self.yaml_config["config"] = config
             else:

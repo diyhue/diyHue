@@ -152,7 +152,7 @@ class BehaviorInstance():
                   "id": self.id_v2,
                   "last_error": "",
                   "metadata": {
-                      "type": "InstanceMetadata"
+                      "name": "noname"
                   },
                   "script_id": self.script_id,
                   "status": "running" if self.enabled else "disabled",
@@ -166,8 +166,7 @@ class BehaviorInstance():
             result["dependees"].append({"level": "critical",
                                         "target": {
                                             "rid": resource[list(resource.keys())[0]]["rid"],
-                                            "rtype": resource[list(resource.keys())[0]]["rtype"],
-                                            "type": "ResourceIdentifier"
+                                            "rtype": resource[list(resource.keys())[0]]["rtype"]
                                         },
                                         "type": "ResourceDependee"
                                         })

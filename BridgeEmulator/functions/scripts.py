@@ -64,3 +64,153 @@ def triggerScript(behavior_instance):
                     scene.activate(behavior_instance.configuration["when_extended"]["start_at"]["transition"])
                 else:
                     scene.activate({})
+
+def behaviorScripts():
+    return [{
+      "configuration_schema": {
+        "$ref": "basic_goto_sleep_config.json#"
+      },
+      "description": "Get ready for nice sleep.",
+      "id": "7e571ac6-f363-42e1-809a-4cbf6523ed72",
+      "metadata": {
+        "category": "automation",
+        "name": "Basic go to sleep routine"
+      },
+      "state_schema": {},
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "basic_wake_up_config.json#"
+      },
+      "description": "Get your body in the mood to wake up by fading on the lights in the morning.",
+      "id": "ff8957e3-2eb9-4699-a0c8-ad2cb3ede704",
+      "metadata": {
+        "category": "automation",
+        "name": "Basic wake up routine"
+      },
+      "state_schema": {},
+      "supported_features": [
+        "style_sunrise"
+      ],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "coming_home_config.json#"
+      },
+      "description": "Automatically turn your lights to choosen light states, when you arrive at home.",
+      "id": "fd60fcd1-4809-4813-b510-4a18856a595c",
+      "metadata": {
+        "category": "automation",
+        "name": "Coming home"
+      },
+      "state_schema": {},
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "leaving_home_config.json#"
+      },
+      "description": "Automatically turn off your lights when you leave",
+      "id": "0194752a-2d53-4f92-8209-dfdc52745af3",
+      "metadata": {
+        "category": "automation",
+        "name": "Leaving home"
+      },
+      "state_schema": {},
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "schedule_config.json#"
+      },
+      "description": "Schedule turning on and off lights",
+      "id": "7238c707-8693-4f19-9095-ccdc1444d228",
+      "metadata": {
+        "category": "automation",
+        "name": "Schedule"
+      },
+      "state_schema": {},
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "timer_config.json#"
+      },
+      "description": "Countdown Timer",
+      "id": "e73bc72d-96b1-46f8-aa57-729861f80c78",
+      "metadata": {
+        "category": "automation",
+        "name": "Timers"
+      },
+      "state_schema": {
+        "$ref": "timer_state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "lights_state_after_streaming_config.json#"
+      },
+      "description": "State of lights in the entertainment group after streaming ends",
+      "id": "7719b841-6b3d-448d-a0e7-601ae9edb6a2",
+      "metadata": {
+        "category": "entertainment",
+        "name": "Light state after streaming"
+      },
+      "state_schema": {},
+      "supported_features": [],
+      "trigger_schema": {},
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "natural_light_config.json#"
+      },
+      "description": "Natural light during the day",
+      "id": "a4260b49-0c69-4926-a29c-417f4a38a352",
+      "metadata": {
+        "category": "",
+        "name": "Natural Light"
+      },
+      "state_schema": {
+        "$ref": "natural_light_state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "natural_light_trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1"
+    }]
