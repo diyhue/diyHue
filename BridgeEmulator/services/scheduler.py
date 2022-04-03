@@ -65,7 +65,10 @@ def runScheduler():
                                 continue
                         if "time_point" in obj.configuration["when"] and obj.configuration["when"]["time_point"]["type"] == "time":
                             triggerTime = obj.configuration["when"]["time_point"]["time"]
-                            time_object = time(
+                            time_object = datetime(
+                                year = 1,
+                                month = 1,
+                                day = 1,
                                 hour = triggerTime["hour"],
                                 minute = triggerTime["minute"],
                                 second = triggerTime["second"] if "second" in triggerTime else 0)
@@ -75,7 +78,7 @@ def runScheduler():
                                     hours=fade_duration["hours"] if "hours" in fade_duration else 0,
                                     minutes=fade_duration["minutes"] if "minutes" in fade_duration else 0,
                                     seconds=fade_duration["seconds"] if "seconds" in fade_duration else 0)
-                                time_object = (datetime.combine(date(1,1,1),time_object) - delta).time()
+                                time_object = time_object - delta
                             if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
                                 logging.info("execute timmer: " + obj.name)
                                 Thread(target=triggerScript, args=[obj]).start()
