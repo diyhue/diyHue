@@ -169,7 +169,7 @@ def v2BridgeDevice():
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": bridgeConfig["config"]["apiversion"] + bridgeConfig["config"]["swversion"]
+        "software_version": bridgeConfig["config"]["apiversion"][:5] + bridgeConfig["config"]["swversion"]
     }
     result["services"] = [
         {

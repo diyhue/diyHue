@@ -15,6 +15,7 @@ def findScene(element):
         elif element["group"]["rtype"] == "zone":
             if obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Zone()["id"] == element["group"]["rid"]:
                 return obj
+    return False
 
 def findGroup(id_v2):
     for group, obj in bridgeConfig["groups"].items():
@@ -22,6 +23,7 @@ def findGroup(id_v2):
             return obj
         elif obj.getV2Zone()["id"] == id_v2:
             return obj
+    return False
 
 def triggerScript(behavior_instance):
 
@@ -60,10 +62,16 @@ def triggerScript(behavior_instance):
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
                 scene = findScene(element)
-                if "when_extended" in behavior_instance.configuration and "transition" in behavior_instance.configuration["when_extended"]["start_at"]:
-                    scene.activate(behavior_instance.configuration["when_extended"]["start_at"]["transition"])
+                if scene:
+                    if "when_extended" in behavior_instance.configuration and "transition" in behavior_instance.configuration["when_extended"]["start_at"]:
+                        scene.activate(behavior_instance.configuration["when_extended"]["start_at"]["transition"])
+                    else:
+                        scene.activate({})
                 else:
-                    scene.activate({})
+                    group = findGroup(element["group"]["rid"])
+                    if element["recall"]["rid"] == "f4397759-f9eb-51b8-a1b1-daa86688cb28": # Bright scene
+                        group.setGroupAction({"on": True, "bri": 254, "ct": 247})
+
 
 def behaviorScripts():
     return [{
