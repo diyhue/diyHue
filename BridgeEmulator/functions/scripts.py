@@ -69,8 +69,9 @@ def triggerScript(behavior_instance):
                         scene.activate({})
                 else:
                     group = findGroup(element["group"]["rid"])
-                    if element["recall"]["rid"] == "f4397759-f9eb-51b8-a1b1-daa86688cb28": # Bright scene
-                        group.setGroupAction({"on": True, "bri": 254, "ct": 247})
+                    if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
+                        logging.info("Apply Bright scene to group " + group.name)
+                        group.setV1Action({"on": True, "bri": 254, "ct": 247})
 
 
 def behaviorScripts():
