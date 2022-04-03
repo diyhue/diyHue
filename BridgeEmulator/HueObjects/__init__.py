@@ -185,7 +185,7 @@ class BehaviorInstance():
             else:
                 setattr(self, key, value)
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api],
+                         "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
@@ -1142,6 +1142,10 @@ class Group():
                 "breathe"
             ]
         }
+        result["color"] = {}
+        result["dimming"] = {}
+        result["dimming_delta"] = {}
+        result["dynamics"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
@@ -1293,6 +1297,7 @@ class Scene():
             if "bri" in state:
                 v2State["dimming"] = {
                     "brightness": state["bri"] / 2.54}
+                v2State["dimming_delta"] = {}
             if "xy" in state:
                 v2State["color"] = {
                     "xy": {"x": state["xy"][0], "y": state["xy"][1]}}
