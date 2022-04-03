@@ -133,6 +133,7 @@ def v2Bridge():
         "bridge_id": bridgeConfig["config"]["bridgeid"].lower(),
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
         "id_v1": "",
+        "identify": {},
         "owner": {
             "rid": str(uuid.uuid5(
                 uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
@@ -404,9 +405,6 @@ class ClipV2Resource(Resource):
             "rid": newObject.id_v2,
             "rtype": resource}
         ], "errors": []}
-        if resource == "behavior_instance":
-            returnMessage["data"][0]["type"] = "ResourceIdentifier"
-            returnMessage["type"] = "ClipMessageBehaviorInstance"
 
         logging.debug(json.dumps(returnMessage, sort_keys=True, indent=4))
         return returnMessage
