@@ -5,7 +5,7 @@ import logManager
 logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data):
-    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&idx=" + light.protocol_cfg["light_id"]
+    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&idx=" + light.protocol_cfg["domoticzID"]
     if "on" in data and not "bri" in data and not "ct" in data and not "xy" in data:
         for key, value in data.items():
             url += "&param=switchlight"
@@ -55,7 +55,7 @@ def set_light(light, data):
 
 
 def get_light_state(light):
-    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=devices&rid=" + light.protocol_cfg["light_id"]).json()
+    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=devices&rid=" + light.protocol_cfg["domoticzID"]).json()
     state = {}
     if light_data["result"][0]["Status"] == "Off":
          state["on"] = False
