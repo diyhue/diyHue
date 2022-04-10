@@ -49,6 +49,8 @@ def set_light(light, data):
 
     urlObj = {}
     urlObj["url"] = url
+
+    logging.debug(url)
     requests.put(url, timeout=3)
 
 
