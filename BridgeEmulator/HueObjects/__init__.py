@@ -354,7 +354,8 @@ class Light():
             state = incProcess(self.state, state)
             self.updateLightState(state)
             for key, value in state.items():
-                self.state[key] = value
+                if key in self.state:
+                    self.state[key] = value
             if "bri" in state:
                 if "min_bri" in self.protocol_cfg and self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
