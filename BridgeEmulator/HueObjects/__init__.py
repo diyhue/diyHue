@@ -1378,6 +1378,11 @@ class Scene():
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "appdata": self.appdata, "owner": self.owner.username, "type": self.type, "picture": self.picture,
                   "image": self.image, "recycle": self.recycle, "lastupdated": self.lastupdated, "lights": [], "lightstates": {}}
+        if self.type == "GroupScene":
+            if self.group():
+                result["group"] = self.group().id_v1
+            else:
+                return False
         if self.palette != None:
             result["palette"] = self.palette
         if self.speed != None:
@@ -1388,8 +1393,7 @@ class Scene():
         lightstates = list(self.lightstates.items())
         for light, state in lightstates:
             result["lightstates"][light.id_v1] = state
-        if self.type == "GroupScene":
-            result["group"] = self.group().id_v1
+
         return result
 
 

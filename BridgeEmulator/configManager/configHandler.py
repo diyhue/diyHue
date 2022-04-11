@@ -185,7 +185,9 @@ class Config:
             dumpDict = {}
             for element in self.yaml_config[object]:
                 if element != "0":
-                    dumpDict[self.yaml_config[object][element].id_v1] = self.yaml_config[object][element].save()
+                    savedData = self.yaml_config[object][element].save()
+                    if savedData:
+                        dumpDict[self.yaml_config[object][element].id_v1] = savedData
             _write_yaml(filePath, dumpDict)
             logging.debug("Dump config file " + filePath)
 
