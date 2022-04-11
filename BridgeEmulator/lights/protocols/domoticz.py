@@ -21,19 +21,20 @@ def set_light(light, data, rgb = None):
         color_data = {}
         if "ct" in data:
             color_data["m"] = 2
-            ct01 = (ct - 153) / (500 - 153) #map color temperature from 153-500 to 0-1
+            ct01 = (data["ct"] - 153) / (500 - 153) #map color temperature from 153-500 to 0-1
             ct255 = ct01 * 255 #map color temperature from 0-1 to 0-255
             color_data["t"] = ct255
         if "xy" in data:
+            bri = data["bri"] if "bri" in data else light.state["bri"]
             color_data["m"] = 3
             if rgb:
                 (color_data["r"], color_data["g"], color_data["b"]) = rgbBrightness(rgb, bri)
             else:
-                (color_data["r"], color_data["g"], color_data["b"]) = convert_xy(xy[0], xy[1], bri)
+                (color_data["r"], color_data["g"], color_data["b"]) = convert_xy(data["xy"][0], data["xy"][1], bri)
 
             url += "&color="+json.dumps(color_data)
         if "bri" in data:
-            url += "&brightness=" + str(round(float(bri)/255*100))
+            url += "&brightness=" + str(round(float(data["bri"])/255*100))
         logging.debug(url)
         requests.put(url, timeout=3)
 
