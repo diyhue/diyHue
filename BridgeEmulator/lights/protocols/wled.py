@@ -92,30 +92,30 @@ def set_light(light, data):
 
 
 def send_light_data(c, light, data):
+    seg = {}
     for k, v in data.items():
         if k == "on":
             if v:
-                c.setOnSeg(True, light.protocol_cfg['segmentId'])
+                seg["on"] = True
             else:
-                c.setOnSeg(False, light.protocol_cfg['segmentId'])
+                seg["on"] = False
         elif k == "bri":
-            c.setBriSeg(v+1, light.protocol_cfg['segmentId'])
+            seg["bri"] = v+1
         elif k == "ct":
             kelvin = round(translateRange(v, 153, 500, 6500, 2000))
             color = kelvinToRgb(kelvin)
-            c.setRGBSeg(color[0], color[1], color[2],
-                        light.protocol_cfg['segmentId'])
+            seg["col"] = [[color[0], color[1], color[2]]]
         elif k == "xy":
             color = convert_xy(v[0], v[1], 255)
-            c.setRGBSeg(color[0], color[1], color[2],
-                        light.protocol_cfg['segmentId'])
+            seg["col"] = [[color[0], color[1], color[2]]]
         elif k == "alert":
-            c.setRGBSeg(150, 0, 0,
-                        light.protocol_cfg['segmentId'])
+            state = c.getSegState(light.protocol_cfg['segmentId'])
+            c.setBriSeg(0, light.protocol_cfg['segmentId'])
             sleep(0.6)
-            c.setRGBSeg(0, 0, 150,
-                        light.protocol_cfg['segmentId'])
-
+            c.setBriSeg(state["bri"], light.protocol_cfg['segmentId'])
+            return
+    seg["id"] = light.protocol_cfg['segmentId']
+    c.sendJson({"seg": [seg]})
 
 def get_light_state(light):
     ip = light.protocol_cfg['ip']
