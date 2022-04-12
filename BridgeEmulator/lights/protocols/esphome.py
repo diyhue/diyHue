@@ -28,11 +28,11 @@ def getLightType(light, data):
         elif ("hue" in data) or ("sat" in data):
             request_data = request_data + "/light/color_led"
         else:
-            if light["state"]["colormode"] == "xy":
+            if light.state["colormode"] == "xy":
                 request_data = request_data + "/light/color_led"
-            elif light["state"]["colormode"] == "ct":
+            elif light.state["colormode"] == "ct":
                 request_data = request_data + "/light/white_led"
-            elif light["state"]["colormode"] == "hs":
+            elif light.state["colormode"] == "hs":
                 request_data = request_data + "/light/color_led"
     elif light.protocol_cfg["esphome_model"] == "ESPHome-CT":
         request_data = request_data + "/light/white_led"
