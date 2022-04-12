@@ -16,10 +16,10 @@ def get_environment_variable(var, boolean=False):
     return value
 
 
-def generate_certificate(mac):
+def generate_certificate(mac, path):
     logging.info("Generating certificate")
     serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
-    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial])
+    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial, path])
     logging.info("Certificate created")
 
 
@@ -30,7 +30,7 @@ def process_arguments(configDir, args):
     else:
         logging.info("Debug logging enabled!")
     if not path.isfile(configDir + "/cert.pem"):
-        generate_certificate(args["MAC"])
+        generate_certificate(args["MAC"], configDir)
 
 
 def parse_arguments():
@@ -41,9 +41,11 @@ def parse_arguments():
     # Arguements can also be passed as Environment Variables.
     ap.add_argument("--debug", action='store_true', help="Enables debug output")
     ap.add_argument("--bind-ip", help="The IP address to listen on", type=str)
+    ap.add_argument("--config_path", help="Set certificate and config files location", type=str)
     ap.add_argument("--docker", action='store_true', help="Enables setup for use in docker container")
     ap.add_argument("--ip", help="The IP address of the host system (Docker)", type=str)
     ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
+    ap.add_argument("--https-port", help="The port to listen on for HTTPS (Docker)", type=int)
     ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
     ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
     ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
@@ -68,7 +70,14 @@ def parse_arguments():
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True
 
-    bind_ip = ''
+    config_path = '/opt/hue-emulator/config'
+    if args.config_path:
+        config_path = args.config_path
+    elif get_environment_variable('CONFIG_PATH'):
+        config_path = get_environment_variable('CONFIG_PATH')
+    argumentDict["CONFIG_PATH"] = config_path
+
+    bind_ip = '0.0.0.0'
     if args.bind_ip:
         bind_ip = args.bind_ip
     elif get_environment_variable('BIND_IP'):
@@ -79,21 +88,28 @@ def parse_arguments():
         host_ip = args.ip
     elif get_environment_variable('IP'):
         host_ip = get_environment_variable('IP')
-    elif bind_ip:
+    elif bind_ip != '0.0.0.0':
         host_ip = bind_ip
     else:
         host_ip = getIpAddress()
     argumentDict["HOST_IP"] = host_ip
 
-    if args.http_port:  # should be depreciated
+    if args.http_port:
         host_http_port = args.http_port
     elif get_environment_variable('HTTP_PORT'):
-        host_http_port = get_environment_variable('HTTP_PORT')
+        host_http_port = int(get_environment_variable('HTTP_PORT'))
     else:
         host_http_port = 80
-    host_https_port = 443
     argumentDict["HTTP_PORT"] = host_http_port
+
+    if args.https_port:
+        host_https_port = args.https_port
+    elif get_environment_variable('HTTPS_PORT'):
+        host_https_port = int(get_environment_variable('HTTPS_PORT'))
+    else:
+        host_https_port = 443
     argumentDict["HTTPS_PORT"] = host_https_port
+
     logging.info("Using Host %s:%s" % (host_ip, host_http_port))
 
     if args.mac:

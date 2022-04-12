@@ -5,7 +5,6 @@ import uuid
 import json
 import weakref
 from subprocess import Popen
-from lights.manage import sendLightRequest
 from flask_restful import Resource
 from flask import request
 from services.entertainment import entertainmentService
@@ -13,13 +12,15 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime
+from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
 
-
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
+v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
+}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
+
 
 def getObject(element, v2uuid):
     if element in ["behavior_instance"]:
@@ -31,99 +32,125 @@ def getObject(element, v2uuid):
         for v1Element in ["lights", "groups", "scenes"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if obj.id_v2 == v2uuid:
-                    v2Resources[element][v2uuid] =  weakref.ref(obj)
+                    v2Resources[element][v2uuid] = weakref.ref(obj)
                     logging.debug("Cache Miss " + element)
                     return obj
     elif element in ["entertainment"]:
         for key, obj in bridgeConfig["lights"].items():
             if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
-                v2Resources[element][v2uuid] =  weakref.ref(obj)
+                v2Resources[element][v2uuid] = weakref.ref(obj)
                 return obj
     else:
         for v1Element in ["lights", "groups", "scenes", "sensors"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + element)) == v2uuid:
                     logging.debug("Cache Miss " + element)
-                    v2Resources[element][v2uuid] =  weakref.ref(obj)
+                    v2Resources[element][v2uuid] = weakref.ref(obj)
                     return obj
     logging.info("element not found!")
     return False
 
+
 def authorizeV2(headers):
     if "hue-application-key" in headers and headers["hue-application-key"] in bridgeConfig["apiUsers"]:
-        bridgeConfig["apiUsers"][headers["hue-application-key"]].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["apiUsers"][headers["hue-application-key"]
+                                 ].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
     return []
 
 
 def v2BridgeEntertainment():
     return {"id": "57a9ebc9-406d-4a29-a4ff-42acee9e9be7",
-        "id_v1": "",
-        "proxy": True,
-        "renderer": False,
-        "type": "entertainment"
-    }
+            "id_v1": "",
+            "proxy": True,
+            "renderer": False,
+            "type": "entertainment"
+            }
+
 
 def v2HomeKit():
-    return { "id": str(uuid.uuid5(uuid.NAMESPACE_URL , bridgeConfig["config"]["bridgeid"] + 'homekit')),
-      "status": "unpaired",
-      "type": "homekit"
+    return {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'homekit')),
+            "status": "unpaired",
+            "status_values": [
+                "pairing",
+                "paired",
+                "unpaired"
+            ],
+        "type": "homekit"
     }
+
 
 def v2BridgeZigBee():
     result = {}
-    result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL , bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity'))
-    result["id_v1"] =  ""
+    result["id"] = str(uuid.uuid5(
+        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity'))
+    result["id_v1"] = ""
     result["status"] = "connected"
     result["type"] = "zigbee_connectivity"
     return result
 
+
 def v2BridgeHome():
     result = {}
-    #result["grouped_services"] = [{
-    #      "rid": bridgeConfig["groups"]["0"].id_v2,
-    #      "rtype": "grouped_light"
-    #    }]
+    result["children"] = []
     result["grouped_services"] = []
     if len(bridgeConfig["lights"]) > 0:
         result["grouped_services"].append({
-             "rid": bridgeConfig["groups"]["0"].id_v2,
-             "rtype": "grouped_light"
-            })
-    result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL , bridgeConfig["config"]["bridgeid"] + 'bridge_home'))
+            "rid": bridgeConfig["groups"]["0"].id_v2,
+            "rtype": "grouped_light"
+        })
+    result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
+                                  bridgeConfig["groups"]["0"].id_v2 + 'bridge_home'))
     result["id_v1"] = "/groups/0"
     result["services"] = []
     result["type"] = "bridge_home"
     for key, light in bridgeConfig["lights"].items():
         result["services"].append(light.getBridgeHome())
+        result["children"].append({"rid": light.getDevice()["id"], "rtype": "device"})
+    for key, group in bridgeConfig["groups"].items():
+        if group.type == "Room":
+            result["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
     for key, sensor in bridgeConfig["sensors"].items():
         if sensor.getBridgeHome():
             result["services"].append(sensor.getBridgeHome())
+    result["services"].append({"rid": bridgeConfig["groups"]["0"].id_v2 ,"rtype": "grouped_light"})
     return result
 
 
 def v2Bridge():
     return {
         "bridge_id": bridgeConfig["config"]["bridgeid"].lower(),
-        "id": str(uuid.uuid5(uuid.NAMESPACE_URL ,bridgeConfig["config"]["bridgeid"] + 'bridge')),
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
         "id_v1": "",
+        "owner": {
+            "rid": str(uuid.uuid5(
+                uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+            "rtype": "device"
+        },
+        "time_zone": {
+            "time_zone": bridgeConfig["config"]["timezone"]
+        },
+
         "type": "bridge"
     }
 
+
 def geoLocation():
     return {
-      "id": str(uuid.uuid5(uuid.NAMESPACE_URL ,bridgeConfig["config"]["bridgeid"] + 'geolocation')),
-      "id_v1": "",
-      "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
-      "type": "geolocation"
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'geolocation')),
+        "id_v1": "",
+        "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
+        "type": "geolocation"
     }
 
+
 def v2BridgeDevice():
-    result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL , bridgeConfig["config"]["bridgeid"] + 'device')), "type": "device"}
+    result = {"id": str(uuid.uuid5(
+        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')), "type": "device"}
     result["id_v1"] = ""
     result["metadata"] = {
         "archetype": "bridge_v2",
-        "name": "Philips hue" #bridgeConfig["config"]["name"]
+        "name": bridgeConfig["config"]["name"]
     }
     result["product_data"] = {
         "certified": True,
@@ -131,36 +158,24 @@ def v2BridgeDevice():
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": "1.46." + bridgeConfig["config"]["swversion"]
+        "software_version": bridgeConfig["config"]["apiversion"] + bridgeConfig["config"]["swversion"]
     }
     result["services"] = [
         {
-          "rid": str(uuid.uuid5(uuid.NAMESPACE_URL ,bridgeConfig["config"]["bridgeid"] + 'bridge')),
-          "rtype": "bridge"
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
+            "rtype": "bridge"
         },
         {
-          "rid": str(uuid.uuid5(uuid.NAMESPACE_URL ,bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
-          "rtype": "zigbee_connectivity"
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
+            "rtype": "zigbee_connectivity"
         },
         {
-          "rid": str(uuid.uuid5(uuid.NAMESPACE_URL ,bridgeConfig["config"]["bridgeid"] + 'entertainment')),
-          "rtype": "entertainment"
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'entertainment')),
+            "rtype": "entertainment"
         }
     ]
     return result
 
-def convertV2StateToV1(state):
-    v1State = {}
-    if "dimming" in state:
-        v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
-    if "on" in state:
-        v1State["on"] =  state["on"]["on"]
-    if "color_temperature" in state:
-        v1State["ct"] =  state["color_temperature"]["mirek"]
-    if "color" in state:
-        if "xy" in state["color"]:
-            v1State["xy"] = [state["color"]["xy"]["x"], state["color"]["xy"]["y"]]
-    return v1State
 
 class AuthV1(Resource):
     def get(self):
@@ -171,7 +186,7 @@ class AuthV1(Resource):
 
         else:
             logging.debug("Auth 403")
-            return "", 403
+            return '', 403
 
 
 class ClipV2(Resource):
@@ -220,14 +235,15 @@ class ClipV2(Resource):
         # entertainment_configuration
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Entertainment":
-                data.append(group.getV2EntertainmentConfig())
+                data.append(group.getV2Api())
         # bridge home
         data.append(v2BridgeHome())
         return {"errors": [], "data": data}
 
+
 class ClipV2Resource(Resource):
     def get(self, resource):
-        #logging.debug(request.headers)
+        # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -258,7 +274,7 @@ class ClipV2Resource(Resource):
                 zigbee = sensor.getZigBee()
                 if zigbee != None:
                     response["data"].append(zigbee)
-            response["data"].append(v2BridgeZigBee()) # the bridge
+            response["data"].append(v2BridgeZigBee())  # the bridge
         elif resource == "entertainment":
             for key, light in bridgeConfig["lights"].items():
                 response["data"].append(light.getV2Entertainment())
@@ -266,7 +282,7 @@ class ClipV2Resource(Resource):
         elif resource == "entertainment_configuration":
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Entertainment":
-                    response["data"].append(group.getV2EntertainmentConfig())
+                    response["data"].append(group.getV2Api())
         elif resource == "device":
             for key, light in bridgeConfig["lights"].items():
                 response["data"].append(light.getDevice())
@@ -274,20 +290,18 @@ class ClipV2Resource(Resource):
                 device = sensor.getDevice()
                 if device != None:
                     response["data"].append(device)
-            response["data"].append(v2BridgeDevice()) # the bridge
+            response["data"].append(v2BridgeDevice())  # the bridge
         elif resource == "bridge":
             response["data"].append(v2Bridge())
         elif resource == "bridge_home":
             response["data"].append(v2BridgeHome())
+        elif resource == "homekit":
+            response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
-            response["type"] = "ClipMessageGeolocation"
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
-            response["type"] = "ClipMessageBehaviorInstance"
-        elif resource == "geofence_client":
-            response["type"] = "ClipMessageGeofenceClient"
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
@@ -295,7 +309,7 @@ class ClipV2Resource(Resource):
         return response
 
     def post(self, resource):
-        #logging.debug(request.headers)
+        # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -311,16 +325,42 @@ class ClipV2Resource(Resource):
                 "owner": bridgeConfig["apiUsers"][request.headers["hue-application-key"]],
             }
             if "group" in postDict:
-                objCreation["group"] = weakref.ref(getObject(postDict["group"]["rtype"], postDict["group"]["rid"]))
+                objCreation["group"] = weakref.ref(
+                    getObject(postDict["group"]["rtype"], postDict["group"]["rid"]))
                 objCreation["type"] = "GroupScene"
+                del postDict["group"]
             elif "lights" in postDict:
                 objCreation["type"] = "LightScene"
                 objLights = []
                 for light in postDict["lights"]:
                     objLights.append(getObject(light["rtype"], light["rid"]))
                 objCreation["lights"] = objLights
+            objCreation.update(postDict)
             newObject = HueObjects.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
+            if "actions" in postDict:
+                for action in postDict["actions"]:
+                    if "target" in action:
+                        if action["target"]["rtype"] == "light":
+                            lightObj = getObject(
+                                "light",  action["target"]["rid"])
+                            sceneState = {}
+                            scene = action["action"]
+                            if "on" in scene:
+                                sceneState["on"] = scene["on"]["on"]
+                            if "dimming" in scene:
+                                sceneState["bri"] = int(
+                                    scene["dimming"]["brightness"] * 2.54)
+                            if "color" in scene:
+                                if "xy" in scene["color"]:
+                                    sceneState["xy"] = [
+                                        scene["color"]["xy"]["x"], scene["color"]["xy"]["y"]]
+                            if "color_temperature" in scene:
+                                if "mirek" in scene["color_temperature"]:
+                                    sceneState["ct"] = scene["color_temperature"]["mirek"]
+                            if "gradient" in scene:
+                                sceneState["gradient"] = scene["gradient"]
+                            newObject.lightstates[lightObj] = sceneState
         elif resource == "behavior_instance":
             newObject = HueObjects.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
@@ -328,38 +368,35 @@ class ClipV2Resource(Resource):
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
                 "id_v1": new_object_id,
-                "name": postDict["metadata"]["name"],
-                "type": "Entertainment",
-                "class": "TV"
-                }
-            newObject = HueObjects.Group(objCreation)
+                "name": postDict["metadata"]["name"]
+            }
+            objCreation.update(postDict)
+            newObject = HueObjects.EntertainmentConfiguration(objCreation)
             if "locations" in postDict:
-                from pprint import pprint
                 if "service_locations" in postDict["locations"]:
                     for element in postDict["locations"]["service_locations"]:
-                        obj = getObject(element["service"]["rtype"], element["service"]["rid"])
+                        obj = getObject(
+                            element["service"]["rtype"], element["service"]["rid"])
                         newObject.add_light(obj)
-                        newObject.locations[obj] = [element["positions"][0]["x"], element["positions"][0]["y"], element["positions"][0]["z"]]
+                        newObject.locations[obj] = element["positions"]
             bridgeConfig["groups"][new_object_id] = newObject
-        # build stream message
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [{"id": newObject.id_v2, "type": resource}],
-                "id": str(uuid.uuid4()),
-                "type": "add"
-                }
-        streamMessage["id_v1"] = "/" + newObject.getObjectPath()["resource"] + "/" + newObject.getObjectPath()["id"] if  hasattr(newObject, 'getObjectPath') else ""
-        streamMessage["data"][0].update(postDict)
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
-        return {"data": [{
-                    "rid": newObject.id_v2,
-                    "rtype": resource}
-                ],"errors": []}
 
+        # return message
+        returnMessage = {"data": [{
+            "rid": newObject.id_v2,
+            "rtype": resource}
+        ], "errors": []}
+        if resource == "behavior_instance":
+            returnMessage["data"][0]["type"] = "ResourceIdentifier"
+            returnMessage["type"] = "ClipMessageBehaviorInstance"
+
+        logging.debug(json.dumps(returnMessage, sort_keys=True, indent=4))
+        return returnMessage
 
 
 class ClipV2ResourceId(Resource):
     def get(self, resource, resourceid):
-        #logging.debug(request.headers)
+        # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -380,13 +417,12 @@ class ClipV2ResourceId(Resource):
         elif resource == "entertainment":
             return {"errors": [], "data": [object.getV2Entertainment()]}
         elif resource == "entertainment_configuration":
-            return {"errors": [], "data": [object.getV2EntertainmentConfig()]}
+            return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "bridge":
             return {"errors": [], "data": [v2Bridge()]}
 
-
     def put(self, resource, resourceid):
-        #logging.debug(request.headers)
+        logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -394,73 +430,63 @@ class ClipV2ResourceId(Resource):
         logging.debug(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
-            v1Request = convertV2StateToV1(putDict)
-            if object.modelid in ["LCX001", "LCX002", "LCX003"]:
-                if object.id_v1 not in bridgeConfig["temp"]["gradientStripLights"] or bridgeConfig["temp"]["gradientStripLights"][object.id_v1] > 7:
-                    bridgeConfig["temp"]["gradientStripLights"][object.id_v1] = 1
-                object.setV1State(state={"lights": {bridgeConfig["temp"]["gradientStripLights"][object.id_v1]: v1Request}})
-                bridgeConfig["temp"]["gradientStripLights"][object.id_v1] += 1
-            else:
-                object.setV1State(state=v1Request)
-
+            object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
-                    Thread(target=entertainmentService, args=[object, authorisation["user"]]).start()
-                    sleep(3)
+                    object.stream.update(
+                        {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"})
+                    Thread(target=entertainmentService, args=[
+                           object, authorisation["user"]]).start()
+                    for light in object.lights:
+                        light().state["mode"] = "streaming"
+                    sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
-                    Popen(["killall", "entertain-srv"])
+                    object.stream["active"] = False
+                    for light in object.lights:
+                        light().state["mode"] = "homeautomation"
+                    Popen(["killall", "openssl"])
         elif resource == "scene":
-            object.activate(putDict)
+            if "recall" in putDict:
+                object.activate(putDict)
+            if "speed" in putDict:
+                object.speed = putDict["speed"]
+            if "palette" in putDict:
+                object.palette = putDict["palette"]
+            if "metadata" in putDict:
+                object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
-            v1Request = convertV2StateToV1(putDict)
-            object.setV1Action(state=v1Request)
+            object.setV2Action(putDict)
         elif resource == "geolocation":
-            bridgeConfig["sensors"]["1"].protocol_cfg = {"lat": putDict["latitude"], "long": putDict["longitude"]}
+            bridgeConfig["sensors"]["1"].protocol_cfg = {
+                "lat": putDict["latitude"], "long": putDict["longitude"]}
             bridgeConfig["sensors"]["1"].config["configured"] = True
         elif resource == "behavior_instance":
             object.update_attr(putDict)
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
-            }]}
+        }]}
 
-
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [{"id": resourceid, "type": resource}],
-                "id": str(uuid.uuid4()),
-                "type": "update"
-                }
-        streamMessage["id_v1"] = "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"] if  hasattr(object, 'getObjectPath') else ""
-        streamMessage["data"][0].update(putDict)
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
         return response
 
-
     def delete(self, resource, resourceid):
-        #logging.debug(request.headers)
+        # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
         object = getObject(resource, resourceid)
 
         if hasattr(object, 'getObjectPath'):
-            del bridgeConfig[object.getObjectPath()["resource"]][object.getObjectPath()["id"]]
+            del bridgeConfig[object.getObjectPath()["resource"]
+                             ][object.getObjectPath()["id"]]
         else:
             del bridgeConfig[resource][resourceid]
 
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
-            }]}
-
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "data": [{"id": resourceid, "type": resource}],
-                "id": str(uuid.uuid4()),
-                "type": "delete"
-                }
-        streamMessage["id_v1"] = "/" + object.getObjectPath()["resource"] + "/" + object.getObjectPath()["id"] if  hasattr(object, 'getObjectPath') else ""
-        bridgeConfig["temp"]["eventstream"].append(streamMessage)
+        }]}
         return response

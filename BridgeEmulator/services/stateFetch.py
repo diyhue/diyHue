@@ -2,7 +2,6 @@ import logManager
 import configManager
 from lights.protocols import protocols
 from time import sleep
-from lights.manage import updateGroupStats
 from datetime import datetime, timedelta
 
 logging = logManager.logger.get_logger(__name__)
@@ -14,7 +13,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
         for key, light in bridgeConfig["lights"].items():
             protocol_name = light.protocol
             for protocol in protocols:
-                if "lights.protocols." + protocol_name == protocol.__name__:
+                if "lights.protocols." + protocol_name == protocol.__name__ and protocol_name not in ["mqtt", "flex", "mi_box"]:
                     try:
                         logging.debug("fetch " + light.name)
                         newState = protocol.get_light_state(light)
@@ -26,7 +25,6 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                         if off_if_unreachable:
                             light.state["on"] = False
                         logging.warning(light.name + " is unreachable: %s", e)
-            #updateGroupStats(light, lights, groups)
 
         sleep(10) #wait at last 10 seconds before next sync
         i = 0

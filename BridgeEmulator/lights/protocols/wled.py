@@ -54,7 +54,7 @@ def discover(detectedLights, device_ips):
             x = WledDevice(device[0], device[1])
             logging.info("<WLED> Found device: %s with %d segments" %
                          (device[1], x.segmentCount))
-            modelid = "LCX002"  # Gradient Strip
+            modelid = "LST002"  # Gradient Strip
             segmentid = 0
             for _ in range(1, x.segmentCount+1):
                 lights.append({"protocol": "wled",

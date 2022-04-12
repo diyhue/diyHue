@@ -1,13 +1,18 @@
 from configManager import configInit
+from configManager.argumentHandler import parse_arguments
 from datetime import datetime
-from time import tzset
 import os
 import json
 import logManager
 import yaml
 import uuid
 import weakref
-from HueObjects import Light, Group, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+try:
+    from time import tzset
+except ImportError:
+    tzset = None
+
 logging = logManager.logger.get_logger(__name__)
 
 class NoAliasDumper(yaml.SafeDumper):
@@ -25,8 +30,7 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    projectDir = '/opt/hue-emulator'
-    configDir = projectDir + '/config'
+    configDir = parse_arguments()["CONFIG_PATH"]
 
     def __init__(self):
         if not os.path.exists(self.configDir):
@@ -39,18 +43,30 @@ class Config:
             if os.path.exists(self.configDir + "/config.yaml"):
                 config = _open_yaml(self.configDir + "/config.yaml")
                 os.environ['TZ'] = config["timezone"]
-                tzset()
+                if tzset is not None:
+                    tzset()
                 config["apiUsers"] = {}
                 for user, data in config["whitelist"].items():
                     self.yaml_config["apiUsers"][user] = ApiUser(user, data["name"], data["client_key"], data["create_date"], data["last_use_date"])
                 del config["whitelist"]
+                # updgrade config
+                if "homeassistant" not in config:
+                    config["homeassistant"] = {"enabled": False}
+
+                if int(config["swversion"]) < 1949203030:
+                    config["swversion"] = "1949203030"
+                if float(config["apiversion"][:3]) < 1.49:
+                    config["apiversion"] = "1.49.0"
+
                 self.yaml_config["config"] = config
             else:
-                self.yaml_config["config"] = {"Remote API enabled": False, "Hue Essentials key": str(uuid.uuid1()).replace('-', ''), "mqtt":{"enabled":False},"deconz":{"enabled":False},"alarm":{"enabled": False, "lasttriggered": 0},"apiUsers":{},"apiversion":"1.46.0","name":"DiyHue Bridge","netmask":"255.255.255.0","swversion":"1946157000","timezone":"Europe/London","linkbutton":{"lastlinkbuttonpushed": 1599398980},"users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}}, "hue": {}, "tradfri": {}}
+                self.yaml_config["config"] = {"Remote API enabled": False, "Hue Essentials key": str(uuid.uuid1()).replace('-', ''), "mqtt":{"enabled":False},"deconz":{"enabled":False},"alarm":{"enabled": False, "lasttriggered": 0},"apiUsers":{},"apiversion":"1.46.0","name":"DiyHue Bridge","netmask":"255.255.255.0","swversion":"1946157000","timezone":"Europe/London","linkbutton":{"lastlinkbuttonpushed": 1599398980},"users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}}, "hue": {}, "tradfri": {}, "tradfri": {}, "homeassistant": {"enabled":False}}
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")
                 for light, data in lights.items():
+                    if data["modelid"] == "915005106701":
+                        data["modelid"] = "LCX004"
                     data["id_v1"] = light
                     self.yaml_config["lights"][light] = Light(data)
                     #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])
@@ -64,14 +80,19 @@ class Config:
                 groups = _open_yaml(self.configDir + "/groups.yaml")
                 for group, data in groups.items():
                     data["id_v1"] = group
-                    self.yaml_config["groups"][group] = Group(data)
-                    #   Reference lights objects instead of id's
-                    for light in data["lights"]:
-                        self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
-                    if "locations" in data:
-                        for light, location in data["locations"].items():
-                            lightObj = self.yaml_config["lights"][light]
-                            self.yaml_config["groups"][group].locations[lightObj] = location
+                    if data["type"] == "Entertainment":
+                        self.yaml_config["groups"][group] = EntertainmentConfiguration(data)
+                        for light in data["lights"]:
+                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                        if "locations" in data:
+                            for light, location in data["locations"].items():
+                                lightObj = self.yaml_config["lights"][light]
+                                self.yaml_config["groups"][group].locations[lightObj] = location
+                    else:
+                        self.yaml_config["groups"][group] = Group(data)
+                        for light in data["lights"]:
+                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+
             #scenes
             if os.path.exists(self.configDir + "/scenes.yaml"):
                 scenes = _open_yaml(self.configDir + "/scenes.yaml")

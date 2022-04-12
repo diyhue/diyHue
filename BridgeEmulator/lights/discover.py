@@ -5,8 +5,8 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime
-from services.deconz import scanDeconz
-from lights.protocols import wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from services.homeAssistantWS import discover
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -17,12 +17,15 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 def pretty_json(data):
     return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
+
 def scanHost(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(0.02) # Very short timeout. If scanning fails this could be increased
+    # Very short timeout. If scanning fails this could be increased
+    sock.settimeout(0.02)
     result = sock.connect_ex((host, port))
     sock.close()
     return result
+
 
 def iter_ips(port):
     argsDict = configManager.runtimeConfig.arg
@@ -40,6 +43,7 @@ def iter_ips(port):
         if test_host != HOST_IP:
             yield (test_host, port)
 
+
 def find_hosts(port):
     validHosts = []
     for host, port in iter_ips(port):
@@ -48,50 +52,6 @@ def find_hosts(port):
             validHosts.append(hostWithPort)
 
     return validHosts
-
-
-
-
-def streamMessages(light):
-    # entertainment
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "data": [{"id":str(uuid.uuid5(
-            uuid.NAMESPACE_URL, light.id_v2 + 'entertainment')), "type": "entertainent"}],
-            "id": str(uuid.uuid4()),
-            "type": "add"
-            }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getV2Entertainment())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    #zigbee_connectivity
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "data": [{"id":str(uuid.uuid5(
-            uuid.NAMESPACE_URL, light.id_v2 + 'zigbee_connectivity')), "type": "zigbee_connectivity"}],
-            "id": str(uuid.uuid4()),
-            "type": "add"
-            }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getZigBee())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    # light
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "data": [{"id": light.id_v2, "type": "light"}],
-            "id": str(uuid.uuid4()),
-            "type": "add"
-            }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getV2Api())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
-    #device
-    streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "data": [{"id":str(uuid.uuid5(
-            uuid.NAMESPACE_URL, light.id_v2 + 'device')), "type": "device"}],
-            "id": str(uuid.uuid4()),
-            "type": "add"
-            }
-    streamMessage["id_v1"] = "/lights/" + light.id_v1
-    streamMessage["data"][0].update(light.getDevice())
-    bridgeConfig["temp"]["eventstream"].append(streamMessage)
 
 
 def addNewLight(modelid, name, protocol, protocol_cfg):
@@ -106,61 +66,79 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         newObject = HueObjects.Light(light)
         bridgeConfig["lights"][newLightID] = newObject
         bridgeConfig["groups"]["0"].add_light(newObject)
+        # trigger stream messages
+        rooms = []
+        lights = []
+        for group, obj in bridgeConfig["groups"].items():
+            rooms.append(obj.id_v2)
+        for light, obj in bridgeConfig["lights"].items():
+            lights.append(obj.id_v2)
+        bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
-        streamMessages(newObject)
+
         return newLightID
     return False
+
 
 def manualAddLight(ip, protocol, config={}):
     modelid = config["lightModelID"] if "lightModelID" in config else "LCT015"
     name = config["lightName"] if "lightName" in config else "New Light"
     if protocol == "auto":
         detectedLights = []
-        native_multi.discover(detectedLights,[ip])
-        tasmota.discover(detectedLights,[ip])
-        shelly.discover(detectedLights,[ip])
-        esphome.discover(detectedLights,[ip])
+        native_multi.discover(detectedLights, [ip])
+        tasmota.discover(detectedLights, [ip])
+        shelly.discover(detectedLights, [ip])
+        esphome.discover(detectedLights, [ip])
         if len(detectedLights) >= 1:
             for x in range(len(detectedLights)):
-                logging.info("Found light " + detectedLights[x]["protocol"] + " " + detectedLights[x]["name"])
-                addNewLight(detectedLights[x]["modelid"], detectedLights[x]["name"], detectedLights[x]["protocol"], detectedLights[x]["protocol_cfg"])
+                logging.info(
+                    "Found light " + detectedLights[x]["protocol"] + " " + detectedLights[x]["name"])
+                addNewLight(detectedLights[x]["modelid"], detectedLights[x]["name"],
+                            detectedLights[x]["protocol"], detectedLights[x]["protocol_cfg"])
 
     else:
         config["ip"] = ip
         addNewLight(modelid, name, protocol, config)
 
-def scanForLights(): #scan for ESP8266 lights and strips
+
+def scanForLights():  # scan for ESP8266 lights and strips
     bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
     detectedLights = []
-    #return all host that listen on port 80
+    # return all host that listen on port 80
     device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
     if bridgeConfig["config"]["mqtt"]["enabled"]:
-        mqtt.discover(bridgeConfig["config"]["mqtt"]) # brioadcast MQTT message, lights will be added by the service
+        # brioadcast MQTT message, lights will be added by the service
+        mqtt.discover(bridgeConfig["config"]["mqtt"])
     if bridgeConfig["config"]["deconz"]["enabled"]:
         deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
+    if bridgeConfig["config"]["homeassistant"]["enabled"]:
+        discover(detectedLights)
     yeelight.discover(detectedLights)
-    native_multi.discover(detectedLights,device_ips) # native_multi probe all esp8266 lights with firmware from diyhue repo
-    tasmota.discover(detectedLights,device_ips)
-    wled.discover(detectedLights,device_ips)
+    # native_multi probe all esp8266 lights with firmware from diyhue repo
+    native_multi.discover(detectedLights, device_ips)
+    tasmota.discover(detectedLights, device_ips)
+    wled.discover(detectedLights, device_ips)
     hue.discover(detectedLights, bridgeConfig["config"]["hue"])
-    shelly.discover(detectedLights,device_ips)
-    esphome.discover(detectedLights,device_ips)
+    shelly.discover(detectedLights, device_ips)
+    esphome.discover(detectedLights, device_ips)
     tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
     hyperion.discover(detectedLights)
-    bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    tpkasa.discover(detectedLights)
+    bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
+        "%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
         # check if light is already present
         lightIsNew = True
         for key, lightObj in bridgeConfig["lights"].items():
             if lightObj.protocol == light["protocol"]:
                 if light["protocol"] == "native_multi":
-                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["light_nr"] == light["protocol_cfg"]["light_nr"]:
-                         logging.info("Update IP for light " + light["name"])
-                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
-                         lightIsNew = False
-                         break
-                elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion"]:
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["light_nr"] == light["protocol_cfg"]["light_nr"]:
+                        logging.info("Update IP for light " + light["name"])
+                        lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        lightIsNew = False
+                        break
+                elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion", "tpkasa"]:
                     if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
@@ -171,7 +149,7 @@ def scanForLights(): #scan for ESP8266 lights and strips
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
-                elif  light["protocol"] in  ["hue", "deconz"]:
+                elif light["protocol"] in ["hue", "deconz"]:
                     # check based on light uniqueid
                     if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]:
                         logging.info("Update IP for light " + light["name"])
@@ -183,8 +161,13 @@ def scanForLights(): #scan for ESP8266 lights and strips
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
+                elif light["protocol"] == "homeassistant_ws":
+                    if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"]:
+                        lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])
-            lightId = addNewLight(light["modelid"], light["name"], light["protocol"], light["protocol_cfg"])
-            bridgeConfig["temp"]["scanResult"][lightId] = {"name": light["name"]}
+            lightId = addNewLight(
+                light["modelid"], light["name"], light["protocol"], light["protocol_cfg"])
+            bridgeConfig["temp"]["scanResult"][lightId] = {
+                "name": light["name"]}
     return bridgeConfig["temp"]["scanResult"]

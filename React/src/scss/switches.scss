@@ -1,0 +1,111 @@
+/*Hue Switch */
+
+.hueSwitch{
+    width: 240px;
+    padding: 50px 60px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    background: #F3F3F3;
+    box-shadow: rgba(0, 0, 0, 0.25) -4px 5px 12px 2px;
+
+    .inner{
+        padding: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 20px;
+        box-shadow: rgba(0, 0, 0, 0.25) -4px 5px 12px 2px;
+    
+        .button{
+            width: 100%;
+            height: 80px;
+            background: #F3F3F3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            svg{
+                color: #aaa;
+            }
+
+            &:hover{
+                background: #6295d6; 
+            }
+
+            &.top{
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
+            }
+
+            &.bottom{
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+            }
+        
+        }
+
+        .spacer{
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.20);
+        }
+    }
+}
+
+/* Generic Zigbee */
+.genericSwitch{
+    width: 240px;
+    height: 240px;
+    padding: 25px;
+    border-radius: 15px;
+    box-sizing: border-box;
+    background: #F3F3F3;
+    box-shadow: rgba(0, 0, 0, 0.25) -4px 5px 12px 2px;
+
+    .inner{
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        border: 2px solid rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        display: flex;
+        overflow: hidden;
+
+
+        .row{
+            width: 55px;
+            flex-direction: column;
+
+            
+            &.right{
+                margin-left: auto;
+            }
+
+            .button{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 50%;
+                margin-bottom: 1px;
+                background: #F3F3F3;
+                box-shadow: rgba(0, 0, 0, 0.25) 0px 2px 4px 0px;
+            
+                svg{
+                    color: #aaa;
+                }
+
+                &:hover{
+                    background: #6295d6; 
+                }
+
+
+            }
+
+        }
+
+    }
+
+
+}

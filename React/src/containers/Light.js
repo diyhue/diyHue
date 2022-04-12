@@ -1,11 +1,12 @@
 import { FaLightbulb } from "react-icons/fa";
-import { MdDeleteForever, MdSystemUpdate } from "react-icons/md";
+import { MdDeleteForever } from "react-icons/md";
 import LightUpdate from "./LightUpdate";
 import axios from "axios";
 import Dropdown from "react-dropdown";
 import "react-dropdown/style.css";
 import { confirmAlert } from "react-confirm-alert"; // Import
 import "react-confirm-alert/src/react-confirm-alert.css"; // Import css
+import { HueIcons } from "../icons/hass-hue-icons"
 
 const Light = ({
   HOST_IP,
@@ -86,21 +87,35 @@ const Light = ({
   };
 
   return (
-    <div className="card light expanded">
+    <div className="devicecard light">
       <div className="row1">
-        <div className="icon"><FaLightbulb onClick={() => alertLight()} /></div>
-        <div className="text">{light["name"]}{" "}</div>
+        <div className="icon">
+          <HueIcons
+          type = {"light-" + light["config"]["archetype"]}
+          color= "#eeeeee"
+          onClick={() => alertLight()} />
+        </div>
 
+        <div className="text">{light["name"]} </div>
       </div>
       <div className="row3">
-        <Dropdown
-          options={modelIds}
-          value={light["modelid"]}
-          onChange={(e) => setModelId(e.value)}
-          placeholder="Choose light modelid"
+        <div className="form-control">
+          <Dropdown
+            options={modelIds}
+            value={light["modelid"]}
+            onChange={(e) => setModelId(e.value)}
+            placeholder="Choose light modelid"
+          />
+        </div>
+        <LightUpdate
+          light={light}
+          lightsCatalog={lightsCatalog}
+          setMessage={setMessage}
+          setType={setType}
         />
-        <LightUpdate light={light} lightsCatalog={lightsCatalog} setMessage={setMessage} setType={setType} />
-        <div className="btn red"><MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}</div>
+        <div className="btn red">
+          <MdDeleteForever title="Delete" onClick={() => deleteAlert()} />{" "}
+        </div>
       </div>
       <div className="row4">
         <ul>
@@ -109,11 +124,8 @@ const Light = ({
         </ul>
       </div>
 
-      {(light["state"]["reachable"] || <div className="label">Offline</div>)}
-
+      {light["state"]["reachable"] || <div className="label">Offline</div>}
     </div>
-
-
   );
 };
 

@@ -7,6 +7,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
   const [message, setMessage] = useState("no message");
   const [bridgeIp, setBridgeIp] = useState("192.168.x.x");
   const [hueUser, setHueUser] = useState("");
+  const [hueKey, setHueKey] = useState("");
 
   useEffect(() => {
     axios
@@ -14,6 +15,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
       .then((result) => {
         setBridgeIp(result.data["ip"]);
         setHueUser(result.data["hueUser"]);
+        setHueKey(result.data["hueKey"]);
       })
       .catch((error) => {
         console.error(error);
@@ -23,15 +25,17 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
   const pairBridge = (e) => {
     e.preventDefault();
     axios
-      .post(`http://${bridgeIp}/api`, { devicetype: "diyhue#bridge" })
+      .post(`http://${bridgeIp}/api`, { devicetype: "diyhue#bridge", "generateclientkey":true })
       .then((result) => {
         if ("success" in result.data[0]) {
           setHueUser(result.data[0]["success"]["username"]);
+          setHueKey(result.data[0]["success"]["clientkey"]);
           axios
             .put(`${HOST_IP}/api/${API_KEY}/config`, {
               hue: {
                 ip: bridgeIp,
                 hueUser: result.data[0]["success"]["username"],
+                hueKey: result.data[0]["success"]["clientkey"],
               },
             })
             .then((fetchedData) => {
@@ -55,7 +59,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -65,6 +69,7 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
+      <div className="headline">Pair original Hue Bridge</div>
         <form className="add-form" onSubmit={(e) => pairBridge(e)}>
           <div className="form-control">
             <label>Bridge Ip</label>
@@ -82,6 +87,15 @@ const HueBridge = ({ HOST_IP, API_KEY }) => {
               placeholder="Automatically populated"
               readOnly
               value={hueUser}
+            />
+          </div>
+          <div className="form-control">
+            <label>Hue Key</label>
+            <input
+              type="text"
+              placeholder="Automatically populated"
+              readOnly
+              value={hueKey}
             />
           </div>
           <div className="form-control">

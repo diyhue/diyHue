@@ -10,16 +10,23 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
   const [mqttPort, setMqttPort] = useState(1883);
   const [mqttUser, setMqttUser] = useState("");
   const [mqttPass, setMqttPass] = useState("");
+  const [discoveryPrefix, setDiscoveryPrefix] = useState("homeassistant");
 
   useEffect(() => {
     axios
       .get(`${HOST_IP}/api/${API_KEY}/config/mqtt`)
       .then((result) => {
         setEnable(result.data["enabled"]);
-        setMqttServer(result.data["mqttServer"]);
-        setMqttPort(result.data["mqttPort"]);
-        setMqttUser(result.data["mqttUser"]);
-        setMqttPass(result.data["mqttPassword"]);
+        if ("mqttServer" in result.data)
+          setMqttServer(result.data["mqttServer"]);
+        if ("mqttPort" in result.data)
+          setMqttPort(result.data["mqttPort"]);
+        if ("mqttUser" in result.data)
+          setMqttUser(result.data["mqttUser"]);
+        if ("mqttPassword" in result.data)
+          setMqttPass(result.data["mqttPassword"]);
+        if ("discoveryPrefix" in result.data)
+          setDiscoveryPrefix(result.data["discoveryPrefix"]);
       })
       .catch((error) => {
         console.error(error);
@@ -37,6 +44,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
           mqttPort: mqttPort,
           mqttUser: mqttUser,
           mqttPassword: mqttPass,
+          discoveryPrefix: discoveryPrefix,
         },
       })
       .then((fetchedData) => {
@@ -52,7 +60,7 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -62,7 +70,8 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
-        <form className="add-form" onSubmit={(e) => onSubmit(e)}>
+        <div className="headline">ZigBee2MQTT config</div>
+        <form className="add-form" method="POST" onSubmit={(e) => onSubmit(e)}>
           <div className="switchContainer">
             <label className="switch">
               <input
@@ -108,6 +117,15 @@ const Mqtt = ({ HOST_IP, API_KEY }) => {
               placeholder="MQTT password"
               value={mqttPass}
               onChange={(e) => setMqttPass(e.target.value)}
+            />
+          </div>
+          <div className="form-control">
+            <label>Discovery Prefix</label>
+            <input
+              type="text"
+              placeholder="Discovery prefix"
+              value={discoveryPrefix}
+              onChange={(e) => setDiscoveryPrefix(e.target.value)}
             />
           </div>
           <div className="form-control">

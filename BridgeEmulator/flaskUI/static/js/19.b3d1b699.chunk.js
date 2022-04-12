@@ -1,0 +1,2 @@
+(this.webpackJsonpdiyhue=this.webpackJsonpdiyhue||[]).push([[19],{200:function(e,s,n){"use strict";n.r(s);var i=n(7);s.default=function(){return Object(i.jsx)("div",{className:"inner",children:Object(i.jsxs)("div",{className:"contentContainer",children:[Object(i.jsx)("div",{className:"headline",children:"Settings"}),Object(i.jsx)("p",{children:"Work in progress. "})]})})}}}]);
+//# sourceMappingURL=19.b3d1b699.chunk.js.map

@@ -8,14 +8,19 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 def findScene(element):
-    if element["group"]["rtype"] == "room":
-        for scene, obj in bridgeConfig["scenes"].items():
-            if obj.image == element["recall"]["rid"] and obj.group().getV2Room()["id"] == element["group"]["rid"]:
+    for scene, obj in bridgeConfig["scenes"].items():
+        if element["group"]["rtype"] == "room":
+            if obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Room()["id"] == element["group"]["rid"]:
+                return obj
+        elif element["group"]["rtype"] == "zone":
+            if obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Zone()["id"] == element["group"]["rid"]:
                 return obj
 
 def findGroup(id_v2):
     for group, obj in bridgeConfig["groups"].items():
         if obj.getV2Room()["id"] == id_v2:
+            return obj
+        elif obj.getV2Zone()["id"] == id_v2:
             return obj
 
 def triggerScript(behavior_instance):
@@ -25,6 +30,7 @@ def triggerScript(behavior_instance):
 
     # Wake Up
     if behavior_instance.script_id == "ff8957e3-2eb9-4699-a0c8-ad2cb3ede704":
+        logging.debug("Start Wake Up routine")
         for element in behavior_instance.configuration["where"]:
             if "group" in element:
                 group = findGroup(element["group"]["rid"])

@@ -1,0 +1,240 @@
+.cardGrid{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.groupCard {
+  flex-shrink: 0;
+  width: 380px;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  background: rgba(255, 255, 255, 0.09);
+  background: linear-gradient(45deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.2) 100%);
+  border-radius: 20px;
+  margin-bottom: 20px;
+  margin-right: 20px;
+  box-sizing: border-box;
+  /*border: 1px solid rgba(255, 255, 255, 0.05);*/
+  overflow: hidden;
+
+  &.light{
+    width: 100%;
+    border-radius: 14px;
+  }
+
+  
+
+  .row {
+    display: flex;
+
+    &.top {
+      padding: 20px 0 20px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    &.background {
+      background: rgba(0, 0, 0, 0.2);
+      border-top-right-radius: 12px;
+      border-top-left-radius: 12px;
+    }
+    &.bottom {
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    &.colorpicker{
+      align-items: center;
+      justify-content: center;
+
+      section{
+        padding: 20px;
+      }
+    }
+
+    &.buttons{
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .btn {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.6);
+        margin-right: 10px;
+        margin-left: 10px;
+        font-size: 20px;
+        padding: 5px;
+        transition: color 0.1s ease;
+  
+        &.active{
+          color: rgba(4, 154, 255, 0.8);
+        }
+  
+        &:hover{
+          color: rgba(255, 255, 255, 0.9);
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+  
+        &.disabled{
+          color: rgba(255, 255, 255, 0.4);
+          cursor: not-allowed;
+          pointer-events: all !important;
+        }
+      }      
+    }
+
+    .gradient {
+      display: flex;
+      flex: 0 0 auto;
+      width: 50px;
+      height: 50px;
+      margin-left: 20px;
+      background: rgb(131, 58, 180);
+      background: linear-gradient(
+        45deg,
+        rgba(0,0,0,.1) 0%,
+        rgba(0,0,0,.3) 100%
+      );
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 5px 5px 15px -1px rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: 25px;
+        height: 25px;
+        fill: #ddd;
+        
+        &.dark{
+          fill: #222;
+        }
+      }
+
+
+    }
+
+    .lights{
+      width: 100%;
+      padding: 20px;
+    }
+
+    .text {
+      margin: 0 20px;
+      flex: 1 1 auto;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      p {
+        &.name {
+          color: #fff;
+          font-size: 18px;
+        }
+
+        &.subtext {
+          color: #aaa;
+          margin-top: 5px;
+          font-size: 14px;
+        }
+      }
+    }
+
+    .switchContainer {
+      width: 50px;
+      margin-right: 20px;
+      padding-top: 10px;
+    }
+
+    .show{
+      padding: 20px;
+    }
+
+    .expandbtn {
+      text-align: center;
+      font-size: 20px;
+      width: 100px;
+      color: rgba(255, 255, 255, 0.6);
+      transition: color 0.1s ease;
+
+      &:hover{
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        transition: color 0.2s ease;
+      }
+    }
+
+    .btn {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.6);
+      margin-right: 10px;
+      margin-left: 10px;
+      font-size: 20px;
+      padding: 5px;
+      transition: color 0.1s ease;
+
+      &.active{
+        color: rgba(4, 154, 255, 0.8);
+      }
+
+      &:hover{
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        transition: color 0.2s ease;
+      }
+
+      &.disabled{
+        color: rgba(255, 255, 255, 0.4);
+        cursor: not-allowed;
+        pointer-events: all !important;
+      }
+    }
+
+    
+    
+
+    
+
+  }
+}
+
+@media screen and (max-width: 750px) {
+
+  .groupCard{
+    width: 100%;
+  }
+
+}
+
+
+
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+  .groupCard {
+    position: relative;
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .groupCard:after{
+    content: '';
+    background: url(../static/images/background.jpg) no-repeat 50%;
+    background-size: cover;
+    filter: blur(30px);
+    transform: scale(1.1);
+    display: flex;
+    position: absolute; 
+    height: 100%;
+    width: 100%;
+    top:0;
+    left:0;
+    z-index: -1;
+  }
+
+}

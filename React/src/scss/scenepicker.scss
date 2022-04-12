@@ -1,0 +1,77 @@
+.scenecontainer {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+
+  .scene {
+    background-size: cover;
+    border-radius: 15px;
+    width: 300px;
+    /*background: rgba(255,255,255,.09);*/
+    height: 125px;
+    margin-bottom: 20px;
+    margin-right: 20px;
+    box-sizing: border-box;
+
+    &.selected {
+      border: 2px solid #ddd;
+      background-size: cover;
+    }
+
+    &:hover {
+      border: 2px solid #ddd;
+      background-size: cover;
+      
+    }
+
+    .dimmer{
+      display: flex;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 15px;
+      flex: 0 0 auto;
+      
+      .color {
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgb(35, 129, 236);
+        display: inline-block;
+        margin-left: -15px;
+        border: 0.1px solid #aaa;
+        box-shadow: 0px 0px 5px 0 rgba(0, 0, 0, 0.5);
+      }
+
+      .color:nth-child(1) {
+        margin-left: 0;
+      }
+
+      .name {
+        flex: 1 1 auto;
+        color: #eee;
+        display: inline-block;
+        height: 30px;
+        width: 100%;
+        margin: 0 15px;
+        line-height: 30px;
+      }
+    }
+
+    .dynamiccontrol {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      color: #ccc;
+      font-size: 25px;
+    }
+  }
+}
+
+
+@media screen and (max-width: 750px) {
+}
+
+

@@ -118,6 +118,12 @@ def websocketClient():
                             if "dark" in message["state"]:
                                 del message["state"]["dark"]
 
+                        if bridgeSensor.modelid == "SML001" and "lightlevel" in message["state"]:
+                            if message["state"][lightlevel] > bridgeSensor.config["tholddark"]:
+                                message["state"]["dark"] = False
+                            else:
+                                message["state"]["dark"] = True
+
                         bridgeSensor.state.update(message["state"])
                         current_time = datetime.now()
                         for key in message["state"].keys():

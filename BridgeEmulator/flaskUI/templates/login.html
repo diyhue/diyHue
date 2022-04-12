@@ -1,58 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0" />
-    <title>DIYHue Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DiyHue Login</title>
+    
+ 
+    
     <link href="/static/assets/login.css" rel="stylesheet">
+    
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous"/>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/assets/fontawesome-free-5.15.1-web/css/fontawesome.min.css"> 
+    <link rel="stylesheet" href="/static/assets/fontawesome-free-5.15.1-web/css/all.min.css">
+    
   </head>
   <body>
 
-<div class="loginContainer">
-  <h1>DIYHUE LOGIN</h1>
-  <img src="/static/assets/images/logo.svg">
+    <div class="index">
 
-      <form class="formContainer" method="post" action="">
-        {# This hidden_tag is a CSRF security feature. #}
-        {{ form.hidden_tag() }}
-
-        <div class="form-group">
-
-            <label for="inlineFormInputUsername">Username</label>
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <div class="input-group-text"><i class="fas fa-user"></i></div>
-              </div>
-              {{ form.email(class="form-control", id="inlineFormInputUsername", placeholder="admin@diyhue.org") }}
+    <div class="loginContainer">
+        <h1>DIYHUE LOGIN</h1>
+        <img src="/static/assets/images/logo.svg">
+      
+            <form class="formContainer" method="post" action="">
+              
+              <input id="csrf_token" name="csrf_token" type="hidden" value="Ijg2YWU1ODAxN2M4MWEyMGYxNjgxODU4NGE4MGExYmQwYWNjYWI5ZGMi.YSzGlg.sBdqDrfnQuAX2bjBNumLU9l_pPs">
+      
+              <div class="form-group">
+      
+                  <label for="inlineFormInputUsername">Username</label>
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <div class="input-group-text"><i class="fas fa-user"></i></div>
+                    </div>
+                    <input class="form-control" id="inlineFormInputUsername" name="email" placeholder="admin@diyhue.org" required type="text" value="">
+                  </div>
+      
+      
+                  <label for="inlineFormInputPassword">Password</label>
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <div class="input-group-text"><i class="fas fa-key"></i></div>
+                    </div>
+                    <input class="form-control" id="inlineFormInputPassword" name="password" placeholder="changeme" required type="password" value="">
+                  </div>
+      
+                  <div class="btn-group">
+                    <button type="submit" name="login" class="btn btn-primary"><i class="fas fa-arrow-right"></i></button>
+                  </div>
             </div>
-
-
-            <label for="inlineFormInputPassword">Password</label>
-            <div class="input-group">
-              <div class="input-group-prepend">
-                <div class="input-group-text"><i class="fas fa-key"></i></div>
-              </div>
-              {{ form.password(class="form-control", id="inlineFormInputPassword", placeholder="changeme") }}
-            </div>
-
-            <div class="btn-group">
-              <button type="submit" name="login" class="btn btn-primary"><i class="fas fa-arrow-right"></i></button>
-            </div>
+          </form>
+      
+          <p>admin@diyhue.org / changeme</p>
+      
+      
       </div>
-    </form>
-
-    <p>admin@diyhue.org / changeme</p>
-
-
-</div>
-
-
-
-
+      
+    </div>
 
   </body>
-</html>
+  </html>
+  

@@ -15,9 +15,12 @@ const Deconz = ({ HOST_IP, API_KEY }) => {
       .get(`${HOST_IP}/api/${API_KEY}/config/deconz`)
       .then((result) => {
         setEnable(result.data["enabled"]);
-        setDeconzHost(result.data["deconzHost"]);
-        setDeconzPort(result.data["deconzPort"]);
-        setDeconzUser(result.data["deconzUser"]);
+        if ("deconzHost" in result.data)
+          setDeconzHost(result.data["deconzHost"]);
+        if ("deconzPort" in result.data)
+          setDeconzPort(result.data["deconzPort"]);
+        if ("deconzUser" in result.data)
+          setDeconzUser(result.data["deconzUser"]);
       })
       .catch((error) => {
         console.error(error);
@@ -82,8 +85,9 @@ const Deconz = ({ HOST_IP, API_KEY }) => {
       });
   };
 
+
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -93,6 +97,7 @@ const Deconz = ({ HOST_IP, API_KEY }) => {
         />
       )}
       <div className="contentContainer">
+        <div className="headline">Deconz Config</div>
         <form className="add-form" onSubmit={(e) => pairDeconz(e)}>
           <div className="switchContainer">
             <label className="switch">

@@ -28,7 +28,7 @@ export default function LinkButton({ HOST_IP, API_KEY }) {
   };
 
   return (
-    <div className="content">
+    <div className="inner">
       {type !== "none" && (
         <Flash
           type={type}
@@ -38,10 +38,10 @@ export default function LinkButton({ HOST_IP, API_KEY }) {
         />
       )}
       <div className="contentContainer">
+      <div className="headline">Link Button</div>
         <p>Push this button to accept the pairing of the requested app</p>
         <div className="linkbtn" onClick={() => pushLinkButton()}>
           Link App
-          <div className="linkbtn2"></div>
         </div>
       </div>
     </div>

@@ -102,13 +102,18 @@ def get_light_state(light):
             state["colormode"] = "xy"
     else:
         #logging.debug('Color')
-        hex = light_data["Color"]
-        rgb = hex_to_rgb(hex)
-        logging.debug(rgb)
-        #rgb = light_data["Color"].split(",")
-        logging.debug("tasmota: <get_light_state>: red " + str(rgb[0]) + " green " + str(rgb[1]) + " blue " + str(rgb[2]) )
-        # state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
-        state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
+        #logging.debug(light_data["Color"])
+        if "," in light_data["Color"]:
+            # RGB
+            rgb = light_data["Color"].split(",")
+            state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
+        else:
+            # HEX
+            hex = light_data["Color"]
+            rgb = hex_to_rgb(hex)
+            state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
+
         state["bri"] = (int(light_data["Dimmer"]) / 100.0) * 254.0
         state["colormode"] = "xy"
+
     return state

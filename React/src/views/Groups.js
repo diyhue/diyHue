@@ -16,7 +16,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
         axios
           .get(`${HOST_IP}/api/${API_KEY}`)
           .then((fetchedData) => {
-            console.log(fetchedData.data);
+            //console.log(fetchedData.data);
             setConfig(fetchedData.data);
           })
           .catch((error) => {
@@ -33,7 +33,7 @@ export default function Groups({ HOST_IP, API_KEY }) {
   }, [HOST_IP, API_KEY]);
 
   return (
-    <div className="content">
+    <div className="inner">
       <div className="cardGrid">
         {Object.entries(config.groups)
           .filter((group) => group[1].type !== "Entertainment")

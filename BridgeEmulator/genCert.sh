@@ -5,7 +5,7 @@ openssl req -new -days 3650 -config /opt/hue-emulator/openssl.conf  -nodes -x509
 
 touch /opt/hue-emulator/config/cert.pem
 
-cat private.key > /opt/hue-emulator/config/cert.pem
-cat public.crt >> /opt/hue-emulator/config/cert.pem
+cat private.key > "$2/cert.pem"
+cat public.crt >> "$2/cert.pem"
 
-rm private.key public.crt 
+rm private.key public.crt

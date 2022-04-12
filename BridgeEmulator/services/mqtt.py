@@ -14,11 +14,9 @@ from sensors.sensor_types import sensorTypes
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 
-
-from pprint import pprint
-
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
+client = mqtt.Client()
 
 devices_ids = {}
 
@@ -37,10 +35,13 @@ standardSensors = {
             "TRADFRI wireless dimmer": {
                 "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}},
             "RWL021": {
-                "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "off_press": {"buttonevent": 4000} }},
-            "RWL022": {
-                "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "off_press": {"buttonevent": 4000} }}
+            "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on-press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on-hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "on-hold-release": {"buttonevent": 1003},"up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up-hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "up-hold-release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down-press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down-hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "down-hold-release": {"buttonevent": 3002},"off_press": {"buttonevent": 4000}  ,"off-press": {"buttonevent": 4000} }}
             }
+
+standardSensors["RWL022"] = standardSensors["RWL021"]
+
+def getClient():
+    return client
 
 def longPressButton(sensor, buttonevent):
     print("running.....")
@@ -75,9 +76,6 @@ def getObject(friendly_name):
                         return device
         logging.debug("Device not found for " + friendly_name)
         return False
-
-client = mqtt.Client()
-
 
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):
@@ -167,8 +165,8 @@ def on_message(client, userdata, msg):
                         payload["state"] = "ON" if light.state["on"] else "OFF"
                         client.publish(light.protocol_cfg['command_topic'], json.dumps(payload))
                 elif data["type"] == "zigbee_publish_error":
+                    logging.info(light.name + " is unreachable")
                     light.state["reachable"] = False
-
             else:
                 device_friendlyname = msg.topic.split("/")[1]
                 device = getObject(device_friendlyname)
@@ -225,7 +223,7 @@ def on_message(client, userdata, msg):
                             Thread(target=longPressButton, args=[device, convertedPayload["buttonevent"]]).start()
                         rulesProcessor(device, current_time)
                     elif device.getObjectPath()["resource"] == "lights":
-                        state = {}
+                        state = {"reachable": True}
                         if "state" in data:
                             if data["state"] == "ON":
                                 state["on"] = True

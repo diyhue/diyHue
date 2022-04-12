@@ -61,6 +61,7 @@ export default function Lights({ HOST_IP, API_KEY }) {
     };
 
     const fetchLightsCatalog = () => {
+      if (API_KEY !== undefined) {
         axios
           .get(`https://raw.githubusercontent.com/diyhue/Lights/master/catalog.json`)
           .then((fetchedData) => {
@@ -70,6 +71,7 @@ export default function Lights({ HOST_IP, API_KEY }) {
           .catch((error) => {
             console.error(error);
           });
+      }
     };
 
 
@@ -84,6 +86,8 @@ export default function Lights({ HOST_IP, API_KEY }) {
 
   return (
     <div className="content">
+      <div className="inner">
+        <div className="devicecontainer">
       {type !== "none" && (
         <Flash
           type={type}
@@ -92,7 +96,8 @@ export default function Lights({ HOST_IP, API_KEY }) {
           setType={setType}
         />
       )}
-      <div className="cardGrid">
+      <div className="contentContainer lights">
+        <div className="headline">Light Configuration</div>
         <div className="btn generic" onClick={() => searchForLights()}>
           Scan For Lights
           <div className="btn btn-block"></div>
@@ -104,13 +109,13 @@ export default function Lights({ HOST_IP, API_KEY }) {
         >
           Add light manually
         </button>
-        {lightForm && <AddLight 
-                        setType={setType}
-                        setMessage={setMessage} 
-                        HOST_IP={HOST_IP} 
-                        API_KEY={API_KEY}>
-                      </AddLight>}
-                      </div>
+        {lightForm && <AddLight
+          setType={setType}
+          setMessage={setMessage}
+          HOST_IP={HOST_IP}
+          API_KEY={API_KEY}>
+        </AddLight>}
+      </div>
       <div className="cardGrid">
         {Object.entries(lights).map(([id, light]) => (
           <Light
@@ -126,6 +131,8 @@ export default function Lights({ HOST_IP, API_KEY }) {
           />
         ))}
       </div>
+    </div>
+    </div>
     </div>
   );
 }
