@@ -92,13 +92,19 @@ def set_light(light, data):
 
 
 def send_light_data(c, light, data):
-    seg = {}
+    state = {}
+    # Always turn on the segment and handle the on/off at light level
+    seg = {
+        "id": light.protocol_cfg['segmentId'],
+        "on": True
+    }
     for k, v in data.items():
         if k == "on":
+            # Handle on/off at light level
             if v:
-                seg["on"] = True
+                state["on"] = True
             else:
-                seg["on"] = False
+                state["on"] = False
         elif k == "bri":
             seg["bri"] = v+1
         elif k == "ct":
@@ -114,8 +120,8 @@ def send_light_data(c, light, data):
             sleep(0.6)
             c.setBriSeg(state["bri"], light.protocol_cfg['segmentId'])
             return
-    seg["id"] = light.protocol_cfg['segmentId']
-    c.sendJson({"seg": [seg]})
+    state["seg"] = [seg]
+    c.sendJson(state)
 
 def get_light_state(light):
     ip = light.protocol_cfg['ip']
