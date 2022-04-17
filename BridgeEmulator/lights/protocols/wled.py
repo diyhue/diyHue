@@ -196,14 +196,15 @@ class WledDevice:
 
     def getSegState(self, seg):
         state = {}
-        data = self.getLightState()['state']['seg'][seg]
-        state['bri'] = data['bri']
-        state['on'] = data['on']
-        state['bri'] = data['bri']
+        data = self.getLightState()['state']
+        seg = data['seg'][seg]
+        state['bri'] = seg['bri']
+        state['on'] = data['on'] # Get on/off at light level
+        state['bri'] = seg['bri']
         # Weird division by zero when a color is 0
-        r = int(data['col'][0][0])+1
-        g = int(data['col'][0][1])+1
-        b = int(data['col'][0][2])+1
+        r = int(seg['col'][0][0])+1
+        g = int(seg['col'][0][1])+1
+        b = int(seg['col'][0][2])+1
         state['xy'] = convert_rgb_xy(r, g, b)
         state["colormode"] = "xy"
         return state
