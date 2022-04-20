@@ -15,6 +15,35 @@ logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
 
+def v1StateToV2(v1State):
+    v2State = {}
+    if "on" in v1State:
+        v2State["on"] = {"on": v1State["on"]}
+    if "bri" in v1State:
+        v2State["dimming"] = {"brightness": round(v1State["bri"] / 2.54, 2)}
+    if "ct" in v1State:
+        v2State["color_temperature"] = {"mirek": v1State["ct"]}
+    if "xy" in v1State:
+        v2State["color"] = {"xy": {"x": v1State["xy"][0], "y": v1State["xy"][1]}}
+    return v2State
+
+def v2StateToV1(v2State):
+    v1State = {}
+    if "dimming" in v2State:
+        v1State["bri"] = int(v2State["dimming"]["brightness"] * 2.54)
+    if "on" in v2State:
+        v1State["on"] = v2State["on"]["on"]
+    if "color_temperature" in v2State:
+        v1State["ct"] = v2State["color_temperature"]["mirek"]
+    if "color" in v2State:
+        if "xy" in v2State["color"]:
+            v1State["xy"] = [v2State["color"]["xy"]
+                             ["x"], v2State["color"]["xy"]["y"]]
+    if "gradient" in v2State:
+        v1State["gradient"] = v2State["gradient"]
+    if "transitiontime" in v2State:  # to be replaced once api will be public
+        v1State["transitiontime"] = v2State["transitiontime"]
+    return v1State
 
 def genV2Uuid():
     return str(uuid.uuid4())
@@ -372,34 +401,16 @@ class Light():
                     logging.warning(self.name + " light error, details: %s", e)
                 return
         if advertise:
-            v2State={}
-            if "on" in state:
-                v2State["on"] = {"on": state["on"]}
-            if "bri" in state:
-                v2State["dimming"] = {"brightness": state["bri"] / 2.54}
+            v2State = v1StateToV2(state)
             self.genStreamEvent(v2State)
 
 
 
     def setV2State(self, state):
-        v1State = {}
-        if "dimming" in state:
-            v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
-        if "on" in state:
-            v1State["on"] = state["on"]["on"]
-        if "color_temperature" in state:
-            v1State["ct"] = state["color_temperature"]["mirek"]
-        if "color" in state:
-            if "xy" in state["color"]:
-                v1State["xy"] = [state["color"]["xy"]
-                                 ["x"], state["color"]["xy"]["y"]]
-        if "gradient" in state:
-            v1State["gradient"] = state["gradient"]
+        v1State = v2StateToV1(state)
         if "effects" in state:
             v1State["effect"] = state["effects"]["effect"]
             self.effect = v1State["effect"]
-        if "transitiontime" in state:  # to be replaced once api will be public
-            v1State["transitiontime"] = state["transitiontime"]
         if "dynamics" in state and "speed" in state["dynamics"]:
             self.dynamics["speed"] = state["dynamics"]["speed"]
         self.setV1State(v2State,advertise=False)
@@ -865,30 +876,16 @@ class EntertainmentConfiguration():
         return result
 
     def setV2Action(self, state):
-        v1State = {}
-        if "dimming" in state:
-            v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
-        if "on" in state:
-            v1State["on"] = state["on"]["on"]
-        if "color_temperature" in state:
-            v1State["ct"] = state["color_temperature"]["mirek"]
-        if "color" in state:
-            if "xy" in state["color"]:
-                v1State["xy"] = [state["color"]["xy"]
-                                 ["x"], state["color"]["xy"]["y"]]
+        v1State = v2StateToV1(state)
         setGroupAction(self, v1State)
-        genStreamEvent(self,state)
+        self.genStreamEvent(state)
 
 
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
-        v2State={}
-        if "on" in state:
-            v2State["on"] = {"on": state["on"]}
-        if "bri" in state:
-            v2State["dimming"] = {"brightness": state["bri"] / 2.54}
-        genStreamEvent(self, v2State)
+        v2State = v1StateToV2(state)
+        self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1045,27 +1042,13 @@ class Group():
         return {"all_on": all_on, "any_on": any_on}
 
     def setV2Action(self, state):
-        v1State = {}
-        if "dimming" in state:
-            v1State["bri"] = int(state["dimming"]["brightness"] * 2.54)
-        if "on" in state:
-            v1State["on"] = state["on"]["on"]
-        if "color_temperature" in state:
-            v1State["ct"] = state["color_temperature"]["mirek"]
-        if "color" in state:
-            if "xy" in state["color"]:
-                v1State["xy"] = [state["color"]["xy"]
-                                 ["x"], state["color"]["xy"]["y"]]
+        v1State = v2StateToV1(state)
         setGroupAction(self, v1State)
         genStreamEvent(self, state)
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
-        v2State={}
-        if "on" in state:
-            v2State["on"] = {"on": state["on"]}
-        if "bri" in state:
-            v2State["dimming"] = {"brightness": state["bri"] / 2.54}
+        v2State = v1StateToV2(state)
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
