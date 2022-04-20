@@ -349,7 +349,7 @@ class Light():
         elif ("hue" in state or "sat" in state) and "hue" in self.state:
             self.state["colormode"] = "hs"
 
-    def setV1State(self, state):
+    def setV1State(self, state, advertise=True):
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
@@ -371,6 +371,15 @@ class Light():
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
                 return
+        if advertise:
+            v2State={}
+            if "on" in state:
+                v2State["on"] = {"on": state["on"]}
+            if "bri" in state:
+                v2State["dimming"] = {"brightness": state["bri"] / 2.54}
+            self.genStreamEvent(v2State)
+
+
 
     def setV2State(self, state):
         v1State = {}
@@ -393,16 +402,19 @@ class Light():
             v1State["transitiontime"] = state["transitiontime"]
         if "dynamics" in state and "speed" in state["dynamics"]:
             self.dynamics["speed"] = state["dynamics"]["speed"]
-        self.setV1State(v1State)
+        self.setV1State(v2State,advertise=False)
+        self.genStreamEvent(state)
+
+    def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        streamMessage["data"][0].update(state)
+        streamMessage["data"][0].update(statev2)
+        streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"],"rtype": "device"}})
         eventstream.append(streamMessage)
-        pprint(eventstream)
 
     def getDevice(self):
         result = {"id": str(uuid.uuid5(
@@ -500,7 +512,7 @@ class Light():
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
             result["dimming"] = {
-                "brightness": self.state["bri"] / 2.54,
+                "brightness": round(self.state["bri"] / 2.54, 2),
                 "min_dim_level": 0.10000000149011612
             }
         result["dynamics"] = self.dynamics
@@ -865,9 +877,28 @@ class EntertainmentConfiguration():
                 v1State["xy"] = [state["color"]["xy"]
                                  ["x"], state["color"]["xy"]["y"]]
         setGroupAction(self, v1State)
+        genStreamEvent(self,state)
+
+
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
+        v2State={}
+        if "on" in state:
+            v2State["on"] = {"on": state["on"]}
+        if "bri" in state:
+            v2State["dimming"] = {"brightness": state["bri"] / 2.54}
+        genStreamEvent(self, v2State)
+
+    def genStreamEvent(self, v2State):
+        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
+        streamMessage["id_v1"] = "/groups/" + self.id_v1
+        streamMessage.update(state)
+        eventstream.append(streamMessage)
 
     def getObjectPath(self):
         return {"resource": "groups", "id": self.id_v1}
@@ -1026,6 +1057,18 @@ class Group():
                 v1State["xy"] = [state["color"]["xy"]
                                  ["x"], state["color"]["xy"]["y"]]
         setGroupAction(self, v1State)
+        genStreamEvent(self, state)
+
+    def setV1Action(self, state, scene=None):
+        setGroupAction(self, state, scene)
+        v2State={}
+        if "on" in state:
+            v2State["on"] = {"on": state["on"]}
+        if "bri" in state:
+            v2State["dimming"] = {"brightness": state["bri"] / 2.54}
+        self.genStreamEvent(v2State)
+
+    def genStreamEvent(self, v2State):
         for light in self.lights:
             if light():
                 streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1033,11 +1076,16 @@ class Group():
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
-                streamMessage["data"][0].update(state)
+                streamMessage["data"][0].update(v2State)
                 eventstream.append(streamMessage)
-
-    def setV1Action(self, state, scene=None):
-        setGroupAction(self, state, scene)
+        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
+        streamMessage["id_v1"] = "/groups/" + self.id_v1
+        streamMessage.update(v2State)
+        eventstream.append(streamMessage)
 
     def getV1Api(self):
         result = {}
@@ -1297,7 +1345,7 @@ class Scene():
                 v2State["on"] = {"on": state["on"]}
             if "bri" in state:
                 v2State["dimming"] = {
-                    "brightness": state["bri"] / 2.54}
+                    "brightness": round(state["bri"] / 2.54, 2)}
                 v2State["dimming_delta"] = {}
             if "xy" in state:
                 v2State["color"] = {
