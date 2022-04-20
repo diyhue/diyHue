@@ -413,7 +413,7 @@ class Light():
             self.effect = v1State["effect"]
         if "dynamics" in state and "speed" in state["dynamics"]:
             self.dynamics["speed"] = state["dynamics"]["speed"]
-        self.setV1State(v2State,advertise=False)
+        self.setV1State(v1State,advertise=False)
         self.genStreamEvent(state)
 
     def genStreamEvent(self, v2State):
