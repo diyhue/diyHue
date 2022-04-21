@@ -423,7 +423,7 @@ class Light():
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        streamMessage["data"][0].update(statev2)
+        streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"],"rtype": "device"}})
         eventstream.append(streamMessage)
 
