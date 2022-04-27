@@ -1378,6 +1378,7 @@ class Scene():
                     lights.append(light)
         for light in lights:
             state = {}
+            state["on"] = light().state["on"]
             if "colormode" in light().state:
                 if light().state["colormode"] == "xy":
                     state["xy"] = light().state["xy"]
@@ -1386,8 +1387,8 @@ class Scene():
                 elif light().state["colormode"] == "hs":
                     state["hue"] = light().state["hue"]
                     state["sat"] = light().state["sat"]
-            state["on"] = light().state["on"]
-            state["bri"] = light().state["bri"]
+            if "bri" in light().state:
+                state["bri"] = light().state["bri"]
             self.lightstates[light()] = state
 
     def update_attr(self, newdata):
