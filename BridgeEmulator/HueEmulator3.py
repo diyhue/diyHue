@@ -92,8 +92,6 @@ app.register_blueprint(stream)
 def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ctx.load_cert_chain(certfile=CONFIG_PATH + "/cert.pem")
-    ctx.options |= ssl.OP_NO_TLSv1
-    ctx.options |= ssl.OP_NO_TLSv1_1
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
     ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256')
     ctx.set_ecdh_curve('prime256v1')
