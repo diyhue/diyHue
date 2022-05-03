@@ -393,8 +393,10 @@ class Element(Resource):
                     if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
         if resource in ["groups", "lights"]:
-            # trigger stream messages
-            GroupZeroMessage()
+            GroupZeroMessage() # trigger stream messages
+        if resource == "lights":
+            configManager.bridgeConfig.save_config(backup=False, resource='groups')
+            configManager.bridgeConfig.save_config(backup=False, resource='scenes')
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 
