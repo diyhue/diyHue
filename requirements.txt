@@ -15,3 +15,6 @@ zeroconf==0.38.3
 flask_cors==3.0.10
 yeelight
 python-kasa==0.4.1
+bleak==0.14.3
+rgbxy==0.5
+
