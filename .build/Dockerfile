@@ -23,7 +23,7 @@ COPY requirements.txt ./
 ## Install requirements  
 RUN apt update && apt install --no-install-recommends -y \
     python3-minimal python3-pip python3-dev python3-setuptools gcc \
-    openssl nmap psmisc iproute2 \
+    openssl nmap psmisc iproute2 bluez bluetooth \
     && pip3 install -r requirements.txt --no-cache-dir \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
     && apt autoremove -y \
