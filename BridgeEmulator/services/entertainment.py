@@ -89,22 +89,25 @@ def entertainmentService(group, user):
 
     init = False
     frameBites = 10
-    fremeID = 1
+    frameID = 1
+    initMatchBytes = 0
     host_ip = bridgeConfig["config"]["ipaddress"]
+    p.stdout.read(1) # read one byte so the init function will correctly detect the frameBites
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
-                line = p.stdout.read(200)
-                logging.debug(",".join('{:02x}'.format(x) for x in line))
-                frameBites = line[1:].find(b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d') + 1
-                logging.debug("frameBites: " + str(frameBites))
-                if frameBites > 100:
-                    p.stdout.read(frameBites - (200 - frameBites)) # sync streaming bytes
-                elif frameBites > 67:
-                    p.stdout.read(frameBites - (200 - frameBites * 2)) # sync streaming bytes
+                readByte = p.stdout.read(1)
+                logging.debug(readByte)
+                if readByte in b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d':
+                    initMatchBytes += 1
                 else:
-                    p.stdout.read(frameBites - (200 - frameBites * 3)) # sync streaming bytes
-                init = True
+                    initMatchBytes = 0
+                if initMatchBytes == 9:
+                    frameBites = frameID - 8
+                    logging.debug("frameBites: " + str(frameBites))
+                    p.stdout.read(frameBites - 9) # sync streaming bytes
+                    init = True
+                frameID += 1
 
             else:
                 data = p.stdout.read(frameBites)
@@ -219,16 +222,16 @@ def entertainmentService(group, user):
                         elif proto == "hue" and int(light.protocol_cfg["id"]) in hueGroupLights:
                             hueGroupLights[int(light.protocol_cfg["id"])] = [r,g,b]
                         else:
-                            if fremeID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
+                            if frameID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
                                 operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
                                 if operation == 1:
                                     light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
                                 elif operation == 2:
                                     light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
 
-                        fremeID += 1
-                        if fremeID == 25:
-                            fremeID = 1
+                        frameID += 1
+                        if frameID == 25:
+                            frameID = 1
                         if apiVersion == 1:
                             i = i + 9
                         elif  apiVersion == 2:
