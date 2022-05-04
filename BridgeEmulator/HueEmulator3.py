@@ -118,7 +118,7 @@ if __name__ == '__main__':
         Thread(target=mqtt.mqttServer).start()
     if bridgeConfig["config"]["homeassistant"]["enabled"]:
         homeAssistantWS.create_ws_client(bridgeConfig)
-    if not configManager.runtimeConfig.arg["disableOnlineDiscover"]:
+    if not ("discovery" in bridgeConfig["config"] and bridgeConfig["config"]["discovery"] == False):
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
