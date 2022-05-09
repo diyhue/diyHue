@@ -71,7 +71,7 @@ class NewUser(Resource):
 
     def post(self):
         postDict = request.get_json(force=True)
-        pprint(postDict)
+        logging.debug(postDict)
         if "devicetype" in postDict:
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
             if last_button_press + 30 >= datetime.now().timestamp():
@@ -87,7 +87,7 @@ class NewUser(Resource):
                     response[0]["success"]["clientkey"] = client_key
                 bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(
                     username, postDict["devicetype"], client_key)
-                pprint(response)
+                logging.debug(response)
                 configManager.bridgeConfig.save_config()
                 return response
             else:
@@ -150,7 +150,7 @@ class ResourceElements(Resource):
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
-        pprint(postDict)
+        logging.debug(postDict)
         if resource == "lights":  # add light manually from the web interface
             Thread(target=manualAddLight, args=[
                    postDict["ip"], postDict["protocol"], postDict["config"]]).start()
@@ -281,7 +281,7 @@ class ResourceElements(Resource):
         for key, value in putDict.items():
             responseList.append(
                 {"success": {response_location + key: value}})
-        pprint(responseList)
+        logging.debug(responseList)
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return responseList
 
@@ -298,7 +298,7 @@ class Element(Resource):
 
         if resource in ["lights", "sensors"] and resourceid == "new":
             response = bridgeConfig["temp"]["scanResult"]
-            pprint(response)
+            logging.debug(response)
             return response
         if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
             return bridgeConfig[resource][resourceid].getV1Api()
@@ -310,7 +310,7 @@ class Element(Resource):
             return authorisation
 
         putDict = request.get_json(force=True)
-        pprint(putDict)
+        logging.debug(putDict)
         currentTime = datetime.now()
         responseList = []
         response_location = "/" + resource + "/" + resourceid + "/"
@@ -414,7 +414,7 @@ class ElementParam(Resource):
             return authorisation
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
-        pprint(putDict)
+        logging.debug(putDict)
         if resource == "lights" and param == "state":  # state is applied to a light
             bridgeConfig[resource][resourceid].setV1State(putDict)
         elif param == "action":  # state is applied to a light
@@ -442,7 +442,7 @@ class ElementParam(Resource):
         for key, value in putDict.items():
             responseList.append(
                 {"success": {responseLocation + key: value}})
-        pprint(responseList)
+        logging.debug(responseList)
         return responseList
 
     def delete(self, username, resource, resourceid, param):
@@ -470,7 +470,7 @@ class ElementParamId(Resource):
             return authorisation
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
-        pprint(putDict)
+        logging.debug(putDict)
         responseList = []
         responseLocation = "/" + resource + "/" + \
             resourceid + "/" + param + "/" + paramid + "/"
@@ -481,5 +481,5 @@ class ElementParamId(Resource):
             paramid = bridgeConfig["lights"][paramid]
         bridgeConfig[resource][resourceid].update_attr(
             {param: {paramid: putDict}})
-        pprint(responseList)
+        logging.debug(responseList)
         return responseList
