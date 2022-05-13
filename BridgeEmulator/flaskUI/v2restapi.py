@@ -399,6 +399,24 @@ class ClipV2Resource(Resource):
                         newObject.add_light(obj)
                         newObject.locations[obj] = element["positions"]
             bridgeConfig["groups"][new_object_id] = newObject
+        elif resource in ["room", "zone"]:
+            new_object_id = nextFreeId(bridgeConfig, "groups")
+            objCreation = {
+                "id_v1": new_object_id,
+                "name": postDict["metadata"]["name"]
+            }
+            objCreation["type"] = "Room" if resource == "room" else "Zone"
+            if "archetype" in postDict["metadata"]:
+                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ")
+            objCreation.update(postDict)
+            newObject = HueObjects.Group(objCreation)
+            if "children" in postDict:
+                for children in postDict["children"]:
+                    obj = getObject(
+                        children["rtype"], children["rid"])
+                    newObject.add_light(obj)
+
+            bridgeConfig["groups"][new_object_id] = newObject
 
         # return message
         returnMessage = {"data": [{

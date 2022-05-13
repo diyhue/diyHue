@@ -1044,7 +1044,7 @@ class Group():
     def setV2Action(self, state):
         v1State = v2StateToV1(state)
         setGroupAction(self, v1State)
-        genStreamEvent(self, state)
+        self.genStreamEvent(state)
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
