@@ -102,7 +102,10 @@ def rulesProcessor(device, current_time):
                     logging.info("ddx rule " + rule.name + " will be re validated after " + str(rule_result[1]) + " seconds")
                     Thread(target=ddxRecheck, args=[rule, device, current_time, rule_result[1], rule_result[2]]).start()
     for action in actionsToExecute:
+        urlPrefix = "http://localhost/api/local"
+        if action["address"].startswith("http"):
+            urlPrefix = ""
         if action["method"] == "POST":
-            requests.post("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
+            requests.post(urlPrefix + action["address"], json=action["body"], timeout=5)
         elif action["method"] == "PUT":
-            requests.put("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
+            requests.put(urlPrefix + action["address"], json=action["body"], timeout=5)
