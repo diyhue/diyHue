@@ -114,7 +114,7 @@ def send_light_data(c, light, data):
         elif k == "xy":
             color = convert_xy(v[0], v[1], 255)
             seg["col"] = [[color[0], color[1], color[2]]]
-        elif k == "alert":
+        elif k == "alert" and v != "none":
             state = c.getSegState(light.protocol_cfg['segmentId'])
             c.setBriSeg(0, light.protocol_cfg['segmentId'])
             sleep(0.6)
