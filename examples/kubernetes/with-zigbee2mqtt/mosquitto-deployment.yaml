@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto
+  namespace: diyhue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app-name: mosquitto
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app-name: mosquitto
+    spec:
+      containers:
+        - image: eclipse-mosquitto
+          name: mosquitto
+          ports:
+            - containerPort: 1883
+            - containerPort: 9001
+          volumeMounts:
+            - mountPath: /mosquitto/config
+              name: mosquitto-config
+      hostname: mosquitto
+      restartPolicy: Always
+      volumes:
+        - name: mosquitto-config
+          hostPath:
+            path: /container_data/mosquitto/
+            type: DirectoryOrCreate

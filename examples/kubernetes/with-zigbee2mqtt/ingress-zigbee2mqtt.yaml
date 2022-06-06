@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-mariusmotea-go
+  namespace: diyhue
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  tls:
+  - hosts:
+    - mariusmotea.go.ro
+  rules:
+    - host: mariusmotea.go.ro
+      http:
+        paths:
+          - path: /zigbee2mqtt(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: zigbee2mqtt
+                port:
+                  number: 8080

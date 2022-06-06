@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: diyhue-service
+  namespace: diyhue
+spec:
+  ports:
+    - name: "443"
+      port: 443
+      targetPort: 443
+    - name: "80"
+      port: 80
+      targetPort: 80
+    - name: "2100"
+      port: 2100
+      protocol: UDP
+      targetPort: 2100
+  selector:
+    app-name: diyhue
+  type: NodePort
+  externalIPs:
+    - 192.168.xx.xxx

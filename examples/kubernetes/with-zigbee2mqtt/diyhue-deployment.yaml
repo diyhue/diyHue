@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diyhue
+  namespace: diyhue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app-name: diyhue
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app-name: diyhue
+    spec:
+      containers:
+        - env:
+            - name: IP
+              value: 192.168.xx.xxx # Important!! Must be the service external IP. Hue apps may not work if this is not correctly set
+            - name: DEBUG
+              value: "false"
+            - name: MAC
+              value: dc:a6:32:xx:xx:xx # Important!! Must be the host mac address. Hue app will not pair if is not correctly specified
+            - name: TZ
+              value: Europe/Berlin
+          image: diyhue/core:latest
+          name: diyhue
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /opt/hue-emulator/config
+              name: diyhue-config
+          imagePullPolicy: Always
+      restartPolicy: Always
+      volumes:
+        - name: diyhue-config
+          hostPath:
+            path: /container_data/diyHue
+            type: DirectoryOrCreate

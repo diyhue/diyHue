@@ -1,0 +1,15 @@
+version: '3'
+services:
+  diyhue:
+    container_name: diyhue
+    image: diyhue/core:latest
+    volumes:
+      - ./diyHue:/opt/hue-emulator/config
+    restart: always
+    network_mode: host
+    privileged: true
+    environment:
+      - DEBUG=false
+      - MAC=dc:a6:32:fe:xx:xx # Important!! Hue app will not pair if is not specified correctly
+      - TZ=Europe/Berlin
+

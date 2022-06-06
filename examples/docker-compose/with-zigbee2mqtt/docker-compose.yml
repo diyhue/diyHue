@@ -1,0 +1,48 @@
+version: '3'
+services:
+  diyhue:
+    container_name: diyhue
+    image: diyhue/core:latest
+    volumes:
+      - ./diyHue:/opt/hue-emulator/config
+    restart: always
+    network_mode: host
+    privileged: true
+    environment:
+      - DEBUG=false
+      - MAC=dc:a6:32:fe:xx:xx # Important !! Hue app will not pair if is wrong specified
+      - TZ=Europe/Berlin
+    depends_on:
+      - mosquitto
+
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt:1.25.1
+    volumes:
+      - ./zigbee2mqtt:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/ttyAMA1:/dev/ttyAMA1
+    restart: always
+    ports:
+      - "8080:8080"
+    privileged: true
+    environment:
+      - TZ=Europe/Bucharest
+    depends_on:
+      - mosquitto
+
+  mosquitto:
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    expose:
+      - "1883"
+      - "9001"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: always
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
