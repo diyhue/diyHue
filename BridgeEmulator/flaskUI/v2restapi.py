@@ -499,6 +499,19 @@ class ClipV2ResourceId(Resource):
             bridgeConfig["sensors"]["1"].config["configured"] = True
         elif resource == "behavior_instance":
             object.update_attr(putDict)
+        elif resource in ["room", "zone"]:
+            v1Api = {}
+            if "metadata" in putDict:
+                if "name" in putDict["metadata"]:
+                    v1Api["name"] = putDict["metadata"]["name"]
+                if "archetype" in putDict["metadata"]:
+                    v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ")
+            if "children" in putDict:
+                for children in putDict["children"]:
+                    obj = getObject(
+                        children["rtype"], children["rid"])
+                    object.add_light(obj)
+            object.update_attr(v1Api)
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
