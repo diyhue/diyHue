@@ -22,7 +22,7 @@ COPY requirements.txt ./
 
 ## Install requirements  
 RUN apt update && apt install --no-install-recommends -y \
-    python3-minimal python3-pip python3-dev python3-setuptools gcc \
+    curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
     openssl nmap psmisc iproute2 bluez bluetooth \
     && pip3 install -r requirements.txt --no-cache-dir \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
@@ -39,6 +39,14 @@ COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
 COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
 COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+
+## Install the web interface
+
+RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip && \
+    unzip -qo diyHueUI.zip && \
+    mv index.html flaskUI/templates/ && \
+    cp -r static flaskUI/ && \
+    rm -r static
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/

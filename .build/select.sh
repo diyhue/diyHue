@@ -11,7 +11,6 @@ case "$TARGETPLATFORM" in
 esac
 
 # echo "Got file suffix: $SELECTED"
-mv ./entertainment-$SELECTED ./out/entertain-srv
 mv ./coap-client-$SELECTED ./out/coap-client-linux
 
 # echo "Files in out folder"

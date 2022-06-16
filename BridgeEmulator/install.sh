@@ -148,6 +148,14 @@ fi
 
 cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
+# Copy web interface files
+
+curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
+unzip -qo diyHueUI.zip
+mv index.html /opt/hue-emulator/flaskUI/templates/
+cp -r static /opt/hue-emulator/flaskUI/
+rm -r static
+
 # Install correct binaries
 case $arch in
     x86_64|i686|aarch64)
@@ -178,4 +186,3 @@ systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
 
 echo -e "\033[32m Installation completed. Open Hue app and search for bridges.\033[0m"
-
