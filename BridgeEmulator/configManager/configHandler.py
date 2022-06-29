@@ -53,8 +53,8 @@ class Config:
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
 
-                if int(config["swversion"]) < 1950207110:
-                    config["swversion"] = "1950207110"
+                if int(config["swversion"]) < 1952086020:
+                    config["swversion"] = "1952086020"
                 if float(config["apiversion"][:3]) < 1.50:
                     config["apiversion"] = "1.50.0"
 
