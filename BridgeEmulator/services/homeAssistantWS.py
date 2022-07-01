@@ -280,21 +280,25 @@ def discover(detectedLights):
 
         logging.info("HomeAssistant_ws: found light {}".format(lightName))
         # From Home Assistant lights/__init.py__
-        SUPPORT_BRIGHTNESS = 1
-        SUPPORT_COLOR_TEMP = 2
-        SUPPORT_EFFECT = 4
-        SUPPORT_FLASH = 8
-        SUPPORT_COLOR = 16
-        SUPPORT_TRANSITION = 32
-        SUPPORT_WHITE_VALUE = 128
-        supported_features = ha_state['attributes']['supported_features']
+        UNKNOWN = "unknown"  # Ambiguous color mode
+        ONOFF = "onoff"  # Must be the only supported mode
+        BRIGHTNESS = "brightness"  # Must be the only supported mode
+        COLOR_TEMP = "color_temp"
+        HS = "hs"
+        XY = "xy"
+        RGB = "rgb"
+        RGBW = "rgbw"
+        RGBWW = "rgbww"
+        WHITE = "white"  # Must *NOT* be the only supported mode
+
+        supported_colourmodes = ha_state.get('attributes', {}).get('supported_color_modes', [])
 
         model_id = None
-        if supported_features & SUPPORT_COLOR:
+        if HS in supported_colourmodes or XY in supported_colourmodes or RGB in supported_colourmodes or RGBW in supported_colourmodes or RGBWW in supported_colourmodes:
             model_id = "LCT015"
-        elif supported_features & SUPPORT_COLOR_TEMP:
+        elif COLOR_TEMP in supported_colourmodes:
             model_id = "LTW001"
-        elif supported_features & SUPPORT_BRIGHTNESS:
+        elif BRIGHTNESS in supported_colourmodes:
             model_id = "LWB010"
         else:
             model_id = "LOM001"
