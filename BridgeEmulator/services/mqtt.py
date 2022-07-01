@@ -39,8 +39,8 @@ standardSensors = {
         "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on-press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on-hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "on-hold-release": {"buttonevent": 1003}, "up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up-hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "up-hold-release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down-press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down-hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "down-hold-release": {"buttonevent": 3002}, "off_press": {"buttonevent": 4000}, "off-press": {"buttonevent": 4000}}},
     "WXKG01LM": {"dataConversion": {"rootKey": "action", "single": {"buttonevent": 1001}, "double": {"buttonevent": 1002}, "triple": {"buttonevent": 1003}, "quadruple": {"buttonevent": 1004}, "hold": {"buttonevent": 2001}, "release": {"buttonevent": 2002}, "release": {"many": 2003}}},
     "Remote Control N2": {"dataConversion": {"rootKey": "action", "on": {"buttonevent": 1001}, "off": {"buttonevent": 2001}, "brightness_move_up": {"buttonevent": 1002}, "brightness_stop": {"buttonevent": 1003}, "brightness_move_down": {"buttonevent": 2002}, "arrow_left_click": {"buttonevent": 3002}, "arrow_right_click": {"many": 4002}}},
-    "Pushbutton transmitter module":{
-        "dataConversion": {"rootKey": "action", "press_1": {"buttonevent": 1002}, "press_3": {"buttonevent": 2002}, "press_2": {"buttonevent": 1001}, "press_4": {"buttonevent": 2001}, "release_2": {"buttonevent": 3001}, "release_4": {"buttonevent": 3001}}},
+    "GreenPower_2":{
+        "dataConversion": {"rootKey": "action", "press_1": {"buttonevent": 1002}, "longpress_1": {"buttonevent": 1001},  "press_2": {"buttonevent": 2002}, "longpress_2": {"buttonevent": 2001}, "press_3": {"buttonevent": 3002}, "longpress_3": {"buttonevent": 3001}, "press_4": {"buttonevent": 4002}, "longpress_4": {"buttonevent": 4001}, "release_1": {"buttonevent": 1003}, "release_2": {"buttonevent": 2003}, "release_3": {"buttonevent": 3003}, "release_4": {"buttonevent": 4003}}},
     
 }
 
@@ -63,6 +63,21 @@ def longPressButton(sensor, buttonevent):
         rulesProcessor(sensor, current_time)
         sleep(0.5)
     return
+
+def longPressGreenPower(sensor):
+    print("running.....")
+    logging.info("detecting long press")
+    sleep(1)
+    initialButton = sensor.state["buttonevent"]
+    while sensor.state["buttonevent"] not in [1003, 2003, 3003, 4003]: # not released yet  
+        logging.info("still pressed")
+        current_time = datetime.now()
+        sensor.dxState["lastupdated"] = current_time
+        sensor.state["buttonevent"] = initialButton - 1
+        rulesProcessor(sensor, current_time)
+        sleep(0.5)
+    return
+
 
 
 def getObject(friendly_name):
@@ -253,6 +268,10 @@ def on_message(client, userdata, msg):
                         if "buttonevent" in convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
                             Thread(target=longPressButton, args=[
                                    device, convertedPayload["buttonevent"]]).start()
+                        if (device.modelid in standardSensors and device.modelid == "GreenPower_2" and convertedPayload["buttonevent"] in [1002, 2002, 3002, 4002]): # initial button click
+                            Thread(target=longPressGreenPower, args=[
+                                   device, convertedPayload["buttonevent"]]).start()                            
+                            return
                         rulesProcessor(device, current_time)
                     elif device.getObjectPath()["resource"] == "lights":
                         state = {"reachable": True}
