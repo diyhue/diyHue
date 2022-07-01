@@ -116,10 +116,10 @@ class HomeAssistantClient(WebSocketClient):
             "service_data": service_data
         }
 
-        payload["service"] = "turn_off"
+        payload["service"] = "turn_on"
         if 'on' in data:
-            if data['on']:
-                payload["service"] = "turn_on"
+            if not data['on']:
+                payload["service"] = "turn_off"
 
         color_from_hsv = False
         for key, value in data.items():
@@ -212,9 +212,7 @@ class HomeAssistantClient(WebSocketClient):
 
 
 def connect_if_required():
-    print("A")
     if homeassistant_ws_client is None or homeassistant_ws_client.client_terminated:
-        print("B")
         create_websocket_client()
         
     return homeassistant_ws_client
