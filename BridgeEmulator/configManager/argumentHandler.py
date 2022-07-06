@@ -174,4 +174,7 @@ def parse_arguments():
         logging.info("Online Discovery/Remote API Enabled!")
     argumentDict["disableOnlineDiscover"] = disableOnlineDiscover
 
+    if argumentDict['noServeHttps']:
+        logging.info("HTTPS Port Disabled")
+
     return argumentDict

@@ -267,7 +267,7 @@ def entertainmentService(group, user):
                             color = wledLights[ip]["color"] * int(wledLights[ip]["ledCount"])
                             udpdata = bytes(udphead+color)
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                            sock.sendto(udpdata, (ip, 21324))
+                            sock.sendto(udpdata, (ip.split(":")[0], 21324))
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
                 else:

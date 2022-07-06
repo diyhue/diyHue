@@ -82,5 +82,5 @@ def get_light_state(light):
     entity_id = light.protocol_cfg["entity_id"]
     homeassistant_state = latest_states[entity_id]
     existing_diy_hue_state = light.state
-    pprint(translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, homeassistant_state))
+    # pprint(translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, homeassistant_state))
     return translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, homeassistant_state)
