@@ -1,3 +1,4 @@
+from sqlalchemy import false, true
 import logManager
 import configManager
 import json
@@ -41,6 +42,8 @@ standardSensors = {
     "Remote Control N2": {"dataConversion": {"rootKey": "action", "on": {"buttonevent": 1001}, "off": {"buttonevent": 2001}, "brightness_move_up": {"buttonevent": 1002}, "brightness_stop": {"buttonevent": 1003}, "brightness_move_down": {"buttonevent": 2002}, "arrow_left_click": {"buttonevent": 3002}, "arrow_right_click": {"many": 4002}}},
     "GreenPower_2":{
         "dataConversion": {"rootKey": "action", "press_1": {"buttonevent": 1002}, "longpress_1": {"buttonevent": 1001},  "press_2": {"buttonevent": 2002}, "longpress_2": {"buttonevent": 2001}, "press_3": {"buttonevent": 3002}, "longpress_3": {"buttonevent": 3001}, "press_4": {"buttonevent": 4002}, "longpress_4": {"buttonevent": 4001}, "release_1": {"buttonevent": 1003}, "release_2": {"buttonevent": 2003}, "release_3": {"buttonevent": 3003}, "release_4": {"buttonevent": 4003}}},
+    # "GreenPower_2":{
+    #     "dataConversion": {"rootKey": "action", "press_1": {"buttonevent": 16}, "release_1": {"buttonevent": 20}, "press_2": {"buttonevent": 19}, "release_2": {"buttonevent": 23}, "press_3": {"buttonevent": 17}, "release_3": {"buttonevent": 21},"press_4": {"buttonevent": 17}, "release_4": {"buttonevent": 21}}},
     
 }
 
@@ -64,19 +67,47 @@ def longPressButton(sensor, buttonevent):
         sleep(0.5)
     return
 
-def longPressGreenPower(sensor):
-    print("running.....")
+def longPressGreenPower(sensor, buttonevent):
+    count = 0                   # iterate to stay below  (count * sleep(seconds) < 7 Seconds) to prevent pairing mode via longpress
+    maxCount = 10
+    logging.debug("running.....")
     logging.info("detecting long press")
-    sleep(1)
-    initialButton = sensor.state["buttonevent"]
-    while sensor.state["buttonevent"] not in [1003, 2003, 3003, 4003]: # not released yet  
+    sleep(1)    
+    global longpressDetected
+    longpressDetected = False
+    while sensor.state["buttonevent"] not in [1003, 2003, 3003, 4003] and count <= maxCount: # current state not released and button not pressed for longer than 7 sec.
+        mState = sensor.state["buttonevent"] 
         logging.info("still pressed")
+        longpressDetected = True
         current_time = datetime.now()
         sensor.dxState["lastupdated"] = current_time
-        sensor.state["buttonevent"] = initialButton - 1
+        sensor.state["buttonevent"] = buttonevent - 1
         rulesProcessor(sensor, current_time)
+        
+        if mState in [1003, 2003, 3003, 4003]:
+            return
+        count += 1   
         sleep(0.5)
-    return
+
+
+    if(not longpressDetected):
+        current_time = datetime.now()
+        sensor.dxState["lastupdated"] = current_time
+        sensor.state["buttonevent"] = buttonevent
+        rulesProcessor(sensor, current_time)
+        current_time = datetime.now()
+        sensor.dxState["lastupdated"] = current_time
+        sensor.state["buttonevent"] = buttonevent + 1  #send release codes
+        rulesProcessor(sensor, current_time)
+
+
+    if(count == maxCount):          # Set state to released
+        current_time = datetime.now()
+        sensor.dxState["lastupdated"] = current_time
+        sensor.state["buttonevent"] = buttonevent + 2
+        rulesProcessor(sensor, current_time)
+
+    return 
 
 
 

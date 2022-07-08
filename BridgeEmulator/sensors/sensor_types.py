@@ -11,4 +11,88 @@ sensorTypes["RWL022"]["ZHASwitch"] = sensorTypes["RWL022"]["ZLLSwitch"]
 sensorTypes["TRADFRI remote control"] = {"ZHASwitch": {"state": {"buttonevent": 1002, "lastupdated": "none"}, "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "static": {"swversion": "1.2.214", "manufacturername": "IKEA of Sweden"}}}
 sensorTypes["TRADFRI on/off switch"] = {"ZHASwitch": {"state": {"buttonevent": 1002, "lastupdated": "none"}, "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "static": {"swversion": "2.2.008", "manufacturername": "IKEA of Sweden"}}}
 sensorTypes["TRADFRI wireless dimmer"] = {"ZHASwitch": {"state": {"buttonevent": 1002, "lastupdated": "none"}, "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "static": {"swversion": "1.2.248", "manufacturername": "IKEA of Sweden"}}}
-sensorTypes["GreenPower_2"] = {"ZGPSwitch": {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "static": {"manufacturername": "Signify Netherlands B.V.", "swversion": ""}}}
+sensorTypes["GreenPower_2"] = {"ZHASwitch": {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "static": {"manufacturername": "Signify Netherlands B.V.", "swversion": ""}}}
+#sensorTypes["GreenPower_2"] = {"FOHSwitch": {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "static": {"manufacturername": "Signify Netherlands B.V.", "swversion": ""}}}
+
+
+
+
+# {
+#     "state": {
+#         "buttonevent": 21,
+#         "lastupdated": "2022-06-27T13:55:33"
+#     },
+#     "swupdate": {
+#         "state": "notupdatable",
+#         "lastinstall": null
+#     },
+#     "config": {
+#         "on": true
+#     },
+#     "name": "Friends of Hue Switch 1",
+#     "type": "ZGPSwitch",
+#     "modelid": "FOHSWITCH",
+#     "manufacturername": "PhilipsFoH",
+#     "productname": "Friends of Hue Switch",
+#     "diversityid": "ded6468f-6b26-4a75-9582-f2b52d36a5a3",
+#     "uniqueid": "00:00:00:00:01:70:10:9f-f2",
+#     "capabilities": {
+#         "certified": true,
+#         "primary": true,
+#         "inputs": [
+#             {
+#                 "repeatintervals": [],
+#                 "events": [
+#                     {
+#                         "buttonevent": 16, #Top Left
+#                         "eventtype": "initial_press"
+#                     },
+#                     {
+#                         "buttonevent": 20,
+#                         "eventtype": "short_release"
+#                     }
+#                 ]
+#             },
+#             {
+#                 "repeatintervals": [],
+#                 "events": [
+#                     {
+#                         "buttonevent": 17, #Bottom Left
+#                         "eventtype": "initial_press"
+#                     },
+#                     {
+#                         "buttonevent": 21,
+#                         "eventtype": "short_release"
+#                     }
+#                 ]
+#             },
+#             {
+#                 "repeatintervals": [],
+#                 "events": [
+#                     {
+#                         "buttonevent": 19, #Top Right
+#                         "eventtype": "initial_press"
+#                     },
+#                     {
+#                         "buttonevent": 23,
+#                         "eventtype": "short_release"
+#                     }
+#                 ]
+#             },
+#             {
+#                 "repeatintervals": [],
+#                 "events": [
+#                     {
+#                         "buttonevent": 18, #Bottom Right
+#                         "eventtype": "initial_press"
+#                     },
+#                     {
+#                         "buttonevent": 22,
+#                         "eventtype": "short_release"
+#                     }
+#                 ]
+#             }
+#         ]
+#     }
+# }
+
