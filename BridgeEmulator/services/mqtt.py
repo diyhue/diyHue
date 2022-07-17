@@ -28,17 +28,107 @@ discoveredDevices = {}
 
 motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "SML001"]
 standardSensors = {
-            "TRADFRI remote control": {
-                "dataConversion": {"rootKey": "action", "toggle": {"buttonevent": 1002}, "arrow_right_click": {"buttonevent": 5002}, "arrow_right_hold": {"buttonevent": 5001}, "arrow_left_click": {"buttonevent": 4002}, "arrow_left_hold": {"buttonevent": 4001}, "brightness_up_click": {"buttonevent": 2002}, "brightness_up_hold": {"buttonevent": 2001}, "brightness_down_click": {"buttonevent": 3002}, "brightness_down_hold": {"buttonevent": 3001}, "brightness_up_release": {"buttonevent": 2003},  "brightness_down_release": {"buttonevent": 3003}, "arrow_left_release": {"buttonevent": 4003}, "arrow_right_release": {"buttonevent": 5003}}},
-            "TRADFRI on/off switch": {
-                "dataConversion": {"rootKey": "click", "on": {"buttonevent": 1002}, "off": {"buttonevent": 2002}, "brightness_up": {"buttonevent": 1001}, "brightness_down": {"buttonevent": 2001}, "brightness_stop": {"buttonevent": 3001}}},
-            "TRADFRI wireless dimmer": {
-                "dataConversion": {"rootKey": "action", "rotate_right_quick": {"buttonevent": 1002}, "rotate_right": {"buttonevent": 2002}, "rotate_left": {"buttonevent": 3002}, "rotate_left_quick": {"buttonevent": 4002}, "rotate_stop": {}, "": {}}},
-            "RWL021": {
-            "dataConversion": {"rootKey": "action", "on_press": {"buttonevent": 1002}, "on-press": {"buttonevent": 1002}, "on_hold": {"buttonevent": 1001}, "on-hold": {"buttonevent": 1001}, "on_hold_release": {"buttonevent": 1003}, "on-hold-release": {"buttonevent": 1003},"up_press": {"buttonevent": 2000}, "up_hold": {"buttonevent": 2001}, "up-hold": {"buttonevent": 2001}, "up_hold_release": {"buttonevent": 2002}, "up-hold-release": {"buttonevent": 2002}, "down_press": {"buttonevent": 3000}, "down-press": {"buttonevent": 3000}, "down_hold": {"buttonevent": 3001}, "down-hold": {"buttonevent": 3001}, "down_hold_release": {"buttonevent": 3002}, "down-hold-release": {"buttonevent": 3002},"off_press": {"buttonevent": 4000}  ,"off-press": {"buttonevent": 4000} }},
-            "WXKG01LM": {"dataConversion": {"rootKey": "action", "single": {"buttonevent": 1001}, "double": {"buttonevent": 1002}, "triple": {"buttonevent": 1003}, "quadruple": {"buttonevent": 1004}, "hold": {"buttonevent": 2001}, "release": {"buttonevent": 2002}, "release": {"many": 2003}}},
-            "Remote Control N2": {"dataConversion": {"rootKey": "action", "on": {"buttonevent": 1001}, "off": {"buttonevent": 2001}, "brightness_move_up": {"buttonevent": 1002}, "brightness_stop": {"buttonevent": 1003}, "brightness_move_down": {"buttonevent": 2002}, "arrow_left_click": {"buttonevent": 3002}, "arrow_right_click": {"many": 4002}}}
-            }
+    "TRADFRI remote control": {
+        "dataConversion": {
+            "rootKey": "action",
+            "toggle": {"buttonevent": 1002},
+            "arrow_right_click": {"buttonevent": 5002},
+            "arrow_right_hold": {"buttonevent": 5001},
+            "arrow_left_click": {"buttonevent": 4002},
+            "arrow_left_hold": {"buttonevent": 4001},
+            "brightness_up_click": {"buttonevent": 2002},
+            "brightness_up_hold": {"buttonevent": 2001},
+            "brightness_down_click": {"buttonevent": 3002},
+            "brightness_down_hold": {"buttonevent": 3001},
+            "brightness_up_release": {"buttonevent": 2003},
+            "brightness_down_release": {"buttonevent": 3003},
+            "arrow_left_release": {"buttonevent": 4003},
+            "arrow_right_release": {"buttonevent": 5003},
+        }
+    },
+    "TRADFRI on/off switch": {
+        "dataConversion": {
+            "rootKey": "click",
+            "on": {"buttonevent": 1002},
+            "off": {"buttonevent": 2002},
+            "brightness_up": {"buttonevent": 1001},
+            "brightness_down": {"buttonevent": 2001},
+            "brightness_stop": {"buttonevent": 3001},
+        }
+    },
+    "TRADFRI wireless dimmer": {
+        "dataConversion": {
+            "rootKey": "action",
+            "rotate_right_quick": {"buttonevent": 1002},
+            "rotate_right": {"buttonevent": 2002},
+            "rotate_left": {"buttonevent": 3002},
+            "rotate_left_quick": {"buttonevent": 4002},
+            "rotate_stop": {},
+            "": {},
+        }
+    },
+    "RWL021": {
+        "dataConversion": {
+            "rootKey": "action",
+            "on_press": {"buttonevent": 1000},
+            "on-press": {"buttonevent": 1000},
+            "on_hold": {"buttonevent": 1001},
+            "on-hold": {"buttonevent": 1001},
+            "on_press_release": {"buttonevent": 1002},
+            "on-press-release": {"buttonevent": 1002},
+            "on_hold_release": {"buttonevent": 1003},
+            "on-hold-release": {"buttonevent": 1003},
+            "up_press": {"buttonevent": 2000},
+            "up-press": {"buttonevent": 2000},
+            "up_hold": {"buttonevent": 2001},
+            "up-hold": {"buttonevent": 2001},
+            "up_press_release": {"buttonevent": 2002},
+            "up-press-release": {"buttonevent": 2002},
+            "up_hold_release": {"buttonevent": 2003},
+            "up-hold-release": {"buttonevent": 2003},
+            "down_press": {"buttonevent": 3000},
+            "down-press": {"buttonevent": 3000},
+            "down_hold": {"buttonevent": 3001},
+            "down-hold": {"buttonevent": 3001},
+            "down_press_release": {"buttonevent": 3002},
+            "down-press-release": {"buttonevent": 3002},
+            "down_hold_release": {"buttonevent": 3003},
+            "down-hold-release": {"buttonevent": 3003},
+            "off_press": {"buttonevent": 4000},
+            "off-press": {"buttonevent": 4000},
+            "off_hold": {"buttonevent": 4001},
+            "off-hold": {"buttonevent": 4001},
+            "off_press_release": {"buttonevent": 4002},
+            "off-press-release": {"buttonevent": 4002},
+            "off_hold_release": {"buttonevent": 4003},
+            "off-hold-release": {"buttonevent": 4003},
+        }
+    },
+    "WXKG01LM": {
+        "dataConversion": {
+            "rootKey": "action",
+            "single": {"buttonevent": 1001},
+            "double": {"buttonevent": 1002},
+            "triple": {"buttonevent": 1003},
+            "quadruple": {"buttonevent": 1004},
+            "hold": {"buttonevent": 2001},
+            "release": {"buttonevent": 2002},
+            "release": {"many": 2003},
+        }
+    },
+    "Remote Control N2": {
+        "dataConversion": {
+            "rootKey": "action",
+            "on": {"buttonevent": 1001},
+            "off": {"buttonevent": 2001},
+            "brightness_move_up": {"buttonevent": 1002},
+            "brightness_stop": {"buttonevent": 1003},
+            "brightness_move_down": {"buttonevent": 2002},
+            "arrow_left_click": {"buttonevent": 3002},
+            "arrow_right_click": {"many": 4002},
+        }
+    },
+}
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
