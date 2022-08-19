@@ -9,6 +9,7 @@ Connections = {}
 
 
 def discover(detectedLights):
+    logging.debug("Yeelight: <discover> invoked!")
     discover = yeelight.discover_bulbs()
     for light in discover:
         logging.info("Found YeeLight: " + light["capabilities"]["id"])
