@@ -233,8 +233,10 @@ def on_message(client, userdata, msg):
                                 state["on"] = True
                             else:
                                 state["on"] = False
+                            device.genStreamEvent({"on": state["on"]})
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
+                            device.genStreamEvent({"brightness": round(state["bri"] / 2.54, 2)})
                         device.state.update(state)
 
                 on_state_update(msg)
