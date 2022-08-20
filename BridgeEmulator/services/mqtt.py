@@ -149,10 +149,12 @@ def longPressButton(sensor, buttonevent):
         sleep(0.5)
     return
 
-def streamGroupEvent(light):
-    for group, obj in bridgeConfig["groups"].items():
-        if light in ojb.lights:
-            obj.update_attr({})
+def streamGroupEvent(device, state):
+    for id, group in bridgeConfig["groups"].items():
+        if id != "0":
+            for light in group.lights:
+                if light().id_v1 == device.id_v1:
+                    group.genStreamEvent(state)
 
 
 def getObject(friendly_name):
@@ -323,17 +325,20 @@ def on_message(client, userdata, msg):
                         rulesProcessor(device, current_time)
                     elif device.getObjectPath()["resource"] == "lights":
                         state = {"reachable": True}
+                        v2State = {}
                         if "state" in data:
                             if data["state"] == "ON":
                                 state["on"] = True
                             else:
                                 state["on"] = False
-                            device.genStreamEvent({"on": state["on"]})
+                            v2State.update({"on": state["on"]})
+                            device.genStreamEvent(v2State)
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
-                            device.genStreamEvent({"brightness": round(state["bri"] / 2.54, 2)})
+                            v2State.update({"brightness": round(state["bri"] / 2.54, 2)})
+                            device.genStreamEvent(v2State)
                         device.state.update(state)
-                        streamGroupEvent(device)
+                        streamGroupEvent(device, v2State)
 
                 on_state_update(msg)
         except Exception as e:
