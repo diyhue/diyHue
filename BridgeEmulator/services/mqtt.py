@@ -149,6 +149,11 @@ def longPressButton(sensor, buttonevent):
         sleep(0.5)
     return
 
+def streamGroupEvent(light):
+    for group, obj in bridgeConfig["groups"].items():
+        if light in ojb.lights:
+            obj.update_attr({})
+
 
 def getObject(friendly_name):
     if friendly_name in devices_ids:
@@ -328,6 +333,7 @@ def on_message(client, userdata, msg):
                             state["bri"] = data["brightness"]
                             device.genStreamEvent({"brightness": round(state["bri"] / 2.54, 2)})
                         device.state.update(state)
+                        streamGroupEvent(device)
 
                 on_state_update(msg)
         except Exception as e:
