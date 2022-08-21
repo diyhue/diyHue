@@ -331,11 +331,11 @@ def on_message(client, userdata, msg):
                                 state["on"] = True
                             else:
                                 state["on"] = False
-                            v2State.update({"on": state["on"]})
+                            v2State.update({"on":{"on": state["on"]}})
                             device.genStreamEvent(v2State)
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
-                            v2State.update({"brightness": round(state["bri"] / 2.54, 2)})
+                            v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
                             device.genStreamEvent(v2State)
                         device.state.update(state)
                         streamGroupEvent(device, v2State)
