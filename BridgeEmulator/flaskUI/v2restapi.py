@@ -20,7 +20,7 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
-}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
+}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}, "device_power": {}}
 
 
 def getObject(element, v2uuid):
@@ -252,6 +252,15 @@ class ClipV2(Resource):
         data.append(v2GeofenceClient())
         for script in behaviorScripts():
             data.append(script)
+        for key, sensor in bridgeConfig["sensors"].items():
+            motion = sensor.getMotion()
+            if motion != None:
+                data.append(motion)
+        #for key, sensor in bridgeConfig["sensors"].items():
+        #    power = sensor.getDevicePower()
+        #    if power != None:
+        #        data.append(power)
+
         return {"errors": [], "data": data}
 
 
@@ -322,7 +331,15 @@ class ClipV2Resource(Resource):
             for script in behaviorScripts():
                 response["data"].append(script)
         elif resource == "motion":
-            response["data"] = []
+            for key, sensor in bridgeConfig["sensors"].items():
+                motion = sensor.getMotion()
+                if motion != None:
+                    response["data"].append(motion)
+        elif resource == "device_power":
+            for key, sensor in bridgeConfig["sensors"].items():
+                power = sensor.getDevicePower()
+                if power != None:
+                    response["data"].append(power)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
@@ -456,6 +473,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "bridge":
             return {"errors": [], "data": [v2Bridge()]}
+        elif resource == "device_power":
+            return {"errors": [], "data": [object.getDevicePower()]}
 
     def put(self, resource, resourceid):
         logging.debug(request.headers)
