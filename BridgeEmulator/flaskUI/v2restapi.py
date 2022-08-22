@@ -321,6 +321,8 @@ class ClipV2Resource(Resource):
         elif resource == "behavior_script":
             for script in behaviorScripts():
                 response["data"].append(script)
+        elif resource == "motion":
+            response["data"] = []
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]

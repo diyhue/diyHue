@@ -69,10 +69,10 @@ class Config:
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
 
-                if int(config["swversion"]) < 1952086020:
+                if int(config["swversion"]) < 1952154030:
                     config["swversion"] = "1952086020"
-                if float(config["apiversion"][:3]) < 1.50:
-                    config["apiversion"] = "1.50.0"
+                if float(config["apiversion"][:3]) < 1.52:
+                    config["apiversion"] = "1.52.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -102,7 +102,7 @@ class Config:
                     "esphome": {"enabled":True},
                     "hyperion": {"enabled":True},
                     "tpkasa": {"enabled":True},
-                }            
+                }
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")
