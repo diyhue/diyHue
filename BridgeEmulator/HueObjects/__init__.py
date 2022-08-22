@@ -1023,6 +1023,10 @@ class Group():
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                         "owner":{
+                            "rid":self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                            "rtype": "room" if self.type == "Room" else "zone"
+                         },
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
@@ -1062,12 +1066,17 @@ class Group():
                 streamMessage["data"][0].update(v2State)
                 eventstream.append(streamMessage)
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
+                         "data": [{"id": self.id_v2, "type": "grouped_light",
+                             "owner":{
+                                "rid":self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                                "rtype": "room" if self.type == "Room" else "zone"
+                             }
+                         }],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        streamMessage.update(v2State)
+        streamMessage["data"][0].update(v2State)
         eventstream.append(streamMessage)
 
     def getV1Api(self):

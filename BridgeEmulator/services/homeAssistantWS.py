@@ -214,7 +214,7 @@ class HomeAssistantClient(WebSocketClient):
 def connect_if_required():
     if homeassistant_ws_client is None or homeassistant_ws_client.client_terminated:
         create_websocket_client()
-        
+
     return homeassistant_ws_client
 
 
@@ -274,7 +274,7 @@ def discover(detectedLights):
     for entity_id in latest_states.keys():
         ha_state = latest_states[entity_id]
         device_new = True
-        lightName = ha_state["attributes"]["friendly_name"] if ha_state["attributes"]["friendly_name"] is not None else entity_id
+        lightName = ha_state["attributes"]["friendly_name"] if "friendly_name" in ha_state["attributes"] else entity_id
 
         logging.info("HomeAssistant_ws: found light {}".format(lightName))
         # From Home Assistant lights/__init.py__
