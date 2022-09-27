@@ -69,8 +69,8 @@ class Config:
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
 
-                if int(config["swversion"]) < 1952154030:
-                    config["swversion"] = "1952086020"
+                if int(config["swversion"]) < 1953188020:
+                    config["swversion"] = "1953188020"
                 if float(config["apiversion"][:3]) < 1.52:
                     config["apiversion"] = "1.52.0"
 
@@ -107,8 +107,6 @@ class Config:
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")
                 for light, data in lights.items():
-                    if data["modelid"] == "915005106701":
-                        data["modelid"] = "LCX004"
                     data["id_v1"] = light
                     self.yaml_config["lights"][light] = Light(data)
                     #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])
