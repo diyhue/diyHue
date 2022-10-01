@@ -5,7 +5,7 @@ opkg update
 wait
 
 echo -e "\033[32m Installing dependencies.\033[0m"
-opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client kmod-bluetooth bluez-daemon ca-certificates libustream-wolfssl
+opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client kmod-bluetooth bluez-daemon ca-certificates libustream-wolfssl libcurl
 wait
 
 echo -e "\033[32m Creating directories.\033[0m"
@@ -27,7 +27,7 @@ cp HueEmulator3.py updater /opt/hue-emulator/
 cp -r HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
 echo -e "\033[32m Copy web interface files.\033[0m"
-curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
+curl -sL https://www.github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 wait
 unzip -qo diyHueUI.zip
 wait
@@ -35,11 +35,11 @@ mv index.html /opt/hue-emulator/flaskUI/templates/
 cp -r static /opt/hue-emulator/flaskUI/
 
 echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
-rm -Rf /opt/hue-emulator/functions/network.py
+rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
 mv /opt/tmp/diyHue/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 
 echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install /opt/tmp/diyHue/requirements.txt
+python3 -m pip install -r /opt/tmp/diyHue/requirements.txt
 wait
 
 echo -e "\033[32m Creating certificate.\033[0m"
@@ -92,4 +92,3 @@ echo -e "\033[32m Installation completed.\033[0m"
 wait
 reboot 10
 exit 0
-
