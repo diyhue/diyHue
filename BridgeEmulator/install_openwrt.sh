@@ -36,7 +36,7 @@ cp -r static /opt/hue-emulator/flaskUI/
 
 echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
 rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
-mv /opt/tmp/diyHue/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
+mv /opt/tmp/diyHue/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 
 echo -e "\033[32m Installing pip dependencies.\033[0m"
 python3 -m pip install -r /opt/tmp/diyHue/requirements.txt
@@ -44,6 +44,7 @@ wait
 
 echo -e "\033[32m Creating certificate.\033[0m"
 cd /opt/hue-emulator
+mkdir -p /opt/hue-emulator/config
 mac=`cat /sys/class/net/br-lan/address`
 curl https://raw.githubusercontent.com/mariusmotea/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
 wait
