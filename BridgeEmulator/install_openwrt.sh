@@ -18,7 +18,7 @@ wait
 
 echo -e "\033[32m Downloading diyHue.\033[0m"
 cd /opt/tmp
-git clone https://github.com/diyhue/diyHue.git
+git clone https://www.github.com/diyhue/diyHue.git
 wait
 
 echo -e "\033[32m Copying files to directories.\033[0m"
