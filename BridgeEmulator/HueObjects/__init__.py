@@ -97,6 +97,8 @@ def setGroupAction(group, state, scene=None):
                 if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
                     lightsState[light().id_v1]["bri"] = light(
                     ).protocol_cfg["max_bri"]
+                if  light().protocol == "mqtt" and not light().state["on"]:
+                    continue
             # end limits
             if light().protocol in ["native_multi", "mqtt"]:
                 if light().protocol_cfg["ip"] not in queueState:
