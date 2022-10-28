@@ -15,3 +15,6 @@ sensorTypes["RWL022"]["ZHASwitch"] = sensorTypes["RWL022"]["ZLLSwitch"]
 sensorTypes["SML001"]["ZHATemperature"] = sensorTypes["SML001"]["ZLLTemperature"]
 sensorTypes["SML001"]["ZHAPresence"] = sensorTypes["SML001"]["ZLLPresence"]
 sensorTypes["SML001"]["ZHALightLevel"] = sensorTypes["SML001"]["ZLLLightLevel"]
+
+
+sensorTypes["GreenPower_2"] = {"FOHSwitch": {"state": {"buttonevent": 0, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "static": {"manufacturername": "PhilipsFoH", "swversion": ""}}}

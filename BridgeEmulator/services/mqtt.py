@@ -128,6 +128,23 @@ standardSensors = {
             "arrow_right_click": {"many": 4002},
         }
     },
+     "GreenPower_2":{
+        "dataConversion": {
+            "rootKey": "action", 
+            "press_1": {"buttonevent": 16}, 
+            "longpress_1": {"buttonevent": 1001},
+            "press_2": {"buttonevent": 17},
+            "longpress_2": {"buttonevent": 2001},
+            "press_3": {"buttonevent": 19},
+            "longpress_3": {"buttonevent": 3001},
+            "press_4": {"buttonevent": 18},
+            "longpress_4": {"buttonevent": 4001},
+            "release_1": {"buttonevent": 20},
+            "release_2": {"buttonevent": 21},
+            "release_3": {"buttonevent": 23},
+            "release_4": {"buttonevent": 22}
+            }
+    },
 }
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html

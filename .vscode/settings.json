@@ -1,3 +1,8 @@
 {
-    "python.autoComplete.extraPaths": ["./BridgeEmulator"]
+    "python.autoComplete.extraPaths": [
+        "./BridgeEmulator"
+    ],
+    "python.analysis.extraPaths": [
+        "./BridgeEmulator"
+    ]
 }

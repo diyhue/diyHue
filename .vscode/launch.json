@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "/opt/hue-emulator/HueEmulator3.py",
             "args" : ["--docker"],
-            "pythonPath": "/usr/bin/python3",
+            "python": "/usr/bin/python3",
             "console": "integratedTerminal"
         }
     ]
