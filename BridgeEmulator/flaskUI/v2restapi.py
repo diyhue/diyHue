@@ -351,9 +351,6 @@ class ClipV2Resource(Resource):
                 if len(buttons) != 0:
                     for button in buttons:
                         data.append(button)
-        if len(buttons) != 0:
-            for button in buttons:
-                data.append(power)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
