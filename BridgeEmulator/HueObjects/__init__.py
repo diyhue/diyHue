@@ -1703,8 +1703,7 @@ class Sensor():
     def getDevice(self):
         result = None
         if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {"id": str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'device')), "type": "device"}
+            result = {"id": self.id_v2, "type": "device"}
             result["metadata"] = {
                 "archetype": "unknown_archetype",
                 "name": self.name
@@ -1712,7 +1711,7 @@ class Sensor():
             result["product_data"] = {
                 "certified": True,
                 "manufacturer_name": "Signify Netherlands B.V.",
-                "model_id": "SML001",
+                "model_id": self.modelid,
                 "product_archetype": "unknown_archetype",
                 "product_name": "Hue motion sensor",
                 "software_version": "1.1.27575"
@@ -1737,8 +1736,42 @@ class Sensor():
                 {
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
                     "rtype": "temperature"
-                }
-            ]
+                }]
+            result["type"] = "device"
+        elif self.modelid == "RWL022":
+            result = {"id": self.id_v2, "type": "device"}
+            result["product_data"] = {"model_id": self.modelid,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "product_name": "Hue dimmer switch",
+                "product_archetype": "unknown_archetype",
+                "certified": True,
+                "software_version": "2.44.0",
+                "hardware_platform_type": "100b-119"
+            }
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["services"] = [{
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button1')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button2')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button3')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button4')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
         return result
 
     def getMotion(self):
@@ -1767,29 +1800,48 @@ class Sensor():
             result["id"] = str(uuid.uuid5(
                 uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
             result["id_v1"] = "/sensors/" + self.id_v1
+            result["owner"] = {
+                "rid": self.id_v2,
+                "rtype": "device"
+                }
+            result["type"] = "zigbee_connectivity"
             result["mac_address"] = self.uniqueid[:23]
             result["status"] = "connected"
-            result["type"] = "zigbee_connectivity"
+        return result
+    def getButtons(self):
+        result = []
+        if self.modelid == "RWL022":
+            for button in range(4):
+                result.append({
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                  "rid": self.id_v2,
+                  "rtype": "device"
+                },
+                "metadata": {
+                  "control_id": button + 1
+                },
+                "type": "button"
+              })
         return result
 
     def getDevicePower(self):
-        result = False
+        result = {
+            "id": str(uuid.uuid5(
+                uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+            "id_v1": "/sensors/" + self.id_v1,
+            "owner": {
+                "rid": self.id_v2,
+                "rtype": "device"
+            },
+            "power_state": {},
+            "type": "device_power"
+        }
         if "battery" in self.config:
-            result = {
-                "id": str(uuid.uuid5(
-                    uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
-                "id_v1": "/sensors/" + self.id_v1,
-                "owner": {
-                    "rid": str(uuid.uuid5(
-                        uuid.NAMESPACE_URL, self.id_v2 + 'device')),
-                    "rtype": "device"
-                },
-                "power_state": {
-                    "battery_level": self.config["battery"],
-                    "battery_state": "normal"
-                },
-                "type": "device_power"
-            }
+            result["power_state"].update({"battery_level": self.config["battery"],
+                "battery_state": "normal"
+                })
         return result
 
     def update_attr(self, newdata):

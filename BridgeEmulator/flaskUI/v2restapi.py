@@ -256,6 +256,11 @@ class ClipV2(Resource):
             motion = sensor.getMotion()
             if motion != None:
                 data.append(motion)
+        for key, sensor in bridgeConfig["sensors"].items():
+            buttons = sensor.getButtons()
+            if len(buttons) != 0:
+                for button in buttons:
+                    data.append(power)
         #for key, sensor in bridgeConfig["sensors"].items():
         #    power = sensor.getDevicePower()
         #    if power != None:
@@ -340,6 +345,15 @@ class ClipV2Resource(Resource):
                 power = sensor.getDevicePower()
                 if power != None:
                     response["data"].append(power)
+        elif resource == "button":
+            for key, sensor in bridgeConfig["sensors"].items():
+                buttons = sensor.getButtons()
+                if len(buttons) != 0:
+                    for button in buttons:
+                        data.append(button)
+        if len(buttons) != 0:
+            for button in buttons:
+                data.append(power)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
