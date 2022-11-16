@@ -261,10 +261,10 @@ class ClipV2(Resource):
             if len(buttons) != 0:
                 for button in buttons:
                     data.append(button)
-        #for key, sensor in bridgeConfig["sensors"].items():
-        #    power = sensor.getDevicePower()
-        #    if power != None:
-        #        data.append(power)
+        for key, sensor in bridgeConfig["sensors"].items():
+            power = sensor.getDevicePower()
+            if power != None:
+                data.append(power)
 
         return {"errors": [], "data": data}
 

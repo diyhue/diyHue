@@ -1703,7 +1703,8 @@ class Sensor():
     def getDevice(self):
         result = None
         if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {"id": self.id_v2, "type": "device"}
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
             result["metadata"] = {
                 "archetype": "unknown_archetype",
                 "name": self.name
@@ -1739,7 +1740,7 @@ class Sensor():
                 }]
             result["type"] = "device"
         elif self.modelid == "RWL022":
-            result = {"id": self.id_v2, "type": "device"}
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
             result["product_data"] = {"model_id": self.modelid,
                 "manufacturer_name": "Signify Netherlands B.V.",
                 "product_name": "Hue dimmer switch",
