@@ -16,7 +16,7 @@ def discover(detectedLights):
         modelid = "LWB010"
         if light["capabilities"]["model"] == "desklamp":
             modelid = "LTW001"
-        elif light["capabilities"]["model"] in ["ceiling10", "ceiling20", "ceiling4"]:
+        elif light["capabilities"]["model"] in ["ceiling10", "ceiling20", "ceiling4", "ceilb"]:
             detectedLights.append({"protocol": "yeelight", "name": light["capabilities"]["name"] + '-bg' if light["capabilities"]["name"] != '' else 'Yeelight ' + light["capabilities"]["id"], "modelid": "LCT015", "protocol_cfg": {"ip": light["ip"], "id": light["capabilities"]["id"] + "bg", "backlight": True, "model": light["capabilities"]["model"]}})
             modelid = "LWB010" # second light must be CT only
         elif light["capabilities"]["rgb"]:
