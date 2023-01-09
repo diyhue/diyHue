@@ -44,6 +44,8 @@ class Switch(Resource):
                         sensor.protocol_cfg["mac"] = mac
                     elif args["devicetype"] == "ZLLPresence":
                         sensor = addHueMotionSensor("Hue Motion Sensor", "native", {"mac": mac, "threaded": False})
+                    return {"success": "device registered"}
+                return {"fail": "registration failed"}
             else:
                 for device, obj in bridgeConfig["sensors"].items():
                     if "mac" in obj.protocol_cfg and obj.protocol_cfg["mac"] == mac:
@@ -63,5 +65,6 @@ class Switch(Resource):
                         obj.dxState["lastupdated"] = current_time
                         obj.state["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
                         rulesProcessor(obj, current_time)
-            return {"result": "ok"}
+                        return {"success": "command applied"}
+                    return {"fail": "device not found"}
         return {"fail": "missing mac address"}
