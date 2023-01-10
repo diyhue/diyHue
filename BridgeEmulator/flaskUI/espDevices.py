@@ -69,27 +69,16 @@ class Switch(Resource):
                                 obj.state["buttonevent"] = int(args["button"])
                                 obj.dxState["buttonevent"] = current_time
                             else:
-                                resultaat = 1
+                                result = {"fail": "unknown device"}
                             obj.dxState["lastupdated"] = current_time
                             obj.state["lastupdated"] = datetime.utcnow().strftime(
                                 "%Y-%m-%dT%H:%M:%S")
                             rulesProcessor(obj, current_time)
-                            resultaat = 2
+                            return {"success": "command applied"}
                         else:
-                            resultaat = 3
+                            result = {"fail": "device not found"}
                     else:
-                        resultaat = 4
-                if resultaat == 1:
-                    return {"fail": "unknown device"}
-                elif resultaat == 2:
-                    return {"success": "command applied"}
-                elif resultaat == 3:
-                    return {"fail": "device not found"}
-                elif resultaat == 4:
-                    return {"fail": "no mac in list"}
+                        result = {"fail": "no mac in list"}
+                return result
         else:
             return {"fail": "missing mac address"}
-#1 = {"fail": "unknown device"}
-#2 = {"success": "command applied"}
-#3 = {"fail": "device not found"}
-#4 = {"fail": "no mac in list"}
