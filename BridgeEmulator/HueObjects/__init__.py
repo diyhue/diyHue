@@ -902,7 +902,7 @@ class EntertainmentConfiguration():
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        streamMessage.update(state)
+        streamMessage.update(v2State)
         eventstream.append(streamMessage)
 
     def getObjectPath(self):
