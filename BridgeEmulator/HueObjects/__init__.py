@@ -1676,6 +1676,11 @@ class Sensor():
                 "rid": self.id_v2,
                 "rtype": rtype
             }
+        else:
+            return {
+                "rid": self.id_v2,
+                "rtype": 'device'
+            }
         return False
 
     def getV1Api(self):
@@ -1796,18 +1801,21 @@ class Sensor():
 
     def getZigBee(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {}
-            result["id"] = str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
-            result["id_v1"] = "/sensors/" + self.id_v1
-            result["owner"] = {
-                "rid": self.id_v2,
-                "rtype": "device"
-                }
-            result["type"] = "zigbee_connectivity"
-            result["mac_address"] = self.uniqueid[:23]
-            result["status"] = "connected"
+        if self.modelid == "SML001" and self.type != "ZLLPresence":
+            return None
+        if not self.uniqueid:
+            return None
+        result = {}
+        result["id"] = str(uuid.uuid5(
+            uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
+        result["id_v1"] = "/sensors/" + self.id_v1
+        result["owner"] = {
+            "rid": self.id_v2,
+            "rtype": "device"
+            }
+        result["type"] = "zigbee_connectivity"
+        result["mac_address"] = self.uniqueid[:23]
+        result["status"] = "connected"
         return result
     def getButtons(self):
         result = []

@@ -69,10 +69,10 @@ class Config:
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
 
-                if int(config["swversion"]) < 1953188020:
-                    config["swversion"] = "1953188020"
-                if float(config["apiversion"][:3]) < 1.52:
-                    config["apiversion"] = "1.52.0"
+                if int(config["swversion"]) < 1955082050:
+                    config["swversion"] = "1955082050"
+                if float(config["apiversion"][:3]) < 1.55:
+                    config["apiversion"] = "1.55.0"
 
                 self.yaml_config["config"] = config
             else:
