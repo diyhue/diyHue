@@ -269,7 +269,7 @@ def on_message(client, userdata, msg):
                     logging.info(light.name + " is unreachable")
                     light.state["reachable"] = False
             else:
-                device_friendlyname = msg.topic.split("/")[1]
+                device_friendlyname = msg.topic[msg.topic.index("/") + 1:]
                 device = getObject(device_friendlyname)
                 if device != False:
                     if device.getObjectPath()["resource"] == "sensors":
