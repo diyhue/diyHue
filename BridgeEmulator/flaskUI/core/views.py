@@ -67,7 +67,8 @@ def pairTradfri():
     try:
         data = request.get_json(force=True)
         pprint(data)
-        registration = json.loads(check_output("./coap-client-linux -m post -u \"Client_identity\" -k \"" + data["tradfriCode"] + "\" -e '{\"9090\":\"" + data["identity"] + "\"}' \"coaps://" + data["tradfriGwIp"] + ":5684/15011/9063\"", shell=True).decode('utf-8').rstrip('\n').split("\n")[-1])
+        cmd = ["./coap-client-linux", "-m", "post", "-u", "Client_identity", "-k", data["tradfriCode"], "-e", "{\"9090\":\"" + data["identity"] + "\"}", "coaps://" + data["tradfriGwIp"] + ":5684/15011/9063"]
+        registration = json.loads(check_output(cmd).decode('utf-8').rstrip('\n').split("\n")[-1])
         if "9091" in registration:
             bridgeConfig["config"]["tradfri"] = {"psk": registration["9091"], "tradfriGwIp": data["tradfriGwIp"], "identity": data["identity"]}
             return {"result": "success", "psk": registration["9091"]}
