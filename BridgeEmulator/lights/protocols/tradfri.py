@@ -52,12 +52,12 @@ def set_light(light, data):
 
     if "5712" not in payload:
         payload["5712"] = 4 #If no transition add one, might also add check to prevent large transitiontimes
-    cmd = ["./coap-client-linux", "-B", "2", "-m", "put", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "-e", "{ \"3311\": [" + json.dumps(payload) + "] }", url]
+    cmd = ["coap-client-gnutls", "-B", "2", "-m", "put", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "-e", "{ \"3311\": [" + json.dumps(payload) + "] }", url]
     check_output(cmd)
 
 def get_light_state(light):
     state ={}
-    cmd = ["./coap-client-linux", "-B", "5", "-m", "get", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"])]
+    cmd = ["coap-client-gnutls", "-B", "5", "-m", "get", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"])]
     light_data = json.loads(check_output(cmd).decode('utf-8').rstrip('\n').split("\n")[-1])
     state["on"] = bool(light_data["3311"][0]["5850"])
     state["bri"] = light_data["3311"][0]["5851"]
@@ -77,11 +77,11 @@ def discover(detectedLights, tradfriConfig):
     if "psk" in tradfriConfig:
         logging.debug("tradfri: <discover> invoked!")
         try:
-            cmd = ["./coap-client-linux", "-B", "5", "-m", "get", "-u", tradfriConfig["identity"], "-k", tradfriConfig["psk"], "coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001"]
+            cmd = ["coap-client-gnutls", "-B", "5", "-m", "get", "-u", tradfriConfig["identity"], "-k", tradfriConfig["psk"], "coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001"]
             tradriDevices = json.loads(check_output(cmd).decode('utf-8').rstrip('\n').split("\n")[-1])
             logging.debug(tradriDevices)
             for device in tradriDevices:
-                cmd = ["./coap-client-linux", "-B", "5", "-m", "get", "-u", tradfriConfig["identity"], "-k", tradfriConfig["psk"], "coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001/" + str(device)]
+                cmd = ["coap-client-gnutls", "-B", "5", "-m", "get", "-u", tradfriConfig["identity"], "-k", tradfriConfig["psk"], "coaps://" + tradfriConfig["tradfriGwIp"] + ":5684/15001/" + str(device)]
                 deviceParameters = json.loads(check_output(cmd).decode('utf-8').rstrip('\n').split("\n")[-1])
                 if "3311" in deviceParameters:
                     logging.debug("found tradfi light " + deviceParameters["9001"])
