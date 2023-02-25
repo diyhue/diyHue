@@ -385,6 +385,25 @@ def mqttServer():
 
     if bridgeConfig["config"]["mqtt"]['discoveryPrefix'] is not None:
         discoveryPrefix = bridgeConfig["config"]["mqtt"]['discoveryPrefix']
+        
+    # defaults for TLS and certs 
+    if 'mqttCaCerts' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["mqttCaCerts"] = None
+    if 'mqttCertfile' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["mqttCertfile"] = None
+    if 'mqttKeyfile' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["mqttKeyfile"] = None
+    if 'mqttTls' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["mqttTls"] = False
+    if 'mqttTlsInsecure' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["mqttTlsInsecure"] = False
+    # TLS set? 
+    if bridgeConfig["config"]["mqtt"]["mqttTls"]:
+        mqttTlsVersion = ssl.PROTOCOL_TLS
+        client.tls_set(ca_certs=bridgeConfig["config"]["mqtt"]["mqttCaCerts"], certfile=bridgeConfig["config"]["mqtt"]["mqttCertfile"], keyfile=bridgeConfig["config"]["mqtt"]["mqttKeyfile"], tls_version=mqttTlsVersion)
+        # allow insecure
+        if bridgeConfig["config"]["mqtt"]["mqttTlsInsecure"]:
+            client.tls_insecure_set(bridgeConfig["config"]["mqtt"]["mqttTlsInsecure"])
     # Setup handlers
     client.on_connect = on_connect
     client.on_message = on_message
