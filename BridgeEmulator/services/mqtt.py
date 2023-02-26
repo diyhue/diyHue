@@ -3,6 +3,7 @@ import configManager
 import json
 import math
 import weakref
+import ssl
 import HueObjects
 import paho.mqtt.client as mqtt
 from datetime import datetime
