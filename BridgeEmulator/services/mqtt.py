@@ -49,7 +49,7 @@ standardSensors = {
     },
     "TRADFRI on/off switch": {
         "dataConversion": {
-            "rootKey": "click",
+            "rootKey": "action",
             "on": {"buttonevent": 1002},
             "off": {"buttonevent": 2002},
             "brightness_up": {"buttonevent": 1001},
