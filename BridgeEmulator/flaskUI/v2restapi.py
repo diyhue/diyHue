@@ -87,13 +87,20 @@ def v2HomeKit():
 
 
 def v2BridgeZigBee():
-    result = {}
-    result["id"] = str(uuid.uuid5(
-        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity'))
-    result["id_v1"] = ""
-    result["status"] = "connected"
-    result["type"] = "zigbee_connectivity"
-    return result
+    return {"id": str(uuid.uuid5(
+        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
+            "owner": {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+                "rtype": "device"
+                },
+            "status": "connected",
+            "mac_address": bridgeConfig["config"]["mac"][:8] + ":01:01:" +  bridgeConfig["config"]["mac"][9:],
+            "channel": {
+                "value": "channel_25",
+                "status": "set"
+                },
+            "type": "zigbee_connectivity"
+            }
 
 
 def v2GeofenceClient():
