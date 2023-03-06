@@ -1847,7 +1847,7 @@ class Sensor():
             "power_state": {},
             "type": "device_power"
         }
-        if "battery" in self.config:
+        if "battery" in self.config and self.config["battery"]:
             result["power_state"].update({"battery_level": self.config["battery"],
                 "battery_state": "normal"
                 })
