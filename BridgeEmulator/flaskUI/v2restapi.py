@@ -59,14 +59,19 @@ def authorizeV2(headers):
         return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
     return []
 
-
 def v2BridgeEntertainment():
     return {"id": "57a9ebc9-406d-4a29-a4ff-42acee9e9be7",
-            "id_v1": "",
-            "proxy": True,
+            "owner": {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+                "rtype": "device"
+                },
             "renderer": False,
+            "proxy": True,
+            "equalizer": False,
+            "max_streams": 1,
             "type": "entertainment"
             }
+
 
 
 def v2HomeKit():
