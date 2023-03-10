@@ -1836,21 +1836,23 @@ class Sensor():
         return result
 
     def getDevicePower(self):
-        result = {
-            "id": str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
-            "id_v1": "/sensors/" + self.id_v1,
-            "owner": {
-                "rid": self.id_v2,
-                "rtype": "device"
-            },
-            "power_state": {},
-            "type": "device_power"
-        }
-        if "battery" in self.config and self.config["battery"]:
-            result["power_state"].update({"battery_level": self.config["battery"],
-                "battery_state": "normal"
-                })
+        result = None
+        if "battery" in self.config:
+            result = {
+                "id": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                    "rid": self.id_v2,
+                    "rtype": "device"
+                },
+                "power_state": {},
+                "type": "device_power"
+            }
+            if self.config["battery"]:
+                result["power_state"].update({"battery_level": self.config["battery"],
+                    "battery_state": "normal"
+                    })
         return result
 
     def update_attr(self, newdata):
