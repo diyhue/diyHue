@@ -10,7 +10,7 @@ body:
   - type: dropdown
     id: existing-feature
     attributes:
-      label: "Feutre does not already exist?"
+      label: "Feature does not already exist?"
       description: "Please search to see if your feature request already exists"
       options:
         - "No, I did not search"
