@@ -536,7 +536,7 @@ class Light():
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {"name": self.name,
                               "archetype": archetype[self.config["archetype"]]}
-        result["mode"] = "normal"
+        result["mode"] = self.state["mode"] if "mode" in self.state else "normal"
         result["on"] = {
             "on": self.state["on"]
         }
@@ -832,8 +832,9 @@ class EntertainmentConfiguration():
             "type": "entertainment_configuration",
             "name": self.name,
             "status": "active" if self.stream["active"] else "inactive"
-
         }
+        if self.stream["active"]:
+            result["active_streamer"] = {"rid": self.stream["owner"], "rtype": "auth_v1"}
         channel_id = 0
         for light in self.lights:
             if light():
