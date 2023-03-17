@@ -518,14 +518,15 @@ class ClipV2ResourceId(Resource):
                     Thread(target=entertainmentService, args=[
                            object, authorisation["user"]]).start()
                     for light in object.lights:
-                        light().state["mode"] = "streaming"
+                        light().update_attr({"state": {"mode": "streaming"}})
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     object.stream["active"] = False
                     for light in object.lights:
-                        light().state["mode"] = "homeautomation"
+                        light().update_attr({"state": {"mode": "homeautomation"}})
                     Popen(["killall", "openssl"])
+            object.update_attr(putDict)  
         elif resource == "scene":
             if "recall" in putDict:
                 object.activate(putDict)
