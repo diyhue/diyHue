@@ -513,20 +513,18 @@ class ClipV2ResourceId(Resource):
             if "action" in putDict:
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
-                    object.stream.update(
-                        {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"})
                     Thread(target=entertainmentService, args=[
                            object, authorisation["user"]]).start()
                     for light in object.lights:
                         light().update_attr({"state": {"mode": "streaming"}})
+                    object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
-                    object.stream["active"] = False
                     for light in object.lights:
-                        light().update_attr({"state": {"mode": "homeautomation"}})
+                        light().update_attr({"state": {"mode": "homeautomation"}}) 
                     Popen(["killall", "openssl"])
-            object.update_attr(putDict)  
+                    object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
             if "recall" in putDict:
                 object.activate(putDict)
