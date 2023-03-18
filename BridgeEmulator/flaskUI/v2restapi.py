@@ -205,7 +205,7 @@ class AuthV1(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" in authorisation:
             logging.debug("Auth 200")
-            return {}, 200, {'hue-application-id': '36b1e193-4b74-4763-a054-0578cd927a7b'}
+            return {}, 200, {'hue-application-id': request.headers["hue-application-key"]}
 
         else:
             logging.debug("Auth 403")
