@@ -536,7 +536,9 @@ class Light():
         result["id_v1"] = "/lights/" + self.id_v1
         result["metadata"] = {"name": self.name,
                               "archetype": archetype[self.config["archetype"]]}
-        result["mode"] = self.state["mode"] if "mode" in self.state else "normal"
+        result["mode"] = "normal"
+        if "mode" in self.state and self.state["mode"] == "streaming":
+            result["mode"] = "streaming"
         result["on"] = {
             "on": self.state["on"]
         }
