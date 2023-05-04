@@ -148,7 +148,7 @@ standardSensors = {
 
 standardSensors["RWL022"] = standardSensors["RWL021"]
 standardSensors["8719514440999"] = standardSensors["8719514440937"]
-standardSensors["RDM002"] = standardSensors["8719514440937"]
+standardSensors["9290035001"] = standardSensors["8719514440937"]
 
 
 def getClient():
