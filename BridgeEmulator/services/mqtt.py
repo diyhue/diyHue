@@ -129,11 +129,25 @@ standardSensors = {
             "arrow_right_click": {"many": 4002},
         }
     },
+    "8719514440937": {
+        "dataConversion": {
+            "rootKey": "action",
+            "button_1_press": {"buttonevent": 34},
+            "button_2_press": {"buttonevent": 16},
+            "button_3_press": {"buttonevent": 17},
+            "button_4_press": {"buttonevent": 18},
+            "dial_rotate_left_step": {"buttonevent": 2000},
+            "dial_rotate_right_step": {"buttonevent": 2001},
+            "dial_rotate_left_slow": {"many": 3000},
+            "dial_rotate_right_slow": {"many": 3001},
+        }
+    },
 }
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
 standardSensors["RWL022"] = standardSensors["RWL021"]
+standardSensors["8719514440999"] = standardSensors["8719514440937"]
 
 def getClient():
     return client
