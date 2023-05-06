@@ -129,26 +129,44 @@ standardSensors = {
             "arrow_right_click": {"many": 4002},
         }
     },
-    "8719514440937": {
+    "RDM002": {
         "dataConversion": {
             "rootKey": "action",
-            "button_1_press": {"buttonevent": 34},
-            "button_2_press": {"buttonevent": 16},
-            "button_3_press": {"buttonevent": 17},
-            "button_4_press": {"buttonevent": 18},
-            "dial_rotate_left_step": {"buttonevent": 2000},
-            "dial_rotate_right_step": {"buttonevent": 2001},
-            "dial_rotate_left_slow": {"many": 3000},
-            "dial_rotate_right_slow": {"many": 3001},
+            "button_1_press": {"buttonevent": 1000},
+            "button_1_hold": {"buttonevent": 1001},
+            "button_1_press_release": {"buttonevent": 1002},
+            "button_1_hold_release": {"buttonevent": 1003},
+            "button_2_press": {"buttonevent": 2000},
+            "button_2_hold": {"buttonevent": 2001},
+            "button_2_press_release": {"buttonevent": 2002},
+            "button_2_hold_release": {"buttonevent": 2003},
+            "button_3_press": {"buttonevent": 3000},
+            "button_3_hold": {"buttonevent": 3001},
+            "button_3_press_release": {"buttonevent": 3002},
+            "button_3_hold_release": {"buttonevent": 3003},
+            "button_4_press": {"buttonevent": 4000},
+            "button_4_hold": {"buttonevent": 4001},
+            "button_4_press_release": {"buttonevent": 4002},
+            "button_4_hold_release": {"buttonevent": 4003},
+            "dial_rotate_left_step": {"rotaryevent": 1},
+            "dial_rotate_left_slow": {"rotaryevent": 2},
+            "dial_rotate_left_fast": {"rotaryevent": 2},
+            "dial_rotate_right_step": {"rotaryevent": 1},
+            "dial_rotate_right_slow": {"rotaryevent": 2},
+            "dial_rotate_right_fast": {"rotaryevent": 2},
         }
     },
 }
 
+
+
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
 standardSensors["RWL022"] = standardSensors["RWL021"]
-standardSensors["8719514440999"] = standardSensors["8719514440937"]
-standardSensors["9290035001"] = standardSensors["8719514440937"]
+standardSensors["8719514440937"] = standardSensors["RDM002"]
+standardSensors["8719514440999"] = standardSensors["RDM002"]
+standardSensors["9290035001"] = standardSensors["RDM002"]
+standardSensors["9290035003"] = standardSensors["RDM002"]
 
 
 def getClient():
