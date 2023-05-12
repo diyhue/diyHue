@@ -14,6 +14,7 @@ logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
+
 def noMotion(sensor):
     bridgeConfig["sensors"][sensor].protocol_cfg["threaded"] = True
     logging.info("Monitor the sensor for no motion")
@@ -25,6 +26,7 @@ def noMotion(sensor):
     bridgeConfig["sensors"][sensor].dxState["presence"] = current_time
     rulesProcessor(bridgeConfig["sensors"][sensor], current_time)
     bridgeConfig["sensors"][sensor].protocol_cfg["threaded"] = False
+
 
 class Switch(Resource):
     def get(self):
@@ -56,15 +58,24 @@ class Switch(Resource):
                     if "mac" in obj.protocol_cfg:
                         if obj.protocol_cfg["mac"] == mac:
                             if obj.type == "ZLLLightLevel":
-                              dark = True if args["dark"] == "true" else False
-                              if obj.state["dark"] != dark:
-                                  obj.dxState["dark"] = current_time
-                                  obj.state["dark"] = dark
+                                obj.state["lightlevel"] = int(args["lightlevel"])
+                                obj.dxState["lightlevel"] = current_time
+                                dark = True if args["dark"] == "true" else False
+                                daylight = True if args["daylight"] == "true" else False
+                                if obj.state["dark"] != dark:
+                                    obj.dxState["dark"] = current_time
+                                    obj.state["dark"] = dark
+                                if obj.state["daylight"] != daylight:
+                                    obj.dxState["daylight"] = current_time
+                                    obj.state["daylight"] = daylight
                             elif obj.type == "ZLLPresence":
-                               obj.state["presence"] = True
-                               obj.dxState["presence"] = current_time
-                               if obj.protocol_cfg["threaded"] == False:
+                                obj.state["presence"] = True
+                                obj.dxState["presence"] = current_time
+                                if obj.protocol_cfg["threaded"] == False:
                                     Thread(target=noMotion, args=[device]).start()
+                            elif obj.type == "ZLLTemperature":
+                                obj.state["temperature"] = int(args["temperature"])
+                                obj.dxState["temperature"] = current_time
                             elif obj.type in ["ZLLSwitch", "ZGPSwitch"]:
                                 obj.state["buttonevent"] = int(args["button"])
                                 obj.dxState["buttonevent"] = current_time
@@ -74,7 +85,8 @@ class Switch(Resource):
                             obj.state["lastupdated"] = datetime.utcnow().strftime(
                                 "%Y-%m-%dT%H:%M:%S")
                             rulesProcessor(obj, current_time)
-                            return {"success": "command applied"}
+                            logging.debug("obj.type:" + obj.type + "command applied")
+                            result = {"success": "command applied"}
                         else:
                             result = {"fail": "device not found"}
                     else:
