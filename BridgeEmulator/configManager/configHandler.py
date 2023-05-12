@@ -69,10 +69,10 @@ class Config:
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
 
-                if int(config["swversion"]) < 1953188020:
-                    config["swversion"] = "1953188020"
-                if float(config["apiversion"][:3]) < 1.52:
-                    config["apiversion"] = "1.52.0"
+                if int(config["swversion"]) < 19561788040:
+                    config["swversion"] = "19561788040"
+                if float(config["apiversion"][:3]) < 1.56:
+                    config["apiversion"] = "1.56.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -84,10 +84,10 @@ class Config:
                     "deconz":{"enabled":False},
                     "alarm":{"enabled": False,"lasttriggered": 0},
                     "apiUsers":{},
-                    "apiversion":"1.46.0",
+                    "apiversion":"1.56.0",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
-                    "swversion":"1946157000",
+                    "swversion":"19561788040",
                     "timezone":"Europe/London",
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},

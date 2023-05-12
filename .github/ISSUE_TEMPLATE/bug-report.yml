@@ -1,0 +1,85 @@
+name: Bug Report
+description: File a bug report
+labels: ["Bug Report"]
+body:
+  - type: markdown
+    id: intro
+    attributes:
+      value: |
+        Thank you for taking the time to submit a BUG REPORT for this project. To make sure we have all the information we need, please read the following instructions carefully. This will ensure that we have the information we need to understand the problem.
+  - type: dropdown
+    id: existing-issue
+    attributes:
+      label: "Issue does not already exist?"
+      description: "Please search to see if an issue already exists for the bug you encountered."
+      options:
+        - "No, I did not search"
+        - "I have searched and found no existing issue"
+    validations:
+      required: true
+  - type: dropdown
+    id: Environment
+    attributes:
+      label: "Select Environment"
+      description: "Plese select your installation method"
+      options:
+        - "Docker"
+        - "Install Script"
+    validations:
+      required: true
+  - type: dropdown
+    id: HA
+    attributes:
+      label: "Home Assistant related?"
+      description: "Please select if this a Home Assistant related issue"
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Describe in detail how and where you encountered the bug"
+    validations:
+      required: true
+  - type: textarea
+    id: errors-received
+    attributes:
+      label: "Errorlog:"
+      description: "Please paste the full error log here"
+      value: |
+        ```
+        Please paste the full error log here
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Steps to reproduce"
+      description: "Step by step guide how to reproduce the issue"
+    validations:
+      required: true
+  - type: textarea
+    id: os
+    attributes:
+      label: "Please enter your operating system details here"
+      description: "You can provide the output from: uname -mrs"
+    validations:
+      required: true
+  - type: markdown
+    id: env-info
+    attributes:
+      value: "## Environment Details"
+  - type: dropdown
+    id: branch
+    attributes:
+      label: "What DiyHue version(branch) are you using?"
+      multiple: false
+      options:
+        - master (latest)
+        - dev
+    validations:
+      required: true

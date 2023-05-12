@@ -537,6 +537,8 @@ class Light():
         result["metadata"] = {"name": self.name,
                               "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
+        if "mode" in self.state and self.state["mode"] == "streaming":
+            result["mode"] = "streaming"
         result["on"] = {
             "on": self.state["on"]
         }
@@ -832,8 +834,9 @@ class EntertainmentConfiguration():
             "type": "entertainment_configuration",
             "name": self.name,
             "status": "active" if self.stream["active"] else "inactive"
-
         }
+        if self.stream["active"]:
+            result["active_streamer"] = {"rid": self.stream["owner"], "rtype": "auth_v1"}
         channel_id = 0
         for light in self.lights:
             if light():
@@ -1676,6 +1679,11 @@ class Sensor():
                 "rid": self.id_v2,
                 "rtype": rtype
             }
+        else:
+            return {
+                "rid": self.id_v2,
+                "rtype": 'device'
+            }
         return False
 
     def getV1Api(self):
@@ -1796,18 +1804,21 @@ class Sensor():
 
     def getZigBee(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {}
-            result["id"] = str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
-            result["id_v1"] = "/sensors/" + self.id_v1
-            result["owner"] = {
-                "rid": self.id_v2,
-                "rtype": "device"
-                }
-            result["type"] = "zigbee_connectivity"
-            result["mac_address"] = self.uniqueid[:23]
-            result["status"] = "connected"
+        if self.modelid == "SML001" and self.type != "ZLLPresence":
+            return None
+        if not self.uniqueid:
+            return None
+        result = {}
+        result["id"] = str(uuid.uuid5(
+            uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
+        result["id_v1"] = "/sensors/" + self.id_v1
+        result["owner"] = {
+            "rid": self.id_v2,
+            "rtype": "device"
+            }
+        result["type"] = "zigbee_connectivity"
+        result["mac_address"] = self.uniqueid[:23]
+        result["status"] = "connected"
         return result
     def getButtons(self):
         result = []
@@ -1828,21 +1839,23 @@ class Sensor():
         return result
 
     def getDevicePower(self):
-        result = {
-            "id": str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
-            "id_v1": "/sensors/" + self.id_v1,
-            "owner": {
-                "rid": self.id_v2,
-                "rtype": "device"
-            },
-            "power_state": {},
-            "type": "device_power"
-        }
+        result = None
         if "battery" in self.config:
-            result["power_state"].update({"battery_level": self.config["battery"],
-                "battery_state": "normal"
-                })
+            result = {
+                "id": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                    "rid": self.id_v2,
+                    "rtype": "device"
+                },
+                "power_state": {},
+                "type": "device_power"
+            }
+            if self.config["battery"]:
+                result["power_state"].update({"battery_level": self.config["battery"],
+                    "battery_state": "normal"
+                    })
         return result
 
     def update_attr(self, newdata):

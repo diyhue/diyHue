@@ -98,11 +98,11 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth
+  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap2-bin
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat || exit 1
+  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat libcoap || exit 1
 else
   # Or assume that packages are already installed (possibly with user confirmation)?
   # Or check them?
@@ -156,27 +156,6 @@ mv index.html /opt/hue-emulator/flaskUI/templates/
 cp -r static /opt/hue-emulator/flaskUI/
 rm -r static
 
-# Install correct binaries
-case $arch in
-    x86_64|i686|aarch64)
-        cp coap-client-$arch /opt/hue-emulator/coap-client-linux
-       ;;
-    arm64)
-        cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
-       ;;
-    armv*)
-        cp coap-client-arm /opt/hue-emulator/coap-client-linux
-       ;;
-    *)
-        echo -e "\033[0;31m-------------------------------------------------------------------------------"
-        echo -e "ERROR: Unsupported architecture $arch!"
-        echo -e "You will need to manually compile the coap-client binary\033[0m"
-        echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
-        echo -e "Once installed, open this script and manually run the last 10 lines."
-        exit 1
-esac
-
-chmod +x /opt/hue-emulator/coap-client-linux
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-$branchSelection
