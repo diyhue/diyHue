@@ -69,10 +69,12 @@ class Switch(Resource):
                                     obj.dxState["daylight"] = current_time
                                     obj.state["daylight"] = daylight
                             elif obj.type == "ZLLPresence":
-                                obj.state["presence"] = True
-                                obj.dxState["presence"] = current_time
-                                if obj.protocol_cfg["threaded"] == False:
-                                    Thread(target=noMotion, args=[device]).start()
+                                presence = True if args["presence"] == "true" else False
+                                if obj.state["presence"] != presence:
+                                    obj.state["presence"] = presence
+                                    obj.dxState["presence"] = current_time
+                                    if obj.protocol_cfg["threaded"] == False:
+                                        Thread(target=noMotion, args=[device]).start()
                             elif obj.type == "ZLLTemperature":
                                 obj.state["temperature"] = int(args["temperature"])
                                 obj.dxState["temperature"] = current_time
@@ -85,7 +87,7 @@ class Switch(Resource):
                             obj.state["lastupdated"] = datetime.utcnow().strftime(
                                 "%Y-%m-%dT%H:%M:%S")
                             rulesProcessor(obj, current_time)
-                            logging.debug("obj.type:" + obj.type + "command applied")
+                            logging.debug("obj.type: " + obj.type + " command applied")
                             result = {"success": "command applied"}
                         else:
                             result = {"fail": "device not found"}
