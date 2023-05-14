@@ -54,45 +54,57 @@ class Switch(Resource):
                 else:
                     return {"fail": "device already registerd"}
             else:
+                result = {""}
                 for device, obj in bridgeConfig["sensors"].items():
                     if "mac" in obj.protocol_cfg:
                         if obj.protocol_cfg["mac"] == mac:
                             if obj.type == "ZLLLightLevel":
-                                obj.state["lightlevel"] = int(args["lightlevel"])
-                                obj.dxState["lightlevel"] = current_time
-                                dark = True if args["dark"] == "true" else False
-                                daylight = True if args["daylight"] == "true" else False
-                                if obj.state["dark"] != dark:
-                                    obj.dxState["dark"] = current_time
-                                    obj.state["dark"] = dark
-                                if obj.state["daylight"] != daylight:
-                                    obj.dxState["daylight"] = current_time
-                                    obj.state["daylight"] = daylight
+                                if "lightlevel" in args:
+                                    obj.state["lightlevel"] = int(args["lightlevel"])
+                                    obj.dxState["lightlevel"] = current_time
+                                if "dark" in args:
+                                    dark = True if args["dark"] == "true" else False
+                                    if obj.state["dark"] != dark:
+                                        obj.dxState["dark"] = current_time
+                                        obj.state["dark"] = dark
+                                if "daylight" in args:
+                                    daylight = True if args["daylight"] == "true" else False
+                                    if obj.state["daylight"] != daylight:
+                                        obj.dxState["daylight"] = current_time
+                                        obj.state["daylight"] = daylight
                             elif obj.type == "ZLLPresence":
-                                presence = True if args["presence"] == "true" else False
-                                if obj.state["presence"] != presence:
-                                    obj.state["presence"] = presence
-                                    obj.dxState["presence"] = current_time
-                                    if obj.protocol_cfg["threaded"] == False:
-                                        Thread(target=noMotion, args=[device]).start()
+                                if "battery" in args:
+                                    obj.config["battery"] = int(args["battery"])
+                                if "presence" in args:
+                                    presence = True if args["presence"] == "true" else False
+                                    if obj.state["presence"] != presence:
+                                        obj.state["presence"] = presence
+                                        obj.dxState["presence"] = current_time
+                                        if obj.protocol_cfg["threaded"] == False:
+                                            Thread(target=noMotion, args=[device]).start()
                             elif obj.type == "ZLLTemperature":
-                                obj.state["temperature"] = int(args["temperature"])
-                                obj.dxState["temperature"] = current_time
+                                if "temperature" in args:
+                                    obj.state["temperature"] = int(args["temperature"])
+                                    obj.dxState["temperature"] = current_time
                             elif obj.type in ["ZLLSwitch", "ZGPSwitch"]:
-                                obj.state["buttonevent"] = int(args["button"])
-                                obj.dxState["buttonevent"] = current_time
+                                if "button" in args:
+                                    obj.state["buttonevent"] = int(args["button"])
+                                    obj.dxState["buttonevent"] = current_time
+                                if "battery" in args:
+                                    obj.config["battery"] = int(args["battery"])
                             else:
                                 result = {"fail": "unknown device"}
                             obj.dxState["lastupdated"] = current_time
                             obj.state["lastupdated"] = datetime.utcnow().strftime(
                                 "%Y-%m-%dT%H:%M:%S")
                             rulesProcessor(obj, current_time)
-                            logging.debug("obj.type: " + obj.type + " command applied")
                             result = {"success": "command applied"}
                         else:
-                            result = {"fail": "device not found"}
+                            if result == {""} or result == {"fail": "no mac in list"}:
+                                result = {"fail": "device not found"}
                     else:
-                        result = {"fail": "no mac in list"}
+                        if result == {""}:
+                            result = {"fail": "no mac in list"}
                 return result
         else:
             return {"fail": "missing mac address"}
