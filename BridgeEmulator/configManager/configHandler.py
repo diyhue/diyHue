@@ -69,8 +69,8 @@ class Config:
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
 
-                if int(config["swversion"]) < 19561788040:
-                    config["swversion"] = "19561788040"
+                if int(config["swversion"]) < 1957200040:
+                    config["swversion"] = "1957200040"
                 if float(config["apiversion"][:3]) < 1.56:
                     config["apiversion"] = "1.56.0"
 
