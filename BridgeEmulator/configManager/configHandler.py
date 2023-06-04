@@ -68,6 +68,8 @@ class Config:
                     config["hyperion"] = {"enabled": True}
                 if "tpkasa" not in config:
                     config["tpkasa"] = {"enabled": True}
+                if "elgato" not in config:
+                    config["elgato"] = {"enabled": True}
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1958077010"
@@ -102,6 +104,7 @@ class Config:
                     "esphome": {"enabled":True},
                     "hyperion": {"enabled":True},
                     "tpkasa": {"enabled":True},
+                    "elgato": {"enabled":True},
                 }
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):
