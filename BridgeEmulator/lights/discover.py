@@ -135,6 +135,11 @@ def scanForLights():  # scan for ESP8266 lights and strips
         hyperion.discover(detectedLights)
     if bridgeConfig["config"]["tpkasa"]["enabled"]:
         tpkasa.discover(detectedLights)
+    if bridgeConfig["config"]["elgato"]["enabled"]:
+        # Scan with port 9123 before mDNS discovery
+        elgato_ips = find_hosts(9123)
+        logging.info(pretty_json(elgato_ips))
+        elgato.discover(detectedLights, elgato_ips)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
         "%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
@@ -173,6 +178,9 @@ def scanForLights():  # scan for ESP8266 lights and strips
                         lightIsNew = False
                 elif light["protocol"] == "homeassistant_ws":
                     if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"]:
+                        lightIsNew = False
+                elif light["protocol"] == "elgato":
+                    if lightObj.protocol_cfg['mac'] == light["protocol_cfg"]['mac']:
                         lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])
