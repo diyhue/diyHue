@@ -5,7 +5,7 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime
-from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri, elgato
 from services.homeAssistantWS import discover
 import HueObjects
 from functions.core import nextFreeId
