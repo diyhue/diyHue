@@ -10,7 +10,7 @@ flask_wtf==1.0.0
 jsonify==0.5
 Werkzeug==2.0.3
 WTForms==3.0.1
-pyyaml==6.0
+pyyaml==6.0.1
 zeroconf==0.38.3
 flask_cors==3.0.10
 yeelight
