@@ -7,8 +7,8 @@ WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
 # ============================ Actual image from here ====================
-#FROM debian:stable-slim as prod
-FROM debian@sha256:457715c656bf1b14ae3790853c1a4bde13a7e740c510b9c029d38012be78d8c6 as prod
+FROM debian:stable-slim as prod
+#FROM debian@sha256:457715c656bf1b14ae3790853c1a4bde13a7e740c510b9c029d38012be78d8c6 as prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
