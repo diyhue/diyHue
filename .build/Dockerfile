@@ -8,16 +8,16 @@ ARG TARGETPLATFORM
 
 # ============================ Actual image from here ====================
 FROM debian:stable-slim as prod
-#FROM debian@sha256:457715c656bf1b14ae3790853c1a4bde13a7e740c510b9c029d38012be78d8c6 as prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
 COPY requirements.txt ./
 
-## Install requirements  
-RUN apt update && apt install --no-install-recommends -y \
-    curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
-    openssl nmap psmisc iproute2 bluez bluetooth libcoap2-bin \
+## Install requirements
+RUN apt update \
+    && apt install --no-install-recommends -y \
+        curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
+        openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin \
     && pip3 install -r requirements.txt --no-cache-dir \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
     && apt autoremove -y \
@@ -35,12 +35,11 @@ COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 
 ## Install the web interface
-
-RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip && \
-    unzip -qo diyHueUI.zip && \
-    mv index.html flaskUI/templates/ && \
-    cp -r static flaskUI/ && \
-    rm -r static
+RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \
+    && unzip -qo diyHueUI.zip \
+    && mv index.html flaskUI/templates/ \
+    && cp -r static flaskUI/ \
+    && rm -r static
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/
@@ -50,8 +49,5 @@ RUN chmod +x /opt/hue-emulator/genCert.sh
 
 ## Expose ports
 EXPOSE 80 443 1900/udp 1982/udp 2100/udp
-
-## Debug
-## RUN ls -la /opt/hue-emulator
 
 CMD [ "python3", "-u", "/opt/hue-emulator/HueEmulator3.py", "--docker" ]
