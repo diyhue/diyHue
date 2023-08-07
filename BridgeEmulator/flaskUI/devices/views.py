@@ -8,7 +8,7 @@ from functions.devicesRules import addTradfriDimmer, addTradfriCtRemote, addTrad
 logging = logManager.logger.get_logger(__name__)
 #################
 suportedDevicesRules = ["TRADFRI remote control", "TRADFRI on/off switch", "TRADFRI wireless dimmer"]
-dailightMotionEmulation = ["TRADFRI motion sensor", "lumi.sensor_motion"]
+dailightMotionEmulation = ["TRADFRI motion sensor", "lumi.sensor_motion", "lumi.motion.ac02"]
 #################
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
