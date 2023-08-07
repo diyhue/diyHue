@@ -27,7 +27,7 @@ latestStates = {}
 discoveredDevices = {}
 
 
-motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "SML001"]
+motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001"]
 standardSensors = {
     "TRADFRI remote control": {
         "dataConversion": {
