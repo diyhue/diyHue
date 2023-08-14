@@ -1,0 +1,14 @@
+name: Lock closed issue
+
+on: 
+  issues:
+    types: [labeled]
+
+jobs:
+  lock:
+    if: contains(github.event.issue.labels.*.name, 'missing-template')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: OSDKDev/lock-issues@v1.1
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"

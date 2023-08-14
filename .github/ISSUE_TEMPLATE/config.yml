@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ReadMe
+    url: https://github.com/diyhue/diyHue
+    about: Find general information about the project. You may find your answer here!
+  - name: Documentation
+    url: https://diyhue.readthedocs.io/en/latest/
+    about: Find the latest diyHue documentation here. You may find your answer here!
+  - name: Support for diyHue
+    url: https://github.com/diyhue/diyHue#support
+    about: How to reach us directly if you need help using the program or with setup.

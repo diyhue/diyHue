@@ -1,0 +1,10 @@
+*.py[cod]
+lib
+bin
+pip-selfcheck.json
+pyvenv.cfg
+dist
+diyhue.egg-info
+.DS_Store
+.idea
+*.code-workspace

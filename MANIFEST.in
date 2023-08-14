@@ -1,0 +1,5 @@
+include README.md
+include requirements.txt
+include LICENSE.md
+graft diyhue
+recursive-exclude * *.py[co]
