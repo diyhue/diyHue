@@ -1,0 +1,47 @@
+FROM mcr.microsoft.com/vscode/devcontainers/python:0-3.11
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Uninstall pre-installed formatting and linting tools
+# They would conflict with our pinned versions
+RUN \
+    pipx uninstall black \
+    && pipx uninstall pydocstyle \
+    && pipx uninstall pycodestyle \
+    && pipx uninstall mypy \
+    && pipx uninstall pylint
+
+RUN \
+    curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        # Additional library needed by some tests and accordingly by VScode Tests Discovery
+        bluez \
+        libudev-dev \
+        libavformat-dev \
+        libavcodec-dev \
+        libavdevice-dev \
+        libavutil-dev \
+        libswscale-dev \
+        libswresample-dev \
+        libavfilter-dev \
+        libpcap-dev \
+        libturbojpeg0 \
+        libyaml-dev \
+        libxml2 \
+        git \
+        cmake \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspaces
+
+# Install Python dependencies from requirements
+COPY requirements.txt script ./
+RUN pip3 install -r requirements.txt
+COPY requirements-test.txt ./
+RUN pip3 install -r requirements-test.txt
+RUN rm -rf requirements.txt requirements-test.txt
+
+# Set the default shell to bash instead of sh
+ENV SHELL /bin/bash
