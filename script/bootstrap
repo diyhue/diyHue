@@ -1,0 +1,12 @@
+#!/bin/sh
+# Resolve all dependencies that the application requires to run.
+
+# Stop on errors
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Installing development dependencies..."
+python3 -m pip install wheel --upgrade
+python3 -m pip install colorlog pre-commit $(grep awesomeversion requirements.txt) --upgrade
+python3 -m pip install -r requirements-test.txt --upgrade
