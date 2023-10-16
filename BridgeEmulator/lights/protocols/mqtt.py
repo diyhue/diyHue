@@ -15,6 +15,32 @@ from functions.colors import hsv_to_rgb
 
 logging = logManager.logger.get_logger(__name__)
 
+def xy_to_hex(x, y):
+    z = 1.0 - x - y
+    Y = 1.0
+    X = (Y / y) * x
+    Z = (Y / y) * z
+    r = X * 3.240 - Y * 1.537 - Z * 0.499
+    g = -X * 0.969 + Y * 1.877 + Z * 0.042
+    b = X * 0.056 - Y * 0.204 + Z * 1.057
+    r = 12.92 * r if r <= 0.0031308 else (1.0 + 0.055) * (r **(1.0 / 2.4)) - 0.055
+    g = 12.92 * g if g <= 0.0031308 else (1.0 + 0.055) * (g **(1.0 / 2.4)) - 0.055
+    b = 12.92 * b if b <= 0.0031308 else (1.0 + 0.055) * (b **(1.0 / 2.4)) - 0.055
+
+    maxValue = max(r, g, b)
+    r /= maxValue
+    g /= maxValue
+    b /= maxValue
+
+    r = 0 if r * 255 < 0 else r * 255
+    g = 0 if g * 255 < 0 else g * 255
+    b = 0 if b * 255 < 0 else b * 255
+    r = format(int(round(r)), '02x')
+    g = format(int(round(g)), '02x')
+    b = format(int(round(b)), '02x')
+
+    return "#" + r + g + b
+
 
 def set_light(light, data):
     messages = []
@@ -43,6 +69,10 @@ def set_light(light, data):
                 payload['alert'] = value
             if key == "transitiontime":
                 payload['transition'] = value / 10
+            if key == "gradient":
+                gradient = list(map(lambda color: xy_to_hex(color['color']['xy']['x'], color['color']['xy']['y']), value['points']))
+                gradient.reverse()
+                payload['gradient'] = gradient
         if colorFromHsv:
             color = hsv_to_rgb(data['hue'], data['sat'], light.state["bri"])
             payload['color'] = { 'r': color[0], 'g': color[1], 'b': color[2] }
