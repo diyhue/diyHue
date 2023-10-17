@@ -1,4 +1,5 @@
 import logging
+import sys
 
 
 def _get_log_format():
@@ -18,10 +19,19 @@ class Logger:
 
     def _setup_logger(self, name):
         logger = logging.getLogger(name)
-        handler = logging.StreamHandler()
+
+        handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(_get_log_format())
-        logger.setLevel(self.logLevel)
+        handler.setLevel(logging.DEBUG)
+        handler.addFilter(lambda record: record.levelno <= logging.INFO)
         logger.addHandler(handler)
+
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(_get_log_format())
+        handler.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+
+        logger.setLevel(self.logLevel)
         logger.propagate = False
         return logger
 

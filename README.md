@@ -41,8 +41,10 @@ All documentation and instructions can be found over at [diyhue.readthedocs.io](
 
 ## Requirements
 
+- coap-client: i.e. via `apt install libcoap2-bin`
 - Python 3
 - Python modules: ws4py, requests, astral, paho-mqtt [see requirements.txt](./requirements.txt)
+- faketime: i.e. via `apt install faketime`
 
  or
 

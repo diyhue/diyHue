@@ -59,6 +59,8 @@ YeelightConnections = {}
 def entertainmentService(group, user):
     logging.debug("User: " + user.username)
     logging.debug("Key: " + user.client_key)
+    bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
+    bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
     lights_v2 = []
     lights_v1 = {}
     hueGroup  = -1
@@ -69,6 +71,8 @@ def entertainmentService(group, user):
             hueGroup = get_hue_entertainment_group(light(), group.name)
             hueGroupLights[int(light().protocol_cfg["id"])] = [] # Add light id to list
         bridgeConfig["lights"][light().id_v1].state["mode"] = "streaming"
+        bridgeConfig["lights"][light().id_v1].state["on"] = True
+        bridgeConfig["lights"][light().id_v1].state["colormode"] = "xy"
     v2LightNr = {}
     for channel in group.getV2Api()["channels"]:
         lightObj =  getObject(channel["members"][0]["service"]["rid"])
@@ -277,6 +281,7 @@ def entertainmentService(group, user):
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
 
     p.kill()
+    bridgeConfig["groups"][group.id_v1].stream["owner"] = None
     try:
         h.disconnect()
     except UnboundLocalError:

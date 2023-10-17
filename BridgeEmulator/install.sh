@@ -38,10 +38,9 @@ generate_certificate () {
 
   echo "Generating certificat for MAC $mac"
   echo -e "\033[33mIf this is a diyhue reinstallation process then you will need to reinstall official Hue apps from PC and phone in order to wipe old certificate.\033[0m"
-  curl https://raw.githubusercontent.com/diyhue/diyHue/9ceed19b4211aa85a90fac9ea6d45cfeb746c9dd/BridgeEmulator/openssl.conf -o openssl.conf
   serial="${mac:0:2}${mac:3:2}${mac:6:2}fffe${mac:9:2}${mac:12:2}${mac:15:2}"
   dec_serial=`python3 -c "print(int(\"$serial\", 16))"`
-  openssl req -new -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial -days 3650
+  faketime '2017-01-01 00:00:00' openssl req -new -config openssl.conf  -nodes -x509 -newkey  ec -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve   -subj "/C=NL/O=Philips Hue/CN=$serial" -keyout private.key -out public.crt -set_serial $dec_serial -days 7670
   if [ $? -ne 0 ] ; then
     echo -e "\033[31m ERROR!! Local certificate generation failed! Attempting remote server generation\033[0m"
     ### test is server for certificate generation is reachable
@@ -98,11 +97,11 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth
+  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap2-bin faketime
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat || exit 1
+  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat libcoap faketime || exit 1
 else
   # Or assume that packages are already installed (possibly with user confirmation)?
   # Or check them?
@@ -156,27 +155,6 @@ mv index.html /opt/hue-emulator/flaskUI/templates/
 cp -r static /opt/hue-emulator/flaskUI/
 rm -r static
 
-# Install correct binaries
-case $arch in
-    x86_64|i686|aarch64)
-        cp coap-client-$arch /opt/hue-emulator/coap-client-linux
-       ;;
-    arm64)
-        cp coap-client-aarch64 /opt/hue-emulator/coap-client-linux
-       ;;
-    armv*)
-        cp coap-client-arm /opt/hue-emulator/coap-client-linux
-       ;;
-    *)
-        echo -e "\033[0;31m-------------------------------------------------------------------------------"
-        echo -e "ERROR: Unsupported architecture $arch!"
-        echo -e "You will need to manually compile the coap-client binary\033[0m"
-        echo -e "Please visit https://diyhue.readthedocs.io/en/latest/AddFuncts/entertainment.html"
-        echo -e "Once installed, open this script and manually run the last 10 lines."
-        exit 1
-esac
-
-chmod +x /opt/hue-emulator/coap-client-linux
 cp hue-emulator.service /lib/systemd/system/
 cd ../../
 rm -rf diyHue.zip diyHue-$branchSelection

@@ -5,7 +5,7 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime
-from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri, elgato
 from services.homeAssistantWS import discover
 import HueObjects
 from functions.core import nextFreeId
@@ -114,17 +114,32 @@ def scanForLights():  # scan for ESP8266 lights and strips
         deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
     if bridgeConfig["config"]["homeassistant"]["enabled"]:
         discover(detectedLights)
-    yeelight.discover(detectedLights)
+    if bridgeConfig["config"]["yeelight"]["enabled"]:
+        yeelight.discover(detectedLights)
     # native_multi probe all esp8266 lights with firmware from diyhue repo
-    native_multi.discover(detectedLights, device_ips)
-    tasmota.discover(detectedLights, device_ips)
-    wled.discover(detectedLights, device_ips)
+    if bridgeConfig["config"]["native_multi"]["enabled"]:
+        native_multi.discover(detectedLights, device_ips)
+    if bridgeConfig["config"]["tasmota"]["enabled"]:
+        tasmota.discover(detectedLights, device_ips)
+    if bridgeConfig["config"]["wled"]["enabled"]:
+        # Most of the other discoveries are disabled by having no IP address (--disable-network-scan)
+        # But wled does an mdns discovery as well.
+        wled.discover(detectedLights, device_ips)
     hue.discover(detectedLights, bridgeConfig["config"]["hue"])
-    shelly.discover(detectedLights, device_ips)
-    esphome.discover(detectedLights, device_ips)
+    if bridgeConfig["config"]["shelly"]["enabled"]:
+        shelly.discover(detectedLights, device_ips)
+    if bridgeConfig["config"]["esphome"]["enabled"]:
+        esphome.discover(detectedLights, device_ips)
     tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
-    hyperion.discover(detectedLights)
-    tpkasa.discover(detectedLights)
+    if bridgeConfig["config"]["hyperion"]["enabled"]:
+        hyperion.discover(detectedLights)
+    if bridgeConfig["config"]["tpkasa"]["enabled"]:
+        tpkasa.discover(detectedLights)
+    if bridgeConfig["config"]["elgato"]["enabled"]:
+        # Scan with port 9123 before mDNS discovery
+        elgato_ips = find_hosts(9123)
+        logging.info(pretty_json(elgato_ips))
+        elgato.discover(detectedLights, elgato_ips)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
         "%Y-%m-%dT%H:%M:%S")
     for light in detectedLights:
@@ -163,6 +178,9 @@ def scanForLights():  # scan for ESP8266 lights and strips
                         lightIsNew = False
                 elif light["protocol"] == "homeassistant_ws":
                     if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"]:
+                        lightIsNew = False
+                elif light["protocol"] == "elgato":
+                    if lightObj.protocol_cfg['mac'] == light["protocol_cfg"]['mac']:
                         lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])

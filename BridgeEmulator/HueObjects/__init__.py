@@ -15,6 +15,7 @@ logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
 
+
 def v1StateToV2(v1State):
     v2State = {}
     if "on" in v1State:
@@ -24,8 +25,10 @@ def v1StateToV2(v1State):
     if "ct" in v1State:
         v2State["color_temperature"] = {"mirek": v1State["ct"]}
     if "xy" in v1State:
-        v2State["color"] = {"xy": {"x": v1State["xy"][0], "y": v1State["xy"][1]}}
+        v2State["color"] = {
+            "xy": {"x": v1State["xy"][0], "y": v1State["xy"][1]}}
     return v2State
+
 
 def v2StateToV1(v2State):
     v1State = {}
@@ -44,6 +47,7 @@ def v2StateToV1(v2State):
     if "transitiontime" in v2State:  # to be replaced once api will be public
         v1State["transitiontime"] = v2State["transitiontime"]
     return v1State
+
 
 def genV2Uuid():
     return str(uuid.uuid4())
@@ -93,6 +97,8 @@ def setGroupAction(group, state, scene=None):
                 if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
                     lightsState[light().id_v1]["bri"] = light(
                     ).protocol_cfg["max_bri"]
+                if  light().protocol == "mqtt" and not light().state["on"]:
+                    continue
             # end limits
             if light().protocol in ["native_multi", "mqtt"]:
                 if light().protocol_cfg["ip"] not in queueState:
@@ -404,8 +410,6 @@ class Light():
             v2State = v1StateToV2(state)
             self.genStreamEvent(v2State)
 
-
-
     def setV2State(self, state):
         v1State = v2StateToV1(state)
         if "effects" in state:
@@ -413,7 +417,7 @@ class Light():
             self.effect = v1State["effect"]
         if "dynamics" in state and "speed" in state["dynamics"]:
             self.dynamics["speed"] = state["dynamics"]["speed"]
-        self.setV1State(v1State,advertise=False)
+        self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
     def genStreamEvent(self, v2State):
@@ -424,7 +428,8 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"],"rtype": "device"}})
+        streamMessage["data"][0].update(
+            {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         eventstream.append(streamMessage)
 
     def getDevice(self):
@@ -533,6 +538,8 @@ class Light():
         result["metadata"] = {"name": self.name,
                               "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
+        if "mode" in self.state and self.state["mode"] == "streaming":
+            result["mode"] = "streaming"
         result["on"] = {
             "on": self.state["on"]
         }
@@ -828,8 +835,9 @@ class EntertainmentConfiguration():
             "type": "entertainment_configuration",
             "name": self.name,
             "status": "active" if self.stream["active"] else "inactive"
-
         }
+        if self.stream["active"]:
+            result["active_streamer"] = {"rid": self.stream["owner"], "rtype": "auth_v1"}
         channel_id = 0
         for light in self.lights:
             if light():
@@ -860,16 +868,22 @@ class EntertainmentConfiguration():
                         ]
                     }
                     if light().modelid in ["LCX001", "LCX002", "LCX003"]:
-                        channel["position"] = {"x": gradienStripPositions[x]["x"], "y": gradienStripPositions[x]["y"], "z": gradienStripPositions[x]["z"]}
+
+                        channel["position"] = {"x": gradienStripPositions[x]["x"],
+                                               "y": gradienStripPositions[x]["y"], "z": gradienStripPositions[x]["z"]}
                     elif light().modelid in ["915005987201", "LCX004", "LCX006"]:
                         if x == 0:
-                            channel["position"] = {"x": self.locations[light()][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
+                            channel["position"] = {"x": self.locations[light(
+                            )][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
                         elif x == 2:
-                            channel["position"] = {"x": self.locations[light()][1]["x"], "y": self.locations[light()][1]["y"], "z": self.locations[light()][1]["z"]}
+                            channel["position"] = {"x": self.locations[light(
+                            )][1]["x"], "y": self.locations[light()][1]["y"], "z": self.locations[light()][1]["z"]}
                         else:
-                            channel["position"] = {"x": (self.locations[light()][0]["x"] + self.locations[light()][1]["x"]) / 2, "y": (self.locations[light()][0]["y"] + self.locations[light()][1]["y"]) / 2, "z": (self.locations[light()][0]["z"] + self.locations[light()][1]["z"]) / 2}
+                            channel["position"] = {"x": (self.locations[light()][0]["x"] + self.locations[light()][1]["x"]) / 2, "y": (self.locations[light(
+                            )][0]["y"] + self.locations[light()][1]["y"]) / 2, "z": (self.locations[light()][0]["z"] + self.locations[light()][1]["z"]) / 2}
                     else:
-                        channel["position"] = {"x": self.locations[light()][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
+                        channel["position"] = {"x": self.locations[light(
+                        )][0]["x"], "y": self.locations[light()][0]["y"], "z": self.locations[light()][0]["z"]}
 
                     result["channels"].append(channel)
                     channel_id += 1
@@ -880,8 +894,6 @@ class EntertainmentConfiguration():
         v1State = v2StateToV1(state)
         setGroupAction(self, v1State)
         self.genStreamEvent(state)
-
-
 
     def setV1Action(self, state, scene=None):
         setGroupAction(self, state, scene)
@@ -895,7 +907,7 @@ class EntertainmentConfiguration():
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        streamMessage.update(state)
+        streamMessage.update(v2State)
         eventstream.append(streamMessage)
 
     def getObjectPath(self):
@@ -1024,9 +1036,13 @@ class Group():
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+                         "owner": {
+            "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+            "rtype": "room" if self.type == "Room" else "zone"
+        },
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         eventstream.append(streamMessage)
 
     def update_state(self):
@@ -1063,12 +1079,17 @@ class Group():
                 streamMessage["data"][0].update(v2State)
                 eventstream.append(streamMessage)
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
+                         "data": [{"id": self.id_v2, "type": "grouped_light",
+                                   "owner": {
+                                       "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                                       "rtype": "room" if self.type == "Room" else "zone"
+                                   }
+                                   }],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        streamMessage.update(v2State)
+        streamMessage["data"][0].update(v2State)
         eventstream.append(streamMessage)
 
     def getV1Api(self):
@@ -1660,6 +1681,11 @@ class Sensor():
                 "rid": self.id_v2,
                 "rtype": rtype
             }
+        else:
+            return {
+                "rid": self.id_v2,
+                "rtype": 'device'
+            }
         return False
 
     def getV1Api(self):
@@ -1687,8 +1713,8 @@ class Sensor():
     def getDevice(self):
         result = None
         if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {"id": str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'device')), "type": "device"}
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
             result["metadata"] = {
                 "archetype": "unknown_archetype",
                 "name": self.name
@@ -1696,7 +1722,7 @@ class Sensor():
             result["product_data"] = {
                 "certified": True,
                 "manufacturer_name": "Signify Netherlands B.V.",
-                "model_id": "SML001",
+                "model_id": self.modelid,
                 "product_archetype": "unknown_archetype",
                 "product_name": "Hue motion sensor",
                 "software_version": "1.1.27575"
@@ -1707,8 +1733,8 @@ class Sensor():
                     "rtype": "motion"
                 },
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'battery')),
-                    "rtype": "battery"
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                    "rtype": "device_power"
                 },
                 {
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
@@ -1721,31 +1747,128 @@ class Sensor():
                 {
                     "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
                     "rtype": "temperature"
-                }
-            ]
+                }]
+            result["type"] = "device"
+        elif self.modelid == "RWL022":
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["product_data"] = {"model_id": self.modelid,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "product_name": "Hue dimmer switch",
+                "product_archetype": "unknown_archetype",
+                "certified": True,
+                "software_version": "2.44.0",
+                "hardware_platform_type": "100b-119"
+            }
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["services"] = [{
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button1')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button2')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button3')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button4')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
+        return result
+
+    def getMotion(self):
+        result = None
+        if self.modelid == "SML001" and self.type == "ZLLPresence":
+            result = {"enabled": self.config["on"],
+                      "id": str(uuid.uuid5(
+                          uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
+                      "id_v1": "/sensors/" + self.id_v1,
+                      "motion": {
+                "motion": True if self.state["presence"] else False,
+                "motion_valid": True
+            },
+                "owner": {
+                "rid": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                "rtype": "device"
+            },
+                "type": "motion"}
         return result
 
     def getZigBee(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {}
-            result["id"] = str(uuid.uuid5(
-                uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
-            result["id_v1"] = "/sensors/" + self.id_v1
-            result["mac_address"] = self.uniqueid[:23]
-            result["status"] = "connected"
-            result["type"] = "zigbee_connectivity"
+        if self.modelid == "SML001" and self.type != "ZLLPresence":
+            return None
+        if not self.uniqueid:
+            return None
+        result = {}
+        result["id"] = str(uuid.uuid5(
+            uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
+        result["id_v1"] = "/sensors/" + self.id_v1
+        result["owner"] = {
+            "rid": self.id_v2,
+            "rtype": "device"
+            }
+        result["type"] = "zigbee_connectivity"
+        result["mac_address"] = self.uniqueid[:23]
+        result["status"] = "connected"
+        return result
+    def getButtons(self):
+        result = []
+        if self.modelid == "RWL022":
+            for button in range(4):
+                result.append({
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                  "rid": self.id_v2,
+                  "rtype": "device"
+                },
+                "metadata": {
+                  "control_id": button + 1
+                },
+                "type": "button"
+              })
+        return result
+
+    def getDevicePower(self):
+        result = None
+        if "battery" in self.config:
+            result = {
+                "id": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                    "rid": self.id_v2,
+                    "rtype": "device"
+                },
+                "power_state": {},
+                "type": "device_power"
+            }
+            if self.config["battery"]:
+                result["power_state"].update({"battery_level": self.config["battery"],
+                    "battery_state": "normal"
+                    })
         return result
 
     def update_attr(self, newdata):
         if self.id_v1 == "1" and "config" in newdata:  # manage daylight sensor
             if "long" in newdata["config"] and "lat" in newdata["config"]:
-                self.config["configured"] = True
-                self.protocol_cfg = {"long": float(
+                self.config["configured"]=True
+                self.protocol_cfg={"long": float(
                     newdata["config"]["long"][:-1]), "lat": float(newdata["config"]["lat"][:-1])}
                 return
         for key, value in newdata.items():
-            updateAttribute = getattr(self, key)
+            updateAttribute=getattr(self, key)
             if isinstance(updateAttribute, dict):
                 updateAttribute.update(value)
                 setattr(self, key, updateAttribute)
@@ -1753,17 +1876,17 @@ class Sensor():
                 setattr(self, key, value)
 
     def save(self):
-        result = {}
-        result["name"] = self.name
-        result["id_v1"] = self.id_v1
-        result["id_v2"] = self.id_v2
-        result["state"] = self.state
-        result["config"] = self.config
-        result["type"] = self.type
-        result["modelid"] = self.modelid
-        result["manufacturername"] = self.manufacturername
-        result["uniqueid"] = self.uniqueid
-        result["swversion"] = self.swversion
-        result["protocol"] = self.protocol
-        result["protocol_cfg"] = self.protocol_cfg
+        result={}
+        result["name"]=self.name
+        result["id_v1"]=self.id_v1
+        result["id_v2"]=self.id_v2
+        result["state"]=self.state
+        result["config"]=self.config
+        result["type"]=self.type
+        result["modelid"]=self.modelid
+        result["manufacturername"]=self.manufacturername
+        result["uniqueid"]=self.uniqueid
+        result["swversion"]=self.swversion
+        result["protocol"]=self.protocol
+        result["protocol_cfg"]=self.protocol_cfg
         return result

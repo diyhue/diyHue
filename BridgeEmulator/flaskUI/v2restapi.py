@@ -20,7 +20,7 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
-}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}}
+}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}, "device_power": {}}
 
 
 def getObject(element, v2uuid):
@@ -59,14 +59,19 @@ def authorizeV2(headers):
         return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
     return []
 
-
 def v2BridgeEntertainment():
     return {"id": "57a9ebc9-406d-4a29-a4ff-42acee9e9be7",
-            "id_v1": "",
-            "proxy": True,
+            "owner": {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+                "rtype": "device"
+                },
             "renderer": False,
+            "proxy": True,
+            "equalizer": False,
+            "max_streams": 1,
             "type": "entertainment"
             }
+
 
 
 def v2HomeKit():
@@ -82,13 +87,20 @@ def v2HomeKit():
 
 
 def v2BridgeZigBee():
-    result = {}
-    result["id"] = str(uuid.uuid5(
-        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity'))
-    result["id_v1"] = ""
-    result["status"] = "connected"
-    result["type"] = "zigbee_connectivity"
-    return result
+    return {"id": str(uuid.uuid5(
+        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
+            "owner": {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+                "rtype": "device"
+                },
+            "status": "connected",
+            "mac_address": bridgeConfig["config"]["mac"][:8] + ":01:01:" +  bridgeConfig["config"]["mac"][9:],
+            "channel": {
+                "value": "channel_25",
+                "status": "set"
+                },
+            "type": "zigbee_connectivity"
+            }
 
 
 def v2GeofenceClient():
@@ -193,7 +205,7 @@ class AuthV1(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" in authorisation:
             logging.debug("Auth 200")
-            return {}, 200, {'hue-application-id': '36b1e193-4b74-4763-a054-0578cd927a7b'}
+            return {}, 200, {'hue-application-id': request.headers["hue-application-key"]}
 
         else:
             logging.debug("Auth 403")
@@ -252,6 +264,20 @@ class ClipV2(Resource):
         data.append(v2GeofenceClient())
         for script in behaviorScripts():
             data.append(script)
+        for key, sensor in bridgeConfig["sensors"].items():
+            motion = sensor.getMotion()
+            if motion != None:
+                data.append(motion)
+        for key, sensor in bridgeConfig["sensors"].items():
+            buttons = sensor.getButtons()
+            if len(buttons) != 0:
+                for button in buttons:
+                    data.append(button)
+        for key, sensor in bridgeConfig["sensors"].items():
+            power = sensor.getDevicePower()
+            if power != None:
+                data.append(power)
+
         return {"errors": [], "data": data}
 
 
@@ -321,6 +347,22 @@ class ClipV2Resource(Resource):
         elif resource == "behavior_script":
             for script in behaviorScripts():
                 response["data"].append(script)
+        elif resource == "motion":
+            for key, sensor in bridgeConfig["sensors"].items():
+                motion = sensor.getMotion()
+                if motion != None:
+                    response["data"].append(motion)
+        elif resource == "device_power":
+            for key, sensor in bridgeConfig["sensors"].items():
+                power = sensor.getDevicePower()
+                if power != None:
+                    response["data"].append(power)
+        elif resource == "button":
+            for key, sensor in bridgeConfig["sensors"].items():
+                buttons = sensor.getButtons()
+                if len(buttons) != 0:
+                    for button in buttons:
+                        data.append(button)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
@@ -454,6 +496,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "bridge":
             return {"errors": [], "data": [v2Bridge()]}
+        elif resource == "device_power":
+            return {"errors": [], "data": [object.getDevicePower()]}
 
     def put(self, resource, resourceid):
         logging.debug(request.headers)
@@ -469,19 +513,18 @@ class ClipV2ResourceId(Resource):
             if "action" in putDict:
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
-                    object.stream.update(
-                        {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"})
                     Thread(target=entertainmentService, args=[
                            object, authorisation["user"]]).start()
                     for light in object.lights:
-                        light().state["mode"] = "streaming"
+                        light().update_attr({"state": {"mode": "streaming"}})
+                    object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
-                    object.stream["active"] = False
                     for light in object.lights:
-                        light().state["mode"] = "homeautomation"
+                        light().update_attr({"state": {"mode": "homeautomation"}}) 
                     Popen(["killall", "openssl"])
+                    object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
             if "recall" in putDict:
                 object.activate(putDict)

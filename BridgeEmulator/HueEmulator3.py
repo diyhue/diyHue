@@ -19,6 +19,7 @@ from pprint import pprint
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
+_ = logManager.logger.get_logger("werkzeug")
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
 api = Api(app)
@@ -109,6 +110,7 @@ if __name__ == '__main__':
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
     HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
     CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
+    DISABLE_HTTPS = configManager.runtimeConfig.arg["noServeHttps"]
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
@@ -127,5 +129,6 @@ if __name__ == '__main__':
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
+    if not DISABLE_HTTPS:
+        Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
     runHttp(BIND_IP, HOST_HTTP_PORT)
