@@ -73,6 +73,15 @@ lightTypes["LCX004"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,
 lightTypes["LCX004"]["config"] = {"archetype": "huelightstrip", "function": "mixed", "direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
 lightTypes["LCX004"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
+# Hue Play Gradient Lightstrip for PC
+lightTypes["LCX006"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue gradient lightstrip","swversion": "1.94.2","swconfigid": "DC0A18AF","productid": "4422-9482-0441_HG01_PSU03"}}
+lightTypes["LCX006"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2022-01-13T22:54:51"}
+lightTypes["LCX006"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
+lightTypes["LCX006"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "LCX004","product_archetype": "hue_lightstrip","product_name": "Hue gradient lightstrip","software_version": "1.94.2"}
+lightTypes["LCX006"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
+lightTypes["LCX006"]["config"] = {"archetype": "huelightstrip", "function": "mixed", "direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
+lightTypes["LCX006"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+
 ## Hue Plug
 lightTypes["LOM001"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}
 lightTypes["LOM001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
