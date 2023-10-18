@@ -11,7 +11,7 @@ import traceback
 import paho.mqtt.publish as publish
 
 # internal functions
-from functions.colors import hsv_to_rgb
+from functions.colors import hsv_to_rgb, convert_xy
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -35,6 +35,13 @@ def set_light(light, data):
                 payload['brightness'] = value
             if key == "xy":
                 payload['color'] = {'x': value[0], 'y': value[1]}
+            if key == "gradient":
+                rgbs = list(map(lambda xy_record: convert_xy(xy_record['color']['xy']['x'], xy_record['color']['xy']['y'], 255), value['points']))
+                hexes = list(map(lambda rgb: 
+                    "#" + format(int(round(rgb[0])), '02x') + format(int(round(rgb[1])), '02x') + format(int(round(rgb[2])), '02x'),
+                    rgbs))
+                hexes.reverse
+                payload['gradient'] = hexes
             if key == "ct":
                 payload["color_temp"] = value
             if key == "hue" or key == "sat":
