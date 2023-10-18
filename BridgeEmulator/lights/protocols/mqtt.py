@@ -40,7 +40,7 @@ def set_light(light, data):
                 hexes = list(map(lambda rgb: 
                     "#" + format(int(round(rgb[0])), '02x') + format(int(round(rgb[1])), '02x') + format(int(round(rgb[2])), '02x'),
                     rgbs))
-                hexes.reverse
+                hexes.reverse()
                 payload['gradient'] = hexes
             if key == "ct":
                 payload["color_temp"] = value
