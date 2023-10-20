@@ -1,3 +1,4 @@
+root@1d8c0f05e3d2:/opt/hue-emulator# cat /opt/hue-emulator/functions/rules.py
 import logManager
 import configManager
 import json
@@ -10,7 +11,7 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
-    #logging.debug("Check " + rule.name)
+    #logging.debug("Check " + rule.id_v1)
     ddx = 0
     device_found = False
     ddx_sensor = []
@@ -19,6 +20,7 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
             url_pices = condition["address"].split('/')
             if url_pices[1] == device.getObjectPath()["resource"] and url_pices[2] == device.getObjectPath()["id"]:
                 device_found = True
+                #logging.debug("device found")
             if condition["operator"] == "eq":
                 if condition["value"] == "true":
                     if not bridgeConfig[url_pices[1]][url_pices[2]].state[url_pices[4]]:
@@ -83,6 +85,13 @@ def ddxRecheck(rule, device, current_time, ddx_delay, ddx_sensor):
             elif action["method"] == "PUT":
                 requests.put("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
 
+def threadRequest(method, address, data):
+    if method == "POST":
+        requests.post(address, json=data, timeout=5)
+    elif method == "PUT":
+        requests.put(address, json=data, timeout=5)
+
+
 
 def rulesProcessor(device, current_time):
     logging.debug("Processing rules for " + device.name)
@@ -105,7 +114,4 @@ def rulesProcessor(device, current_time):
         urlPrefix = "http://localhost/api/local"
         if action["address"].startswith("http"):
             urlPrefix = ""
-        if action["method"] == "POST":
-            requests.post(urlPrefix + action["address"], json=action["body"], timeout=5)
-        elif action["method"] == "PUT":
-            requests.put(urlPrefix + action["address"], json=action["body"], timeout=5)
+        Thread(target=threadRequest, args=[action["method"], urlPrefix + action["address"], action["body"]]).start()
