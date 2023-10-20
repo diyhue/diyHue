@@ -1,4 +1,3 @@
-root@1d8c0f05e3d2:/opt/hue-emulator# cat /opt/hue-emulator/functions/rules.py
 import logManager
 import configManager
 import json
