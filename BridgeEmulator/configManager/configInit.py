@@ -1,3 +1,4 @@
+import ipaddress
 import uuid
 from random import randrange
 
@@ -9,9 +10,14 @@ def _generate_unique_id():
 
 def write_args(args, yaml_config):
     host_ip = args["HOST_IP"]
-    ip_pieces = host_ip.split(".")
+
+    parsed_ip = ipaddress.ip_address(host_ip)
+    netmask = yaml_config["config"]["netmask"]
+    network = ipaddress.ip_network(f'{parsed_ip}/{netmask}', False)
+    gateway = args.get("GATEWAY", network.network_address + 1)
+
     yaml_config["config"]["ipaddress"] = host_ip
-    yaml_config["config"]["gateway"] = ip_pieces[0] + "." + ip_pieces[1] + "." + ip_pieces[2] + ".1"
+    yaml_config["config"]["gateway"] = gateway
     yaml_config["config"]["mac"] = args["FULLMAC"]
     yaml_config["config"]["bridgeid"] = (args["MAC"][:6] + 'FFFE' + args["MAC"][-6:]).upper()
     return yaml_config
