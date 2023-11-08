@@ -178,9 +178,11 @@ esac
 
 chmod +x /opt/hue-emulator/coap-client-linux
 cp hue-emulator.service /lib/systemd/system/
+cp hue-emulator.env /etc/default/hue-emulator
 cd ../../
 rm -rf diyHue.zip diyHue-$branchSelection
 chmod 644 /lib/systemd/system/hue-emulator.service
+chmod 644 /etc/default/hue-emulator
 systemctl daemon-reload
 systemctl enable hue-emulator.service
 systemctl start hue-emulator.service
