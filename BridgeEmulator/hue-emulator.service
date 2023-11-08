@@ -3,6 +3,8 @@ Description=Hue Emulator Service
 After=multi-user.target
 
 [Service]
+#User=diyhue
+EnvironmentFile=-/etc/default/hue-emulator
 Type=idle
 Restart=always
 RestartSec=30
@@ -11,7 +13,7 @@ StartLimitBurst=5
 
 WorkingDirectory=/opt/hue-emulator
 ExecStart=/opt/hue-emulator/HueEmulator3.py
-ExecStop=/usr/bin/curl http://127.0.0.1/save
+ExecStop=/usr/bin/curl -s http://127.0.0.1:${HTTP_PORT}/save
 ExecStop=/bin/sleep 1
 
 [Install]
