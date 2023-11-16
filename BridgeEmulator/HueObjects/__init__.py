@@ -528,10 +528,18 @@ class Light():
             result["color_temperature"]["mirek_valid"] = True if self.state[
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
         if "bri" in self.state:
+            bri_value = self.state["bri"]
+            if bri_value is None or bri_value == "null":
+                bri_value = 1
             result["dimming"] = {
-                "brightness": round(self.state["bri"] / 2.54, 2),
-                "min_dim_level": 0.10000000149011612
+                "brightness": round(float(bri_value) / 2.54, 2),
+                "min_dim_level": 0.1  # Adjust this value as needed
             }
+#        if "bri" in self.state:
+#            result["dimming"] = {
+#                "brightness": round(self.state["bri"] / 2.54, 2),
+#                "min_dim_level": 0.10000000149011612
+#            }
         result["dynamics"] = self.dynamics
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
@@ -1348,9 +1356,18 @@ class Scene():
             if "on" in state:
                 v2State["on"] = {"on": state["on"]}
             if "bri" in state:
+                bri_value = state["bri"]
+                if bri_value is None or bri_value == "null":
+                    bri_value = 1
                 v2State["dimming"] = {
-                    "brightness": round(state["bri"] / 2.54, 2)}
+                    "brightness": round(float(bri_value) / 2.54, 2)
+                }
                 v2State["dimming_delta"] = {}
+
+#            if "bri" in state:
+#                v2State["dimming"] = {
+#                    "brightness": round(state["bri"] / 2.54, 2)}
+#                v2State["dimming_delta"] = {}
             if "xy" in state:
                 v2State["color"] = {
                     "xy": {"x": state["xy"][0], "y": state["xy"][1]}}
@@ -1889,3 +1906,4 @@ class Sensor():
         result["protocol"]=self.protocol
         result["protocol_cfg"]=self.protocol_cfg
         return result
+
