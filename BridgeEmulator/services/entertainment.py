@@ -111,7 +111,7 @@ def entertainmentService(group, user):
 
             else:
                 data = p.stdout.read(frameBites)
-                logging.debug(",".join('{:02x}'.format(x) for x in data))
+                #logging.debug(",".join('{:02x}'.format(x) for x in data))
                 nativeLights = {}
                 esphomeLights = {}
                 mqttLights = []
@@ -132,6 +132,7 @@ def entertainmentService(group, user):
                     while (i < counter):
                         light = None
                         r,g,b = 0,0,0
+                        bri = 0
                         if apiVersion == 1:
                             if (data[i+1] * 256 + data[i+2]) in channels:
                                 channels[data[i+1] * 256 + data[i+2]] += 1
@@ -166,12 +167,19 @@ def entertainmentService(group, user):
                         if light == None:
                             logging.info("error in light identification")
                             break
-                        logging.debug("Light:" + str(light.name) + " RED: " + str(r) + ", GREEN: " + str(g) + ", BLUE: " + str(b) )
+                        logging.debug("Frame: " + str(frameID) + " Light:" + str(light.name) + " RED: " + str(r) + ", GREEN: " + str(g) + ", BLUE: " + str(b) )
                         proto = light.protocol
                         if r == 0 and  g == 0 and  b == 0:
                             light.state["on"] = False
                         else:
-                            light.state.update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
+                            if bri == 0:
+                                light.state.update({"on": True, "bri": int((r + g + b) / 3), "xy": convert_rgb_xy(r, g, b), "colormode": "xy"})
+                            else:
+                                light.state.update({"on": True, "bri": bri, "xy": [x, y], "colormode": "xy"})
+                            #logging.debug("in X: " + str(x) + " Y: " + str(y) + " B: " + str(bri))
+                            #logging.debug("st X: " + str(light.state["xy"][0]) + " Y: " + str(light.state["xy"][1]) + " B: " + str(light.state["bri"]))
+                            #logging.debug("co XY: " + str(convert_rgb_xy(r, g, b)) + " B: " + str((r + g + b) / 3))
+
                         if proto in ["native", "native_multi", "native_single"]:
                             if light.protocol_cfg["ip"] not in nativeLights:
                                 nativeLights[light.protocol_cfg["ip"]] = {}
