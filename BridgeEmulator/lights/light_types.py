@@ -28,6 +28,15 @@ lightTypes["LST002"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "x
 lightTypes["LST002"]["config"] = {"archetype": "huelightstrip",	"function": "mixed", "direction": "omnidirectional", "startup": {"mode": "safety", "configured": False}}
 lightTypes["LST002"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
+## Hue White and Color Ambiance A19 800 Lumen
+lightTypes["LCA005"] = {"v1_static": {"type": "Extended color light", "swversion":"1.104.2","swconfigid":"5419E9E3","productid":"Philips-LCA005-1-A19ECLv7","manufacturername": "Signify Netherlands B.V."}}
+lightTypes["LCA005"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LCA005"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.6915,0.3083],[0.17,0.7],[0.1532,0.0475]],"colorgamuttype": "C","ct": {"max": 500,"min": 153},"maxlumen": 800,"mindimlevel": 1000},"streaming": {"proxy": False,"renderer": True}}
+lightTypes["LCA005"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.","product_archetype": "sultan_bulb","product_name": "Hue color lamp","software_version": "1.104.2"}
+lightTypes["LCA005"]["state"] = {"on": False, "bri": 200, "hue": 0, "sat": 0, "xy": [0.0, 0.0], "ct": 461, "alert": "none", "mode": "homeautomation", "effect": "none", "colormode": "ct", "reachable": True}
+lightTypes["LCA005"]["config"] = {"archetype": "sultanbulb", "function": "mixed", "direction": "omnidirectional","startup":{"mode":"safety","configured": True}}
+lightTypes["LCA005"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+
 ## Dimmable Hue Bulb
 lightTypes["LWB010"] = {"v1_static": {"type": "Dimmable light", "swversion": "1.50.2_r30933", "manufacturername": "Signify Netherlands B.V.", "productid": "Philips-LWB010-1-A19DLv4"}}
 lightTypes["LWB010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}

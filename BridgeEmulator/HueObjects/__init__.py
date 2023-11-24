@@ -503,7 +503,7 @@ class Light():
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006"]:
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -638,13 +638,13 @@ class Light():
         while self.dynamics["status"] == "dynamic_palette":
             transition = int(30 / self.dynamics["speed"])
             logging.debug("using transistiontime " + str(transition))
-            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "LCX004", "LCX006"]:
+            if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
                 if index == len(palette["color"]):
                     index = 0
                 points = []
                 if self.modelid in ["LCX002", "915005987201", "LCX004", "LCX006"]:
-                    gradientIndex = index
                     # for gradient lights
+                    gradientIndex = index
                     for x in range(self.protocol_cfg["points_capable"]):
                         points.append(palette["color"][gradientIndex])
                         gradientIndex += 1
@@ -1906,4 +1906,3 @@ class Sensor():
         result["protocol"]=self.protocol
         result["protocol_cfg"]=self.protocol_cfg
         return result
-
