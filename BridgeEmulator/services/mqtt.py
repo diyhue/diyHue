@@ -162,6 +162,7 @@ standardSensors = {
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
+standardSensors["RWL020"] = standardSensors["RWL021"]
 standardSensors["RWL022"] = standardSensors["RWL021"]
 standardSensors["8719514440937"] = standardSensors["RDM002"]
 standardSensors["8719514440999"] = standardSensors["RDM002"]
@@ -420,8 +421,8 @@ def mqttServer():
 
     if bridgeConfig["config"]["mqtt"]['discoveryPrefix'] is not None:
         discoveryPrefix = bridgeConfig["config"]["mqtt"]['discoveryPrefix']
-        
-    # defaults for TLS and certs 
+
+    # defaults for TLS and certs
     if 'mqttCaCerts' not in bridgeConfig["config"]["mqtt"]:
         bridgeConfig["config"]["mqtt"]["mqttCaCerts"] = None
     if 'mqttCertfile' not in bridgeConfig["config"]["mqtt"]:
@@ -432,7 +433,7 @@ def mqttServer():
         bridgeConfig["config"]["mqtt"]["mqttTls"] = False
     if 'mqttTlsInsecure' not in bridgeConfig["config"]["mqtt"]:
         bridgeConfig["config"]["mqtt"]["mqttTlsInsecure"] = False
-    # TLS set? 
+    # TLS set?
     if bridgeConfig["config"]["mqtt"]["mqttTls"]:
         mqttTlsVersion = ssl.PROTOCOL_TLS
         client.tls_set(ca_certs=bridgeConfig["config"]["mqtt"]["mqttCaCerts"], certfile=bridgeConfig["config"]["mqtt"]["mqttCertfile"], keyfile=bridgeConfig["config"]["mqtt"]["mqttKeyfile"], tls_version=mqttTlsVersion)
