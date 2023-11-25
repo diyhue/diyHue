@@ -356,12 +356,12 @@ class Light():
         result = lightTypes[self.modelid]["v1_static"]
         result["config"] = self.config
         result["state"] = {"on": self.state["on"]}
-        if "bri" in self.state and self.modelid not in ["LOM001"]:
+        if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
             result["state"]["bri"] = self.state["bri"]
-        if "ct" in self.state and self.modelid not in ["LOM001", "LTW001"]:
+        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001"]:
             result["state"]["ct"] = self.state["ct"]
             result["state"]["colormode"] = self.state["colormode"]
-        if "xy" in self.state and self.modelid not in ["LOM001", "LTW001", "LWB010"]:
+        if "xy" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LWB010"]:
             result["state"]["xy"] = self.state["xy"]
             result["state"]["hue"] = self.state["hue"]
             result["state"]["sat"] = self.state["sat"]
@@ -1906,4 +1906,3 @@ class Sensor():
         result["protocol"]=self.protocol
         result["protocol_cfg"]=self.protocol_cfg
         return result
-
