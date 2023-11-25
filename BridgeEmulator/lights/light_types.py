@@ -92,6 +92,22 @@ lightTypes["LOM001"]["state"] = {"on": False,"alert": "select","mode": "homeauto
 lightTypes["LOM001"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
 lightTypes["LOM001"]["dynamics"] = {"status": "none", "status_values": ["none"]}
 
+lightTypes["LOM004"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}
+lightTypes["LOM004"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LOM004"]["v1_static"]["capabilities"] = {"certified": True,"control": {},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LOM004"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "model_id": "LOM001", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.90.1"}
+lightTypes["LOM004"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
+lightTypes["LOM004"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
+lightTypes["LOM004"]["dynamics"] = {"status": "none", "status_values": ["none"]}
+
+lightTypes["LOM010"] = {"v1_static": {"type": "On/Off plug-in unit","manufacturername": "Signify Netherlands B.V.","productname": "Hue Smart plug","swversion": "1.90.1","swconfigid": "A641B5AB","productid": "SmartPlug_OnOff_v01-00_01"}}
+lightTypes["LOM010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LOM010"]["v1_static"]["capabilities"] = {"certified": True,"control": {},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LOM010"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.", "model_id": "LOM001", "product_archetype": "plug","product_name": "Hue Smart plug","software_version": "1.90.1"}
+lightTypes["LOM010"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
+lightTypes["LOM010"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
+lightTypes["LOM010"]["dynamics"] = {"status": "none", "status_values": ["none"]}
+
 
 archetype = {"tableshade":"table_shade",
     "flexiblelamp":"flexible_lamp",
