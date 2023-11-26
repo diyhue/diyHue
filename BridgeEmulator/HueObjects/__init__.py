@@ -1400,8 +1400,7 @@ class Scene():
         result["type"] = "scene"
         if self.palette:
             result["palette"] = self.palette
-            if self.speed != 1:
-                result["speed"] = self.speed
+        result["speed"] = self.speed
         return result
 
     def storelightstate(self):
