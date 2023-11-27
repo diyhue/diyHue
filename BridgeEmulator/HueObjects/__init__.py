@@ -1227,6 +1227,8 @@ class Group():
 
 class Scene():
 
+    DEFAULT_SPEED = 0.6269841194152832
+
     def __init__(self, data):
         self.name = data["name"]
         self.id_v1 = data["id_v1"]
@@ -1241,7 +1243,7 @@ class Scene():
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lightstates = weakref.WeakKeyDictionary()
         self.palette = data["palette"] if "palette" in data else {}
-        self.speed = data["speed"] if "speed" in data else 0.6269841194152832
+        self.speed = data["speed"] if "speed" in data else self.DEFAULT_SPEED
         self.group = data["group"] if "group" in data else None
         self.lights = data["lights"] if "lights" in data else []
         if "group" in data:
@@ -1400,8 +1402,7 @@ class Scene():
         result["type"] = "scene"
         if self.palette:
             result["palette"] = self.palette
-            if self.speed != 1:
-                result["speed"] = self.speed
+        result["speed"] = self.speed
         return result
 
     def storelightstate(self):
@@ -1455,8 +1456,7 @@ class Scene():
                 return False
         if self.palette != None:
             result["palette"] = self.palette
-        if self.speed != None:
-            result["speed"] = self.speed
+        result["speed"] = self.speed or self.DEFAULT_SPEED
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)
