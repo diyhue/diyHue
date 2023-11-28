@@ -465,7 +465,8 @@ class ClipV2Resource(Resource):
             objCreation = {
                 "id_v1": new_object_id,
                 "name": postDict["name"],
-                "type": "geofence_client"
+                "type": "geofence_client",
+                "is_at_home": postDict.get("is_at_home", False)
             }
             newObject = HueObjects.GeofenceClient(objCreation)
             bridgeConfig["geofence_clients"][new_object_id] = newObject
