@@ -459,6 +459,12 @@ class ClipV2Resource(Resource):
                     newObject.add_light(obj)
 
             bridgeConfig["groups"][new_object_id] = newObject
+        else:
+            return {
+                "errors": [{
+                    "description": f"Resource type not supported: {resource}"
+                }]
+            }, 500
 
         # return message
         returnMessage = {"data": [{
@@ -522,7 +528,7 @@ class ClipV2ResourceId(Resource):
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     for light in object.lights:
-                        light().update_attr({"state": {"mode": "homeautomation"}}) 
+                        light().update_attr({"state": {"mode": "homeautomation"}})
                     Popen(["killall", "openssl"])
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
