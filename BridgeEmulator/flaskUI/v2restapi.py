@@ -20,7 +20,8 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
-}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}, "device_power": {}}
+}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}, "device_power": {},
+"geofence_client": {}}
 
 
 def getObject(element, v2uuid):
@@ -42,7 +43,7 @@ def getObject(element, v2uuid):
                 v2Resources[element][v2uuid] = weakref.ref(obj)
                 return obj
     else:
-        for v1Element in ["lights", "groups", "scenes", "sensors"]:
+        for v1Element in ["lights", "groups", "scenes", "sensors", "geofence_clients"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + element)) == v2uuid:
                     logging.debug("Cache Miss " + element)
@@ -459,6 +460,22 @@ class ClipV2Resource(Resource):
                     newObject.add_light(obj)
 
             bridgeConfig["groups"][new_object_id] = newObject
+        elif resource == 'geofence_client':
+            new_object_id = nextFreeId(bridgeConfig, "geofence_clients")
+            objCreation = {
+                "id_v1": new_object_id,
+                "name": postDict["name"],
+                "type": "geofence_client",
+                "is_at_home": postDict.get("is_at_home", False)
+            }
+            newObject = HueObjects.GeofenceClient(objCreation)
+            bridgeConfig["geofence_clients"][new_object_id] = newObject
+        else:
+            return {
+                "errors": [{
+                    "description": f"Resource type not supported: {resource}"
+                }]
+            }, 500
 
         # return message
         returnMessage = {"data": [{
@@ -522,7 +539,7 @@ class ClipV2ResourceId(Resource):
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     for light in object.lights:
-                        light().update_attr({"state": {"mode": "homeautomation"}}) 
+                        light().update_attr({"state": {"mode": "homeautomation"}})
                     Popen(["killall", "openssl"])
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
@@ -555,6 +572,20 @@ class ClipV2ResourceId(Resource):
                         children["rtype"], children["rid"])
                     object.add_light(obj)
             object.update_attr(v1Api)
+        elif resource == 'geofence_client':
+            attrs = {}
+            if "name" in putDict:
+                attrs['name'] = putDict['name']
+            if 'is_at_home' in putDict:
+                attrs['is_at_home'] = putDict['is_at_home']
+            object.update_attr(attrs)
+        else:
+            return {
+                "errors": [{
+                    "description": f"Resource type not supported: {resource}"
+                }]
+            }, 500
+
         response = {"data": [{
             "rid": resourceid,
             "rtype": resource
