@@ -357,7 +357,7 @@ class Light():
         result["config"] = self.config
         result["state"] = {"on": self.state["on"]}
         if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
-            result["state"]["bri"] = self.state["bri"]
+            result["state"]["bri"] = int(self.state["bri"])
         if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001"]:
             result["state"]["ct"] = self.state["ct"]
             result["state"]["colormode"] = self.state["colormode"]
