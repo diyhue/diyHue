@@ -23,7 +23,7 @@ def v1StateToV2(v1State):
     if "bri" in v1State:
         v2State["dimming"] = {"brightness": round(v1State["bri"] / 2.54, 2)}
     if "ct" in v1State:
-        v2State["color_temperature"] = {"mirek": v1State["ct"]}
+        v2State["color_temperature"] = {"mirek": v1State["ct"], "color_temperature_delta": {}}
     if "xy" in v1State:
         v2State["color"] = {
             "xy": {"x": v1State["xy"][0], "y": v1State["xy"][1]}}
@@ -527,6 +527,7 @@ class Light():
             }
             result["color_temperature"]["mirek_valid"] = True if self.state[
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
+            result["color_temperature_delta"] = {}
         if "bri" in self.state:
             bri_value = self.state["bri"]
             if bri_value is None or bri_value == "null":
@@ -535,15 +536,25 @@ class Light():
                 "brightness": round(float(bri_value) / 2.54, 2),
                 "min_dim_level": 0.1  # Adjust this value as needed
             }
-#        if "bri" in self.state:
-#            result["dimming"] = {
-#                "brightness": round(self.state["bri"] / 2.54, 2),
-#                "min_dim_level": 0.10000000149011612
-#            }
+            result["dimming_delta"] = {}
         result["dynamics"] = self.dynamics
+        result["effects"] = {
+        "effect_values": [
+            "no_effect",
+            "candle",
+            "fire"
+        ],
+        "status": "no_effect",
+        "status_values": [
+            "no_effect",
+            "candle",
+            "fire"
+        ]
+    }
+        result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
-        result["metadata"] = {"name": self.name,
+        result["metadata"] = {"name": self.name, "function": "mixed",
                               "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
         if "mode" in self.state and self.state["mode"] == "streaming":
@@ -555,6 +566,10 @@ class Light():
             "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
             "rtype": "device"
         }
+        result["product_data"] = {"function": "mixed"}
+        result["signaling"] = {"signal_values": [
+            "no_signal",
+            "on_off"]}
         result["type"] = "light"
         return result
 
@@ -562,10 +577,15 @@ class Light():
         entertainmenUuid = str(uuid.uuid5(
             uuid.NAMESPACE_URL, self.id_v2 + 'entertainment'))
         result = {
+            "equalizer": True,
             "id": entertainmenUuid,
             "id_v1": "/lights/" + self.id_v1,
             "proxy": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["proxy"],
-            "renderer": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["renderer"]
+            "renderer": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["renderer"],
+            "renderer_reference": {
+                "rid": self.id_v2,
+                "rtype": "light"
+            }
         }
         result["owner"] = {
             "rid": self.getDevice()["id"], "rtype": "device"}
@@ -853,7 +873,7 @@ class EntertainmentConfiguration():
                     {"rtype": "light", "rid": light().id_v2})
                 entertainmentUuid = str(uuid.uuid5(
                     uuid.NAMESPACE_URL, light().id_v2 + 'entertainment'))
-                result["locations"]["service_locations"].append({"positions": self.locations[light()],
+                result["locations"]["service_locations"].append({"equalization_factor": 1, "positions": self.locations[light()],
                                                                  "service": {"rid": entertainmentUuid, "rtype": "entertainment"}, "position": self.locations[light()][0]})
 
                 loops = 1
