@@ -881,8 +881,9 @@ class EntertainmentConfiguration():
                 if light().modelid in ["LCX001", "LCX002", "LCX003"]:
                     loops = len(gradienStripPositions)
                 elif light().modelid in ["915005987201", "LCX004", "LCX006"]:
-                    loops = 3
+                    loops = len(self.locations[light()])
                 for x in range(loops):
+                    print("x:", x)
                     channel = {
                         "channel_id": channel_id,
                         "members": [
