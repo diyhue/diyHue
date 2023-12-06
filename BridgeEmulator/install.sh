@@ -48,7 +48,7 @@ generate_certificate () {
       echo -e "\033[31m ERROR!! Certificate generation service is down. Please try again later.\033[0m"
       exit 1
     fi
-    curl "https://certgen.lightningdark.com/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
+    curl "http://mariusmotea.go.ro:9002/gencert?mac=$mac" > /opt/hue-emulator/cert.pem
   else
     touch /opt/hue-emulator/cert.pem
     cat private.key > /opt/hue-emulator/cert.pem
