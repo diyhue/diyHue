@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 from flask import Flask
 from flask.json import jsonify
 from flask_cors import CORS
