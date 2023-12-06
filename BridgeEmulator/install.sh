@@ -97,7 +97,7 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap2-bin faketime
+  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap3-bin faketime
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
