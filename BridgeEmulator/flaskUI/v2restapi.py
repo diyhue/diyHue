@@ -578,7 +578,8 @@ class ClipV2ResourceId(Resource):
                 attrs['name'] = putDict['name']
             if 'is_at_home' in putDict:
                 attrs['is_at_home'] = putDict['is_at_home']
-            object.update_attr(attrs)
+            if hasattr(object, 'update_attr') and callable(getattr(object, 'update_attr')):
+                object.update_attr(attrs)
         else:
             return {
                 "errors": [{
