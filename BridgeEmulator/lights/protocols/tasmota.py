@@ -113,7 +113,7 @@ def get_light_state(light):
             rgb = hex_to_rgb(hex)
             state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
 
-        state["bri"] = (int(light_data["Dimmer"]) / 100.0) * 254.0
+        state["bri"] = int(light_data["Dimmer"] / 100.0 * 254.0)
         state["colormode"] = "xy"
 
     return state
