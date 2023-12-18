@@ -104,8 +104,19 @@ def manualAddLight(ip, protocol, config={}):
 def scanForLights():  # scan for ESP8266 lights and strips
     bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
     detectedLights = []
+
+    if bridgeConfig["config"]["port"]["enabled"]:
+        device_ips = []
+        for ports in bridgeConfig["config"]["port"]["ports"]:
+            # return all host that listen on ports in list config
+            device_ips += find_hosts(ports)
+    else:
+        # return all host that listen on port 80
+        device_ips = find_hosts(80)
+
+
     # return all host that listen on port 80
-    device_ips = find_hosts(80)
+    #device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         # brioadcast MQTT message, lights will be added by the service

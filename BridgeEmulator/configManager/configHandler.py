@@ -70,6 +70,8 @@ class Config:
                     config["tpkasa"] = {"enabled": True}
                 if "elgato" not in config:
                     config["elgato"] = {"enabled": True}
+                if "port" not in config:
+                    config["port"] = {"enabled": False,"ports": [80]}
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1958077010"
@@ -85,6 +87,7 @@ class Config:
                     "mqtt":{"enabled":False},
                     "deconz":{"enabled":False},
                     "alarm":{"enabled": False,"lasttriggered": 0},
+                    "port":{"enabled": False,"ports": [80]},
                     "apiUsers":{},
                     "apiversion":"1.56.0",
                     "name":"DiyHue Bridge",
