@@ -55,7 +55,7 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
                 if not bridgeConfig[url_pices[1]][url_pices[2]].dxState[url_pices[4]] == current_time:
                     return [False, 0]
                 else:
-                    ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
+                    ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][8:10])
                     ddx_sensor = url_pices
         except Exception as e:
             logging.debug("rule " + rule.name + " failed, reason:" + str(e))
