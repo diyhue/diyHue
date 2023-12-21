@@ -107,7 +107,7 @@ def rulesProcessor(device, current_time):
                     for action in rule.actions:
                         actionsToExecute.append(action)
                 else: #if ddx rule
-                    logging.info("ddx rule " + rule.name + " will be re validated after " + str(rule_result[1]) + " seconds")
+                    logging.info("ddx rule " + rule.id_v1 + ", name: " + rule.name + " will be re validated after " + str(rule_result[1]) + " seconds")
                     Thread(target=ddxRecheck, args=[rule, device, current_time, rule_result[1], rule_result[2]]).start()
     for action in actionsToExecute:
         urlPrefix = "http://localhost/api/local"
