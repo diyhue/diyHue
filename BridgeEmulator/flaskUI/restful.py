@@ -71,7 +71,7 @@ class NewUser(Resource):
 
     def post(self):
         postDict = request.get_json(force=True)
-        logging.debug(postDict)
+        logging.info(postDict)
         if "devicetype" in postDict:
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
             if last_button_press + 30 >= datetime.now().timestamp():
@@ -150,7 +150,7 @@ class ResourceElements(Resource):
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
-        logging.debug(postDict)
+        logging.info(postDict)
         if resource == "lights":  # add light manually from the web interface
             Thread(target=manualAddLight, args=[
                    postDict["ip"], postDict["protocol"], postDict["config"]]).start()
@@ -310,7 +310,7 @@ class Element(Resource):
             return authorisation
 
         putDict = request.get_json(force=True)
-        logging.debug(putDict)
+        logging.info(putDict)
         currentTime = datetime.now()
         responseList = []
         response_location = "/" + resource + "/" + resourceid + "/"
@@ -414,7 +414,7 @@ class ElementParam(Resource):
             return authorisation
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
-        logging.debug(putDict)
+        logging.info(putDict)
         if resource == "lights" and param == "state":  # state is applied to a light
             bridgeConfig[resource][resourceid].setV1State(putDict)
         elif param == "action":  # state is applied to a light
@@ -470,7 +470,7 @@ class ElementParamId(Resource):
             return authorisation
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
-        logging.debug(putDict)
+        logging.info(putDict)
         responseList = []
         responseLocation = "/" + resource + "/" + \
             resourceid + "/" + param + "/" + paramid + "/"
