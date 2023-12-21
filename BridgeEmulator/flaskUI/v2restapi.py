@@ -209,7 +209,7 @@ class AuthV1(Resource):
             return {}, 200, {'hue-application-id': request.headers["hue-application-key"]}
 
         else:
-            logging.debug("Auth 403")
+            logging.info("Auth 403")
             return '', 403
 
 
@@ -376,7 +376,7 @@ class ClipV2Resource(Resource):
         if "user" not in authorisation:
             return "", 403
         postDict = request.get_json(force=True)
-        logging.debug(postDict)
+        logging.info(postDict)
         newObject = None
         if resource == "scene":
             new_object_id = nextFreeId(bridgeConfig, "scenes")
@@ -522,7 +522,7 @@ class ClipV2ResourceId(Resource):
         if "user" not in authorisation:
             return "", 403
         putDict = request.get_json(force=True)
-        logging.debug(putDict)
+        logging.info(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
             object.setV2State(putDict)
