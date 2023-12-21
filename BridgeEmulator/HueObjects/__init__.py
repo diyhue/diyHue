@@ -1406,7 +1406,7 @@ class Scene():
 
         lightstates = list(self.lightstates.items())
         for light, state in lightstates:
-            if light.id_v1 in result["lights"]:
+            if light.id_v1 in result["lights"] and "gradient" not in state:
                 result["lightstates"][light.id_v1] = state
         result["owner"] = self.owner.username
         result["recycle"] = self.recycle
@@ -1436,10 +1436,6 @@ class Scene():
                 }
                 v2State["dimming_delta"] = {}
 
-#            if "bri" in state:
-#                v2State["dimming"] = {
-#                    "brightness": round(state["bri"] / 2.54, 2)}
-#                v2State["dimming_delta"] = {}
             if "xy" in state:
                 v2State["color"] = {
                     "xy": {"x": state["xy"][0], "y": state["xy"][1]}}
