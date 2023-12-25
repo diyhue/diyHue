@@ -32,15 +32,27 @@ def triggerScript(behavior_instance):
 
     # Wake Up
     if behavior_instance.script_id == "ff8957e3-2eb9-4699-a0c8-ad2cb3ede704":
-        logging.debug("Start Wake Up routine")
-        for element in behavior_instance.configuration["where"]:
-            if "group" in element:
-                group = findGroup(element["group"]["rid"])
-                group.setV1Action(state={"ct": 250, "bri": 1})
-                sleep(1)
-                group.setV1Action(state={"on": True})
-                group.setV1Action(state={"bri": 254, "transitiontime": behavior_instance.configuration["fade_in_duration"]["seconds"] * 10})
-                logging.debug("Finish Wake Up")
+        if behavior_instance.active:
+            logging.debug("End Wake Up routine")
+            for element in behavior_instance.configuration["where"]:
+                if "group" in element:
+                    group = findGroup(element["group"]["rid"])
+                    sleep(1)
+                    group.setV1Action(state={"on": False})
+                    behavior_instance.active = False
+                    logging.debug("End Wake Up")
+
+        else:
+            logging.debug("Start Wake Up routine")
+            for element in behavior_instance.configuration["where"]:
+                if "group" in element:
+                    group = findGroup(element["group"]["rid"])
+                    group.setV1Action(state={"ct": 250, "bri": 1})
+                    sleep(1)
+                    group.setV1Action(state={"on": True})
+                    group.setV1Action(state={"bri": 254, "transitiontime": behavior_instance.configuration["fade_in_duration"]["seconds"] * 10})
+                    behavior_instance.active = True
+                    logging.debug("Finish Wake Up")
 
     # Go to sleep
     elif behavior_instance.script_id == "7e571ac6-f363-42e1-809a-4cbf6523ed72":

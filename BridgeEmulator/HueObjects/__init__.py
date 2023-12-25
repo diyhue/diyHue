@@ -162,6 +162,7 @@ class BehaviorInstance():
         self.name = data["metadata"]["name"] if "name" in data["metadata"] else None
         self.configuration = data["configuration"]
         self.enabled = data["enabled"] if "enabled" in data else False
+        self.active = data["active"] if "active" in data else False
         self.script_id = data["script_id"] if "script_id" in data else ""
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -184,6 +185,7 @@ class BehaviorInstance():
         result = {"configuration": self.configuration,
                   "dependees": [],
                   "enabled": self.enabled,
+                  "active": self.active,
                   "id": self.id_v2,
                   "last_error": "",
                   "metadata": {
@@ -227,7 +229,7 @@ class BehaviorInstance():
         eventstream.append(streamMessage)
 
     def save(self):
-        result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled,
+        result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled, "active": self.active,
                   "script_id": self.script_id}
         if self.name != None:
             result["metadata"] = {"name": self.name}
