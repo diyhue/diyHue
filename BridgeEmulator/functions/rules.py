@@ -1,9 +1,9 @@
 import logManager
 import configManager
-import json
+
 from datetime import datetime
 from threading import Thread
-from time import sleep, strftime
+from time import sleep
 import requests
 
 logging = logManager.logger.get_logger(__name__)
@@ -84,13 +84,17 @@ def ddxRecheck(rule, device, current_time, ddx_delay, ddx_sensor):
             elif action["method"] == "PUT":
                 requests.put("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
 
-def threadRequest(method, address, data):
-    if method == "POST":
-        requests.post(address, json=data, timeout=5)
-    elif method == "PUT":
-        requests.put(address, json=data, timeout=5)
-
-
+def threadActions(actionsToExecute):
+    sleep(0.2)
+    for action in actionsToExecute:
+        urlPrefix = "http://localhost/api/local"
+        if action["address"].startswith("http"):
+            urlPrefix = ""
+        if action["method"] == "POST":
+            requests.post( urlPrefix + action["address"], json=action["body"], timeout=5)
+        elif action["method"] == "PUT":
+            requests.put( urlPrefix + action["address"], json=action["body"], timeout=5)
+        
 
 def rulesProcessor(device, current_time):
     logging.debug("Processing rules for " + device.name)
@@ -107,10 +111,7 @@ def rulesProcessor(device, current_time):
                     for action in rule.actions:
                         actionsToExecute.append(action)
                 else: #if ddx rule
-                    logging.info("ddx rule " + rule.name + " will be re validated after " + str(rule_result[1]) + " seconds")
+                    logging.info("ddx rule " + rule.id_v1 + ", name: " + rule.name + " will be re validated after " + str(rule_result[1]) + " seconds")
                     Thread(target=ddxRecheck, args=[rule, device, current_time, rule_result[1], rule_result[2]]).start()
-    for action in actionsToExecute:
-        urlPrefix = "http://localhost/api/local"
-        if action["address"].startswith("http"):
-            urlPrefix = ""
-        Thread(target=threadRequest, args=[action["method"], urlPrefix + action["address"], action["body"]]).start()
+
+    Thread(target=threadActions, args=[actionsToExecute]).start()
