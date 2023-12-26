@@ -256,6 +256,9 @@ class ClipV2(Resource):
         # group
         for key, group in bridgeConfig["groups"].items():
             data.append(group.getV2GroupedLight())
+        # behavior_instance
+        for key, instance in bridgeConfig["behavior_instance"].items():
+            data.append(instance.getV2Api())
         # entertainment_configuration
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Entertainment":
