@@ -366,7 +366,7 @@ class ClipV2Resource(Resource):
                 buttons = sensor.getButtons()
                 if len(buttons) != 0:
                     for button in buttons:
-                        data.append(button)
+                        response["data"].append(button)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
