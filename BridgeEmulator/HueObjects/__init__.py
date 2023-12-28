@@ -1741,13 +1741,14 @@ class Sensor():
             eventstream.append(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        if self.modelid in ["SML001", "RWL022"]:
+            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getDevice()["id"], "type": "device"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
-        streamMessage["id_v1"] = "/sensors/" + self.id_v1
-        eventstream.append(streamMessage)
+            streamMessage["id_v1"] = "/sensors/" + self.id_v1
+            eventstream.append(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
 
     def setV1State(self, state):
