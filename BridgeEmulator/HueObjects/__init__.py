@@ -1834,7 +1834,7 @@ class Sensor():
                     "rtype": "temperature"
                 }]
             result["type"] = "device"
-        elif self.modelid == "RWL022":
+        elif self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020":
             result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
             result["product_data"] = {"model_id": self.modelid,
                 "manufacturer_name": "Signify Netherlands B.V.",
@@ -1909,7 +1909,7 @@ class Sensor():
         return result
     def getButtons(self):
         result = []
-        if self.modelid == "RWL022":
+        if self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020":
             for button in range(4):
                 result.append({
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
