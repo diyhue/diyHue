@@ -159,39 +159,43 @@ def scanForLights():  # scan for ESP8266 lights and strips
         for key, lightObj in bridgeConfig["lights"].items():
             if lightObj.protocol == light["protocol"]:
                 if light["protocol"] == "native_multi":
-                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["light_nr"] == light["protocol_cfg"]["light_nr"]:
+                    # check based on mac address and modelid
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["light_nr"] == light["protocol_cfg"]["light_nr"] and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                         break
                 elif light["protocol"] in ["yeelight", "tasmota", "tradfri", "hyperion", "tpkasa"]:
-                    if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"]:
+                    # check based on id and modelid
+                    if lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"] and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                 elif light["protocol"] in ["shelly", "native", "native_single", "esphome"]:
-                    # check based on mac address
-                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"]:
+                    # check based on mac address and modelid
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                 elif light["protocol"] in ["hue", "deconz"]:
-                    # check based on light uniqueid
-                    if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]:
+                    # check based on light uniqueid and modelid
+                    if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]  and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                 elif light["protocol"] in ["wled"]:
-                    # Check mac and segment
-                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["segmentId"] == light["protocol_cfg"]["segmentId"]:
+                    # Check based on mac and segment and modelid
+                    if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["segmentId"] == light["protocol_cfg"]["segmentId"] and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
                         lightIsNew = False
                 elif light["protocol"] == "homeassistant_ws":
-                    if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"]:
+                    # Check based on entity_id and modelid
+                    if lightObj.protocol_cfg["entity_id"] == light["protocol_cfg"]["entity_id"] and lightObj.modelid == light["modelid"]:
                         lightIsNew = False
                 elif light["protocol"] == "elgato":
-                    if lightObj.protocol_cfg['mac'] == light["protocol_cfg"]['mac']:
+                    # check based on mac address and modelid
+                    if lightObj.protocol_cfg['mac'] == light["protocol_cfg"]['mac'] and lightObj.modelid == light["modelid"]:
                         lightIsNew = False
         if lightIsNew:
             logging.info("Add new light " + light["name"])
