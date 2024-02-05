@@ -34,7 +34,6 @@ login_manager.init_app(app)
 # Tell users what view to go to when they need to login.
 login_manager.login_view = "core.login"
 
-
 @login_manager.user_loader
 def user_loader(email):
     if email not in bridgeConfig["config"]["users"]:
@@ -43,7 +42,6 @@ def user_loader(email):
     user = User()
     user.id = email
     return user
-
 
 @login_manager.request_loader
 def request_loader(request):

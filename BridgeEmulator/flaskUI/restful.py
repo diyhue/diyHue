@@ -74,7 +74,7 @@ class NewUser(Resource):
         logging.info(postDict)
         if "devicetype" in postDict:
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
-            if last_button_press + 30 >= datetime.now().timestamp():
+            if last_button_press + 30 >= datetime.now().timestamp(): # 30 sec offset
                 username = str(uuid.uuid1()).replace('-', '')
                 if postDict["devicetype"].startswith("Hue Essentials"):
                     username = "hueess" + username[-26:]
@@ -85,8 +85,7 @@ class NewUser(Resource):
                     # client_key = "321c0c2ebfa7361e55491095b2f5f9db"
 
                     response[0]["success"]["clientkey"] = client_key
-                bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(
-                    username, postDict["devicetype"], client_key)
+                bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(username, postDict["devicetype"], client_key)
                 logging.debug(response)
                 configManager.bridgeConfig.save_config()
                 return response
@@ -113,8 +112,7 @@ class EntireConfig(Resource):
             result[resource] = {}
             for resource_id in bridgeConfig[resource]:
                 if resource_id != "0":
-                    result[resource][resource_id] = bridgeConfig[resource][resource_id].getV1Api(
-                    ).copy()
+                    result[resource][resource_id] = bridgeConfig[resource][resource_id].getV1Api().copy()
         return result
 
 
@@ -128,8 +126,7 @@ class ResourceElements(Resource):
                 response = {}
                 if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
                     for object in bridgeConfig[resource]:
-                        response[object] = bridgeConfig[resource][object].getV1Api(
-                        ).copy()
+                        response[object] = bridgeConfig[resource][object].getV1Api().copy()
                 elif resource == "config":
                     response = buildConfig()
                 return response
@@ -152,8 +149,7 @@ class ResourceElements(Resource):
         postDict = request.get_json(force=True)
         logging.info(postDict)
         if resource == "lights":  # add light manually from the web interface
-            Thread(target=manualAddLight, args=[
-                   postDict["ip"], postDict["protocol"], postDict["config"]]).start()
+            Thread(target=manualAddLight, args=[postDict["ip"], postDict["protocol"], postDict["config"]]).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         v2Resource = None
         # find the first unused id for new object
@@ -224,14 +220,12 @@ class ResourceElements(Resource):
         elif resource == "rules":
             bridgeConfig[resource][new_object_id] = HueObjects.Rule(postDict)
         elif resource == "resourcelinks":
-            bridgeConfig[resource][new_object_id] = HueObjects.ResourceLink(
-                postDict)
+            bridgeConfig[resource][new_object_id] = HueObjects.ResourceLink(postDict)
         elif resource == "sensors":
             v2Resource = "device"
             bridgeConfig[resource][new_object_id] = HueObjects.Sensor(postDict)
         elif resource == "schedules":
-            bridgeConfig[resource][new_object_id] = HueObjects.Schedule(
-                postDict)
+            bridgeConfig[resource][new_object_id] = HueObjects.Schedule(postDict)
         newObject = bridgeConfig[resource][new_object_id]
         if v2Resource != "none":
             streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -279,8 +273,7 @@ class ResourceElements(Resource):
         responseList = []
         response_location = "/" + resource + "/"
         for key, value in putDict.items():
-            responseList.append(
-                {"success": {response_location + key: value}})
+            responseList.append({"success": {response_location + key: value}})
         logging.debug(responseList)
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return responseList
@@ -453,9 +446,8 @@ class ElementParam(Resource):
             return [{"error": {"type": 4, "address": "/" + resource + "/" + resourceid, "description": "method, DELETE, not available for resource,  " + resource + "/" + resourceid}}]
 
         del bridgeConfig[resource][resourceid][param]
-        return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
         configManager.bridgeConfig.save_config()
-
+        return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
 
 class ElementParamId(Resource):
     def get(self, username, resource, resourceid, param, paramid):
