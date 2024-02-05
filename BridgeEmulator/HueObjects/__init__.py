@@ -15,7 +15,6 @@ logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
 
-
 def v1StateToV2(v1State):
     v2State = {}
     if "on" in v1State:
@@ -48,10 +47,8 @@ def v2StateToV1(v2State):
         v1State["transitiontime"] = v2State["transitiontime"]
     return v1State
 
-
 def genV2Uuid():
     return str(uuid.uuid4())
-
 
 def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
@@ -236,7 +233,6 @@ class BehaviorInstance():
 
         return result
 
-
 class ApiUser():
     def __init__(self, username, name, client_key, create_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), last_use_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")):
         self.username = username
@@ -253,7 +249,6 @@ class ApiUser():
 
 
 class Light():
-
     def __init__(self, data):
         self.name = data["name"]
         self.modelid = data["modelid"]
@@ -271,6 +266,7 @@ class Light():
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
+
         # entertainment
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": str(uuid.uuid5(
@@ -281,6 +277,7 @@ class Light():
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(self.getV2Entertainment())
         eventstream.append(streamMessage)
+
         # zigbee_connectivity
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getZigBee()],
@@ -288,6 +285,7 @@ class Light():
                          "type": "add"
                          }
         eventstream.append(streamMessage)
+
         # light
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
@@ -295,6 +293,7 @@ class Light():
                          "type": "add"
                          }
         eventstream.append(streamMessage)
+
         # device
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getDevice()],
@@ -313,6 +312,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
+
         ## device ##
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getDevice()["id"], "type": "device"}],
@@ -321,6 +321,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
+
         # Zigbee Connectivity
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
@@ -329,6 +330,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
+
         # Entertainment
         streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
@@ -337,6 +339,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
+
         logging.info(self.name + " light was destroyed.")
 
     def update_attr(self, newdata):
