@@ -7,50 +7,86 @@ logging = logManager.logger.get_logger(__name__)
 #bridgeConfig = configManager.bridgeConfig.yaml_config
 #newLights = configManager.runtimeConfig.newLights
 
-def sendRequest(url, timeout=3):
-    head = {"Content-type": "application/json"}
-    response = requests.get(url, timeout=timeout, headers=head)
-    return response.text
-
-
 def discover(detectedLights, device_ips):
-    logging.debug("shelly: <discover> invoked!")
+    logging.debug('shelly: <discover> invoked!')
     for ip in device_ips:
         try:
-            logging.debug("shelly: probing ip " + ip)
-            response = requests.get("http://" + ip + "/shelly", timeout=3)
+            logging.debug('shelly: probing ip ' + ip)
+            response = requests.get('http://' + ip + '/shelly', timeout = 5)
             if response.status_code == 200:
+                logging.debug('Shelly: ' + ip + ' is a shelly device ')
                 device_data = json.loads(response.text)
-                if device_data["type"] == "SHSW-1":
 
-                    logging.debug("shelly: " + ip + " is a shelly device ")
-                    shelly_response = requests.get("http://" + ip + "/status", timeout=5)
-                    shelly_data = json.loads(shelly_response.text)
-                    logging.debug("shelly: ip: " + shelly_data["wifi_sta"]["ip"])
-                    logging.debug("shelly: Mac:      " + shelly_data["mac"])
-                    detectedLights.append({"protocol": "shelly", "name": ip, "modelid": "LOM001", "protocol_cfg": {"ip": ip, "mac": shelly_data["mac"]}})
+                device_model = ''
+                if (not 'gen' in device_data) and ('type' in device_data):
+                    device_model = device_data['type']
+                elif ('gen' in device_data) and ('model' in device_data):
+                    device_model = device_data['model']
+                else:
+                    logging.info('Shelly: <discover> not implemented api version!')
 
-        except Exception as e:
-            logging.debug("shelly: ip " + ip + " is unknow device, " + str(e))
+                if (device_model == 'SHSW-1') or (device_model == 'SHSW-PM'):
+                    shelly_data = request_api_v1(ip, 'status')
+                    logging.debug('Shelly: IP: ' + shelly_data['wifi_sta']['ip'])
+                    logging.debug('Shelly: MAC:      ' + shelly_data['mac'])
 
+                    config = {'ip': ip, 'mac': shelly_data['mac'], 'gen': 1}
+
+                    shelly_data = request_api_v1(ip, 'settings')
+                    name = shelly_data['name'] if 'name' in shelly_data else ip
+                    name = name.strip() if name.strip() != '' else ip
+                    detectedLights.append({'protocol': 'shelly', 'name': name, 'modelid': 'LOM001', 'protocol_cfg': config})
+                elif (device_model == 'SNSW-001P8EU'):
+                    shelly_data = request_api_v2(ip, 'WiFi.GetStatus')
+                    logging.debug('Shelly: IP: ' + shelly_data['sta_ip'])
+                    shelly_data = request_api_v2(ip, 'Shelly.GetDeviceInfo')
+                    logging.debug('Shelly: MAC:      ' + shelly_data['mac'])
+
+                    config = {'ip': ip, 'mac': shelly_data['mac'], 'gen': device_data['gen'] }
+
+                    name = shelly_data['name'] if 'name' in shelly_data else ip
+                    name = name.strip() if name.strip() != '' else ip
+                    detectedLights.append({'protocol': 'shelly', 'name': name, 'modelid': 'LOM001', 'protocol_cfg': config})
+                else:
+                    logging.info('Shelly: ' + ip + ' is not supported ')
+        except Exception as exception:
+            logging.debug('Shelly: IP ' + ip + ' is unknown device, ' + str(exception))
 
 def set_light(light, data):
-    logging.debug("shelly: <set_light> invoked! IP=" + light.protocol_cfg["ip"])
+    config = light.protocol_cfg
+    logging.debug('Shelly: <set_light> invoked! IP=' + config['ip'])
 
     for key, value in data.items():
-        if key == "on":
-            if value:
-                sendRequest("http://" + light.protocol_cfg["ip"] + "/relay/0/?turn=on")
+        if key == 'on':
+            if (not 'gen' in config) or (config['gen'] == 1):
+                request_api_v1(config['ip'], 'relay/0?turn=' + ('on' if value else 'off'))
+            elif config['gen'] == 2:
+                request_api_v2(config['ip'], 'Switch.Set?id=0&on=' + str(value).lower())
             else:
-                sendRequest("http://" + light.protocol_cfg["ip"] + "/relay/0/?turn=off")
-
+                logging.info('Shelly: <set_light> not implemented api version!')
 
 def get_light_state(light):
-    logging.debug("shelly: <get_light_state> invoked!")
-    data = sendRequest("http://" + light.protocol_cfg["ip"] + "/relay/0")
-    light_data = json.loads(data)
-    state = {}
+    config = light.protocol_cfg
+    logging.debug('Shelly: <get_light_state> invoked! IP=' + config['ip'])
 
-    if 'ison' in light_data:
-        state['on'] = True if light_data["ison"] == "true" else False
+    state = {}
+    if (not 'gen' in config) or (config['gen'] == 1):
+        data = request_api_v1(config['ip'], 'relay/0')
+        state['on'] = data['ison'] if 'ison' in data else False
+    elif config['gen'] == 2:
+        data = request_api_v2(config['ip'], 'Switch.GetStatus?id=0')
+        state['on'] = data['output'] if 'output' in data else False
+    else:
+        logging.info('Shelly: <get_light_state> not implemented api version!')
+
     return state
+
+def request_api_v1(ip, request):
+    head = {'Content-type': 'application/json'}
+    response = requests.get('http://' + ip + '/' + request, timeout = 5, headers = head)
+    return json.loads(response.text) if response.status_code == 200 else {}
+
+def request_api_v2(ip, request):
+    head = {'Content-type': 'application/json'}
+    response = requests.get('http://' + ip + '/rpc/' + request, timeout = 5, headers = head)
+    return json.loads(response.text) if response.status_code == 200 else {}
