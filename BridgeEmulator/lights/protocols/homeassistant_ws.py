@@ -59,7 +59,7 @@ def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, ha_sta
 
     diyhue_state["reachable"] = reachable
     diyhue_state["on"] = is_on
-    if "attributes" in ha_state:
+    if "attributes" in ha_state and is_on:  # Home assistant only reports attributes if light is on
         for key, value in ha_state['attributes'].items():
             if key == "brightness":
                 diyhue_state['bri'] = value
