@@ -32,7 +32,7 @@ def triggerScript(behavior_instance):
 
     # Wake Up
     if behavior_instance.script_id == "ff8957e3-2eb9-4699-a0c8-ad2cb3ede704":
-        if behavior_instance.active:
+        if behavior_instance.active and "turn_lights_off_after" in behavior_instance.configuration:
             logging.debug("End Wake Up routine")
             for element in behavior_instance.configuration["where"]:
                 if "group" in element:
@@ -51,7 +51,7 @@ def triggerScript(behavior_instance):
                     sleep(1)
                     group.setV1Action(state={"on": True})
                     group.setV1Action(state={"bri": 254, "transitiontime": behavior_instance.configuration["fade_in_duration"]["seconds"] * 10})
-                    behavior_instance.active = True
+                    behavior_instance.active = True if "turn_lights_off_after" in behavior_instance.configuration else False
                     logging.debug("Finish Wake Up")
 
     # Go to sleep
