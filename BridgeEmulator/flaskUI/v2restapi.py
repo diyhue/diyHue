@@ -142,23 +142,16 @@ def v2BridgeHome():
 
 
 def v2Bridge():
+    bridge_id = bridgeConfig["config"]["bridgeid"]
     return {
-        "bridge_id": bridgeConfig["config"]["bridgeid"].lower(),
-        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
+        "bridge_id": bridge_id.lower(),
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')),
         "id_v1": "",
         "identify": {},
-        "owner": {
-            "rid": str(uuid.uuid5(
-                uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-            "rtype": "device"
-        },
-        "time_zone": {
-            "time_zone": bridgeConfig["config"]["timezone"]
-        },
-
+        "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
+        "time_zone": {"time_zone": bridgeConfig["config"]["timezone"]},
         "type": "bridge"
     }
-
 
 def geoLocation():
     return {
@@ -169,37 +162,25 @@ def geoLocation():
 
 
 def v2BridgeDevice():
-    result = {"id": str(uuid.uuid5(
-        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')), "type": "device"}
+    config = bridgeConfig["config"]
+    bridge_id = config["bridgeid"]
+    result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
-    result["metadata"] = {
-        "archetype": "bridge_v2",
-        "name": bridgeConfig["config"]["name"]
-    }
+    result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
     result["product_data"] = {
         "certified": True,
         "manufacturer_name": "Signify Netherlands B.V.",
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": bridgeConfig["config"]["apiversion"][:5] + bridgeConfig["config"]["swversion"]
+        "software_version": config["apiversion"][:5] + config["swversion"]
     }
     result["services"] = [
-        {
-            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'bridge')),
-            "rtype": "bridge"
-        },
-        {
-            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
-            "rtype": "zigbee_connectivity"
-        },
-        {
-            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'entertainment')),
-            "rtype": "entertainment"
-        }
+        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')), "rtype": "bridge"},
+        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_connectivity')), "rtype": "zigbee_connectivity"},
+        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'entertainment')), "rtype": "entertainment"}
     ]
     return result
-
 
 class AuthV1(Resource):
     def get(self):
