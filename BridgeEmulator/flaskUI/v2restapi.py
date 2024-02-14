@@ -14,13 +14,14 @@ from functions.core import nextFreeId
 from datetime import datetime
 from functions.scripts import behaviorScripts
 from pprint import pprint
+from lights.discover import scanForLights
 
 logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
-}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "device": {}, "device_power": {},
+}, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
 "geofence_client": {}}
 
 
@@ -103,6 +104,17 @@ def v2BridgeZigBee():
             "type": "zigbee_connectivity"
             }
 
+def v2BridgeZigBeeDiscovery():
+    return{"id": str(uuid.uuid5(
+        uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
+           "owner": {
+              "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+              "rtype": "device"
+       },
+       "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
+       "type": "zigbee_device_discovery",
+       }
+
 
 def v2GeofenceClient():
     user = authorizeV2(request.headers)
@@ -178,6 +190,7 @@ def v2BridgeDevice():
     result["services"] = [
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')), "rtype": "bridge"},
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_connectivity')), "rtype": "zigbee_connectivity"},
+        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_device_discovery')), "rtype": "zigbee_device_discovery"},
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'entertainment')), "rtype": "entertainment"}
     ]
     return result
@@ -218,6 +231,7 @@ class ClipV2(Resource):
         for key, sensor in bridgeConfig["sensors"].items():
             if sensor.getZigBee() != None:
                 data.append(sensor.getZigBee())
+        data.append(v2BridgeZigBeeDiscovery())
         # entertainment
         data.append(v2BridgeEntertainment())
         for key, light in bridgeConfig["lights"].items():
@@ -316,6 +330,8 @@ class ClipV2Resource(Resource):
                 if device != None:
                     response["data"].append(device)
             response["data"].append(v2BridgeDevice())  # the bridge
+        elif resource == "zigbee_device_discovery":
+            response["data"].append(v2BridgeZigBeeDiscovery())
         elif resource == "bridge":
             response["data"].append(v2Bridge())
         elif resource == "bridge_home":
@@ -491,6 +507,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getDevice()]}
         elif resource == "zigbee_connectivity":
             return {"errors": [], "data": [object.getZigBee()]}
+        elif resource == "zigbee_device_discovery":
+            return {"errors": [], "data": [object.getZigBeeDiscovery()]}
         elif resource == "entertainment":
             return {"errors": [], "data": [object.getV2Entertainment()]}
         elif resource == "entertainment_configuration":
@@ -564,6 +582,10 @@ class ClipV2ResourceId(Resource):
                 attrs['is_at_home'] = putDict['is_at_home']
             if hasattr(object, 'update_attr') and callable(getattr(object, 'update_attr')):
                 object.update_attr(attrs)
+        elif resource == "zigbee_device_discovery":
+            if putDict["action"]["action_type"] == "search":
+                bridgeConfig["config"]["zigbee_device_discovery_info"]["status"] = "active"
+                Thread(target=scanForLights).start()
         else:
             return {
                 "errors": [{

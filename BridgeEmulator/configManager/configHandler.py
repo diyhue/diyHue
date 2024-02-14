@@ -72,6 +72,8 @@ class Config:
                     config["elgato"] = {"enabled": True}
                 if "port" not in config:
                     config["port"] = {"enabled": False,"ports": [80]}
+                if "zigbee_device_discovery_info" not in config:
+                    config["zigbee_device_discovery_info"] = {"status": "ready"}
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1958077010"
@@ -108,6 +110,7 @@ class Config:
                     "hyperion": {"enabled":True},
                     "tpkasa": {"enabled":True},
                     "elgato": {"enabled":True},
+                    "zigbee_device_discovery_info": {"status": "ready"},
                 }
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):

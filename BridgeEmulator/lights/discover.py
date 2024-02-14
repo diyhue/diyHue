@@ -153,6 +153,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
         elgato.discover(detectedLights, elgato_ips)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
         "%Y-%m-%dT%H:%M:%S")
+    bridgeConfig["config"]["zigbee_device_discovery_info"]["status"] = "ready"
     for light in detectedLights:
         # check if light is already present
         lightIsNew = True
