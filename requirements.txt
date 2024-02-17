@@ -17,4 +17,4 @@ yeelight
 python-kasa==0.4.1
 bleak==0.14.3
 rgbxy==0.5
-netifaces==0.11.0 
+netifaces2
