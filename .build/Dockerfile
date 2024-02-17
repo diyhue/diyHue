@@ -19,6 +19,7 @@ RUN apt update \
         curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && pip3 install -r requirements.txt --no-cache-dir --break-system-packages \
+    && pip3 install netifaces2 \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
