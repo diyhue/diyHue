@@ -93,6 +93,21 @@ class Credits(Resource):
                     "Version": "",
                     "Package": "Mark",
                     "Website": "https://github.com/hendriksen-mark"
+                },
+                {
+                    "Attributions": [],
+                    "SPDX-License-Identifiers": [
+                        ""
+                    ],
+                  "SourceLinks": [
+                        "https://github.com/diyhue/diyHue/graphs/contributors",
+                    ],
+                    "licenses": {
+                        "A big thank you to everyone contributing to this project":""
+                    },
+                    "Version": "",
+                    "Package": "Thank you!",
+                    "Website": "https://github.com/diyhue/diyHue/graphs/contributors"
                 }
             ]
             return response
