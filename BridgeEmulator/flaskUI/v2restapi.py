@@ -586,6 +586,9 @@ class ClipV2ResourceId(Resource):
             if putDict["action"]["action_type"] == "search":
                 bridgeConfig["config"]["zigbee_device_discovery_info"]["status"] = "active"
                 Thread(target=scanForLights).start()
+        elif resource == "device":
+            if putDict["identify"]["action"] == "identify":
+                object.setV1State({"alert": "select"})
         else:
             return {
                 "errors": [{
