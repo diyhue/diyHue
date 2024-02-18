@@ -12,6 +12,7 @@ from flaskUI.core import User #dummy import for flaks_login module
 from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.espDevices import Switch
+from flaskUI.Credits import Credits
 from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
@@ -59,6 +60,8 @@ def request_loader(request):
 
     return user
 
+### Licence/credits
+api.add_resource(Credits, '/licenses/<string:resource>', strict_slashes=False)
 ### ESP devices
 api.add_resource(Switch, '/switch')
 ### HUE API
