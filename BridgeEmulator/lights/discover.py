@@ -104,19 +104,20 @@ def manualAddLight(ip, protocol, config={}):
         addNewLight(modelid, name, protocol, config)
 
 def discoveryEvent():
-    streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "data": [{
-                        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
-                        "owner": {
-                            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-                            "rtype": "device"
-                        },
-                        "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
-                        "type": "zigbee_device_discovery"
-                        }],
-                    "id": str(uuid.uuid4()),
-                    "type": "update"
-                    }
+    streamMessage = {
+      "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+      "data": [{
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
+        "owner": {
+          "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+          "rtype": "device"
+        },
+        "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
+        "type": "zigbee_device_discovery"
+      }],
+      "id": str(uuid.uuid4()),
+      "type": "update"
+    }
     StreamEvent(streamMessage)
 
 

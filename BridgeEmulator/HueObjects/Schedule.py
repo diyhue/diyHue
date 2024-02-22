@@ -5,8 +5,7 @@ logging = logManager.logger.get_logger(__name__)
 
 class Schedule():
     def __init__(self, data):
-        self.name = data["name"] if "name" in data else "schedule " + \
-            data["id_v1"]
+        self.name = data["name"] if "name" in data else "schedule " + data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.description = data["description"] if "description" in data else "none"
         self.command = data["command"] if "command" in data else {}

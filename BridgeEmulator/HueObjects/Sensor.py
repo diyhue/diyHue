@@ -39,8 +39,7 @@ class Sensor():
         self.modelid = data["modelid"]
         self.manufacturername = data["manufacturername"] if "manufacturername" in data else "Philips"
         self.protocol = data["protocol"] if "protocol" in data else "none"
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.type = data["type"]
         self.state = data["state"]
         dxstate = {}
@@ -51,21 +50,23 @@ class Sensor():
         self.recycle = data["recycle"] if "recycle" in data else False
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else None
         if self.getDevice() != None:
-            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                             "data": [{"id": self.id_v2, "type": "device"}],
-                             "id": str(uuid.uuid4()),
-                             "type": "add"
-                             }
+            streamMessage = {
+                "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "data": [{"id": self.id_v2, "type": "device"}],
+                "id": str(uuid.uuid4()),
+                "type": "add"
+            }
             streamMessage["data"][0].update(self.getDevice())
             StreamEvent(streamMessage)
 
     def __del__(self):
         if self.modelid in ["SML001", "RWL022"]:
-            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getDevice()["id"], "type": "device"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+            streamMessage = {
+                "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "data": [{"id": self.getDevice()["id"], "type": "device"}],
+                "id": str(uuid.uuid4()),
+                "type": "delete"
+            }
             streamMessage["id_v1"] = "/sensors/" + self.id_v1
             StreamEvent(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
@@ -329,7 +330,7 @@ class Sensor():
         result["owner"] = {
             "rid": self.id_v2,
             "rtype": "device"
-            }
+        }
         result["type"] = "zigbee_connectivity"
         result["mac_address"] = self.uniqueid[:23]
         result["status"] = "connected"
@@ -340,32 +341,32 @@ class Sensor():
         if self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020" or self.modelid == "RDM002" and self.type != "ZLLRelativeRotary":
             for button in range(4):
                 result.append({
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
-                "id_v1": "/sensors/" + self.id_v1,
-                "owner": {
-                  "rid": self.id_v2,
-                  "rtype": "device"
-                },
-                "metadata": {
-                  "control_id": button + 1
-                },
-                "button": {
-                        "last_event": "short_release",
-                        "button_report": {
-                            "updated": self.state["lastupdated"],
-                            "event": "initial_press"
-                        },
-                        "repeat_interval": 800,
-                        "event_values": [
-                            "initial_press",
-                            "repeat",
-                            "short_release",
-                            "long_release",
-                            "long_press"
-                        ]
+                    "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
+                    "id_v1": "/sensors/" + self.id_v1,
+                    "owner": {
+                      "rid": self.id_v2,
+                      "rtype": "device"
                     },
-                "type": "button"
-              })
+                    "metadata": {
+                      "control_id": button + 1
+                    },
+                    "button": {
+                      "last_event": "short_release",
+                      "button_report": {
+                        "updated": self.state["lastupdated"],
+                        "event": "initial_press"
+                      },
+                      "repeat_interval": 800,
+                      "event_values": [
+                        "initial_press",
+                        "repeat",
+                        "short_release",
+                        "long_release",
+                        "long_press"
+                      ]
+                    },
+                    "type": "button"
+                })
         return result
     
     def getRotary(self):
@@ -379,13 +380,13 @@ class Sensor():
                   "rtype": "device"
                 },
                 "rotary_report": {
-                    "updated": self.state["lastupdated"],
-                    "action": "start" if self.state["rotaryevent"] == 1 else "repeat",
-                    "rotation": {
-                        "direction": "right",#self.state["direction"],
-                        "steps": self.state["expectedrotation"],
-                        "duration": self.state["expectedeventduration"]
-                    }
+                  "updated": self.state["lastupdated"],
+                  "action": "start" if self.state["rotaryevent"] == 1 else "repeat",
+                  "rotation": {
+                    "direction": "right",#self.state["direction"],
+                    "steps": self.state["expectedrotation"],
+                    "duration": self.state["expectedeventduration"]
+                  }
                 },
                 "type": "relative_rotary"
             })
