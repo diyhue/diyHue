@@ -55,7 +55,7 @@ def buildConfig():
     result = staticConfig()
     config = bridgeConfig["config"]
     result.update({"Hue Essentials key": config["Hue Essentials key"], "Remote API enabled": config["Remote API enabled"], "apiversion": config["apiversion"], "bridgeid": config["bridgeid"],
-                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "timezone": config["timezone"]})
+                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "swupdate2": config["swupdate2"], "timezone": config["timezone"]})
     result["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     result["whitelist"] = {}
@@ -266,6 +266,8 @@ class ResourceElements(Resource):
         for key, value in putDict.items():
             if isinstance(value, dict):
                 bridgeConfig[resource][key].update(value)
+                if resource == "config":
+                    bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
             else:
                 bridgeConfig[resource][key] = value
 

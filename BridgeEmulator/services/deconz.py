@@ -119,7 +119,7 @@ def websocketClient():
                                 del message["state"]["dark"]
 
                         if bridgeSensor.modelid == "SML001" and "lightlevel" in message["state"]:
-                            if message["state"][lightlevel] > bridgeSensor.config["tholddark"]:
+                            if message["state"]["lightlevel"] > bridgeSensor.config["tholddark"]:
                                 message["state"]["dark"] = False
                             else:
                                 message["state"]["dark"] = True

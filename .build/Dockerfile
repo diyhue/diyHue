@@ -17,7 +17,7 @@ COPY requirements.txt ./
 RUN apt update \
     && apt install --no-install-recommends -y \
         curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
-        openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
+        openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime git \
     && pip3 install -r requirements.txt --no-cache-dir --break-system-packages \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
     && apt autoremove -y \
