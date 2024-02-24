@@ -266,8 +266,6 @@ class ResourceElements(Resource):
         for key, value in putDict.items():
             if isinstance(value, dict):
                 bridgeConfig[resource][key].update(value)
-                if resource == "config":
-                    bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
             else:
                 bridgeConfig[resource][key] = value
 
