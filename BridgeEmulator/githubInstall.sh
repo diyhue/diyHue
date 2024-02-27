@@ -31,7 +31,6 @@ mv ./BridgeEmulator/logManager/ /opt/hue-emulator/
 mv ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 mv ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 mv ./BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
-echo "cp diyhue"
 
 cd /
 [ ! -d /diyhueUI ] && mkdir diyhueUI
