@@ -26,7 +26,7 @@ def versionCheck():
             else:
                 logging.info("swversion higher than Philips")
         else:
-            logging.info("no swversion number update")
+            logging.info("no swversion number update from Philips")
 
 def githubCheck():
     #creation_time = 2024-02-18 19:50:15.000000000 +0100
@@ -91,3 +91,10 @@ def githubUICheck():
         return True
     else:
         return False
+
+
+def githubInstall():
+    if bridgeConfig["config"]["swupdate2"]["state"] == "anyreadytoinstall":#ui update
+        subprocess.Popen("sh githubUIInstall.sh",shell=True, close_fds=True)
+    if bridgeConfig["config"]["swupdate2"]["state"] == "allreadytoinstall":#diyhue apdate
+        subprocess.Popen("sh githubInstall.sh",shell=True, close_fds=True)

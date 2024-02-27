@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, time, date
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
 from functions.scripts import triggerScript
-from updateManager import versionCheck
+from updateManager import versionCheck, githubCheck
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -107,7 +107,7 @@ def runScheduler():
             Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
             if (datetime.now().strftime("%H") == "23"): #check for updates every day at 23:00:10
                 versionCheck()
-                #githubCheck()
+                githubCheck()
             if (datetime.now().strftime("%H") == "23" and datetime.now().strftime("%A") == "Sunday"): #backup config every Sunday at 23:00:10
                 configManager.bridgeConfig.save_config(backup=True)
         sleep(1)

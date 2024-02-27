@@ -16,6 +16,7 @@ from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
 from services.entertainment import entertainmentService
+from services.updateManager import githubCheck, versionCheck, githubInstall
 
 try:
     from time import tzset
@@ -268,6 +269,13 @@ class ResourceElements(Resource):
                 bridgeConfig[resource][key].update(value)
             else:
                 bridgeConfig[resource][key] = value
+
+        if resource == "config" and "swupdate2" in putDict:
+            if putDict["swupdate2"]["checkforupdate"] == True:
+                versionCheck()
+                githubCheck()
+            if putDict["swupdate2"]["install"] == True:
+                githubInstall()
 
         # build response list
         responseList = []
