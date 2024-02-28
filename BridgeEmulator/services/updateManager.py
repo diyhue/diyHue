@@ -35,7 +35,8 @@ def githubCheck():
     creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
     creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
 
-    url = "https://api.github.com/repos/diyhue/diyhue/branches/master"
+    #url = "https://api.github.com/repos/diyhue/diyhue/branches/master"
+    url = "https://api.github.com/repos/hendriksen-mark/diyhue/branches/master"
     response = requests.get(url)
     if response.status_code == 200:
         device_data = json.loads(response.text)
@@ -66,7 +67,8 @@ def githubUICheck():
     creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
     creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
 
-    url = "https://api.github.com/repos/diyhue/diyhueUI/branches/master"
+    #url = "https://api.github.com/repos/diyhue/diyhueUI/branches/master"
+    url = "https://api.github.com/repos/hendriksen-mark/diyhueUI/branches/master"
     response = requests.get(url)
     if response.status_code == 200:
         device_data = json.loads(response.text)
