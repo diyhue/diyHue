@@ -33,6 +33,8 @@ COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
 COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
 COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+COPY ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
+COPY ./BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
 
 ## Install the web interface
 RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \

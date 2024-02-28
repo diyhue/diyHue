@@ -4,8 +4,8 @@ cd /
 curl -s -J -L -o $diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
 tar xzf $diyhue.tar.gz --strip-components=1 -C diyhue
 cd diyhue
-[ -d /opt/hue-emulator/flaskUI ] && rm -r /opt/hue-emulator/functions
-mv ./BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
+[ -d /opt/hue-emulator/flaskUI ] && rm -r /opt/hue-emulator/flaskUI
+mv ./BridgeEmulator/flaskUI/ /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/functions ] && rm -r /opt/hue-emulator/functions
 mv ./BridgeEmulator/functions/ /opt/hue-emulator/
