@@ -31,6 +31,8 @@ mv diyhue/BridgeEmulator/logManager/ /opt/hue-emulator/
 mv diyhue/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 mv diyhue/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 mv diyhue/BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
+mv diyhue/BridgeEmulator/genCert.sh /opt/hue-emulator/
+mv diyhue/BridgeEmulator/openssl.conf /opt/hue-emulator/
 
 #cd /
 [ ! -d /diyhueUI ] && mkdir diyhueUI
