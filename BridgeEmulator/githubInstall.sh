@@ -5,34 +5,35 @@ curl -s -J -L -o $diyhue.tar.gz "https://github.com/hendriksen-mark/diyHue/archi
 tar xzf $diyhue.tar.gz --strip-components=1 -C diyhue
 #cd diyhue
 [ -d /opt/hue-emulator/flaskUI ] && rm -r /opt/hue-emulator/flaskUI
-mv diyhue/BridgeEmulator/flaskUI/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/flaskUI /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/functions ] && rm -r /opt/hue-emulator/functions
-mv diyhue/BridgeEmulator/functions/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/functions /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/lights ] && rm -r /opt/hue-emulator/lights
-mv diyhue/BridgeEmulator/lights/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/lights /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/sensors ] && rm -r /opt/hue-emulator/sensors
-mv diyhue/BridgeEmulator/sensors/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/sensors /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/HueObjects ] && rm -r /opt/hue-emulator/HueObjects
-mv diyhue/BridgeEmulator/HueObjects/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/HueObjects /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/services ] && rm -r /opt/hue-emulator/services
-mv diyhue/BridgeEmulator/services/ /opt/hue-emulator
+mv diyhue/BridgeEmulator/services /opt/hue-emulator
 
 [ -d /opt/hue-emulator/configManager ] && rm -r /opt/hue-emulator/configManager
-mv diyhue/BridgeEmulator/configManager/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/configManager /opt/hue-emulator/
 
 [ -d /opt/hue-emulator/logManager ] && rm -r /opt/hue-emulator/logManager
-mv diyhue/BridgeEmulator/logManager/ /opt/hue-emulator/
+mv diyhue/BridgeEmulator/logManager /opt/hue-emulator/
 
 mv diyhue/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 mv diyhue/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 mv diyhue/BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
 mv diyhue/BridgeEmulator/genCert.sh /opt/hue-emulator/
 mv diyhue/BridgeEmulator/openssl.conf /opt/hue-emulator/
+chmod +x /opt/hue-emulator/genCert.sh
 
 #cd /
 [ ! -d /diyhueUI ] && mkdir diyhueUI

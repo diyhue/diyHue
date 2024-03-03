@@ -271,10 +271,10 @@ class ResourceElements(Resource):
                 bridgeConfig[resource][key] = value
 
         if resource == "config" and "swupdate2" in putDict:
-            if putDict["swupdate2"]["checkforupdate"] == True:
+            if "checkforupdate" in putDict["swupdate2"] and putDict["swupdate2"]["checkforupdate"] == True:
                 versionCheck()
                 githubCheck()
-            if putDict["swupdate2"]["install"] == True:
+            if "install" in putDict["swupdate2"] and putDict["swupdate2"]["install"] == True:
                 githubInstall()
 
         # build response list
