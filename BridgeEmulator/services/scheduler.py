@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, time, date
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
 from functions.scripts import triggerScript
-from updateManager import versionCheck, githubCheck
+from services.updateManager import versionCheck, githubCheck
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
