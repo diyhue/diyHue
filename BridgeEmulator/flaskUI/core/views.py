@@ -10,6 +10,9 @@ from flaskUI.core import User
 from lights.light_types import lightTypes
 from subprocess import check_output
 from pprint import pprint
+import os
+import logManager
+logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core',__name__)
 @core.route('/')
@@ -81,6 +84,10 @@ def save_config():
     configManager.bridgeConfig.save_config()
     return "config saved"
 
+@core.route('/reboot')
+def reboot():
+    logging.info("start reboot")
+    os._exit(0)
 
 @core.route('/login', methods=['GET', 'POST'])
 def login():

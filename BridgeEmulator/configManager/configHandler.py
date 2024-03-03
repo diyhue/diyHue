@@ -74,6 +74,20 @@ class Config:
                     config["port"] = {"enabled": False,"ports": [80]}
                 if "zigbee_device_discovery_info" not in config:
                     config["zigbee_device_discovery_info"] = {"status": "ready"}
+                if "swupdate2" not in config:
+                    config["swupdate2"] = {"autoinstall": {
+                                                "on": True,
+                                                "updatetime": "T14:00:00"
+                                            },
+                                            "bridge": {
+                                                "lastinstall": "2020-12-11T17:08:55",
+                                                "state": "noupdates"
+                                            },
+                                            "checkforupdate": False,
+                                            "lastchange": "2020-12-13T10:30:15",
+                                            "state": "unknown",
+                                            "install": False
+                                            }
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1962154010"
@@ -111,6 +125,19 @@ class Config:
                     "tpkasa": {"enabled":True},
                     "elgato": {"enabled":True},
                     "zigbee_device_discovery_info": {"status": "ready"},
+                    "swupdate2": {  "autoinstall": {
+                                        "on": True,
+                                        "updatetime": "T14:00:00"
+                                    },
+                                    "bridge": {
+                                        "lastinstall": "2020-12-11T17:08:55",
+                                        "state": "noupdates"
+                                    },
+                                    "checkforupdate": False,
+                                    "lastchange": "2020-12-13T10:30:15",
+                                    "state": "unknown",
+                                    "install": False
+                                    }
                 }
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):

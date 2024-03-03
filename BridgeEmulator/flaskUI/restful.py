@@ -16,6 +16,7 @@ from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
 from services.entertainment import entertainmentService
+from services.updateManager import githubCheck, versionCheck, githubInstall
 
 try:
     from time import tzset
@@ -55,7 +56,7 @@ def buildConfig():
     result = staticConfig()
     config = bridgeConfig["config"]
     result.update({"Hue Essentials key": config["Hue Essentials key"], "Remote API enabled": config["Remote API enabled"], "apiversion": config["apiversion"], "bridgeid": config["bridgeid"],
-                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "timezone": config["timezone"]})
+                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "swupdate2": config["swupdate2"], "timezone": config["timezone"]})
     result["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     result["whitelist"] = {}
@@ -268,6 +269,13 @@ class ResourceElements(Resource):
                 bridgeConfig[resource][key].update(value)
             else:
                 bridgeConfig[resource][key] = value
+
+        if resource == "config" and "swupdate2" in putDict:
+            if "checkforupdate" in putDict["swupdate2"] and putDict["swupdate2"]["checkforupdate"] == True:
+                versionCheck()
+                githubCheck()
+            if "install" in putDict["swupdate2"] and putDict["swupdate2"]["install"] == True:
+                githubInstall()
 
         # build response list
         responseList = []
