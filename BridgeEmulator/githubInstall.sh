@@ -1,7 +1,7 @@
 curl -s localhost/save
 cd /
 [ ! -d diyhue ] && mkdir diyhue
-curl -s -J -L -o $diyhue.tar.gz "https://github.com/hendriksen-mark/diyHue/archive/refs/heads/master.tar.gz"
+curl -s -J -L -o $diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
 tar xzf $diyhue.tar.gz --strip-components=1 -C diyhue
 #cd diyhue
 [ -d /opt/hue-emulator/flaskUI ] && rm -r /opt/hue-emulator/flaskUI
