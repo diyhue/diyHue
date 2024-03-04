@@ -16,7 +16,7 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core',__name__)
 @core.route('/')
-#@flask_login.login_required
+@flask_login.login_required
 def index():
     return render_template('index.html', groups=bridgeConfig["groups"], lights=bridgeConfig["lights"])
 
@@ -103,7 +103,7 @@ def login():
         flask_login.login_user(user)
         return redirect(url_for('core.index'))
 
-    print(generate_password_hash(form.password.data))
+    logging.info("Hashed pass: " + generate_password_hash(form.password.data))
 
     return 'Bad login'
 
@@ -119,6 +119,7 @@ def description_xml():
 
 
 @core.route('/logout')
+@flask_login.login_required
 def logout():
     flask_login.logout_user()
     return redirect(url_for('core.login'))
