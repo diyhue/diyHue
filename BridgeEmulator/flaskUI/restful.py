@@ -17,6 +17,7 @@ from flask import request
 from functions.rules import rulesProcessor
 from services.entertainment import entertainmentService
 from services.updateManager import githubCheck, versionCheck, githubInstall
+from werkzeug.security import generate_password_hash
 
 try:
     from time import tzset
@@ -270,12 +271,18 @@ class ResourceElements(Resource):
             else:
                 bridgeConfig[resource][key] = value
 
-        if resource == "config" and "swupdate2" in putDict:
-            if "checkforupdate" in putDict["swupdate2"] and putDict["swupdate2"]["checkforupdate"] == True:
-                versionCheck()
-                githubCheck()
-            if "install" in putDict["swupdate2"] and putDict["swupdate2"]["install"] == True:
-                githubInstall()
+        if resource == "config":
+            if "swupdate2" in putDict:
+                if "checkforupdate" in putDict["swupdate2"] and putDict["swupdate2"]["checkforupdate"] == True:
+                    versionCheck()
+                    githubCheck()
+                if "install" in putDict["swupdate2"] and putDict["swupdate2"]["install"] == True:
+                    githubInstall()
+            if "users" in putDict:
+                for key, value in putDict["users"].items():
+                    for email, hash in bridgeConfig["config"]["users"].items():
+                        if putDict["users"][key] == bridgeConfig["config"]["users"][email]:
+                            bridgeConfig["config"]["users"][email]["password"] = generate_password_hash(str(value['password']))
 
         # build response list
         responseList = []
