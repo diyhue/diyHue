@@ -28,7 +28,7 @@ def discover(detectedLights, device_ips):
                 if (device_model == 'SHSW-1') or (device_model == 'SHSW-PM'):
                     shelly_data = request_api_v1(ip, 'status')
                     logging.debug('Shelly: IP: ' + shelly_data['wifi_sta']['ip'])
-                    logging.debug('Shelly: MAC:      ' + shelly_data['mac'])
+                    logging.debug('Shelly: MAC: ' + shelly_data['mac'])
 
                     config = {'ip': ip, 'mac': shelly_data['mac'], 'gen': 1}
 
@@ -40,7 +40,7 @@ def discover(detectedLights, device_ips):
                     shelly_data = request_api_v2(ip, 'WiFi.GetStatus')
                     logging.debug('Shelly: IP: ' + shelly_data['sta_ip'])
                     shelly_data = request_api_v2(ip, 'Shelly.GetDeviceInfo')
-                    logging.debug('Shelly: MAC:      ' + shelly_data['mac'])
+                    logging.debug('Shelly: MAC: ' + shelly_data['mac'])
 
                     config = {'ip': ip, 'mac': shelly_data['mac'], 'gen': device_data['gen'] }
 
@@ -60,7 +60,7 @@ def set_light(light, data):
         if key == 'on':
             if (not 'gen' in config) or (config['gen'] == 1):
                 request_api_v1(config['ip'], 'relay/0?turn=' + ('on' if value else 'off'))
-            elif config['gen'] == 2:
+            elif (config['gen'] == 2) or (config['gen'] == 3):
                 request_api_v2(config['ip'], 'Switch.Set?id=0&on=' + str(value).lower())
             else:
                 logging.info('Shelly: <set_light> not implemented api version!')
@@ -73,7 +73,7 @@ def get_light_state(light):
     if (not 'gen' in config) or (config['gen'] == 1):
         data = request_api_v1(config['ip'], 'relay/0')
         state['on'] = data['ison'] if 'ison' in data else False
-    elif config['gen'] == 2:
+    elif (config['gen'] == 2) or (config['gen'] == 3):
         data = request_api_v2(config['ip'], 'Switch.GetStatus?id=0')
         state['on'] = data['output'] if 'output' in data else False
     else:
