@@ -103,7 +103,7 @@ def runHttp(BIND_IP, HOST_HTTP_PORT):
     app.run(host=BIND_IP, port=HOST_HTTP_PORT)
 
 if __name__ == '__main__':
-    from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS
+    from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS, updateManager
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
@@ -112,6 +112,7 @@ if __name__ == '__main__':
     HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
     CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
     DISABLE_HTTPS = configManager.runtimeConfig.arg["noServeHttps"]
+    updateManager.startupCheck()
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services

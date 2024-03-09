@@ -67,12 +67,12 @@ def githubUICheck():
     creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
     creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
 
-    url = "https://api.github.com/repos/diyhue/diyhueUI/branches/master"
+    url = "https://api.github.com/repos/diyhue/diyHueUI/releases/latest"
     #url = "https://api.github.com/repos/hendriksen-mark/diyhueUI/branches/master"
     response = requests.get(url)
     if response.status_code == 200:
         device_data = json.loads(response.text)
-        publish_time = datetime.strptime(device_data["commit"]["commit"]["author"]["date"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+        publish_time = datetime.strptime(device_data["published_at"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
 
     logging.info("creation_time UI : " + str(creation_time))
     logging.info("publish_time  UI : " + str(publish_time))
@@ -83,7 +83,7 @@ def githubUICheck():
         return False
 
 
-def githubInstall_test():
+def githubInstall():
     if bridgeConfig["config"]["swupdate2"]["state"] == "anyreadytoinstall":#ui update
         bridgeConfig["config"]["swupdate2"]["state"] = "installing"
         bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
@@ -93,6 +93,15 @@ def githubInstall_test():
         bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
         subprocess.Popen("sh githubInstall.sh",shell=True, close_fds=True)
 
-def githubInstall():
+def githubInstall_test():
     logging.info("work in progress")
     bridgeConfig["config"]["swupdate2"]["install"] = False
+    bridgeConfig["config"]["swupdate2"]["state"] = "noupdates"
+    bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "noupdates"
+
+def startupCheck():
+    if bridgeConfig["config"]["swupdate2"]["install"] == True:
+        bridgeConfig["config"]["swupdate2"]["install"] = False
+        bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    githubCheck()

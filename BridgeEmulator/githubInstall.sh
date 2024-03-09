@@ -3,8 +3,8 @@ cd /
 if [ ! -d diyhue ]; then
  mkdir diyhue
 fi
-#curl -s -J -L -o diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
-curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
+curl -s -J -L -o diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
+#curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
 tar xzf diyhue.tar.gz --strip-components=1 -C diyhue
 #cd diyhue
 cp -r diyhue/BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
@@ -32,4 +32,4 @@ unzip -qo diyHueUI.zip -d diyhueUI
 mv diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
 cp -r diyhueUI/static/ /opt/hue-emulator/flaskUI/static/
 
-curl -s localhost/reboot
+curl -s localhost/restart

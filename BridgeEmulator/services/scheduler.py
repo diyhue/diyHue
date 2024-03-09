@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, time, date
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
 from functions.scripts import triggerScript
-from services.updateManager import versionCheck, githubCheck
+from services.updateManager import versionCheck, githubCheck, githubInstall
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -102,6 +102,8 @@ def runScheduler():
             except Exception as e:
                 logging.info("Exception while processing the schedule " + obj.name + " | " + str(e))
 
+        if (datetime.now().strftime("T%H%M:%S") == bridgeConfig["swupdate2"]["autoinstall"]["updatetime"]) and bridgeConfig["swupdate2"]["autoinstall"]["on"] == True:
+            githubInstall()
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             configManager.bridgeConfig.save_config()
             Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
