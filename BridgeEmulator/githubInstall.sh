@@ -12,7 +12,7 @@ cp -r diyhue/BridgeEmulator/functions/ /opt/hue-emulator/functions/
 cp -r diyhue/BridgeEmulator/lights/ /opt/hue-emulator/lights/
 cp -r diyhue/BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
 cp -r diyhue/BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
-cp -r diyhue/BridgeEmulator/services/ /opt/hue-emulatorservices/
+cp -r diyhue/BridgeEmulator/services/ /opt/hue-emulator/services/
 cp -r diyhue/BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
 cp -r diyhue/BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 mv diyhue/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
