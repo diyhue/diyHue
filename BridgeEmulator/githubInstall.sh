@@ -5,24 +5,24 @@ if [ -d diyhue ]; then
 fi
 mkdir diyhue
 #curl -s -J -L -o diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
-curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
-#curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.zip
-tar xzf diyhue.tar.gz --strip-components=1 -C diyhue
-#unzip -qo diyhue.zip
+#curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
+curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.zip
+#tar xzf diyhue.tar.gz --strip-components=1 -C diyhue
+unzip -qo diyhue.zip
 #cd diyhue
-cp -r diyhue/BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
-cp -r diyhue/BridgeEmulator/functions/ /opt/hue-emulator/functions/
-cp -r diyhue/BridgeEmulator/lights/ /opt/hue-emulator/lights/
-cp -r diyhue/BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
-cp -r diyhue/BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
-cp -r diyhue/BridgeEmulator/services/ /opt/hue-emulator/services/
-cp -r diyhue/BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
-cp -r diyhue/BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
-cp -r diyhue/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
-cp -r diyhue/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
-cp -r diyhue/BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
-cp -r diyhue/BridgeEmulator/genCert.sh /opt/hue-emulator/
-cp -r diyhue/BridgeEmulator/openssl.conf /opt/hue-emulator/
+cp -r diyhue-master/BridgeEmulator/flaskUI/ /opt/hue-emulator/flaskUI/
+cp -r diyhue-master/BridgeEmulator/functions/ /opt/hue-emulator/functions/
+cp -r diyhue-master/BridgeEmulator/lights/ /opt/hue-emulator/lights/
+cp -r diyhue-master/BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
+cp -r diyhue-master/BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
+cp -r diyhue-master/BridgeEmulator/services/ /opt/hue-emulator/services/
+cp -r diyhue-master/BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
+cp -r diyhue-master/BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
+cp -r diyhue-master/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+cp -r diyhue-master/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
+cp -r diyhue-master/BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
+cp -r diyhue-master/BridgeEmulator/genCert.sh /opt/hue-emulator/
+cp -r diyhue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
 chmod +x /opt/hue-emulator/genCert.sh
 
 #cd /
