@@ -105,7 +105,7 @@ def runScheduler():
         if (datetime.now().strftime("T%H:%M:%S") == bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"]): #check for updates every day at updatetime
             updateManager.versionCheck()
             updateManager.githubCheck()
-            if (bridgeConfig["swupdate2"]["autoinstall"]["on"] == True): #install update if available every day at updatetime
+            if (bridgeConfig["config"]["swupdate2"]["autoinstall"]["on"] == True): #install update if available every day at updatetime
                 updateManager.githubInstall()
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             configManager.bridgeConfig.save_config()
