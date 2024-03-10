@@ -29,11 +29,15 @@ def versionCheck():
             logging.info("no swversion number update from Philips")
 
 def githubCheck():
-    #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"
+    #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"# HA "2024-02-18 19:50:15.000000000\n"
     creation_time = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True)#2024-02-18 19:50:15.000000000 +0100\n
     creation_time_arg1 = creation_time.stdout.replace(".", " ").split(" ")#2024-02-18, 19:50:15, 000000000, +0100\n
-    creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
-    creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
+    if (len(creation_time_arg1) < 4):
+        creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1].replace("\n", "")#2024-02-18 19:50:15
+        creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
+    else:
+        creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
+        creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
 
     url = "https://api.github.com/repos/diyhue/diyhue/branches/master"
     #url = "https://api.github.com/repos/hendriksen-mark/diyhue/branches/master"
@@ -61,11 +65,15 @@ def githubCheck():
     bridgeConfig["config"]["swupdate2"]["checkforupdate"] = False
 
 def githubUICheck():
-    #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"
+    #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"# HA "2024-02-18 19:50:15.000000000\n"
     creation_time = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True)#2024-02-18 19:50:15.000000000 +0100\n
     creation_time_arg1 = creation_time.stdout.replace(".", " ").split(" ")#2024-02-18, 19:50:15, 000000000, +0100\n
-    creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
-    creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
+    if (len(creation_time_arg1) < 4):
+        creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1].replace("\n", "")#2024-02-18 19:50:15
+        creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
+    else:
+        creation_time = creation_time_arg1[0] + " " + creation_time_arg1[1] + " " + creation_time_arg1[3].replace("\n", "")#2024-02-18 19:50:15 +0100
+        creation_time = datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")#2024-02-18 18
 
     url = "https://api.github.com/repos/diyhue/diyHueUI/releases/latest"
     #url = "https://api.github.com/repos/hendriksen-mark/diyhueUI/branches/master"
