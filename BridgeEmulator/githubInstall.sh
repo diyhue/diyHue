@@ -1,9 +1,5 @@
 curl -s localhost/save
 cd /
-if [ -d diyhue ]; then
- rm -r diyhue
-fi
-mkdir diyhue
 #curl -s -J -L -o diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
 #curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
 #curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
