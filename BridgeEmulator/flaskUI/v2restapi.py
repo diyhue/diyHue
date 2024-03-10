@@ -22,7 +22,7 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
-"geofence_client": {}}
+"geofence_client": {}, "motion": {}}
 
 
 def getObject(element, v2uuid):
@@ -589,6 +589,9 @@ class ClipV2ResourceId(Resource):
         elif resource == "device":
             if putDict["identify"]["action"] == "identify":
                 object.setV1State({"alert": "select"})
+        elif resource == "motion":
+            if "enabled" in putDict:
+                object.update_attr({"config": {"on": putDict["enabled"]}})
         else:
             return {
                 "errors": [{
