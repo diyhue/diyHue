@@ -2,8 +2,8 @@ curl -s localhost/save
 cd /
 #curl -s -J -L -o diyhue.tar.gz "https://github.com/diyhue/diyHue/archive/refs/heads/master.tar.gz"
 #curl -s -J -L -o diyhue.tar.gz "https://github.com/hendriksen-mark/diyhue/archive/refs/heads/master.tar.gz"
-#curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
-curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
+curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
+#curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
 #tar xzf diyhue.tar.gz --strip-components=1 -C diyhue
 unzip -qo diyhue.zip
 rm diyhue.zip
