@@ -220,7 +220,7 @@ def on_autodiscovery_light(msg):
     data = json.loads(msg.payload)
     logging.info("Auto discovery message on: " + msg.topic)
     #logging.debug(json.dumps(data, indent=4))
-    discoveredDevices[data['unique_id']] = data;
+    discoveredDevices[data['unique_id']] = data
     for key, data in discoveredDevices.items():
         device_new = True
         for light, obj in bridgeConfig["lights"].items():
