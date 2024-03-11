@@ -16,7 +16,7 @@ def versionCheck():
         device_data = json.loads(response.text)
         if len(device_data["updates"]) != 0:
             new_version = str(device_data["updates"][len(device_data["updates"])-1]["version"])
-            new_versionName = str(device_data["updates"][len(device_data["updates"])-1]["versionName"])
+            new_versionName = str(device_data["updates"][len(device_data["updates"])-1]["versionName"][:4]+".0")
             if new_version > swversion:
                 logging.info("swversion number update from Philips, old: " + swversion + " new:" + new_version)
                 bridgeConfig["config"]["swversion"] = new_version
