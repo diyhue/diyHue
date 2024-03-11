@@ -11,6 +11,7 @@ from lights.light_types import lightTypes
 from subprocess import check_output
 from pprint import pprint
 import os
+import sys
 import logManager
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -84,10 +85,11 @@ def save_config():
     configManager.bridgeConfig.save_config()
     return "config saved"
 
-@core.route('/reboot')
-def reboot():
-    logging.info("start reboot")
-    os._exit(0)
+@core.route('/restart')
+def restart():
+    logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
+    os.execl(sys.executable, sys.executable, *sys.argv)
+    return "restart python with args"
 
 @core.route('/login', methods=['GET', 'POST'])
 def login():

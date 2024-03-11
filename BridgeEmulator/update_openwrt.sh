@@ -36,7 +36,7 @@ unzip -q -o  diyHue.zip
 wait
 echo -e "\033[32m Copying unzip files to directories.\033[0m"
 cd /opt/tmp/diyHue-master/BridgeEmulator
-cp HueEmulator3.py updater /opt/hue-emulator/
+cp HueEmulator3.py updater githubInstall.sh githubUIInstall.sh /opt/hue-emulator/
 cp /tmp/diyHue-config/config.json.bak /opt/hue-emulator/config.json
 cp /tmp/diyHue-config/cert.pem.bak /opt/hue-emulator/cert.pem
 cp default-config.json /opt/hue-emulator/default-config.json

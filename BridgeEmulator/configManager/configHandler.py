@@ -76,7 +76,7 @@ class Config:
                     config["zigbee_device_discovery_info"] = {"status": "ready"}
                 if "swupdate2" not in config:
                     config["swupdate2"] = {"autoinstall": {
-                                                "on": True,
+                                                "on": False,
                                                 "updatetime": "T14:00:00"
                                             },
                                             "bridge": {
@@ -85,14 +85,14 @@ class Config:
                                             },
                                             "checkforupdate": False,
                                             "lastchange": "2020-12-13T10:30:15",
-                                            "state": "unknown",
+                                            "state": "noupdates",
                                             "install": False
                                             }
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1962154010"
                 if float(config["apiversion"][:3]) < 1.56:
-                    config["apiversion"] = "1.62.0"
+                    config["apiversion"] = "1.62_SR4"
 
                 self.yaml_config["config"] = config
             else:
@@ -105,7 +105,7 @@ class Config:
                     "alarm":{"enabled": False,"lasttriggered": 0},
                     "port":{"enabled": False,"ports": [80]},
                     "apiUsers":{},
-                    "apiversion":"1.62.0",
+                    "apiversion":"1.62_SR4",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
                     "swversion":"1962154010",
@@ -126,7 +126,7 @@ class Config:
                     "elgato": {"enabled":True},
                     "zigbee_device_discovery_info": {"status": "ready"},
                     "swupdate2": {  "autoinstall": {
-                                        "on": True,
+                                        "on": False,
                                         "updatetime": "T14:00:00"
                                     },
                                     "bridge": {
@@ -135,7 +135,7 @@ class Config:
                                     },
                                     "checkforupdate": False,
                                     "lastchange": "2020-12-13T10:30:15",
-                                    "state": "unknown",
+                                    "state": "noupdates",
                                     "install": False
                                     }
                 }

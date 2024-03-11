@@ -145,7 +145,7 @@ else
 fi
 
 
-cp -r HueEmulator3.py HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
+cp -r HueEmulator3.py githubInstall.sh githubUIInstall.sh HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
 # Copy web interface files
 

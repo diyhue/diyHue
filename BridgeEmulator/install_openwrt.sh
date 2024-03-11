@@ -23,7 +23,7 @@ wait
 
 echo -e "\033[32m Copying files to directories.\033[0m"
 cd /opt/tmp/diyHue/BridgeEmulator
-cp HueEmulator3.py updater /opt/hue-emulator/
+cp HueEmulator3.py updater githubInstall.sh githubUIInstall.sh /opt/hue-emulator/
 cp -r HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
 echo -e "\033[32m Copy web interface files.\033[0m"
