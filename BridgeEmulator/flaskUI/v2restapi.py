@@ -277,9 +277,10 @@ class ClipV2(Resource):
             if power != None:
                 data.append(power)
         for key, sensor in bridgeConfig["sensors"].items():
-            rotary = sensor.getRotary()
-            if rotary != None:
-                data.append(rotary)
+            rotarys = sensor.getRotary()
+            if len(rotarys) != 0:
+                for rotary in rotarys:
+                    data.append(rotary)
 
         return {"errors": [], "data": data}
 

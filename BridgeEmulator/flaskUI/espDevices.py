@@ -50,8 +50,7 @@ class Switch(Resource):
                                                     "mac": mac, "threaded": False})
                         return {"success": "device registered"}
                     elif args["devicetype"] == "ZLLRelativeRotary":
-                        sensor = addHueRotarySwitch("", args["devicetype"])
-                        sensor.protocol_cfg["mac"] = mac
+                        sensor = addHueRotarySwitch({"mac": mac})
                         return {"success": "device registered"}
                     else:
                         return {"fail": "unknown device"}

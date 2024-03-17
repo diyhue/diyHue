@@ -39,14 +39,13 @@ def addHueSwitch(uniqueid, sensorsType):
     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(deviceData)
     return(bridgeConfig["sensors"][new_sensor_id])
 
-def addHueRotarySwitch(uniqueid, sensorsType):
-    new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-    if uniqueid == "":
-        uniqueid = "00:17:88:01:02:"
-        if len(new_sensor_id) == 1:
-            uniqueid += "0" + new_sensor_id + ":4d:c6-02-fc00"
-        else:
-            uniqueid += new_sensor_id + ":4d:c6-02-fc00"
-    deviceData = {"id_v1": new_sensor_id, "state": {"rotaryevent": 2, "expectedrotation": 90, "expectedeventduration": 400, "lastupdated": "none"}, "config": {"on": True, "battery": 100, "reachable": True}, "name": "Tap dial switch", "type": sensorsType, "modelid": "RDM002", "manufacturername": "Philips", "swversion": "2.59.25", "uniqueid": uniqueid}
-    bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(deviceData)
-    return (bridgeConfig["sensors"][new_sensor_id])
+def addHueRotarySwitch(protocol_cfg):
+    uniqueid = generate_unique_id()
+    button_id = nextFreeId(bridgeConfig, "sensors")
+    button = {"name": "Hue tap dial switch", "id_v1": button_id, "modelid": "RDM002", "type": "ZLLSwitch", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0406"}
+    bridgeConfig["sensors"][button_id] = HueObjects.Sensor(button)
+
+    rotary_id = nextFreeId(bridgeConfig, "sensors")
+    rotary = {"name": "Hue tap dial switch", "id_v1": rotary_id, "modelid": "RDM002", "type": "ZLLRelativeRotary", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0406"}
+    bridgeConfig["sensors"][rotary_id] = HueObjects.Sensor(rotary)
+    return
