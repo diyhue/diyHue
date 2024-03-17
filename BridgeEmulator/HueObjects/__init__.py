@@ -1871,6 +1871,68 @@ class Sensor():
                 "rtype": "zigbee_connectivity"
                 }]
             result["type"] = "device"
+        elif self.modelid == "RDM002" and self.type != "ZLLRelativeRotary":
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["product_data"] = {"model_id": self.modelid,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "product_name": "Hue tap dial switch",
+                "product_archetype": "unknown_archetype",
+                "certified": True,
+                "software_version": "2.59.25",
+                "hardware_platform_type": "100b-119"
+            }
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["services"] = [{
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button1')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button2')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button3')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button4')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
+        elif self.modelid == "RDM002" and self.type == "ZLLRelativeRotary":
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["product_data"] = {"model_id": self.modelid,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "product_name": "Hue tap dial switch",
+                "product_archetype": "unknown_archetype",
+                "certified": True,
+                "software_version": "2.59.25",
+                "hardware_platform_type": "100b-119"
+            }
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["services"] = [{
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button3')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button4')),
+                "rtype": "button"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
         return result
 
     def getMotion(self):
@@ -1910,9 +1972,10 @@ class Sensor():
         result["mac_address"] = self.uniqueid[:23]
         result["status"] = "connected"
         return result
+    
     def getButtons(self):
         result = []
-        if self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020":
+        if self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020" or self.modelid == "RDM002" and self.type != "ZLLRelativeRotary":
             for button in range(4):
                 result.append({
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
@@ -1926,6 +1989,20 @@ class Sensor():
                 },
                 "type": "button"
               })
+        return result
+    
+    def getRotary(self):
+        result = []
+        if self.modelid == "RDM002" and self.type == "ZLLRelativeRotary":
+            result.append({
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'relative_rotary')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                  "rid": self.id_v2,
+                  "rtype": "device"
+                },
+                "type": "relative_rotary"
+            })
         return result
 
     def getDevicePower(self):

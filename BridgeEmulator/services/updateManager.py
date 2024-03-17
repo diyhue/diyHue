@@ -112,4 +112,5 @@ def startupCheck():
         bridgeConfig["config"]["swupdate2"]["install"] = False
         bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    versionCheck()
     githubCheck()
