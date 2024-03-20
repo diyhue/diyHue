@@ -15,8 +15,9 @@ sensorTypes["TRADFRI remote control"] = {"ZHASwitch": {"state": {"buttonevent": 
 sensorTypes["TRADFRI on/off switch"] = {"ZHASwitch": {"state": {"buttonevent": 1002, "lastupdated": "none"}, "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "static": {"swversion": "2.2.008", "manufacturername": "IKEA of Sweden"}}}
 sensorTypes["TRADFRI wireless dimmer"] = {"ZHASwitch": {"state": {"buttonevent": 1002, "lastupdated": "none"}, "config": {"alert": "none", "battery": 90, "on": True, "reachable": True}, "static": {"swversion": "1.2.248", "manufacturername": "IKEA of Sweden"}}}
 # Fix Deconz types
-sensorTypes["RWL020"]["ZHASwitch"] = sensorTypes["RWL020"]["ZLLSwitch"]
-sensorTypes["RWL022"]["ZHASwitch"] = sensorTypes["RWL022"]["ZLLSwitch"]
-sensorTypes["SML001"]["ZHATemperature"] = sensorTypes["SML001"]["ZLLTemperature"]
-sensorTypes["SML001"]["ZHAPresence"] = sensorTypes["SML001"]["ZLLPresence"]
-sensorTypes["SML001"]["ZHALightLevel"] = sensorTypes["SML001"]["ZLLLightLevel"]
+# not used anymore?
+#sensorTypes["RWL020"]["ZHASwitch"] = sensorTypes["RWL020"]["ZLLSwitch"]
+#sensorTypes["RWL022"]["ZHASwitch"] = sensorTypes["RWL022"]["ZLLSwitch"]
+#sensorTypes["SML001"]["ZHATemperature"] = sensorTypes["SML001"]["ZLLTemperature"]
+#sensorTypes["SML001"]["ZHAPresence"] = sensorTypes["SML001"]["ZLLPresence"]
+#sensorTypes["SML001"]["ZHALightLevel"] = sensorTypes["SML001"]["ZLLLightLevel"]
