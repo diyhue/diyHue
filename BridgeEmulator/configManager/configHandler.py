@@ -92,7 +92,7 @@ class Config:
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1962154010"
                 if float(config["apiversion"][:3]) < 1.56:
-                    config["apiversion"] = "1.62_SR4"
+                    config["apiversion"] = "1.62.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -105,7 +105,7 @@ class Config:
                     "alarm":{"enabled": False,"lasttriggered": 0},
                     "port":{"enabled": False,"ports": [80]},
                     "apiUsers":{},
-                    "apiversion":"1.62_SR4",
+                    "apiversion":"1.62.0",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
                     "swversion":"1962154010",

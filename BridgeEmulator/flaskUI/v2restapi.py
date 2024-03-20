@@ -276,6 +276,11 @@ class ClipV2(Resource):
             power = sensor.getDevicePower()
             if power != None:
                 data.append(power)
+        for key, sensor in bridgeConfig["sensors"].items():
+            rotarys = sensor.getRotary()
+            if len(rotarys) != 0:
+                for rotary in rotarys:
+                    data.append(rotary)
 
         return {"errors": [], "data": data}
 
@@ -364,6 +369,12 @@ class ClipV2Resource(Resource):
                 if len(buttons) != 0:
                     for button in buttons:
                         response["data"].append(button)
+        elif resource == "relative_rotary":
+            for key, sensor in bridgeConfig["sensors"].items():
+                rotarys = sensor.getRotary()
+                if len(rotarys) != 0:
+                    for rotary in rotarys:
+                        response["data"].append(rotary)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]

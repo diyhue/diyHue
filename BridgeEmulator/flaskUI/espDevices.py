@@ -5,7 +5,7 @@ import json
 from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
-from sensors.discover import addHueMotionSensor, addHueSwitch
+from sensors.discover import addHueMotionSensor, addHueSwitch, addHueRotarySwitch
 from datetime import datetime
 from threading import Thread
 from time import sleep
@@ -49,6 +49,9 @@ class Switch(Resource):
                         sensor = addHueMotionSensor("Hue Motion Sensor", "native", {
                                                     "mac": mac, "threaded": False})
                         return {"success": "device registered"}
+                    elif args["devicetype"] == "ZLLRelativeRotary":
+                        sensor = addHueRotarySwitch({"mac": mac})
+                        return {"success": "device registered"}
                     else:
                         return {"fail": "unknown device"}
                 else:
@@ -90,6 +93,14 @@ class Switch(Resource):
                                 if "button" in args:
                                     obj.state["buttonevent"] = int(args["button"])
                                     obj.dxState["buttonevent"] = current_time
+                                if "battery" in args:
+                                    obj.config["battery"] = int(args["battery"])
+                            elif obj.type == "ZLLRelativeRotary":
+                                if "rotary" in args:
+                                    obj.state["rotaryevent"] = int(args["rotary"])
+                                    obj.state["expectedrotation"] = int(args["rotation"])
+                                    obj.state["expectedeventduration"] = int(args["duration"])
+                                    obj.dxState["rotaryevent"] = current_time
                                 if "battery" in args:
                                     obj.config["battery"] = int(args["battery"])
                             else:

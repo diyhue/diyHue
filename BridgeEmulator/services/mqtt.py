@@ -157,6 +157,24 @@ standardSensors = {
             "dial_rotate_right_fast": {"rotaryevent": 2},
         }
     },
+    "PTM 215Z": {
+        "dataConversion": {
+            "rootKey": "action",
+            "press_1": {"buttonevent": 1000},
+            "release_1": {"buttonevent": 1002},
+            "press_2": {"buttonevent": 2000},
+            "release_2": {"buttonevent": 2002},
+            "press_3": {"buttonevent": 3000},
+            "release_3": {"buttonevent": 3002},
+            "press_4": {"buttonevent": 4000},
+            "release_4": {"buttonevent": 4002},
+            "press_1_and_3": {"buttonevent": 1010},
+            "release_1_and_3": {"buttonevent": 1003},
+            "press_2_and_4": {"buttonevent": 2010},
+            "release_2_and_4": {"buttonevent": 2003},
+            "press_energy_bar": {"buttonevent": 5000},
+        }
+    },
 }
 
 
@@ -283,11 +301,12 @@ def on_message(client, userdata, msg):
                         if getObject(key["friendly_name"]) == False: ## Add the new sensor
                             logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
                             if key["model_id"] in standardSensors:
-                                new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                                sensor_type = list(sensorTypes[key["model_id"]].keys())[0]
-                                uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
-                                sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
-                                bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(sensorData)
+                                for sensor in sensorTypes[key["model_id"]].keys():
+                                    new_sensor_id = nextFreeId(bridgeConfig, "sensors")
+                                    sensor_type = sensorTypes[key["model_id"]][sensor]
+                                    uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
+                                    sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
+                                    bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(sensorData)
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["model_id"] in motionSensors:
                                     logging.info("MQTT: add new motion sensor " + key["model_id"])

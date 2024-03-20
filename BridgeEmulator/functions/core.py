@@ -57,7 +57,7 @@ def staticConfig():
             },
             "checkforupdate": False,
             "lastchange": "2020-12-13T10:30:15",
-            "state": "unknown"
+            "state": "noupdates"
         },
         "zigbeechannel": 25
     }
