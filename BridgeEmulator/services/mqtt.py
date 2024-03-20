@@ -133,6 +133,9 @@ standardSensors = {
     "RDM002": {
         "dataConversion": {
             "rootKey": "action",
+            "dirKey": "action_direction",
+            "typeKey": "action_type",
+            "timeKey": "action_time",
             "button_1_press": {"buttonevent": 1000},
             "button_1_hold": {"buttonevent": 1001},
             "button_1_press_release": {"buttonevent": 1002},
@@ -301,9 +304,9 @@ def on_message(client, userdata, msg):
                         if getObject(key["friendly_name"]) == False: ## Add the new sensor
                             logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
                             if key["model_id"] in standardSensors:
-                                for sensor in sensorTypes[key["model_id"]].keys():
+                                for sensor_type in sensorTypes[key["model_id"]].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                                    sensor_type = sensorTypes[key["model_id"]][sensor]
+                                    #sensor_type = sensorTypes[key["model_id"]][sensor]
                                     uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
                                     sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
                                     bridgeConfig["sensors"][new_sensor_id] = HueObjects.Sensor(sensorData)
