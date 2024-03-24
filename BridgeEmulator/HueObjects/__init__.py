@@ -1,15 +1,15 @@
-import uuid
-import logManager
-import random
-import weakref
-from lights.light_types import lightTypes, archetype
-from sensors.sensor_types import sensorTypes
+from lights.light_types import archetype, lightTypes
 from lights.protocols import protocols
+from sensors.sensor_types import sensorTypes
 from threading import Thread
 from datetime import datetime
 from pprint import pprint
 from copy import deepcopy
 from time import sleep
+import uuid
+import logManager
+import random
+import weakref
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -89,24 +89,19 @@ def setGroupAction(group, state, scene=None):
             # apply max and min brightness limis
             if "bri" in lightsState[light().id_v1]:
                 if "min_bri" in light().protocol_cfg and light().protocol_cfg["min_bri"] > lightsState[light().id_v1]["bri"]:
-                    lightsState[light().id_v1]["bri"] = light(
-                    ).protocol_cfg["min_bri"]
+                    lightsState[light().id_v1]["bri"] = light().protocol_cfg["min_bri"]
                 if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
-                    lightsState[light().id_v1]["bri"] = light(
-                    ).protocol_cfg["max_bri"]
+                    lightsState[light().id_v1]["bri"] = light().protocol_cfg["max_bri"]
                 if  light().protocol == "mqtt" and not light().state["on"]:
                     continue
             # end limits
             if light().protocol in ["native_multi", "mqtt"]:
                 if light().protocol_cfg["ip"] not in queueState:
-                    queueState[light().protocol_cfg["ip"]] = {
-                        "object": light(), "lights": {}}
+                    queueState[light().protocol_cfg["ip"]] = {"object": light(), "lights": {}}
                 if light().protocol == "native_multi":
-                    queueState[light().protocol_cfg["ip"]]["lights"][light(
-                    ).protocol_cfg["light_nr"]] = lightsState[light().id_v1]
+                    queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["light_nr"]] = lightsState[light().id_v1]
                 elif light().protocol == "mqtt":
-                    queueState[light().protocol_cfg["ip"]]["lights"][light(
-                    ).protocol_cfg["command_topic"]] = lightsState[light().id_v1]
+                    queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["command_topic"]] = lightsState[light().id_v1]
             else:
                 light().setV1State(lightsState[light().id_v1])
     for device, state in queueState.items():
@@ -162,19 +157,21 @@ class BehaviorInstance():
         self.active = data["active"] if "active" in data else False
         self.script_id = data["script_id"] if "script_id" in data else ""
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "behavior_instance"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "behavior_instance"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         eventstream.append(streamMessage)
         logging.info(self.name + " behaviour instance was destroyed.")
 
@@ -218,16 +215,19 @@ class BehaviorInstance():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         eventstream.append(streamMessage)
 
     def save(self):
-        result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled, "active": self.active,
-                  "script_id": self.script_id}
+        result = {
+            "id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration,
+            "enabled": self.enabled, "active": self.active, "script_id": self.script_id
+        }
         if self.name != None:
             result["metadata"] = {"name": self.name}
 
@@ -254,89 +254,92 @@ class Light():
         self.modelid = data["modelid"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id(
-        )
-        self.state = data["state"] if "state" in data else deepcopy(
-            lightTypes[self.modelid]["state"])
+        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
+        self.state = data["state"] if "state" in data else deepcopy(lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
-        self.config = data["config"] if "config" in data else deepcopy(
-            lightTypes[self.modelid]["config"])
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.config = data["config"] if "config" in data else deepcopy(lightTypes[self.modelid]["config"])
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
 
         # entertainment
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": str(uuid.uuid5(
-                             uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(self.getV2Entertainment())
         eventstream.append(streamMessage)
 
         # zigbee_connectivity
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getZigBee()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getZigBee()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
 
         # light
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
 
         # device
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getDevice()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getDevice()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         streamMessage["data"][0].update(self.getDevice())
         eventstream.append(streamMessage)
 
     def __del__(self):
         ## light ##
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "light"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
 
         ## device ##
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getDevice()["id"], "type": "device"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.getDevice()["id"], "type": "device"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
 
         # Zigbee Connectivity
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
 
         # Entertainment
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         eventstream.append(streamMessage)
 
@@ -350,23 +353,26 @@ class Light():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getDevice()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getDevice()],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         eventstream.append(streamMessage)
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
         result["config"] = self.config
-        result["state"] = {"on": self.state["on"]}
-        if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
+        result["state"] = { "on": self.state["on"] }
+
+        device = lightTypes[self.modelid]
+        if ('bri' in self.state) and ('bri' in device['state']):
             result["state"]["bri"] = int(self.state["bri"]) if self.state["bri"] is not None else 1
-        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001"]:
+        if ('ct' in self.state) and ('ct' in device['state']):
             result["state"]["ct"] = self.state["ct"]
             result["state"]["colormode"] = self.state["colormode"]
-        if "xy" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LWB010"]:
+        if ('xy' in self.state) and ('xy' in device['state']):
             result["state"]["xy"] = self.state["xy"]
             result["state"]["hue"] = self.state["hue"]
             result["state"]["sat"] = self.state["sat"]
@@ -381,7 +387,6 @@ class Light():
         return result
 
     def updateLightState(self, state):
-
         if "xy" in state and "xy" in self.state:
             self.state["colormode"] = "xy"
         elif "ct" in state and "ct" in self.state:
@@ -426,11 +431,12 @@ class Light():
         self.genStreamEvent(state)
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "light"}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update(
@@ -438,8 +444,7 @@ class Light():
         eventstream.append(streamMessage)
 
     def getDevice(self):
-        result = {"id": str(uuid.uuid5(
-            uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
+        result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
         result["id_v1"] = "/lights/" + self.id_v1
         result["identify"] = {}
         result["metadata"] = {
@@ -468,8 +473,7 @@ class Light():
 
     def getZigBee(self):
         result = {}
-        result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
-                                      self.id_v2 + 'zigbee_connectivity'))
+        result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,self.id_v2 + 'zigbee_connectivity'))
         result["id_v1"] = "/lights/" + self.id_v1
         result["mac_address"] = self.uniqueid[:23]
         result["owner"] = {
@@ -489,50 +493,49 @@ class Light():
     def getV2Api(self):
         result = {}
         result["alert"] = {"action_values": ["breathe"]}
+
         # gradient lights
         if self.modelid in ["LCX002", "915005987201", "LCX004", "LCX006"]:
-            result["effects"] = {
-                "effect_values": [
-                    "no_effect",
-                    "candle",
-                    "fire"
-                ],
-                "status": self.effect,
-                "status_values": [
-                    "no_effect",
-                    "candle",
-                    "fire"
-                ]
+            result["gradient"] = {
+                "points": self.state["gradient"]["points"],
+                "points_capable": self.protocol_cfg["points_capable"]
             }
-            result["gradient"] = {"points": self.state["gradient"]["points"],
-                                  "points_capable": self.protocol_cfg["points_capable"]}
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
-            colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
+        capabilities = lightTypes[self.modelid]["v1_static"]["capabilities"]
+        if ("colorgamut" in capabilities["control"]) and ("colorgamuttype" in capabilities["control"]):
+            colorgamut = capabilities["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
                     "blue":  {"x": colorgamut[2][0], "y": colorgamut[2][1]},
                     "green": {"x": colorgamut[1][0], "y": colorgamut[1][1]},
                     "red":   {"x": colorgamut[0][0], "y": colorgamut[0][1]}
                 },
-                "gamut_type": lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamuttype"],
+                "gamut_type": capabilities["control"]["colorgamuttype"],
                 "xy": {
                     "x": self.state["xy"][0],
                     "y": self.state["xy"][1]
                 }
             }
-        if "ct" in self.state:
-            result["color_temperature"] = {
-                "mirek": self.state["ct"] if self.state["colormode"] == "ct" else None,
-                "mirek_schema": {
-                    "mirek_maximum": 500,
-                    "mirek_minimum": 153
-                }
+            result["effects"] = {
+                "effect_values": [ "no_effect", "candle", "fire" ],
+                "status": "no_effect",
+                "status_values": [ "no_effect", "candle", "fire" ]
             }
-            result["color_temperature"]["mirek_valid"] = True if self.state[
-                "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
+
+        if ("ct" in self.state) and ("ct" in capabilities["control"]):
+            ct_value = self.state["ct"]
+            ct = capabilities["control"]["ct"]
+            result["color_temperature"] = {
+                "mirek": ct_value if self.state["colormode"] == "ct" else None,
+                "mirek_schema": {
+                    "mirek_maximum": ct["max"],
+                    "mirek_minimum": ct["min"]
+                },
+                "mirek_valid": (ct_value is not None) and (ct["min"] <= ct_value <= ct["max"])
+            }
             result["color_temperature_delta"] = {}
+
         if "bri" in self.state:
             bri_value = self.state["bri"]
             if bri_value is None or bri_value == "null":
@@ -542,25 +545,15 @@ class Light():
                 "min_dim_level": 0.1  # Adjust this value as needed
             }
             result["dimming_delta"] = {}
+
         result["dynamics"] = self.dynamics
-        result["effects"] = {
-        "effect_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ],
-        "status": "no_effect",
-        "status_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ]
-    }
         result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
-        result["metadata"] = {"name": self.name, "function": "mixed",
-                              "archetype": archetype[self.config["archetype"]]}
+        result["metadata"] = {
+            "name": self.name, "function": "mixed",
+            "archetype": archetype[self.config["archetype"]]
+        }
         result["mode"] = "normal"
         if "mode" in self.state and self.state["mode"] == "streaming":
             result["mode"] = "streaming"
@@ -571,16 +564,13 @@ class Light():
             "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
             "rtype": "device"
         }
-        result["product_data"] = {"function": "mixed"}
-        result["signaling"] = {"signal_values": [
-            "no_signal",
-            "on_off"]}
+        result["product_data"] = { "function": "mixed" }
+        result["signaling"] = { "signal_values": [ "no_signal", "on_off" ] }
         result["type"] = "light"
         return result
 
     def getV2Entertainment(self):
-        entertainmenUuid = str(uuid.uuid5(
-            uuid.NAMESPACE_URL, self.id_v2 + 'entertainment'))
+        entertainmenUuid = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment'))
         result = {
             "equalizer": True,
             "id": entertainmenUuid,
@@ -592,11 +582,8 @@ class Light():
                 "rtype": "light"
             }
         }
-        result["owner"] = {
-            "rid": self.getDevice()["id"], "rtype": "device"}
-        result["segments"] = {
-            "configurable": False
-        }
+        result["owner"] = { "rid": self.getDevice()["id"], "rtype": "device" }
+        result["segments"] = { "configurable": False }
         if self.modelid == "LCX002":
             result["segments"]["max_segments"] = 7
             result["segments"]["segments"] = [
@@ -707,45 +694,49 @@ class Light():
 
 class EntertainmentConfiguration():
     def __init__(self, data):
-        self.name = data["name"] if "name" in data else "Group " + \
-            data["id_v1"]
+        self.name = data["name"] if "name" in data else "Group " + data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.configuration_type = data["configuration_type"] if "configuration_type" in data else "3dspace"
         self.lights = []
-        self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
-            0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"}
+        self.action = {
+            "on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none",
+            "xy": [0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"
+        }
         self.sensors = []
         self.type = data["type"] if "type" in data else "Entertainment"
         self.configuration_type = data["configuration_type"] if "configuration_type" in data else "screen"
         self.locations = weakref.WeakKeyDictionary()
-        self.stream = {"proxymode": "auto",
-                       "proxynode": "/bridge", "active": False, "owner": None}
+        self.stream = {"proxymode": "auto", "proxynode": "/bridge", "active": False, "owner": None}
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
 
     def __del__(self):
         # Groupper light
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "grouped_light"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         eventstream.append(streamMessage)
+
         ### Entertainment area ###
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getV2Api()["id"], "type": "entertainment_configuration"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.getV2Api()["id"], "type": "entertainment_configuration"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         eventstream.append(streamMessage)
         logging.info(self.name + " entertainment area was destroyed.")
@@ -766,11 +757,12 @@ class EntertainmentConfiguration():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         eventstream.append(streamMessage)
 
     def update_state(self):
@@ -831,19 +823,15 @@ class EntertainmentConfiguration():
         return result
 
     def getV2Api(self):
-
-        gradienStripPositions = [{"x": -0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645},
-                                 {"x": -0.4000000059604645,
-                                     "y": 0.800000011920929, "z": 0.0},
-                                 {"x": -0.4000000059604645, "y": 0.800000011920929,
-                                     "z": 0.4000000059604645},
-                                 {"x": 0.0, "y": 0.800000011920929,
-                                     "z": 0.4000000059604645},
-                                 {"x": 0.4000000059604645, "y": 0.800000011920929,
-                                     "z": 0.4000000059604645},
-                                 {"x": 0.4000000059604645,
-                                     "y": 0.800000011920929, "z": 0.0},
-                                 {"x": 0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645}]
+        gradienStripPositions = [
+            {"x": -0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645},
+            {"x": -0.4000000059604645, "y": 0.800000011920929, "z": 0.0},
+            {"x": -0.4000000059604645, "y": 0.800000011920929, "z": 0.4000000059604645},
+            {"x": 0.0, "y": 0.800000011920929, "z": 0.4000000059604645},
+            {"x": 0.4000000059604645, "y": 0.800000011920929, "z": 0.4000000059604645},
+            {"x": 0.4000000059604645, "y": 0.800000011920929, "z": 0.0},
+            {"x": 0.4000000059604645, "y": 0.800000011920929, "z": -0.4000000059604645}
+        ]
 
         result = {
             "configuration_type": self.configuration_type,
@@ -874,8 +862,7 @@ class EntertainmentConfiguration():
         channel_id = 0
         for light in self.lights:
             if light():
-                result["light_services"].append(
-                    {"rtype": "light", "rid": light().id_v2})
+                result["light_services"].append({"rtype": "light", "rid": light().id_v2})
                 entertainmentUuid = str(uuid.uuid5(
                     uuid.NAMESPACE_URL, light().id_v2 + 'entertainment'))
                 result["locations"]["service_locations"].append({"equalization_factor": 1, "positions": self.locations[light()],
@@ -934,11 +921,12 @@ class EntertainmentConfiguration():
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "grouped_light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "grouped_light"}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         streamMessage.update(v2State)
         eventstream.append(streamMessage)
@@ -1025,79 +1013,84 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
 
     def groupZeroStream(self, rooms, lights):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         for room in rooms:
-            streamMessage["data"][0]["children"].append(
-                {"rid": room, "rtype": "room"})
+            streamMessage["data"][0]["children"].append({"rid": room, "rtype": "room"})
         for light in lights:
-            streamMessage["data"][0]["children"].append(
-                {"rid": light, "rtype": "light"})
+            streamMessage["data"][0]["children"].append({"rid": light, "rtype": "light"})
         eventstream.append(streamMessage)
 
     def __del__(self):
         # Groupper light
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         eventstream.append(streamMessage)
+
         ### room / zone ####
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         eventstream.append(streamMessage)
         logging.info(self.name + " group was destroyed.")
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         eventstream.append(streamMessage)
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
 
         eventstream.append(streamMessage)
         groupChildrens = []
         groupServices = []
         for light in self.lights:
             if light():
-                groupChildrens.append(
-                    {"rid": light().getDevice()["id"], "rtype": "device"})
+                groupChildrens.append({"rid": light().getDevice()["id"], "rtype": "device"})
                 groupServices.append({"rid": light().id_v2, "rtype": "light"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         eventstream.append(streamMessage)
 
     def add_sensor(self, sensor):
@@ -1116,12 +1109,13 @@ class Group():
             else:
                 setattr(self, key, value)
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "owner": {
-            "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-            "rtype": "room" if self.type == "Room" else "zone"
-        },
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+            "owner": {
+                "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                "rtype": "room" if self.type == "Room" else "zone"
+            },
             "id": str(uuid.uuid4()),
             "type": "update"
         }
@@ -1153,23 +1147,25 @@ class Group():
     def genStreamEvent(self, v2State):
         for light in self.lights:
             if light():
-                streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner": {"rid": light().getDevice()["id"], "rtype":"device"}, "type": "light"}],
-                                 "id": str(uuid.uuid4()),
-                                 "type": "update"
-                                 }
+                streamMessage = {
+                    "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner": {"rid": light().getDevice()["id"], "rtype":"device"}, "type": "light"}],
+                    "id": str(uuid.uuid4()),
+                    "type": "update"
+                }
                 streamMessage["data"][0].update(v2State)
                 eventstream.append(streamMessage)
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "grouped_light",
-                                   "owner": {
-                                       "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-                                       "rtype": "room" if self.type == "Room" else "zone"
-                                   }
-                                   }],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "grouped_light",
+                "owner": {
+                    "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                    "rtype": "room" if self.type == "Room" else "zone"
+                }
+            }],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         streamMessage["data"][0].update(v2State)
         eventstream.append(streamMessage)
@@ -1192,9 +1188,12 @@ class Group():
         result["recycle"] = False
         if self.id_v1 == "0":
             result["presence"] = {
-                "state": {"presence": None, "presence_all": None, "lastupdated": "none"}}
-            result["lightlevel"] = {"state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
-                                              "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}}
+                "state": {"presence": None, "presence_all": None, "lastupdated": "none"}
+            }
+            result["lightlevel"] = {
+                "state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
+                "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}
+            }
         else:
             result["class"] = self.icon_class
         result["action"] = self.action
@@ -1205,8 +1204,7 @@ class Group():
         for light in self.lights:
             if light():
                 result["children"].append({
-                    "rid": str(uuid.uuid5(
-                        uuid.NAMESPACE_URL, light().id_v2 + 'device')),
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, light().id_v2 + 'device')),
                     "rtype": "device"
                 })
 
@@ -1292,8 +1290,10 @@ class Group():
         return {"resource": "groups", "id": self.id_v1}
 
     def save(self):
-        result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type}
+        result = {
+            "id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
+            "lights": [], "action": self.action, "type": self.type
+        }
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)
@@ -1324,20 +1324,23 @@ class Scene():
         if "group" in data:
             self.storelightstate()
             self.lights = self.group().lights
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         streamMessage["data"][0].update(self.getV2Api())
         eventstream.append(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "scene"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "scene"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/scenes/" + self.id_v1
         eventstream.append(streamMessage)
         logging.info(self.name + " scene was destroyed.")
@@ -1374,8 +1377,7 @@ class Scene():
                 if transitiontime > 0:
                     state["transitiontime"] = transitiontime
                 if "recall" in data and "duration" in data["recall"]:
-                    state["transitiontime"] = int(
-                        data["recall"]["duration"] / 100)
+                    state["transitiontime"] = int(data["recall"]["duration"] / 100)
 
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:
@@ -1447,15 +1449,13 @@ class Scene():
             if "ct" in state:
                 v2State["color_temperature"] = {
                     "mirek": state["ct"]}
-            result["actions"].append(
-                {
-                    "action": v2State,
-                    "target": {
-                        "rid": light.id_v2,
-                        "rtype": "light",
-                    },
+            result["actions"].append({
+                "action": v2State,
+                "target": {
+                    "rid": light.id_v2,
+                    "rtype": "light",
                 }
-            )
+            })
 
         if self.type == "GroupScene":
             if self.group():
@@ -1465,8 +1465,7 @@ class Scene():
                 }
         result["metadata"] = {}
         if self.image != None:
-            result["metadata"]["image"] = {"rid": self.image,
-                                           "rtype": "public_image"}
+            result["metadata"]["image"] = {"rid": self.image, "rtype": "public_image"}
         result["metadata"]["name"] = self.name
         result["id"] = self.id_v2
         result["id_v1"] = "/scenes/" + self.id_v1
@@ -1589,7 +1588,6 @@ class Rule():
     def save(self):
         return self.getV1Api()
 
-
 class ResourceLink():
     def __init__(self, data):
         self.name = data["name"]
@@ -1636,8 +1634,7 @@ class ResourceLink():
 
 class Schedule():
     def __init__(self, data):
-        self.name = data["name"] if "name" in data else "schedule " + \
-            data["id_v1"]
+        self.name = data["name"] if "name" in data else "schedule " + data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.description = data["description"] if "description" in data else "none"
         self.command = data["command"] if "command" in data else {}
@@ -1690,7 +1687,6 @@ class Schedule():
     def save(self):
         return self.getV1Api()
 
-
 class Sensor():
     def __init__(self, data):
         if data["modelid"] in sensorTypes:
@@ -1723,8 +1719,7 @@ class Sensor():
         self.modelid = data["modelid"]
         self.manufacturername = data["manufacturername"] if "manufacturername" in data else "Philips"
         self.protocol = data["protocol"] if "protocol" in data else "none"
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.type = data["type"]
         self.state = data["state"]
         dxstate = {}
@@ -1735,21 +1730,23 @@ class Sensor():
         self.recycle = data["recycle"] if "recycle" in data else False
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else None
         if self.getDevice() != None:
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                             "data": [{"id": self.id_v2, "type": "device"}],
-                             "id": str(uuid.uuid4()),
-                             "type": "add"
-                             }
+            streamMessage = {
+                "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "data": [{"id": self.id_v2, "type": "device"}],
+                "id": str(uuid.uuid4()),
+                "type": "add"
+            }
             streamMessage["data"][0].update(self.getDevice())
             eventstream.append(streamMessage)
 
     def __del__(self):
         if self.modelid in ["SML001", "RWL022"]:
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getDevice()["id"], "type": "device"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+            streamMessage = {
+                "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "data": [{"id": self.getDevice()["id"], "type": "device"}],
+                "id": str(uuid.uuid4()),
+                "type": "delete"
+            }
             streamMessage["id_v1"] = "/sensors/" + self.id_v1
             eventstream.append(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
@@ -1967,7 +1964,7 @@ class Sensor():
         result["owner"] = {
             "rid": self.id_v2,
             "rtype": "device"
-            }
+        }
         result["type"] = "zigbee_connectivity"
         result["mac_address"] = self.uniqueid[:23]
         result["status"] = "connected"
@@ -1978,17 +1975,17 @@ class Sensor():
         if self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020" or self.modelid == "RDM002" and self.type != "ZLLRelativeRotary":
             for button in range(4):
                 result.append({
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
-                "id_v1": "/sensors/" + self.id_v1,
-                "owner": {
-                  "rid": self.id_v2,
-                  "rtype": "device"
-                },
-                "metadata": {
-                  "control_id": button + 1
-                },
-                "type": "button"
-              })
+                    "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
+                    "id_v1": "/sensors/" + self.id_v1,
+                    "owner": {
+                      "rid": self.id_v2,
+                      "rtype": "device"
+                    },
+                    "metadata": {
+                      "control_id": button + 1
+                    },
+                    "type": "button"
+                })
         return result
     
     def getRotary(self):
