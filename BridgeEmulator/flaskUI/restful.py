@@ -42,10 +42,12 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
     if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
         return [{"error": {"type": 1, "address": "/" + resource + "/" + resourceId, "description": "unauthorized user"}}]
 
-    if resourceId not in ["0", "new", "timezones"] and resourceId != '' and resourceId not in bridgeConfig[resource]:
+    if resourceId not in ["0", "new", "timezones", "whitelist"] and resourceId != '' and resourceId not in bridgeConfig[resource]:
+        logging.debug(str(resourceId) + " not in bridgeConfig " + str(resource))
         return [{"error": {"type": 3, "address": "/" + resource + "/" + resourceId, "description": "resource, " + resource + "/" + resourceId + ", not available"}}]
 
     if resourceId != "0" and resourceParam != '' and not hasattr(bridgeConfig[resource][resourceId], resourceParam):
+        logging.debug(str(resourceId) + " has no attribute " + str(resourceParam))
         return [{"error": {"type": 3, "address": "/" + resource + "/" + resourceId + "/" + resourceParam, "description": "resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
     if request.remote_addr != "127.0.0.1":
         bridgeConfig["apiUsers"][username].last_use_date = datetime.utcnow().strftime(
@@ -126,7 +128,7 @@ class ResourceElements(Resource):
                 return capabilities()
             else:
                 response = {}
-                if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
+                if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "apiUsers"]:
                     for object in bridgeConfig[resource]:
                         response[object] = bridgeConfig[resource][object].getV1Api().copy()
                 elif resource == "config":
@@ -457,6 +459,18 @@ class ElementParam(Resource):
         authorisation = authorize(username, resource, resourceid)
         if "success" not in authorisation:
             return authorisation
+        if resourceid == "whitelist":
+            for config in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
+                for object in bridgeConfig[config]:
+                    if "owner" in bridgeConfig[config][object].getV1Api():
+                        current_owner = bridgeConfig[config][object].getV1Api()["owner"]
+                        if current_owner == param:
+                            logging.debug("transfer ownership from: " + str(current_owner) + " to: " + str(username))
+                            bridgeConfig[config][object].owner = bridgeConfig["apiUsers"][username]
+            logging.debug("Deleted api user: " + str(param) + " " + bridgeConfig["apiUsers"][param].name)
+            del bridgeConfig["apiUsers"][param]
+            configManager.bridgeConfig.save_config()
+            return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
         if param not in bridgeConfig[resource][resourceid]:
             return [{"error": {"type": 4, "address": "/" + resource + "/" + resourceid, "description": "method, DELETE, not available for resource,  " + resource + "/" + resourceid}}]
 
