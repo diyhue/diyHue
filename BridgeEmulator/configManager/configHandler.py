@@ -277,23 +277,6 @@ class Config:
         self.load_config()
         return backup
 
-    def restore_backup(self):
-        try:
-            os.remove(self.configDir + "/*.yaml")
-        except:
-            logging.exception("Something went wrong when deleting the config")
-        os.popen('cp ' + self.configDir + '/backup/' + self.configDir + ' /') 
-        load = self.load_config()
-        return load
-    
-    def download_config(self):
-        os.popen('zip ' + self.configDir + "/config " + self.configDir + "/*.yaml" )
-        return self.configDir + "/config.zip"
-    
-    def backup_config(self):
-        backup = self.save_config(True)
-        return backup
-    
     def write_args(self, args):
         self.yaml_config = configInit.write_args(args, self.yaml_config)
 
