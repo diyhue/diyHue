@@ -2,7 +2,7 @@ import pytz
 from astral.sun import sun
 from astral import LocationInfo
 from functions.rules import rulesProcessor
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 from threading import Thread
 from functions.scripts import triggerScript
@@ -16,17 +16,17 @@ def runBackgroundSleep(instance, seconds):
     sleep(seconds)
     triggerScript(instance)
 
-def daylightSensor(timezone, sensor):
+def daylightSensor(tz, sensor):#tz = timezone
     if sensor.config["configured"]:
-        localzone = LocationInfo('localzone', timezone.split("/")[1], timezone, sensor.protocol_cfg["lat"], sensor.protocol_cfg["long"])
-        s = sun(localzone.observer, date=datetime.utcnow())
-        deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.utcnow()
-        deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.utcnow()
+        localzone = LocationInfo('localzone', tz.split("/")[1], tz, sensor.protocol_cfg["lat"], sensor.protocol_cfg["long"])
+        s = sun(localzone.observer, date=datetime.now(timezone.utc))
+        deltaSunset = s['sunset'].replace(tzinfo=None) - datetime.now(timezone.utc)
+        deltaSunrise = s['sunrise'].replace(tzinfo=None) - datetime.now(timezone.utc)
         deltaSunsetOffset = deltaSunset.total_seconds() + sensor.config["sunsetoffset"] * 60
         deltaSunriseOffset = deltaSunrise.total_seconds() + sensor.config["sunriseoffset"] * 60
         logging.info("deltaSunsetOffset: " + str(deltaSunsetOffset))
         logging.info("deltaSunriseOffset: " + str(deltaSunriseOffset))
-        current_time =  datetime.utcnow()
+        current_time =  datetime.now(timezone.utc)
         if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
             sensor.state["daylight"] = True
             logging.info("set daylight sensor to true")

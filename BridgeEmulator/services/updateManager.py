@@ -21,8 +21,8 @@ def versionCheck():
                 logging.info("swversion number update from Philips, old: " + swversion + " new:" + new_version)
                 bridgeConfig["config"]["swversion"] = new_version
                 bridgeConfig["config"]["apiversion"] = new_versionName
-                bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-                bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+                bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
             else:
                 logging.info("swversion higher than Philips")
         else:
@@ -104,7 +104,7 @@ def githubInstall():
 def startupCheck():
     if bridgeConfig["config"]["swupdate2"]["install"] == True:
         bridgeConfig["config"]["swupdate2"]["install"] = False
-        bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     versionCheck()
     githubCheck()

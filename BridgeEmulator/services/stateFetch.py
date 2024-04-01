@@ -2,7 +2,7 @@ import logManager
 import configManager
 from lights.protocols import protocols
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -33,7 +33,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                 lu = user.last_use_date
                 try: #in case if last use is not a proper datetime
                     lu = datetime.strptime(lu, "%Y-%m-%dT%H:%M:%S")
-                    if abs(datetime.utcnow() - lu) <= timedelta(seconds = 2):
+                    if abs(datetime.now(timezone.utc) - lu) <= timedelta(seconds = 2):
                         i = 300
                         break
                 except:

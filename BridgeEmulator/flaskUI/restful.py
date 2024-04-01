@@ -9,7 +9,7 @@ import requests
 from subprocess import Popen
 from threading import Thread
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
@@ -50,7 +50,7 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
         logging.debug(str(resourceId) + " has no attribute " + str(resourceParam))
         return [{"error": {"type": 3, "address": "/" + resource + "/" + resourceId + "/" + resourceParam, "description": "resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
     if request.remote_addr != "127.0.0.1":
-        bridgeConfig["apiUsers"][username].last_use_date = datetime.utcnow().strftime(
+        bridgeConfig["apiUsers"][username].last_use_date = datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%S")
     return ["success"]
 
@@ -60,7 +60,7 @@ def buildConfig():
     config = bridgeConfig["config"]
     result.update({"Hue Essentials key": config["Hue Essentials key"], "Remote API enabled": config["Remote API enabled"], "apiversion": config["apiversion"], "bridgeid": config["bridgeid"],
                    "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "swupdate2": config["swupdate2"], "timezone": config["timezone"]})
-    result["UTC"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    result["UTC"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     result["whitelist"] = {}
     for key, user in bridgeConfig["apiUsers"].items():
@@ -232,7 +232,7 @@ class ResourceElements(Resource):
             bridgeConfig[resource][new_object_id] = HueObjects.Schedule(postDict)
         newObject = bridgeConfig[resource][new_object_id]
         if v2Resource != "none":
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                              "data": [],
                              "id_v1": "/" + resource + "/" + new_object_id,
                              "id": str(uuid.uuid4()),
@@ -343,7 +343,7 @@ class Element(Resource):
             if "state" in putDict:
                 for state in putDict["state"].keys():
                     bridgeConfig["sensors"][resourceid].dxState[state] = currentTime
-                bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.utcnow(
+                bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.now(timezone.utc
                 ).strftime("%Y-%m-%dT%H:%M:%S")
                 bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
         elif resource == "groups":
@@ -442,7 +442,7 @@ class ElementParam(Resource):
             bridgeConfig[resource][resourceid].state.update(putDict)
             for state in putDict.keys():
                 bridgeConfig["sensors"][resourceid].dxState[state] = currentTime
-            bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.utcnow(
+            bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.now(timezone.utc
             ).strftime("%Y-%m-%dT%H:%M:%S")
             bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
             rulesProcessor(bridgeConfig[resource][resourceid], currentTime)

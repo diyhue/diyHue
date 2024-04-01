@@ -1,7 +1,7 @@
 from functions.core import nextFreeId
 import configManager
 import HueObjects
-from datetime import datetime
+from datetime import datetime, timezone
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 def addTradfriDimmer(sensor_id, group_id):
@@ -49,5 +49,5 @@ def addTradfriSceneRemote(sensor_id, group_id):
     for rule in rules:
         ruleId = nextFreeId(bridgeConfig, "rules")
         bridgeConfig["rules"][ruleId] = rule
-        bridgeConfig["rules"][ruleId].update({"created": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), "lasttriggered": None, "owner": list(bridgeConfig["config"]["whitelist"])[0], "recycle": True, "status": "enabled", "timestriggered": 0})
+        bridgeConfig["rules"][ruleId].update({"created": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"), "lasttriggered": None, "owner": list(bridgeConfig["config"]["whitelist"])[0], "recycle": True, "status": "enabled", "timestriggered": 0})
         bridgeConfig["resourcelinks"][resourcelinkId]["links"].append("/rules/" + ruleId)
