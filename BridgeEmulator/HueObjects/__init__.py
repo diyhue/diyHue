@@ -1987,12 +1987,6 @@ class Sensor():
                 "metadata": {
                   "control_id": button + 1
                 },
-                "button": {
-                        "button_report": {
-                            "updated": self.state["lastupdated"],
-                            "event": "initial_press"
-                        }
-                    },
                 "type": "button"
               })
         return result
@@ -2006,15 +2000,6 @@ class Sensor():
                 "owner": {
                   "rid": self.id_v2,
                   "rtype": "device"
-                },
-                "rotary_report": {
-                    "updated": self.state["lastupdated"],
-                    "action": "start" if self.state["rotaryevent"] == 1 else "repeat",
-                    "rotation": {
-                        "direction": "right",#self.state["direction"],
-                        "steps": self.state["expectedrotation"],
-                        "duration": self.state["expectedeventduration"]
-                    }
                 },
                 "type": "relative_rotary"
             })
