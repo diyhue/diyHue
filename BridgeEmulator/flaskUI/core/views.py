@@ -85,26 +85,6 @@ def save_config():
     configManager.bridgeConfig.save_config()
     return "config saved"
 
-@core.route('/reset-config')
-def reset_config():
-    configManager.bridgeConfig.reset_config()
-    return "config reset"
-
-@core.route('/restore-config')
-def restore_config():
-    configManager.bridgeConfig.restore_backup()
-    return "restore config"
-
-@core.route('/download-config')
-def download_config():
-    path = configManager.bridgeConfig.download_config()
-    return send_file(path, as_attachment=True)
-
-@core.route('/backup-config')
-def restore_config():
-    configManager.bridgeConfig.backup_config()
-    return "backup config"
-
 @core.route('/restart')
 def restart():
     logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
