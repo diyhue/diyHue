@@ -9,7 +9,7 @@ import uuid
 import weakref
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
 try:
-    from time import tzset
+    from time import tzset, sleep
 except ImportError:
     tzset = None
 
@@ -269,14 +269,28 @@ class Config:
 
 
     def reset_config(self):
-        backup = self.save_config(True)
+        backup = self.save_config(backup=True)
         try:
-            os.remove(self.configDir + "/*.yaml")
+            os.popen('rm -r ' + self.configDir + '/*.yaml')
         except:
             logging.exception("Something went wrong when deleting the config")
         self.load_config()
         return backup
 
+    def restore_backup(self):
+        try:
+            os.popen('rm -r ' + self.configDir + '/*.yaml')
+        except:
+            logging.exception("Something went wrong when deleting the config")
+        os.popen('cp -r ' + self.configDir + '/backup/*.yaml ' + self.configDir + '/') 
+        load = self.load_config()
+        return load
+    
+    def download_config(self):
+        os.popen('tar -czvf ' + self.configDir + '/config.tar.gz ' + self.configDir + '/*.yaml')
+        sleep(1)
+        return self.configDir + "/config.tar.gz"
+    
     def write_args(self, args):
         self.yaml_config = configInit.write_args(args, self.yaml_config)
 

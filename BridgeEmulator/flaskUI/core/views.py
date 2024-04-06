@@ -13,6 +13,7 @@ from pprint import pprint
 import os
 import sys
 import logManager
+import subprocess
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core',__name__)
@@ -82,14 +83,47 @@ def pairTradfri():
 
 @core.route('/save')
 def save_config():
-    configManager.bridgeConfig.save_config()
-    return "config saved"
+    if request.args.get('backup', type = str) == "True":
+        configManager.bridgeConfig.save_config(backup=True)
+        return "backup config"
+    else:
+        configManager.bridgeConfig.save_config()
+        return "config saved"
+
+@core.route('/reset_config')
+@flask_login.login_required
+def reset_config():
+    configManager.bridgeConfig.reset_config()
+    return "config reset"
+
+@core.route('/restore_config')
+@flask_login.login_required
+def restore_config():
+    configManager.bridgeConfig.restore_backup()
+    return "restore config"
+
+@core.route('/download_config')
+@flask_login.login_required
+def download_config():
+    path = configManager.bridgeConfig.download_config()
+    return send_file(path, as_attachment=True)
 
 @core.route('/restart')
 def restart():
     logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
     os.execl(sys.executable, sys.executable, *sys.argv)
     return "restart python with args"
+
+@core.route('/info')
+@flask_login.login_required
+def info():
+    response = {}
+    response["sysname"] = os.uname().sysname
+    response["machine"] = os.uname().machine
+    response["os_version"] = os.uname().version
+    response["os_release"] = os.uname().release
+    response["diyhue"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+    return response
 
 @core.route('/login', methods=['GET', 'POST'])
 def login():

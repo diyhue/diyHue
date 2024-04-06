@@ -1,5 +1,5 @@
 curl -s localhost/save
-#cd /
+cd /
 if [ -d diyhueUI ]; then
  rm -r diyhueUI
 fi
