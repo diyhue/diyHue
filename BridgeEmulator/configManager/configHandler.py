@@ -8,8 +8,9 @@ import yaml
 import uuid
 import weakref
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+from time import sleep
 try:
-    from time import tzset, sleep
+    from time import tzset
 except ImportError:
     tzset = None
 
