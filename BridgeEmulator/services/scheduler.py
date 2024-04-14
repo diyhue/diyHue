@@ -34,7 +34,7 @@ def runScheduler():
                         timmer = schedule_time[2:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        if obj.starttime == (datetime.now(timezone.utc) - d).replace(microsecond=0).isoformat():
+                        if obj.starttime == (datetime.now(timezone.utc).replace(tzinfo=None) - d).replace(microsecond=0).isoformat():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
                             sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
                             obj.status = "disabled"
@@ -42,9 +42,9 @@ def runScheduler():
                         timmer = schedule_time[4:]
                         (h, m, s) = timmer.split(':')
                         d = timedelta(hours=int(h), minutes=int(m), seconds=int(s))
-                        if obj.starttime == (datetime.now(timezone.utc) - d).replace(microsecond=0).isoformat():
+                        if obj.starttime == (datetime.now(timezone.utc).replace(tzinfo=None) - d).replace(microsecond=0).isoformat():
                             logging.info("execute timmer: " + schedule + " withe delay " + str(delay))
-                            obj.starttime = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+                            obj.starttime = datetime.now(timezone.utc).replace(tzinfo=None).replace(microsecond=0).isoformat()
                             sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
                     else:
                         if schedule_time == datetime.now().strftime("%Y-%m-%dT%H:%M:%S"):
