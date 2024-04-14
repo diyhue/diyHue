@@ -36,7 +36,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                     if abs(datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") - lu) <= timedelta(seconds = 2):
                         i = 300
                         break
-                except:
-                    pass
+                except Exception as e:
+                    logging.warning(user.last_use_date + " is not: %s", e + e)
             i += 1
             sleep(1)
