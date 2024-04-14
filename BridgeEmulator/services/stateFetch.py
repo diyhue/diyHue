@@ -37,6 +37,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
                         i = 300
                         break
                 except Exception as e:
-                    logging.warning(user.last_use_date + " is not: %s", e + e)
+                    logging.warning(user.last_use_date + " is not: %s", e)
+                    logging.warning(e)
             i += 1
             sleep(1)
