@@ -6,7 +6,7 @@ import uuid
 from time import sleep
 from datetime import datetime
 from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri, elgato
-from services.homeAssistantWS import discover
+from services import homeAssistantWS
 import HueObjects
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
@@ -124,7 +124,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
     if bridgeConfig["config"]["deconz"]["enabled"]:
         deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
     if bridgeConfig["config"]["homeassistant"]["enabled"]:
-        discover(detectedLights)
+        homeAssistantWS.discover(detectedLights)
     if bridgeConfig["config"]["yeelight"]["enabled"]:
         yeelight.discover(detectedLights)
     # native_multi probe all esp8266 lights with firmware from diyhue repo
