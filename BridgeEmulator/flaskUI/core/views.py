@@ -85,22 +85,22 @@ def pairTradfri():
 def save_config():
     if request.args.get('backup', type = str) == "True":
         configManager.bridgeConfig.save_config(backup=True)
-        return "backup config"
+        return "backup config\n"
     else:
         configManager.bridgeConfig.save_config()
-        return "config saved"
+        return "config saved\n"
 
 @core.route('/reset_config')
 @flask_login.login_required
 def reset_config():
     configManager.bridgeConfig.reset_config()
-    return "config reset"
+    return "config reset\n"
 
 @core.route('/restore_config')
 @flask_login.login_required
 def restore_config():
     configManager.bridgeConfig.restore_backup()
-    return "restore config"
+    return "restore config\n"
 
 @core.route('/download_config')
 @flask_login.login_required
@@ -132,7 +132,7 @@ def login():
         return render_template('login.html', form=form)
     email = form.email.data
     if email not in bridgeConfig["config"]["users"]:
-        return 'User don\'t exist'
+        return 'User don\'t exist\n'
     if check_password_hash(bridgeConfig["config"]["users"][email]['password'],form.password.data):
         user = User()
         user.id = email
@@ -141,7 +141,7 @@ def login():
 
     logging.info("Hashed pass: " + generate_password_hash(form.password.data))
 
-    return 'Bad login'
+    return 'Bad login\n'
 
 
 @core.route('/description.xml')

@@ -91,8 +91,8 @@ def githubUICheck():
 
 def githubInstall():
     if bridgeConfig["config"]["swupdate2"]["state"] in ["allreadytoinstall", "anyreadytoinstall"]:#diyhue + ui update
-        bridgeConfig["config"]["swupdate2"]["state"] = "installing"
         subprocess.Popen("sh githubInstall.sh " + bridgeConfig["config"]["ipaddress"] + " " + bridgeConfig["config"]["swupdate2"]["state"],shell=True, close_fds=True)
+        bridgeConfig["config"]["swupdate2"]["state"] = "installing"
 
 def startupCheck():
     if bridgeConfig["config"]["swupdate2"]["install"] == True:

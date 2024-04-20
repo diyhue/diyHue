@@ -2,8 +2,8 @@ curl -s $1/save
 cd /
 if [ $2 = allreadytoinstall ]; then
     echo "diyhue + ui update"
-    #curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
-    curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
+    curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
+    #curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
     unzip -qo diyhue.zip
     rm diyhue.zip
     cp -r diyHue-master/BridgeEmulator/flaskUI /opt/hue-emulator/
@@ -29,7 +29,7 @@ if [ -d diyhueUI ]; then
 fi
 mkdir diyhueUI
 curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
-curl -sL https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
+#curl -sL https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 unzip -qo diyHueUI.zip -d diyhueUI
 rm diyHueUI.zip
 cp -r diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
