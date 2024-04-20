@@ -1,4 +1,4 @@
-curl -s localhost/save
+curl -s $1/save
 cd /
 if [ -d diyhueUI ]; then
  rm -r diyhueUI
@@ -11,4 +11,4 @@ rm diyHueUI.zip
 cp -r diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
 cp -r diyhueUI/static /opt/hue-emulator/flaskUI/
 
-curl -s localhost/restart
+curl -s $1/restart

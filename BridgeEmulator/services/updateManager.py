@@ -52,11 +52,9 @@ def githubCheck():
     if publish_time > creation_time:
         logging.info("update on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "allreadytoinstall"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "allreadytoinstall"
     elif githubUICheck() == True:
         logging.info("UI update on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "anyreadytoinstall"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "anyreadytoinstall"
     else:
         logging.info("no update for diyHue or UI on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "noupdates"
@@ -92,14 +90,9 @@ def githubUICheck():
 
 
 def githubInstall():
-    if bridgeConfig["config"]["swupdate2"]["state"] == "anyreadytoinstall":#ui update
+    if bridgeConfig["config"]["swupdate2"]["state"] in ["allreadytoinstall", "anyreadytoinstall"]:#diyhue + ui update
         bridgeConfig["config"]["swupdate2"]["state"] = "installing"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
-        subprocess.Popen("sh githubUIInstall.sh",shell=True, close_fds=True)
-    if bridgeConfig["config"]["swupdate2"]["state"] == "allreadytoinstall":#diyhue + ui update
-        bridgeConfig["config"]["swupdate2"]["state"] = "installing"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
-        subprocess.Popen("sh githubInstall.sh",shell=True, close_fds=True)
+        subprocess.Popen("sh githubInstall.sh " + bridgeConfig["config"]["ipaddress"] + " " + bridgeConfig["config"]["swupdate2"]["state"],shell=True, close_fds=True)
 
 def startupCheck():
     if bridgeConfig["config"]["swupdate2"]["install"] == True:
