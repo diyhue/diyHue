@@ -79,11 +79,11 @@ body:
   - type: textarea
     id: debug
     attributes:
-      label: "Debug tar"
+      label: "Upload debug tar"
       description: "Please upload config_debug.tar"
       value: |
         ```
-        This can be downloaded from te webUI.
+        This can be downloaded from the webUI.
         DiyHue > Bridge > Brdige Control > Download debug > Full debug
         ``
     validations:
