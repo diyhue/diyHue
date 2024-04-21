@@ -289,7 +289,7 @@ class Config:
     
     def download_config(self):
         self.save_config()
-        os.popen('tar -czvf ' + self.configDir + '/config.tar ' + self.configDir + '/*.yaml')
+        os.popen('tar -cvf ' + self.configDir + '/config.tar ' + self.configDir + '/*.yaml')
         sleep(1)
         return self.configDir + "/config.tar"
     
@@ -301,7 +301,7 @@ class Config:
         config["whitelist"] = "privately"
         config["Hue Essentials key"] = "privately"
         _write_yaml(self.configDir + "/config_debug.yaml", config)
-        os.popen('tar -czvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml')
+        os.popen('tar -cvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml')
         sleep(1)
         os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
         os.popen('tar -f' + self.configDir + '/config_debug.tar --delete ' + self.configDir + '/config.yaml')
