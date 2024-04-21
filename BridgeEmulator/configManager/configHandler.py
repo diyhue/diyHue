@@ -290,7 +290,7 @@ class Config:
     
     def download_config(self):
         self.save_config()
-        os.popen('tar -cvf ' + self.configDir + '/config.tar ' + self.configDir + '/*.yaml')
+        os.popen('tar --exclude=' + "'config_debug.yaml'" + ' -cvf ' + self.configDir + '/config.tar ' + self.configDir + '/*.yaml')
         sleep(1)
         return self.configDir + "/config.tar"
     
@@ -311,7 +311,7 @@ class Config:
         info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
         _write_yaml(self.configDir + "/config_debug.yaml", debug)
         _write_yaml(self.configDir + "/system_info.yaml", info)
-        os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + 
+        os.popen('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' + 
                  self.configDir + '/*.yaml ' + 
                  self.configDir + '/diyhue.log ')
         sleep(1)
