@@ -298,6 +298,7 @@ class Config:
         return self.configDir + "/diyhue.log"
     
     def download_debug(self):
+        os.popen('rm -r ' + self.configDir + '/config_debug.tar')
         _write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
         debug = _open_yaml(self.configDir + "/config_debug.yaml")
         debug["whitelist"] = "privately"
