@@ -298,7 +298,8 @@ class Config:
         return self.configDir + "/diyhue.log"
     
     def download_debug(self):
-        debug = self.yaml_config["config"]
+        _write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
+        debug = _open_yaml(self.configDir + "/config_debug.yaml")
         debug["whitelist"] = "privately"
         debug["Hue Essentials key"] = "privately"
         debug["users"] = "privately"
