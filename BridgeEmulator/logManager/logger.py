@@ -1,4 +1,5 @@
 import logging
+import logging.handlers
 import sys
 
 
@@ -29,6 +30,11 @@ class Logger:
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(_get_log_format())
         handler.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+
+        handler = logging.handlers.RotatingFileHandler(filename='diyhue.log', maxBytes=(5000000))
+        handler.setFormatter(_get_log_format())
+        handler.setLevel(logging.DEBUG)
         logger.addHandler(handler)
 
         logger.setLevel(self.logLevel)

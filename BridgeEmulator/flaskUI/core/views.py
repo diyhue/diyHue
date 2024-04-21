@@ -108,6 +108,18 @@ def download_config():
     path = configManager.bridgeConfig.download_config()
     return send_file(path, as_attachment=True)
 
+@core.route('/download_log')
+#@flask_login.login_required
+def download_log():
+    path = configManager.bridgeConfig.download_log()
+    return send_file(path, as_attachment=True)
+
+@core.route('/download_debug')
+#@flask_login.login_required
+def download_debug():
+    path = configManager.bridgeConfig.download_debug()
+    return send_file(path, as_attachment=True)
+
 @core.route('/restart')
 def restart():
     logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
