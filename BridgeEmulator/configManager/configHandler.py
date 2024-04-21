@@ -2,6 +2,7 @@ from configManager import configInit
 from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
+import subprocess
 import json
 import logManager
 import yaml
@@ -301,11 +302,18 @@ class Config:
         config["whitelist"] = "privately"
         config["Hue Essentials key"] = "privately"
         config["users"] = "privately"
+        info = {}
+        info["OS"] = os.uname().sysname
+        info["Architecture"] = os.uname().machine
+        info["os_version"] = os.uname().version
+        info["os_release"] = os.uname().release
+        info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
         _write_yaml(self.configDir + "/config_debug.yaml", config)
-        os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml ' + self.configDir.replace("/config", "") + '/diyhue.log')
+        _write_yaml(self.configDir + "/system_info.yaml", info)
+        os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + 
+                 self.configDir + '/*.yaml ' + 
+                 self.configDir + '/diyhue.log ')
         sleep(1)
-        #os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
-        #os.popen('tar -f' + self.configDir + '/config_debug.tar --delete ' + self.configDir + '/config.yaml')
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar"
     
