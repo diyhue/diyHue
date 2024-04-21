@@ -294,7 +294,7 @@ class Config:
         return self.configDir + "/config.tar"
     
     def download_log(self):
-        return self.configDir.strip("/config") + "/diyhue.log"
+        return self.configDir.replace("/config", "") + "/diyhue.log"
     
     def download_debug(self):
         config = self.yaml_config["config"]
@@ -303,7 +303,7 @@ class Config:
         _write_yaml(self.configDir + "/config_debug.yaml", config)
         os.popen('tar -czvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml')
         sleep(1)
-        os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.strip("/config") + '/diyhue.log')
+        os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
         os.popen('tar -f' + self.configDir + '/config_debug.tar --delete ' + self.configDir + '/config.yaml')
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar.gz"
