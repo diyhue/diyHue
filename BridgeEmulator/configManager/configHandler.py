@@ -295,20 +295,20 @@ class Config:
         return self.configDir + "/config.tar"
     
     def download_log(self):
-        return self.configDir.replace("/config", "") + "/diyhue.log"
+        return self.configDir + "/diyhue.log"
     
     def download_debug(self):
-        config = self.yaml_config["config"]
-        config["whitelist"] = "privately"
-        config["Hue Essentials key"] = "privately"
-        config["users"] = "privately"
+        debug = self.yaml_config["config"]
+        debug["whitelist"] = "privately"
+        debug["Hue Essentials key"] = "privately"
+        debug["users"] = "privately"
         info = {}
         info["OS"] = os.uname().sysname
         info["Architecture"] = os.uname().machine
         info["os_version"] = os.uname().version
         info["os_release"] = os.uname().release
         info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
-        _write_yaml(self.configDir + "/config_debug.yaml", config)
+        _write_yaml(self.configDir + "/config_debug.yaml", debug)
         _write_yaml(self.configDir + "/system_info.yaml", info)
         os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + 
                  self.configDir + '/*.yaml ' + 
