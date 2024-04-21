@@ -301,9 +301,9 @@ class Config:
         config["whitelist"] = "privately"
         config["Hue Essentials key"] = "privately"
         _write_yaml(self.configDir + "/config_debug.yaml", config)
-        os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml')
+        os.popen('tar --exclude=' + 'config.yaml' + ' -cvf ' + self.configDir + '/config_debug.tar ' + self.configDir + '/*.yaml' + self.configDir.replace("/config", "") + '/diyhue.log')
         sleep(1)
-        os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
+        #os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
         #os.popen('tar -f' + self.configDir + '/config_debug.tar --delete ' + self.configDir + '/config.yaml')
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar.gz"
