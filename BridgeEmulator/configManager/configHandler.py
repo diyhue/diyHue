@@ -306,7 +306,7 @@ class Config:
         #os.popen('tar -r -f' + self.configDir + '/config_debug.tar ' + self.configDir.replace("/config", "") + '/diyhue.log')
         #os.popen('tar -f' + self.configDir + '/config_debug.tar --delete ' + self.configDir + '/config.yaml')
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
-        return self.configDir + "/config_debug.tar.gz"
+        return self.configDir + "/config_debug.tar"
     
     def write_args(self, args):
         self.yaml_config = configInit.write_args(args, self.yaml_config)
