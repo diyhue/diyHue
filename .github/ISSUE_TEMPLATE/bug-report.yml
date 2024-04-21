@@ -76,6 +76,18 @@ body:
         Hardware:
     validations:
       required: true
+  - type: textarea
+    id: debug
+    attributes:
+      label: "Debug tar"
+      description: "Please upload config_debug.tar"
+      value: |
+        ```
+        This can be downloaded from te webUI.
+        DiyHue > Bridge > Brdige Control > Download debug > Full debug
+        ``
+    validations:
+      required: true
   - type: markdown
     id: env-info
     attributes:
