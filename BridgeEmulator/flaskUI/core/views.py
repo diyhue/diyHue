@@ -127,7 +127,7 @@ def restart():
     return "restart python with args"
 
 @core.route('/info')
-@flask_login.login_required
+#@flask_login.login_required
 def info():
     response = {}
     response["sysname"] = os.uname().sysname

@@ -32,7 +32,7 @@ class Logger:
         handler.setLevel(logging.WARNING)
         logger.addHandler(handler)
 
-        handler = logging.handlers.RotatingFileHandler(filename='config/diyhue.log', maxBytes=(5000000))
+        handler = logging.handlers.RotatingFileHandler(filename='config/diyhue.log', maxBytes=(5000000), backupCount=1)
         handler.setFormatter(_get_log_format())
         handler.setLevel(logging.DEBUG)
         logger.addHandler(handler)

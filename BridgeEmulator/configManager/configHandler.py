@@ -314,7 +314,8 @@ class Config:
         _write_yaml(self.configDir + "/system_info.yaml", info)
         os.popen('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' + 
                  self.configDir + '/*.yaml ' + 
-                 self.configDir + '/diyhue.log ')
+                 self.configDir + '/diyhue.log ' +
+                 self.configDir + '/diyhue.log.1 ')
         sleep(1)
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar"
