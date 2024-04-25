@@ -51,7 +51,9 @@ body:
       description: "Please paste the full error log here"
       value: |
         ```
-        Please paste the full error log here
+        This can be downloaded from the webUI.
+        DiyHue > Bridge > Brdige Control > Download debug > Log File
+        This is also included in Full debug
         ```
     validations:
       required: true
@@ -85,6 +87,7 @@ body:
         ```
         This can be downloaded from the webUI.
         DiyHue > Bridge > Brdige Control > Download debug > Full debug
+        Do not upload from Force config dump, Force config dump contains sensitive information
         ``
     validations:
       required: true
