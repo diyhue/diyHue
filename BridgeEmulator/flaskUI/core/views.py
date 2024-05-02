@@ -40,7 +40,6 @@ def get_lights():
         result[light] = object.save()
     return result
 
-
 @core.route('/sensors')
 #@flask_login.login_required
 def get_sensors():
@@ -48,7 +47,6 @@ def get_sensors():
     for sensor, object in bridgeConfig["sensors"].items():
         result[sensor] = object.save()
     return result
-
 
 @core.route('/light-types', methods=['GET', 'POST'])
 #@flask_login.login_required
@@ -135,6 +133,7 @@ def info():
     response["os_version"] = os.uname().version
     response["os_release"] = os.uname().release
     response["diyhue"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+    response["webui"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
     return response
 
 @core.route('/login', methods=['GET', 'POST'])
@@ -155,7 +154,6 @@ def login():
 
     return 'Bad login\n'
 
-
 @core.route('/description.xml')
 def description_xml():
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
@@ -163,8 +161,6 @@ def description_xml():
     resp = make_response(render_template('description.xml', mimetype='text/xml', port=HOST_HTTP_PORT, name=bridgeConfig["config"]["name"], ipaddress=bridgeConfig["config"]["ipaddress"], serial=mac))
     resp.headers['Content-type'] = 'text/xml'
     return resp
-
-
 
 @core.route('/logout')
 @flask_login.login_required
