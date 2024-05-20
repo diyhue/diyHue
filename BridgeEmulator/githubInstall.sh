@@ -16,7 +16,6 @@ if [ $2 = allreadytoinstall ]; then
     cp -r diyHue-master/BridgeEmulator/logManager /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
-    cp -r diyHue-master/BridgeEmulator/githubUIInstall.sh /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/genCert.sh /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
     chmod +x /opt/hue-emulator/genCert.sh

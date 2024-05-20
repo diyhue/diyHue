@@ -52,7 +52,7 @@ body:
       value: |
         ```
         This can be downloaded from the webUI.
-        DiyHue > Bridge > Brdige Control > Download debug > Log File
+        DiyHue > Bridge > Brdige Control > Download debug > Log tar
         This is also included in Full debug
         ```
     validations:

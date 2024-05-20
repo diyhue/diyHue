@@ -292,7 +292,10 @@ class Config:
         return self.configDir + "/config.tar"
 
     def download_log(self):
-        return self.configDir + "/diyhue.log"
+        subprocess.run('tar -cvf ' + self.configDir + '/diyhue_log.tar ' +
+                 self.configDir + '/*.log* ',
+                 shell=True, capture_output=True, text=True)
+        return self.configDir + "/diyhue_log.tar"
 
     def download_debug(self):
         _write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
