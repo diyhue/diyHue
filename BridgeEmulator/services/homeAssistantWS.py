@@ -109,13 +109,18 @@ class HomeAssistantClient(WebSocketClient):
     def change_light(self, light, data):
         service_data = {}
         service_data['entity_id'] = light.protocol_cfg['entity_id']
-
-        payload = {
-            "type": "call_service",
-            "domain": "light",
-            "service_data": service_data
-        }
-
+        if light.protocol_cfg['entity_id'].startswith("light."):
+            payload = {
+                "type": "call_service",
+                "domain": "light",
+                "service_data": service_data
+            }
+        elif light.protocol_cfg['entity_id'].startswith("switch."):
+            payload = {
+                "type": "call_service",
+                "domain": "switch",
+                "service_data": service_data
+            }
         payload["service"] = "turn_on"
         if 'on' in data:
             if not data['on']:
@@ -183,7 +188,7 @@ class HomeAssistantClient(WebSocketClient):
         should_include = False
         diy_hue_flag = None
         entity_id = ha_state.get('entity_id', None)
-        if entity_id.startswith("light."):
+        if entity_id.startswith("light.") or entity_id.startswith("switch."):
             if 'attributes' in ha_state and 'diyhue' in ha_state['attributes']:
                 diy_hue_flag = ha_state['attributes']['diyhue']
 
