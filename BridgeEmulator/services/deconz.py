@@ -10,7 +10,7 @@ from functions.rules import rulesProcessor
 from ws4py.client.threadedclient import WebSocketClient
 from sensors.discover import addHueMotionSensor
 from functions.core import nextFreeId
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -114,7 +114,7 @@ def websocketClient():
                             else:
                                 lightSensor.state["lightlevel"] = 25000
                             lightSensor.state["daylight"] = not lightSensor.state["dark"]
-                            lightSensor.state["lastupdated"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                            lightSensor.state["lastupdated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
                             if "dark" in message["state"]:
                                 del message["state"]["dark"]
 

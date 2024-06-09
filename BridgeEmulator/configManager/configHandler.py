@@ -2,12 +2,14 @@ from configManager import configInit
 from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
+import subprocess
 import json
 import logManager
 import yaml
 import uuid
 import weakref
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
+from time import sleep
 try:
     from time import tzset
 except ImportError:
@@ -235,7 +237,6 @@ class Config:
             raise SystemExit("CRITICAL! Config file was not loaded")
         bridgeConfig = self.yaml_config
 
-
     def save_config(self, backup=False, resource="all"):
         path = self.configDir + '/'
         if backup:
@@ -267,15 +268,56 @@ class Config:
             _write_yaml(filePath, dumpDict)
             logging.debug("Dump config file " + filePath)
 
-
     def reset_config(self):
-        backup = self.save_config(True)
+        backup = self.save_config(backup=True)
         try:
-            os.remove(self.configDir + "/*.yaml")
+            os.popen('rm -r ' + self.configDir + '/*.yaml')
         except:
             logging.exception("Something went wrong when deleting the config")
         self.load_config()
         return backup
+
+    def restore_backup(self):
+        try:
+            os.popen('rm -r ' + self.configDir + '/*.yaml')
+        except:
+            logging.exception("Something went wrong when deleting the config")
+        subprocess.run('cp -r ' + self.configDir + '/backup/*.yaml ' + self.configDir + '/', shell=True, capture_output=True, text=True)
+        load = self.load_config()
+        return load
+
+    def download_config(self):
+        self.save_config()
+        subprocess.run('tar --exclude=' + "'config_debug.yaml'" + ' -cvf ' + self.configDir + '/config.tar ' + self.configDir + '/*.yaml', shell=True, capture_output=True, text=True)
+        return self.configDir + "/config.tar"
+
+    def download_log(self):
+        subprocess.run('tar -cvf ' + self.configDir + '/diyhue_log.tar ' +
+                 self.configDir.replace('/config', '') + '/*.log* ',
+                 shell=True, capture_output=True, text=True)
+        return self.configDir + "/diyhue_log.tar"
+
+    def download_debug(self):
+        _write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
+        debug = _open_yaml(self.configDir + "/config_debug.yaml")
+        debug["whitelist"] = "privately"
+        debug["Hue Essentials key"] = "privately"
+        debug["users"] = "privately"
+        info = {}
+        info["OS"] = os.uname().sysname
+        info["Architecture"] = os.uname().machine
+        info["os_version"] = os.uname().version
+        info["os_release"] = os.uname().release
+        info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+        info["WebUI Version"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+        _write_yaml(self.configDir + "/config_debug.yaml", debug)
+        _write_yaml(self.configDir + "/system_info.yaml", info)
+        subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
+                 self.configDir + '/*.yaml ' +
+                 self.configDir.replace('/config', '') + '/*.log* ',
+                 shell=True, capture_output=True, text=True)
+        os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
+        return self.configDir + "/config_debug.tar"
 
     def write_args(self, args):
         self.yaml_config = configInit.write_args(args, self.yaml_config)

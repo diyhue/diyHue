@@ -51,7 +51,10 @@ body:
       description: "Please paste the full error log here"
       value: |
         ```
-        Please paste the full error log here
+        This can be downloaded from the webUI.
+        DiyHue > Bridge > Brdige Control > Download debug > Log tar
+        This is also included in Full debug
+        If diyHue does not start upload from normal log
         ```
     validations:
       required: true
@@ -66,7 +69,28 @@ body:
     id: os
     attributes:
       label: "Please enter your operating system details here"
-      description: "You can provide the output from: uname -mrs"
+      description: "You can provide the output from the web ui DiyHue>Bridge>System debug information and change Hardware to match you hardware"
+      value: |
+        If diyHue does not star use "uname -mrs"
+        Hue-Emulator Version:
+        Architecture:
+        OS:
+        Os version:
+        Os release:
+        Hardware:
+    validations:
+      required: true
+  - type: textarea
+    id: debug
+    attributes:
+      label: "Upload debug tar"
+      description: "Please upload config_debug.tar"
+      value: |
+        ```
+        This can be downloaded from the webUI.
+        DiyHue > Bridge > Brdige Control > Download debug > Full debug
+        Do not upload from Force config dump, Force config dump contains sensitive information
+        ``
     validations:
       required: true
   - type: markdown

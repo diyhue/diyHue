@@ -11,7 +11,7 @@ from services.entertainment import entertainmentService
 from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
-from datetime import datetime
+from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
 from pprint import pprint
 from lights.discover import scanForLights
@@ -57,7 +57,7 @@ def getObject(element, v2uuid):
 def authorizeV2(headers):
     if "hue-application-key" in headers and headers["hue-application-key"] in bridgeConfig["apiUsers"]:
         bridgeConfig["apiUsers"][headers["hue-application-key"]
-                                 ].last_use_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                                 ].last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
         return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
     return []
 

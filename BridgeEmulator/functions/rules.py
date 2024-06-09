@@ -58,7 +58,7 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
                     ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
                     ddx_sensor = url_pices
         except Exception as e:
-            logging.debug("rule " + rule.name + " failed, reason:" + str(e))
+            logging.exception("rule " + rule.name + " failed, reason: " + str(type(e).__name__) + " " + str(e))
 
 
     if device_found:
@@ -94,7 +94,7 @@ def threadActions(actionsToExecute):
             requests.post( urlPrefix + action["address"], json=action["body"], timeout=5)
         elif action["method"] == "PUT":
             requests.put( urlPrefix + action["address"], json=action["body"], timeout=5)
-        
+
 
 def rulesProcessor(device, current_time):
     logging.debug("Processing rules for " + device.name)

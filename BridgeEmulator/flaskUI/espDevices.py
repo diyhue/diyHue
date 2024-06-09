@@ -6,7 +6,7 @@ from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
 from sensors.discover import addHueMotionSensor, addHueSwitch, addHueRotarySwitch
-from datetime import datetime
+from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
 
@@ -106,7 +106,7 @@ class Switch(Resource):
                             else:
                                 result = {"fail": "unknown device"}
                             obj.dxState["lastupdated"] = current_time
-                            obj.state["lastupdated"] = datetime.utcnow().strftime(
+                            obj.state["lastupdated"] = datetime.now(timezone.utc).strftime(
                                 "%Y-%m-%dT%H:%M:%S")
                             rulesProcessor(obj, current_time)
                             result = {"success": "command applied"}

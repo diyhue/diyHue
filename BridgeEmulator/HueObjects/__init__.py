@@ -6,7 +6,7 @@ from lights.light_types import lightTypes, archetype
 from sensors.sensor_types import sensorTypes
 from lights.protocols import protocols
 from threading import Thread
-from datetime import datetime
+from datetime import datetime, timezone
 from pprint import pprint
 from copy import deepcopy
 from time import sleep
@@ -170,7 +170,7 @@ class BehaviorInstance():
         eventstream.append(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "behavior_instance"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -234,7 +234,7 @@ class BehaviorInstance():
         return result
 
 class ApiUser():
-    def __init__(self, username, name, client_key, create_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), last_use_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")):
+    def __init__(self, username, name, client_key, create_date=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"), last_use_date=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")):
         self.username = username
         self.name = name
         self.client_key = client_key
@@ -305,7 +305,7 @@ class Light():
 
     def __del__(self):
         ## light ##
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -314,7 +314,7 @@ class Light():
         eventstream.append(streamMessage)
 
         ## device ##
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getDevice()["id"], "type": "device"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -323,7 +323,7 @@ class Light():
         eventstream.append(streamMessage)
 
         # Zigbee Connectivity
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -332,7 +332,7 @@ class Light():
         eventstream.append(streamMessage)
 
         # Entertainment
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -426,7 +426,7 @@ class Light():
         self.genStreamEvent(state)
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -724,7 +724,7 @@ class EntertainmentConfiguration():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -733,7 +733,7 @@ class EntertainmentConfiguration():
 
     def __del__(self):
         # Groupper light
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -741,7 +741,7 @@ class EntertainmentConfiguration():
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         eventstream.append(streamMessage)
         ### Entertainment area ###
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getV2Api()["id"], "type": "entertainment_configuration"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -934,7 +934,7 @@ class EntertainmentConfiguration():
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -967,7 +967,7 @@ class GeofenceClient():
         self.is_at_home = data.get('is_at_home', False)
 
         streamMessage = {
-            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [self.getV2GeofenceClient()],
             "id": str(uuid.uuid4()),
             "type": "add"
@@ -976,7 +976,7 @@ class GeofenceClient():
 
     def __del__(self):
         streamMessage = {
-            "creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [{"id": self.id_v2, "type": "geofence_client"}],
             "id": str(uuid.uuid4()),
             "type": "delete"
@@ -1025,7 +1025,7 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -1033,7 +1033,7 @@ class Group():
         eventstream.append(streamMessage)
 
     def groupZeroStream(self, rooms, lights):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -1048,7 +1048,7 @@ class Group():
 
     def __del__(self):
         # Groupper light
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -1059,7 +1059,7 @@ class Group():
         elementId = self.getV2Room(
         )["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -1072,13 +1072,13 @@ class Group():
         elementId = self.getV2Room(
         )["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
         eventstream.append(streamMessage)
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -1093,7 +1093,7 @@ class Group():
                     {"rid": light().getDevice()["id"], "rtype": "device"})
                 groupServices.append({"rid": light().id_v2, "rtype": "light"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -1153,14 +1153,14 @@ class Group():
     def genStreamEvent(self, v2State):
         for light in self.lights:
             if light():
-                streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                  "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner": {"rid": light().getDevice()["id"], "rtype":"device"}, "type": "light"}],
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
                 streamMessage["data"][0].update(v2State)
                 eventstream.append(streamMessage)
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light",
                                    "owner": {
                                        "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
@@ -1314,7 +1314,7 @@ class Scene():
         self.picture = data["picture"] if "picture" in data else ""
         self.image = data["image"] if "image" in data else None
         self.recycle = data["recycle"] if "recycle" in data else False
-        self.lastupdated = data["lastupdated"] if "lastupdated" in data else datetime.utcnow(
+        self.lastupdated = data["lastupdated"] if "lastupdated" in data else datetime.now(timezone.utc
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lightstates = weakref.WeakKeyDictionary()
         self.palette = data["palette"] if "palette" in data else {}
@@ -1324,7 +1324,7 @@ class Scene():
         if "group" in data:
             self.storelightstate()
             self.lights = self.group().lights
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -1333,7 +1333,7 @@ class Scene():
         eventstream.append(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "scene"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
@@ -1502,7 +1502,7 @@ class Scene():
             self.lightstates[light()] = state
 
     def update_attr(self, newdata):
-        self.lastupdated = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        self.lastupdated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
         if "storelightstate" in newdata and newdata["storelightstate"]:
             self.storelightstate()
             return
@@ -1547,7 +1547,7 @@ class Rule():
         self.owner = data["owner"]
         self.status = data["status"] if "status" in data else "enabled"
         self.recycle = data["recycle"] if "recycle" in data else False
-        self.created = data["created"] if "created" in data else datetime.utcnow(
+        self.created = data["created"] if "created" in data else datetime.now(timezone.utc
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.lasttriggered = data["lasttriggered"] if "lasttriggered" in data else "none"
         self.timestriggered = data["timestriggered"] if "timestriggered" in data else 0
@@ -1642,7 +1642,7 @@ class Schedule():
         self.description = data["description"] if "description" in data else "none"
         self.command = data["command"] if "command" in data else {}
         self.localtime = data["localtime"] if "localtime" in data else None
-        self.created = data["created"] if "created" in data else datetime.utcnow(
+        self.created = data["created"] if "created" in data else datetime.now(timezone.utc
         ).strftime("%Y-%m-%dT%H:%M:%S")
         self.status = data["status"] if "status" in data else "disabled"
         self.autodelete = data["autodelete"] if "autodelete" in data else False
@@ -1682,7 +1682,7 @@ class Schedule():
                 setattr(self, key, value)
             if key == "status" and value == "enabled":
                 logging.debug("enable timer " + self.name)
-                self.starttime = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                self.starttime = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
     def getObjectPath(self):
         return {"resource": "schedules", "id": self.id_v1}
@@ -1735,7 +1735,7 @@ class Sensor():
         self.recycle = data["recycle"] if "recycle" in data else False
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else None
         if self.getDevice() != None:
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                              "data": [{"id": self.id_v2, "type": "device"}],
                              "id": str(uuid.uuid4()),
                              "type": "add"
@@ -1745,7 +1745,7 @@ class Sensor():
 
     def __del__(self):
         if self.modelid in ["SML001", "RWL022"]:
-            streamMessage = {"creationtime": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getDevice()["id"], "type": "device"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"

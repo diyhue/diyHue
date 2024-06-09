@@ -21,8 +21,8 @@ def versionCheck():
                 logging.info("swversion number update from Philips, old: " + swversion + " new:" + new_version)
                 bridgeConfig["config"]["swversion"] = new_version
                 bridgeConfig["config"]["apiversion"] = new_versionName
-                bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-                bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+                bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+                bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
             else:
                 logging.info("swversion higher than Philips")
         else:
@@ -52,11 +52,9 @@ def githubCheck():
     if publish_time > creation_time:
         logging.info("update on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "allreadytoinstall"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "allreadytoinstall"
     elif githubUICheck() == True:
         logging.info("UI update on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "anyreadytoinstall"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "anyreadytoinstall"
     else:
         logging.info("no update for diyHue or UI on github")
         bridgeConfig["config"]["swupdate2"]["state"] = "noupdates"
@@ -92,19 +90,14 @@ def githubUICheck():
 
 
 def githubInstall():
-    if bridgeConfig["config"]["swupdate2"]["state"] == "anyreadytoinstall":#ui update
+    if bridgeConfig["config"]["swupdate2"]["state"] in ["allreadytoinstall", "anyreadytoinstall"]:#diyhue + ui update
+        subprocess.Popen("sh githubInstall.sh " + bridgeConfig["config"]["ipaddress"] + " " + bridgeConfig["config"]["swupdate2"]["state"],shell=True, close_fds=True)
         bridgeConfig["config"]["swupdate2"]["state"] = "installing"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
-        subprocess.Popen("sh githubUIInstall.sh",shell=True, close_fds=True)
-    if bridgeConfig["config"]["swupdate2"]["state"] == "allreadytoinstall":#diyhue + ui update
-        bridgeConfig["config"]["swupdate2"]["state"] = "installing"
-        #bridgeConfig["config"]["swupdate2"]["bridge"]["state"] = "installing"
-        subprocess.Popen("sh githubInstall.sh",shell=True, close_fds=True)
 
 def startupCheck():
     if bridgeConfig["config"]["swupdate2"]["install"] == True:
         bridgeConfig["config"]["swupdate2"]["install"] = False
-        bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     versionCheck()
     githubCheck()
