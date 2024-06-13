@@ -293,7 +293,7 @@ class Config:
 
     def download_log(self):
         subprocess.run('tar -cvf ' + self.configDir + '/diyhue_log.tar ' +
-                 self.configDir.replace('/config', '') + '/*.log* ',
+                 '/*.log* ',
                  shell=True, capture_output=True, text=True)
         return self.configDir + "/diyhue_log.tar"
 
@@ -314,7 +314,7 @@ class Config:
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
                  self.configDir + '/*.yaml ' +
-                 self.configDir.replace('/config', '') + '/*.log* ',
+                 '/*.log* ',
                  shell=True, capture_output=True, text=True)
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar"
