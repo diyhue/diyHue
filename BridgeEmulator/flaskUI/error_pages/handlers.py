@@ -8,7 +8,7 @@ def error_404(error):
     Error for pages not found.
     '''
     # Notice how we return a tuple!
-    return render_template('page-404.html'), 200
+    return render_template('page-404.html'), 404
 
 @error_pages.app_errorhandler(500)
 def error_500(error):
