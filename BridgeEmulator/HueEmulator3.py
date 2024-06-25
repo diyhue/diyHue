@@ -13,7 +13,6 @@ from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.espDevices import Switch
 from flaskUI.Credits import Credits
-from flaskUI.error_pages.handlers import error_pages
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from pprint import pprint
