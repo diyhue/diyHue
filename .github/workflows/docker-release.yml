@@ -97,7 +97,7 @@ jobs:
       matrix:
         arch: [amd64]
         #arch: [amd64, armv7, arm64, armv6]
-        registry: [ghcr.io/]
+        registry: [ghcr.io]
         #registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
@@ -150,7 +150,7 @@ jobs:
         arch: [amd64]
         #arch: [amd64, armv7, arm64, armv6]
         #registry: [registry.hub.docker.com, ghcr.io/diyhue]
-        registry: [ghcr.io/]
+        registry: [ghcr.io]
     steps:
       - name: Set Docker Repository
         run: |
@@ -223,7 +223,7 @@ jobs:
     strategy:
       matrix:
         #registry: [registry.hub.docker.com, ghcr.io/diyhue]
-        registry: [ghcr.io/]
+        registry: [ghcr.io]
     steps:
       - name: Set Docker Repository
         run: |
