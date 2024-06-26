@@ -12,12 +12,20 @@ jobs:
         include:
           - arch: linux/amd64
             arch_friendly: amd64
-          - arch: linux/arm/v7
-            arch_friendly: armv7
-          - arch: linux/arm64
-            arch_friendly: arm64
-          - arch: linux/arm/v6
-            arch_friendly: armv6
+          #- arch: linux/arm/v7
+            #arch_friendly: armv7
+          #- arch: linux/arm64
+            #arch_friendly: arm64
+          #- arch: linux/arm/v6
+            #arch_friendly: armv6
+          #- arch: linux/amd64
+            #arch_friendly: amd64
+          #- arch: linux/arm/v7
+            #arch_friendly: armv7
+          #- arch: linux/arm64
+            #arch_friendly: arm64
+          #- arch: linux/arm/v6
+            #arch_friendly: armv6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -53,7 +61,8 @@ jobs:
     name: Test Image
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64]
+        #arch: [amd64, armv7, arm64, armv6]
     steps:
       - name: Enable qemu
         run: |
@@ -86,7 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64]
+        #arch: [amd64, armv7, arm64, armv6]
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
@@ -136,7 +146,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64]
+        #arch: [amd64, armv7, arm64, armv6]
         registry: [registry.hub.docker.com, ghcr.io/diyhue]
     steps:
       - name: Set Docker Repository
@@ -243,12 +254,7 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA \
-            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+            ${DOCKER_REPO}:amd64-${{ github.run_number }}
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:$GITHUB_SHA published
 
@@ -257,12 +263,7 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:$GITHUB_RUN_NUMBER \
-            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:$GITHUB_RUN_NUMBER ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} 
           docker manifest push ${DOCKER_REPO}:$GITHUB_RUN_NUMBER
           echo ${DOCKER_REPO}:$GITHUB_RUN_NUMBER published
 
@@ -271,12 +272,7 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:latest \
-            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:latest ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} 
           docker manifest push ${DOCKER_REPO}:latest
           echo ${DOCKER_REPO}:latest published
 
@@ -285,12 +281,7 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} 
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
 
@@ -299,88 +290,9 @@ jobs:
         run: |
           docker manifest create \
             ${DOCKER_REPO}:${GITHUB_REF##*/} \
-            ${DOCKER_REPO}:amd64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv7-${{ github.run_number }} \
-            ${DOCKER_REPO}:arm64-${{ github.run_number }} \
-            ${DOCKER_REPO}:armv6-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv6-${{ github.run_number }} --arch arm --variant v6l
-          docker manifest annotate ${DOCKER_REPO}:${GITHUB_REF##*/} ${DOCKER_REPO}:armv7-${{ github.run_number }} --arch arm --variant v7l
+            ${DOCKER_REPO}:amd64-${{ github.run_number }} 
           docker manifest push ${DOCKER_REPO}:${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${GITHUB_REF##*/} published
-
-  retag_arch:
-    needs: [build, test, publish, tag_build, tag_build_manifest]
-    name: Tag images to correct architecture
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        registry: [registry.hub.docker.com, ghcr.io/diyhue]
-        include:
-          - version: v7l
-            arch_friendly: armv7
-          - version: v6l
-            arch_friendly: armv6
-    steps:
-      - name: Set Docker Repository
-        run: |
-          if [ ${GITHUB_REPOSITORY} == "diyhue/diyHue" ]; then
-            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-              export DOCKER_REPO="diyhue/core"
-            else
-              export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
-            fi
-          else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
-          fi
-          echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
-          echo Repository set as: ${DOCKER_REPO}
-
-      - name: Enable Experimental Docker Features
-        run: |
-          export DOCKER_CLI_EXPERIMENTAL="enabled"
-          echo "DOCKER_CLI_EXPERIMENTAL=${DOCKER_CLI_EXPERIMENTAL}" >> $GITHUB_ENV
-
-      - name: Docker login
-        run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
-
-      - name: Commit ID
-        if: ${{ github.sha != '' }}
-        run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}-$GITHUB_SHA
-
-      - name: Run ID
-        run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${{ github.run_number }}
-
-      - name: Latest
-        if: ${{ github.ref == 'refs/heads/master' }}
-        run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-latest
-
-      - name: Branch
-        if: ${{ startsWith(github.ref, 'refs/heads/') }}
-        run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
-
-      - name: Tag
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        run: |
-          docker manifest create ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
-          docker manifest annotate ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/} --arch arm --variant ${{ matrix.version }}
-          docker manifest push ${DOCKER_REPO}:${{ matrix.arch_friendly }}-${GITHUB_REF##*/}
 
   cleanup_failed:
     needs: [build, test]
@@ -389,7 +301,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, armv7, arm64, armv6]
+        arch: [amd64]
+        #arch: [amd64, armv7, arm64, armv6]
     steps:
     - uses: geekyeggo/delete-artifact@v1
       with:
