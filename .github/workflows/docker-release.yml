@@ -98,7 +98,7 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
+            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -144,7 +144,7 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
+            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -216,7 +216,7 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
+            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -326,7 +326,7 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/$GITHUB_REPOSITORY"
+            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
