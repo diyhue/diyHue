@@ -24,6 +24,10 @@ jobs:
 
       - name: Enable qemu
         run: |
+          echo GITHUB_REPOSITORY
+          echo ${GITHUB_REPOSITORY}
+          echo ${GITHUB_REPOSITORY@L}
+          echo ${GITHUB_REPOSITORY,,}
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
