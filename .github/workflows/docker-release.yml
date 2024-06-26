@@ -99,9 +99,9 @@ jobs:
             fi
           else
             if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-              export DOCKER_REPO="${GITHUB_REPOSITORY@L}"
+              export DOCKER_REPO="hendriksen-mark/diyhue"
             else
-              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
+              export DOCKER_REPO="${{ matrix.registry }}/hendriksen-mark/diyhue"
             fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
