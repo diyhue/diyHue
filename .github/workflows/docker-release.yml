@@ -98,7 +98,11 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="${GITHUB_REPOSITORY@L}"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY@L}"
+            fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -122,11 +126,6 @@ jobs:
 
       - name: Push Image
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
           docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${{ github.run_number }} published
@@ -179,11 +178,6 @@ jobs:
       - name: Deploy Commit ID
         if: ${{ github.sha != '' }}
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
           docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}-$GITHUB_SHA published
@@ -191,11 +185,6 @@ jobs:
       - name: Deploy Latest
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
           docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-latest
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-latest
           echo ${DOCKER_REPO}:${{ matrix.arch }}-latest published
@@ -203,11 +192,6 @@ jobs:
       - name: Deploy Branch
         if: ${{ startsWith(github.ref, 'refs/heads/') }}
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
           docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
@@ -215,11 +199,6 @@ jobs:
       - name: Deploy Tag
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
           docker tag diyhue/diyhue:ci ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           docker push ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/}
           echo ${DOCKER_REPO}:${{ matrix.arch }}-${GITHUB_REF##*/} published
