@@ -24,10 +24,6 @@ jobs:
 
       - name: Enable qemu
         run: |
-          echo GITHUB_REPOSITORY
-          echo ${GITHUB_REPOSITORY}
-          echo ${GITHUB_REPOSITORY@L}
-          echo ${GITHUB_REPOSITORY,,}
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - uses: satackey/action-docker-layer-caching@v0.0.8
@@ -110,7 +106,7 @@ jobs:
       - name: Docker login
         run: |
           if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
           else
             echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
           fi
@@ -161,7 +157,7 @@ jobs:
       - name: Docker login
         run: |
           if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
           else
             echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
           fi
@@ -233,7 +229,7 @@ jobs:
       - name: Docker login
         run: |
           if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
           else
             echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
           fi
@@ -343,7 +339,7 @@ jobs:
       - name: Docker login
         run: |
           if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
           else
             echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
           fi
