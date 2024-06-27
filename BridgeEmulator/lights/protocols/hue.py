@@ -9,6 +9,20 @@ def set_light(light, data):
     payload = {}
     payload.update(data)
     color = {}
+    if "strictusexy" in light.protocol_cfg and light.protocol_cfg["strictusexy"] and ("sat" in payload or "hue" in payload):
+        if "sat" in payload and "hue" in payload:
+            rgb = hsv_to_rgb(payload["hue"], payload["sat"], light.state["bri"])
+            del(payload["sat"])
+            del(payload["hue"])
+        elif "hue" in payload:
+            rgb = hsv_to_rgb(payload["hue"], light.state["sat"], light.state["bri"])
+            del(payload["hue"])
+        elif "sat" in payload:
+            rgb = hsv_to_rgb(light.state["hue"], payload["sat"], light.state["bri"])
+            del(payload["sat"])
+        xy = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
+        color["colormode"] = 'xy'
+        color["xy"] = [xy[0], xy[1]]
     if "xy" in payload:
         color["xy"] = payload["xy"]
         del(payload["xy"])
