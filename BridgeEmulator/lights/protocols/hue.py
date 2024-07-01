@@ -61,6 +61,6 @@ def discover(detectedLights, credentials):
                         modelid = "LTW001"
                     elif light["type"] == "On/Off plug-in unit":
                         modelid = "LOM001"
-                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "id": id, "uniqueid": light["uniqueid"]}})
+                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "id": id, "uniqueid": light["uniqueid"], "strictusexy": False}})
         except Exception as e:
             logging.info("Error connecting to Hue Bridge: %s", e)
