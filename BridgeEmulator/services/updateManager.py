@@ -65,6 +65,7 @@ def githubCheck():
 
 def githubUICheck():
     #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"# HA "2024-02-18 19:50:15.000000000\n"
+    publish_time = "1970-01-01 00:00:00.000000000 +0100\n"
     creation_time = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True)#2024-02-18 19:50:15.000000000 +0100\n
     creation_time_arg1 = creation_time.stdout.replace(".", " ").split(" ")#2024-02-18, 19:50:15, 000000000, +0100\n
     if (len(creation_time_arg1) < 4):
