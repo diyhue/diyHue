@@ -11,22 +11,25 @@ logging = logManager.logger.get_logger(__name__)
 def versionCheck():
     swversion = bridgeConfig["config"]["swversion"]
     url = "https://firmware.meethue.com/v1/checkupdate/?deviceTypeId=BSB002&version=" + swversion
-    response = requests.get(url)
-    if response.status_code == 200:
-        device_data = json.loads(response.text)
-        if len(device_data["updates"]) != 0:
-            new_version = str(device_data["updates"][len(device_data["updates"])-1]["version"])
-            new_versionName = str(device_data["updates"][len(device_data["updates"])-1]["versionName"][:4]+".0")
-            if new_version > swversion:
-                logging.info("swversion number update from Philips, old: " + swversion + " new:" + new_version)
-                bridgeConfig["config"]["swversion"] = new_version
-                bridgeConfig["config"]["apiversion"] = new_versionName
-                bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-                bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            device_data = json.loads(response.text)
+            if len(device_data["updates"]) != 0:
+                new_version = str(device_data["updates"][len(device_data["updates"])-1]["version"])
+                new_versionName = str(device_data["updates"][len(device_data["updates"])-1]["versionName"][:4]+".0")
+                if new_version > swversion:
+                    logging.info("swversion number update from Philips, old: " + swversion + " new:" + new_version)
+                    bridgeConfig["config"]["swversion"] = new_version
+                    bridgeConfig["config"]["apiversion"] = new_versionName
+                    bridgeConfig["config"]["swupdate2"]["lastchange"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+                    bridgeConfig["config"]["swupdate2"]["bridge"]["lastinstall"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+                else:
+                    logging.info("swversion higher than Philips")
             else:
-                logging.info("swversion higher than Philips")
-        else:
-            logging.info("no swversion number update from Philips")
+                logging.info("no swversion number update from Philips")
+    except:
+        logging.error("No connection to philips")
 
 def githubCheck():
     #creation_time = "2024-02-18 19:50:15.000000000 +0100\n"# HA "2024-02-18 19:50:15.000000000\n"
@@ -42,10 +45,13 @@ def githubCheck():
 
     url = "https://api.github.com/repos/diyhue/diyhue/branches/master"
     #url = "https://api.github.com/repos/hendriksen-mark/diyhue/branches/master"
-    response = requests.get(url)
-    if response.status_code == 200:
-        device_data = json.loads(response.text)
-        publish_time = datetime.strptime(device_data["commit"]["commit"]["author"]["date"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            device_data = json.loads(response.text)
+            publish_time = datetime.strptime(device_data["commit"]["commit"]["author"]["date"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+    except:
+            logging.error("No connection to github")
 
     logging.info("creation_time diyHue : " + str(creation_time))
     logging.info("publish_time  diyHue : " + str(publish_time))
@@ -77,10 +83,13 @@ def githubUICheck():
 
     url = "https://api.github.com/repos/diyhue/diyHueUI/releases/latest"
     #url = "https://api.github.com/repos/hendriksen-mark/diyhueUI/branches/master"
-    response = requests.get(url)
-    if response.status_code == 200:
-        device_data = json.loads(response.text)
-        publish_time = datetime.strptime(device_data["published_at"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            device_data = json.loads(response.text)
+            publish_time = datetime.strptime(device_data["published_at"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+    except:
+            logging.error("No connection to github")
 
     logging.info("creation_time UI : " + str(creation_time))
     logging.info("publish_time  UI : " + str(publish_time))
