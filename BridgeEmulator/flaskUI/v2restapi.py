@@ -603,6 +603,7 @@ class ClipV2ResourceId(Resource):
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
                     bridgeConfig["config"]["name"] = putDict["metadata"]["name"]
+                    configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
             if "enabled" in putDict:
                 object.update_attr({"config": {"on": putDict["enabled"]}})
