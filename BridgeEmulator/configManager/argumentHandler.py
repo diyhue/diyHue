@@ -35,7 +35,8 @@ def process_arguments(configDir, args):
 
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
-                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False, "noServeHttps": False}
+                    "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False,
+                    "noServeHttps": False, "TZ": ''}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -55,6 +56,7 @@ def parse_arguments():
     ap.add_argument("--no-link-button", action='store_true',
                     help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
     ap.add_argument("--disable-online-discover", help="Disable Online and Remote API functions")
+    ap.add_argument("--TZ", help="Set time zone", type=str)
 
     args = ap.parse_args()
 
@@ -83,6 +85,13 @@ def parse_arguments():
     elif get_environment_variable('BIND_IP'):
         bind_ip = get_environment_variable('BIND_IP')
     argumentDict["BIND_IP"] = bind_ip
+
+    tz = "Europe/London"
+    if args.TZ:
+        tz = args.TZ
+    elif get_environment_variable('TZ'):
+        tz = get_environment_variable('TZ')
+    argumentDict["TZ"] = tz
 
     if args.ip:
         host_ip = args.ip
