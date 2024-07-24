@@ -34,7 +34,7 @@ def _write_yaml(path, contents):
 class Config:
     yaml_config = None
     configDir = parse_arguments()["CONFIG_PATH"]
-    runningDir = pathlib.Path(__file__).parent.resolve()
+    runningDir = str(pathlib.Path(__file__).parent.resolve())
 
     def __init__(self):
         if not os.path.exists(self.configDir):
