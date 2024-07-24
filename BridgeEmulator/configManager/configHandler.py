@@ -2,6 +2,7 @@ from configManager import configInit
 from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
+import pathlib
 import subprocess
 import json
 import logManager
@@ -33,6 +34,7 @@ def _write_yaml(path, contents):
 class Config:
     yaml_config = None
     configDir = parse_arguments()["CONFIG_PATH"]
+    runningDir = pathlib.Path(__file__).parent.resolve()
 
     def __init__(self):
         if not os.path.exists(self.configDir):
@@ -293,7 +295,7 @@ class Config:
 
     def download_log(self):
         subprocess.run('tar -cvf ' + self.configDir + '/diyhue_log.tar ' +
-                 '/*.log* ',
+                 self.runningDir + '/*.log* ',
                  shell=True, capture_output=True, text=True)
         return self.configDir + "/diyhue_log.tar"
 
@@ -314,7 +316,7 @@ class Config:
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
                  self.configDir + '/*.yaml ' +
-                 '/*.log* ',
+                 self.runningDir + '/*.log* ',
                  shell=True, capture_output=True, text=True)
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar"
