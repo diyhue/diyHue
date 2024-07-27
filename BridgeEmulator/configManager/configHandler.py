@@ -94,7 +94,7 @@ class Config:
                                             }
 
                 if int(config["swversion"]) < 1958077010:
-                    config["swversion"] = "1965053040"
+                    config["swversion"] = "1965111030"
                 if float(config["apiversion"][:3]) < 1.56:
                     config["apiversion"] = "1.65.0"
 
@@ -112,7 +112,7 @@ class Config:
                     "apiversion":"1.65.0",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
-                    "swversion":"1965053040",
+                    "swversion":"1965111030",
                     "timezone":parse_arguments()["TZ"],
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
