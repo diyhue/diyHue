@@ -37,10 +37,12 @@ COPY ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 
 ## Install the web interface
 RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \
-    && unzip -qo diyHueUI.zip \
-    && mv index.html flaskUI/templates/ \
-    && cp -r static flaskUI/ \
-    && rm -r static
+    && mkdir diyhueUI \
+    && unzip -qo diyHueUI.zip -d diyhueUI \
+    && rm diyHueUI.zip \
+    && mv diyhueUI/index.html flaskUI/templates/ \
+    && cp -r diyhueUI/static flaskUI/ \
+    && rm -r diyhueUI
 
 ## Copy correct (compiled) C file from previous image
 COPY ./BridgeEmulator/genCert.sh ./BridgeEmulator/openssl.conf /opt/hue-emulator/

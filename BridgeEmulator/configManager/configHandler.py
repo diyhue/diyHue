@@ -2,6 +2,7 @@ from configManager import configInit
 from configManager.argumentHandler import parse_arguments
 from datetime import datetime
 import os
+import pathlib
 import subprocess
 import json
 import logManager
@@ -33,6 +34,7 @@ def _write_yaml(path, contents):
 class Config:
     yaml_config = None
     configDir = parse_arguments()["CONFIG_PATH"]
+    runningDir = str(pathlib.Path(__file__)).replace("/configManager/configHandler.py","")
 
     def __init__(self):
         if not os.path.exists(self.configDir):
@@ -92,9 +94,9 @@ class Config:
                                             }
 
                 if int(config["swversion"]) < 1958077010:
-                    config["swversion"] = "1962154010"
+                    config["swversion"] = "1965111030"
                 if float(config["apiversion"][:3]) < 1.56:
-                    config["apiversion"] = "1.62.0"
+                    config["apiversion"] = "1.65.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -107,11 +109,11 @@ class Config:
                     "alarm":{"enabled": False,"lasttriggered": 0},
                     "port":{"enabled": False,"ports": [80]},
                     "apiUsers":{},
-                    "apiversion":"1.62.0",
+                    "apiversion":"1.65.0",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
-                    "swversion":"1962154010",
-                    "timezone":"Europe/London",
+                    "swversion":"1965111030",
+                    "timezone":parse_arguments()["TZ"],
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                     "hue": {},
@@ -293,7 +295,7 @@ class Config:
 
     def download_log(self):
         subprocess.run('tar -cvf ' + self.configDir + '/diyhue_log.tar ' +
-                 self.configDir.replace('/config', '') + '/*.log* ',
+                 self.runningDir + '/*.log* ',
                  shell=True, capture_output=True, text=True)
         return self.configDir + "/diyhue_log.tar"
 
@@ -314,7 +316,7 @@ class Config:
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
                  self.configDir + '/*.yaml ' +
-                 self.configDir.replace('/config', '') + '/*.log* ',
+                 self.runningDir + '/*.log* ',
                  shell=True, capture_output=True, text=True)
         os.popen('rm -r ' + self.configDir + '/config_debug.yaml')
         return self.configDir + "/config_debug.tar"

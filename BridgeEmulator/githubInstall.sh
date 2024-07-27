@@ -19,13 +19,11 @@ if [ $2 = allreadytoinstall ]; then
     cp -r diyHue-master/BridgeEmulator/genCert.sh /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
     chmod +x /opt/hue-emulator/genCert.sh
+    rm -r diyHue-master
 else
     echo "ui update"
 fi
 
-if [ -d diyhueUI ]; then
-    rm -r diyhueUI
-fi
 mkdir diyhueUI
 curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 #curl -sL https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
@@ -33,5 +31,6 @@ unzip -qo diyHueUI.zip -d diyhueUI
 rm diyHueUI.zip
 cp -r diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
 cp -r diyhueUI/static /opt/hue-emulator/flaskUI/
+rm -r diyhueUI
 
 curl -s $1/restart

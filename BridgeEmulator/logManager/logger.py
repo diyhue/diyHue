@@ -4,7 +4,7 @@ import sys
 
 
 def _get_log_format():
-    return logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    return logging.Formatter('%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s')
 
 
 class Logger:
