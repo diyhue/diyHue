@@ -142,6 +142,7 @@ else
   mkdir /opt/hue-emulator
 
   generate_certificate
+cp -r HueEmulator3.py githubInstall.sh HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 fi
 
 
