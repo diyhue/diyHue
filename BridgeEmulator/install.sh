@@ -142,11 +142,10 @@ else
   mkdir /opt/hue-emulator
 
   generate_certificate
-cp -r HueEmulator3.py githubInstall.sh HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 fi
 
 
-cp -r HueEmulator3.py githubInstall.sh githubUIInstall.sh HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
+cp -r HueEmulator3.py githubInstall.sh HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
 
 # Copy web interface files
 
