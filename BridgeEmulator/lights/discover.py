@@ -116,6 +116,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
                      "id": str(uuid.uuid4()),
                      "type": "update"
                      }
+    logging.debug(streamMessage)
     StreamEvent(streamMessage)
     detectedLights = []
 
@@ -181,6 +182,7 @@ def scanForLights():  # scan for ESP8266 lights and strips
                      "id": str(uuid.uuid4()),
                      "type": "update"
                      }
+    logging.debug(streamMessage)
     StreamEvent(streamMessage)
     for light in detectedLights:
         # check if light is already present
