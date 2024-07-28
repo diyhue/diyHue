@@ -204,13 +204,15 @@ class Light():
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{
                              "id": self.id_v2,
-                             "id_v1": "/lights/" + self.id_v1,
-                             "type": "light"}],
+                             "id_v1": "/lights/" + self.id_v1}],
+                        "owner": {
+                            "rid": self.getDevice()["id"],
+                            "rtype": "device"},
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         streamMessage["data"][0].update(v2State)
-        #streamMessage["data"][0].update(
+        streamMessage["data"][0].update({"type": "light"})
         #    {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         StreamEvent(streamMessage)
 
