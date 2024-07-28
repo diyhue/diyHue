@@ -194,7 +194,7 @@ class Light():
             if "archetype" in state["metadata"]:
                 v1State["archetype"] = state["metadata"]["archetype"]
                 state["metadata"]["name"] = self.name
-            if "name" in state["metadata"]:
+            if "name" in state["metadata"] and not "archetype" in state["metadata"]:
                 state["metadata"]["archetype"] = archetype[self.config["archetype"]]
                 v1State["name"] = state["metadata"]["name"]
         self.setV1State(v1State, advertise=False)
