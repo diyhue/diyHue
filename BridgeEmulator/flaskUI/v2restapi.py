@@ -409,7 +409,7 @@ class ClipV2Resource(Resource):
                     objLights.append(getObject(light["rtype"], light["rid"]))
                 objCreation["lights"] = objLights
             objCreation.update(postDict)
-            newObject = Scene(objCreation)
+            newObject = Scene.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
             if "actions" in postDict:
                 for action in postDict["actions"]:
@@ -435,7 +435,7 @@ class ClipV2Resource(Resource):
                                 sceneState["gradient"] = scene["gradient"]
                             newObject.lightstates[lightObj] = sceneState
         elif resource == "behavior_instance":
-            newObject = BehaviorInstance(postDict)
+            newObject = BehaviorInstance.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
         elif resource == "entertainment_configuration":
             new_object_id = nextFreeId(bridgeConfig, "groups")
@@ -444,7 +444,7 @@ class ClipV2Resource(Resource):
                 "name": postDict["metadata"]["name"]
             }
             objCreation.update(postDict)
-            newObject = EntertainmentConfiguration(objCreation)
+            newObject = EntertainmentConfiguration.EntertainmentConfiguration(objCreation)
             if "locations" in postDict:
                 if "service_locations" in postDict["locations"]:
                     for element in postDict["locations"]["service_locations"]:
@@ -463,7 +463,7 @@ class ClipV2Resource(Resource):
             if "archetype" in postDict["metadata"]:
                 objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ")
             objCreation.update(postDict)
-            newObject = Group(objCreation)
+            newObject = Group.Group(objCreation)
             if "children" in postDict:
                 for children in postDict["children"]:
                     obj = getObject(
@@ -479,7 +479,7 @@ class ClipV2Resource(Resource):
                 "type": "geofence_client",
                 "is_at_home": postDict.get("is_at_home", False)
             }
-            newObject = GeofenceClient(objCreation)
+            newObject = GeofenceClient.GeofenceClient(objCreation)
             bridgeConfig["geofence_clients"][new_object_id] = newObject
         else:
             return {

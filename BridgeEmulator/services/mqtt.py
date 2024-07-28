@@ -311,7 +311,7 @@ def on_message(client, userdata, msg):
                                     #sensor_type = sensorTypes[key["model_id"]][sensor]
                                     uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
                                     sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
-                                    bridgeConfig["sensors"][new_sensor_id] = Sensor(sensorData)
+                                    bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(sensorData)
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["model_id"] in motionSensors:
                                     logging.info("MQTT: add new motion sensor " + key["model_id"])
