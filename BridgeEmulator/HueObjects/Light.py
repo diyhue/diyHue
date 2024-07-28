@@ -210,8 +210,8 @@ class Light():
                          "type": "update"
                          }
         streamMessage["data"][0].update(v2State)
-        streamMessage["data"][0].update(
-            {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        #streamMessage["data"][0].update(
+        #    {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         StreamEvent(streamMessage)
 
     def getDevice(self):
