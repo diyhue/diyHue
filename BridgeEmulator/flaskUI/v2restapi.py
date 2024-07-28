@@ -602,7 +602,10 @@ class ClipV2ResourceId(Resource):
                 object.setV1State({"alert": "select"})
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
-                    bridgeConfig["config"]["name"] = putDict["metadata"]["name"]
+                    if object:
+                        object.name = putDict["metadata"]["name"]
+                    elif resourceid == v2BridgeDevice()["id"]:
+                        bridgeConfig["config"]["name"] = putDict["metadata"]["name"]
                     configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
             if "enabled" in putDict:

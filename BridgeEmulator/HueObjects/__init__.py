@@ -396,6 +396,13 @@ class Light():
             for key, value in state.items():
                 if key in self.state:
                     self.state[key] = value
+                if key in self.config:
+                    if key == "archetype":
+                        self.config[key] = value.replace("_","")
+                    else:
+                        self.config[key] = value
+                if key == "name":
+                    self.name = value
             if "bri" in state:
                 if "min_bri" in self.protocol_cfg and self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
@@ -422,6 +429,11 @@ class Light():
             self.effect = v1State["effect"]
         if "dynamics" in state and "speed" in state["dynamics"]:
             self.dynamics["speed"] = state["dynamics"]["speed"]
+        if "metadata" in state:
+            if "archetype" in state["metadata"]:
+                v1State["archetype"] = state["metadata"]["archetype"]
+            if "name" in state["metadata"]:
+                v1State["name"] = state["metadata"]["name"]
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
@@ -443,7 +455,7 @@ class Light():
         result["id_v1"] = "/lights/" + self.id_v1
         result["identify"] = {}
         result["metadata"] = {
-            "archetype": lightTypes[self.modelid]["device"]["product_archetype"],
+            "archetype": archetype[self.config["archetype"]],
             "name": self.name
         }
         result["product_data"] = lightTypes[self.modelid]["device"]
