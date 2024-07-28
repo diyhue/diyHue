@@ -1,6 +1,6 @@
 import configManager
 import logManager
-from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient
+from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, StreamEvent
 import uuid
 import json
 import weakref
@@ -606,6 +606,18 @@ class ClipV2ResourceId(Resource):
                         object.name = putDict["metadata"]["name"]
                     elif resourceid == v2BridgeDevice()["id"]:
                         bridgeConfig["config"]["name"] = putDict["metadata"]["name"]
+                        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                        "data": [{
+                                            "id": resourceid,
+                                            "metadata": {
+                                                "name": bridgeConfig["config"]["name"]
+                                                },
+                                            "type": "device"
+                                        }],
+                                        "id": str(uuid.uuid4()),
+                                        "type": "update"
+                                        }
+                        StreamEvent(streamMessage)
                     configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
             if "enabled" in putDict:
