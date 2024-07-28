@@ -586,11 +586,15 @@ class ClipV2ResourceId(Resource):
                     object.add_light(obj)
             object.update_attr(v1Api)
         elif resource == 'geofence_client':
+            logging.debug(resource)
+            logging.debug(resourceid)
+            logging.debug(object)
             attrs = {}
             if "name" in putDict:
                 attrs['name'] = putDict['name']
             if 'is_at_home' in putDict:
                 attrs['is_at_home'] = putDict['is_at_home']
+            logging.debug(attrs)
             if hasattr(object, 'update_attr') and callable(getattr(object, 'update_attr')):
                 object.update_attr(attrs)
         elif resource == "zigbee_device_discovery":
