@@ -2,7 +2,7 @@ import uuid
 import logManager
 import weakref
 from datetime import datetime, timezone
-from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, event
+from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -30,7 +30,7 @@ class EntertainmentConfiguration():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def __del__(self):
         # Groupper light
@@ -40,7 +40,7 @@ class EntertainmentConfiguration():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        event(streamMessage)
+        StreamEvent(streamMessage)
         ### Entertainment area ###
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getV2Api()["id"], "type": "entertainment_configuration"}],
@@ -48,7 +48,7 @@ class EntertainmentConfiguration():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        event(streamMessage)
+        StreamEvent(streamMessage)
         logging.info(self.name + " entertainment area was destroyed.")
 
     def add_light(self, light):
@@ -72,7 +72,7 @@ class EntertainmentConfiguration():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def update_state(self):
         all_on = True
@@ -242,7 +242,7 @@ class EntertainmentConfiguration():
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         streamMessage.update(v2State)
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def getObjectPath(self):
         return {"resource": "groups", "id": self.id_v1}

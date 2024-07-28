@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from sensors.sensor_types import sensorTypes
-from HueObjects import genV2Uuid, event
+from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
 
@@ -57,7 +57,7 @@ class Sensor():
                              "type": "add"
                              }
             streamMessage["data"][0].update(self.getDevice())
-            event(streamMessage)
+            StreamEvent(streamMessage)
 
     def __del__(self):
         if self.modelid in ["SML001", "RWL022"]:
@@ -67,7 +67,7 @@ class Sensor():
                          "type": "delete"
                          }
             streamMessage["id_v1"] = "/sensors/" + self.id_v1
-            event(streamMessage)
+            StreamEvent(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
 
     def setV1State(self, state):

@@ -5,7 +5,7 @@ import random
 logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
-def event(message):
+def StreamEvent(message):
     eventstream.append(message)
 
 def v1StateToV2(v1State):

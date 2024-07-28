@@ -1,6 +1,6 @@
 import uuid
 import logManager
-from HueObjects import genV2Uuid, event
+from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
 
 logging = logManager.logger.get_logger(__name__)
@@ -20,7 +20,7 @@ class BehaviorInstance():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def __del__(self):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -28,7 +28,7 @@ class BehaviorInstance():
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
         logging.info(self.name + " behaviour instance was destroyed.")
 
     def getV2Api(self):
@@ -76,7 +76,7 @@ class BehaviorInstance():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def save(self):
         result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled, "active": self.active,

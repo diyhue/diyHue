@@ -2,7 +2,7 @@ import uuid
 import logManager
 import weakref
 from datetime import datetime, timezone
-from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, event
+from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -27,7 +27,7 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def groupZeroStream(self, rooms, lights):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -41,7 +41,7 @@ class Group():
         for light in lights:
             streamMessage["data"][0]["children"].append(
                 {"rid": light, "rtype": "light"})
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def __del__(self):
         # Groupper light
@@ -51,7 +51,7 @@ class Group():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
-        event(streamMessage)
+        StreamEvent(streamMessage)
         ### room / zone ####
         elementId = self.getV2Room(
         )["id"] if self.type == "Room" else self.getV2Zone()["id"]
@@ -61,7 +61,7 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
         logging.info(self.name + " group was destroyed.")
 
     def add_light(self, light):
@@ -74,14 +74,14 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
 
-        event(streamMessage)
+        StreamEvent(streamMessage)
         groupChildrens = []
         groupServices = []
         for light in self.lights:
@@ -95,7 +95,7 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def add_sensor(self, sensor):
         self.sensors.append(weakref.ref(sensor))
@@ -122,7 +122,7 @@ class Group():
             "id": str(uuid.uuid4()),
             "type": "update"
         }
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def update_state(self):
         all_on = True
@@ -156,7 +156,7 @@ class Group():
                                  "type": "update"
                                  }
                 streamMessage["data"][0].update(v2State)
-                event(streamMessage)
+                StreamEvent(streamMessage)
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light",
                                    "owner": {
@@ -169,7 +169,7 @@ class Group():
                          }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        event(streamMessage)
+        StreamEvent(streamMessage)
 
     def getV1Api(self):
         result = {}
