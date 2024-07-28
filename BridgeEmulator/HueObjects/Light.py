@@ -2,7 +2,7 @@ import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
 from lights.protocols import protocols
-from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, eventstream
+from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, event
 from datetime import datetime, timezone
 from copy import deepcopy
 from time import sleep
@@ -37,7 +37,7 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(self.getV2Entertainment())
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         # zigbee_connectivity
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -45,7 +45,7 @@ class Light():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         # light
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -53,7 +53,7 @@ class Light():
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         # device
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -62,7 +62,7 @@ class Light():
                          "type": "add"
                          }
         streamMessage["data"][0].update(self.getDevice())
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
     def __del__(self):
         ## light ##
@@ -72,7 +72,7 @@ class Light():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         ## device ##
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -81,7 +81,7 @@ class Light():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         # Zigbee Connectivity
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -90,7 +90,7 @@ class Light():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         # Entertainment
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -99,7 +99,7 @@ class Light():
                          "type": "delete"
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
         logging.info(self.name + " light was destroyed.")
 
@@ -116,7 +116,7 @@ class Light():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -208,7 +208,7 @@ class Light():
         streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update(
             {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
     def getDevice(self):
         result = {"id": str(uuid.uuid5(

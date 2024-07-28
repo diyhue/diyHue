@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from datetime import datetime, timezone
-from HueObjects import genV2Uuid, eventstream
+from HueObjects import genV2Uuid, event
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -17,7 +17,7 @@ class GeofenceClient():
             "id": str(uuid.uuid4()),
             "type": "add"
         }
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
     def __del__(self):
         streamMessage = {
@@ -26,7 +26,7 @@ class GeofenceClient():
             "id": str(uuid.uuid4()),
             "type": "delete"
         }
-        eventstream.append(streamMessage)
+        event(streamMessage)
         logging.info(self.name + " geofence client was destroyed.")
 
     def update_attr(self, newdata):
@@ -44,7 +44,7 @@ class GeofenceClient():
             "id": str(uuid.uuid4()),
             "type": "update"
         }
-        eventstream.append(streamMessage)
+        event(streamMessage)
 
     def getV2GeofenceClient(self):
         return {
