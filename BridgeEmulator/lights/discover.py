@@ -7,7 +7,7 @@ from time import sleep
 from datetime import datetime
 from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri, elgato
 from services import homeAssistantWS
-import HueObjects
+from HueObjects import Light
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
 logging = logManager.logger.get_logger(__name__)
@@ -63,7 +63,7 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         light["modelid"] = modelid
         light["protocol"] = protocol
         light["protocol_cfg"] = protocol_cfg
-        newObject = HueObjects.Light(light)
+        newObject = Light(light)
         bridgeConfig["lights"][newLightID] = newObject
         bridgeConfig["groups"]["0"].add_light(newObject)
         # trigger stream messages

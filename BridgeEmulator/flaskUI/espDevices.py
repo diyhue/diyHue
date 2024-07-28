@@ -1,7 +1,5 @@
 import configManager
 import logManager
-import HueObjects
-import json
 from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
