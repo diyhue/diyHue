@@ -193,27 +193,21 @@ class Light():
         if "metadata" in state:
             if "archetype" in state["metadata"]:
                 v1State["archetype"] = state["metadata"]["archetype"]
-                state["metadata"]["name"] = self.name
-            if "name" in state["metadata"] and not "archetype" in state["metadata"]:
-                state["metadata"]["archetype"] = archetype[self.config["archetype"]]
+            if "name" in state["metadata"]:
                 v1State["name"] = state["metadata"]["name"]
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
     def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{
-                             "id": self.id_v2,
-                             "id_v1": "/lights/" + self.id_v1}],
-                        "owner": {
-                            "rid": self.getDevice()["id"],
-                            "rtype": "device"},
+                         "data": [{"id": self.id_v2, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
+        streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        streamMessage["data"][0].update({"type": "light"})
-        #    {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        streamMessage["data"][0].update(
+            {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         StreamEvent(streamMessage)
 
     def getDevice(self):
