@@ -5,7 +5,7 @@ import flask_login
 import uuid
 import json
 import configManager
-import HueObjects
+from HueObjects import ApiUser
 from flaskUI.core import User
 from lights.light_types import lightTypes
 from subprocess import check_output
@@ -28,7 +28,7 @@ def get_key():
     if len(bridgeConfig["apiUsers"]) == 0:
         # generate a new user for the web interface
         username = str(uuid.uuid1()).replace('-', '')
-        bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(username, 'WebUi', None)
+        bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, 'WebUi', None)
         configManager.bridgeConfig.save_config()
     return list(bridgeConfig["apiUsers"])[0]
 

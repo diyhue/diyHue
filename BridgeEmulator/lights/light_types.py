@@ -170,5 +170,6 @@ archetype = {"tableshade":"table_shade",
     "upanddown":"up_and_down", 
     "upanddownup":"up_and_down_up", 
     "upanddowndown":"up_and_down_down", 
-    "huefloodlightcamera":"hue_floodlight_camera"
+    "huefloodlightcamera":"hue_floodlight_camera",
+    "twilight":"twilight"
     }

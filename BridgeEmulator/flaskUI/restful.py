@@ -1,6 +1,6 @@
 import configManager
 import logManager
-import HueObjects
+from HueObjects import ApiUser, Group, EntertainmentConfiguration, Scene, Rule, ResourceLink, Sensor, Schedule
 import weakref
 import uuid
 import json
@@ -89,7 +89,7 @@ class NewUser(Resource):
                     # client_key = "321c0c2ebfa7361e55491095b2f5f9db"
 
                     response[0]["success"]["clientkey"] = client_key
-                bridgeConfig["apiUsers"][username] = HueObjects.ApiUser(username, postDict["devicetype"], client_key)
+                bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, postDict["devicetype"], client_key)
                 logging.debug(response)
                 configManager.bridgeConfig.save_config()
                 return response
@@ -164,13 +164,13 @@ class ResourceElements(Resource):
             if "type" in postDict:
                 if postDict["type"] == "Zone":
                     v2Resource = "zone"
-                    bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
+                    bridgeConfig[resource][new_object_id] = Group.Group(postDict)
                 elif postDict["type"] == "Room":
                     v2Resource = "room"
-                    bridgeConfig[resource][new_object_id] = HueObjects.Group(postDict)
+                    bridgeConfig[resource][new_object_id] = Group.Group(postDict)
                 elif postDict["type"] == "Entertainment":
                     v2Resource = "entertainment_configuration"
-                    bridgeConfig[resource][new_object_id] = HueObjects.EntertainmentConfiguration(postDict)
+                    bridgeConfig[resource][new_object_id] = EntertainmentConfiguration.EntertainmentConfiguration(postDict)
 
             if "lights" in postDict:
                 for light in postDict["lights"]:
@@ -193,7 +193,7 @@ class ResourceElements(Resource):
                     objLights.append(weakref.ref(
                         bridgeConfig["lights"][light]))
                 postDict["lights"] = objLights
-            bridgeConfig[resource][new_object_id] = HueObjects.Scene(postDict)
+            bridgeConfig[resource][new_object_id] = Scene.Scene(postDict)
             scene = bridgeConfig[resource][new_object_id]
             if "lightstates" in postDict:
                 for light, state in postDict["lightstates"].items():
@@ -222,14 +222,14 @@ class ResourceElements(Resource):
                             state["sat"] = light.state["sat"]
 
         elif resource == "rules":
-            bridgeConfig[resource][new_object_id] = HueObjects.Rule(postDict)
+            bridgeConfig[resource][new_object_id] = Rule.Rule(postDict)
         elif resource == "resourcelinks":
-            bridgeConfig[resource][new_object_id] = HueObjects.ResourceLink(postDict)
+            bridgeConfig[resource][new_object_id] = ResourceLink.ResourceLink(postDict)
         elif resource == "sensors":
             v2Resource = "device"
-            bridgeConfig[resource][new_object_id] = HueObjects.Sensor(postDict)
+            bridgeConfig[resource][new_object_id] = Sensor.Sensor(postDict)
         elif resource == "schedules":
-            bridgeConfig[resource][new_object_id] = HueObjects.Schedule(postDict)
+            bridgeConfig[resource][new_object_id] = Schedule.Schedule(postDict)
         newObject = bridgeConfig[resource][new_object_id]
         if v2Resource != "none":
             streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
