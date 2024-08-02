@@ -13,6 +13,10 @@ class Group():
             data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
+        if "owner" in data:
+            self.owner = data["owner"]
+        else:
+            self.owner = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
         self.icon_class = data["class"] if "class" in data else "Other"
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
@@ -283,6 +287,7 @@ class Group():
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
         result["type"] = "grouped_light"
+        result["owner"] = self.owner
         return result
 
     def getObjectPath(self):
@@ -290,7 +295,7 @@ class Group():
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type}
+                  "lights": [], "action": self.action, "type": self.type, "owner": self.owner}
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)
