@@ -15,8 +15,6 @@ class Group():
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         if "owner" in data:
             self.owner = data["owner"]
-        else:
-            self.owner = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
         self.icon_class = data["class"] if "class" in data else "Other"
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
@@ -178,6 +176,8 @@ class Group():
     def getV1Api(self):
         result = {}
         result["name"] = self.name
+        if hasattr(self, "owner"):
+            result["owner"] = self.owner.username
         lights = []
         for light in self.lights:
             if light():
@@ -197,7 +197,7 @@ class Group():
             result["lightlevel"] = {"state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
                                               "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}}
         else:
-            result["class"] = self.icon_class
+            result["class"] = self.icon_class.capitalize()
         result["action"] = self.action
         return result
 
@@ -287,7 +287,11 @@ class Group():
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
         result["type"] = "grouped_light"
-        result["owner"] = self.owner
+        if hasattr(self, "owner"):
+            result["owner"] = {"rid": self.owner.username, "rtype": "device"}
+        else:
+            result["owner"] = {"rid": self.id_v2, "rtype": "device"}
+
         return result
 
     def getObjectPath(self):
@@ -295,7 +299,9 @@ class Group():
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type, "owner": self.owner}
+                  "lights": [], "action": self.action, "type": self.type}
+        if hasattr(self, "owner"):
+            result["owner"] = self.owner.username
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)

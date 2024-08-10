@@ -457,11 +457,12 @@ class ClipV2Resource(Resource):
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
                 "id_v1": new_object_id,
-                "name": postDict["metadata"]["name"]
+                "name": postDict["metadata"]["name"],
+                "owner": bridgeConfig["apiUsers"][request.headers["hue-application-key"]],
             }
             objCreation["type"] = "Room" if resource == "room" else "Zone"
             if "archetype" in postDict["metadata"]:
-                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ")
+                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ").capitalize()
             objCreation.update(postDict)
             newObject = Group.Group(objCreation)
             if "children" in postDict:
@@ -578,7 +579,7 @@ class ClipV2ResourceId(Resource):
                 if "name" in putDict["metadata"]:
                     v1Api["name"] = putDict["metadata"]["name"]
                 if "archetype" in putDict["metadata"]:
-                    v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ")
+                    v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ").capitalize()
             if "children" in putDict:
                 for children in putDict["children"]:
                     obj = getObject(

@@ -102,6 +102,8 @@ def runScheduler():
             except Exception as e:
                 logging.info("Exception while processing the schedule " + obj.name + " | " + str(e))
 
+        if ("updatetime" not in bridgeConfig["config"]["swupdate2"]["autoinstall"]):
+            bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"] = "T14:00:00"
         if (datetime.now().strftime("T%H:%M:%S") == bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"]): #check for updates every day at updatetime
             updateManager.versionCheck()
             updateManager.githubCheck()
