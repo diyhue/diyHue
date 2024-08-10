@@ -173,6 +173,8 @@ class Config:
                             data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
                         elif "owner" not in data:
                             data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
+                        else:
+                            data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
                         self.yaml_config["groups"][group] = Group.Group(data)
                         for light in data["lights"]:
                             self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
