@@ -9,8 +9,8 @@ import logManager
 import yaml
 import uuid
 import weakref
-from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance
 from time import sleep
+from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
 try:
     from time import tzset
 except ImportError:
@@ -41,7 +41,7 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
-        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instance": {}, "geofence_clients": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instance": {}, "geofence_clients": {}, "smart_scene": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
@@ -199,7 +199,12 @@ class Config:
                     for light, lightstate in data["lightstates"].items():
                         lightObj = self.yaml_config["lights"][light]
                         self.yaml_config["scenes"][scene].lightstates[lightObj] = lightstate
-
+            #smart_scene
+            if os.path.exists(self.configDir + "/smart_scene.yaml"):
+                smart_scene = _open_yaml(self.configDir + "/smart_scene.yaml")
+                for scene, data in smart_scene.items():
+                    data["id_v1"] = scene
+                    self.yaml_config["smart_scene"][scene] = SmartScene.SmartScene(data)
             #rules
             if os.path.exists(self.configDir + "/rules.yaml"):
                 rules = _open_yaml(self.configDir + "/rules.yaml")
@@ -262,7 +267,7 @@ class Config:
                 return
         saveResources = []
         if resource == "all":
-            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance"]
+            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance", "smart_scene"]
         else:
             saveResources.append(resource)
         for object in saveResources:

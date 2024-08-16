@@ -7,8 +7,10 @@ from threading import Thread
 from datetime import datetime, timedelta, time, date, timezone
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
-from functions.scripts import triggerScript
+from functions.scripts import findGroup, triggerScript
 from services import updateManager
+from flaskUI.v2restapi import getObject
+from copy import deepcopy
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -100,7 +102,56 @@ def runScheduler():
 
 
             except Exception as e:
-                logging.info("Exception while processing the schedule " + obj.name + " | " + str(e))
+                logging.info("Exception while processing the behavior_instance " + obj.name + " | " + str(e))
+
+        for smartscene, obj in bridgeConfig["smart_scene"].items():
+            try:
+                if hasattr(obj, "timeslots"):
+                    sunset_slot = -1
+                    sunset = bridgeConfig["sensors"]["1"].config["sunset"] if "lat" in bridgeConfig["sensors"]["1"].protocol_cfg else "21:00:00"
+                    slots = deepcopy(obj.timeslots)
+                    if hasattr(obj, "recurrence"):
+                        if datetime.now().strftime("%A").lower() not in obj.recurrence:
+                            continue
+                    for instance, slot in enumerate(slots):
+                        time_object = ""
+                        if slot["start_time"]["kind"] == "time":
+                            time_object = datetime(
+                                year=1,
+                                month=1,
+                                day=1,
+                                hour=slot["start_time"]["time"]["hour"],
+                                minute=slot["start_time"]["time"]["minute"],
+                                second=slot["start_time"]["time"]["second"]).strftime("%H:%M:%S")
+                        elif slot["start_time"]["kind"] == "sunset":
+                            sunset_slot = instance
+                            time_object = sunset
+                        if sunset_slot > 0 and instance == sunset_slot+1:
+                            if sunset > time_object:
+                                time_object = (datetime.strptime(sunset, "%H:%M:%S") + timedelta(minutes=30)).strftime("%H:%M:%S")
+                        slots[instance]["start_time"]["time"] = time_object
+                        slots[instance]["start_time"]["instance"] = instance
+
+                    slots = sorted(slots, key=lambda x: datetime.strptime(x["start_time"]["time"], "%H:%M:%S"))
+                    active_timeslot = obj.active_timeslot
+                    for slot in slots:
+                        if datetime.now().strftime("%H:%M:%S") >= slot["start_time"]["time"]:
+                            active_timeslot = slot["start_time"]["instance"]
+                    if obj.active_timeslot != active_timeslot:
+                        obj.active_timeslot = active_timeslot
+                        if obj.state == "active":
+                            if active_timeslot == len(obj.timeslots)-1:
+                                logging.info("stop smart_scene: " + obj.name)
+                                group = findGroup(obj.group["rid"])
+                                group.setV1Action(state={"on": False})
+                            else:
+                                logging.info("execute smart_scene: " + obj.name + " scene: " + str(obj.active_timeslot))
+                                putDict = {"recall": {"action": "active", "duration": obj.speed}}
+                                target_object = getObject(obj.timeslots[active_timeslot]["target"]["rtype"], obj.timeslots[active_timeslot]["target"]["rid"])
+                                target_object.activate(putDict)
+
+            except Exception as e:
+                logging.info("Exception while processing the smart_scene " + obj.name + " | " + str(e))
 
         if ("updatetime" not in bridgeConfig["config"]["swupdate2"]["autoinstall"]):
             bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"] = "T14:00:00"

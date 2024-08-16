@@ -188,7 +188,7 @@ class Group():
                 sensors.append(sensor().id_v1)
         result["lights"] = lights
         result["sensors"] = sensors
-        result["type"] = self.type
+        result["type"] = self.type.capitalize()
         result["state"] = self.update_state()
         result["recycle"] = False
         if self.id_v1 == "0":
