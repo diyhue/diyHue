@@ -18,7 +18,7 @@ def findTriggerTime(times):
         end = now.replace(hour=times[i + 1]["hour"], minute=times[i + 1]["minute"], second=0)
         if start <= now <= end:
             return times[i]["actions"]
-    return times[-1]
+    return times[-1]["actions"]
 
         
 
@@ -58,15 +58,16 @@ def checkBehaviorInstances(device):
     deviceUuid = device.id_v2 
     matchedInstances = []
     for key, instance in bridgeConfig["behavior_instance"].items():
-        try:
-            if "source" in instance.configuration:
-                if instance.configuration["source"]["rtype"] == "device" and instance.configuration["source"]["rid"] == deviceUuid:
-                    matchedInstances.append(instance)
-            elif "device" in instance.configuration:
-                if instance.configuration["device"]["rtype"] == "device" and instance.configuration["device"]["rid"] == deviceUuid:
-                    matchedInstances.append(instance)
-        except KeyError:
-            pass
+        if instance.enabled == True:
+            try:
+                if "source" in instance.configuration:
+                    if instance.configuration["source"]["rtype"] == "device" and instance.configuration["source"]["rid"] == deviceUuid:
+                        matchedInstances.append(instance)
+                elif "device" in instance.configuration:
+                    if instance.configuration["device"]["rtype"] == "device" and instance.configuration["device"]["rid"] == deviceUuid:
+                        matchedInstances.append(instance)
+            except KeyError:
+                pass
 
     for instance in matchedInstances:
         if device.type == "ZLLSwitch": #Hue dimmer switch
