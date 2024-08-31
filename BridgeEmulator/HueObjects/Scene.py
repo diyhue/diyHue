@@ -100,6 +100,9 @@ class Scene():
         for device, state in queueState.items():
             state["object"].setV1State(state)
 
+        if self.type == "GroupScene":
+            self.group().state["any_on"] = True
+
     def getV1Api(self):
         result = {}
         result["name"] = self.name

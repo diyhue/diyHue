@@ -54,6 +54,8 @@ def setGroupAction(group, state, scene=None):
         sceneStates = list(scene.lightstates.items())
         for light, state in sceneStates:
             lightsState[light.id_v1] = state
+            if "on" in state and state["on"] == True:
+                group.state["any_on"] = True
 
     else:
         state = incProcess(group.action, state)
