@@ -27,6 +27,7 @@ class Light():
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
+        self.function = data["function"] if "function" in data else "mixed"
 
         # entertainment
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -164,6 +165,8 @@ class Light():
                         self.config[key] = value
                 if key == "name":
                     self.name = value
+                if key == "function":
+                    self.function = value
             if "bri" in state:
                 if "min_bri" in self.protocol_cfg and self.protocol_cfg["min_bri"] > state["bri"]:
                     state["bri"] = self.protocol_cfg["min_bri"]
@@ -195,6 +198,8 @@ class Light():
                 v1State["archetype"] = state["metadata"]["archetype"]
             if "name" in state["metadata"]:
                 v1State["name"] = state["metadata"]["name"]
+            if "function" in state["metadata"]:
+                v1State["function"] = state["metadata"]["function"]
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
@@ -305,7 +310,7 @@ class Light():
             }
             result["color_temperature"]["mirek_valid"] = True if self.state[
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
-            result["color_temperature_delta"] = {}
+            #result["color_temperature_delta"] = {}
         if "bri" in self.state:
             bri_value = self.state["bri"]
             if bri_value is None or bri_value == "null":
@@ -332,7 +337,7 @@ class Light():
         result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
-        result["metadata"] = {"name": self.name, "function": "mixed",
+        result["metadata"] = {"name": self.name, "function": self.function,
                               "archetype": archetype[self.config["archetype"]]}
         result["mode"] = "normal"
         if "mode" in self.state and self.state["mode"] == "streaming":
@@ -348,6 +353,7 @@ class Light():
         result["signaling"] = {"signal_values": [
             "no_signal",
             "on_off"]}
+        result["powerup"] = {"preset": "last_on_state"}
         result["type"] = "light"
         return result
 
@@ -473,6 +479,6 @@ class Light():
         logging.debug("Dynamic Scene " + self.name + " stopped.")
 
     def save(self):
-        result = {"id_v2": self.id_v2, "name": self.name, "modelid": self.modelid, "uniqueid": self.uniqueid,
+        result = {"id_v2": self.id_v2, "name": self.name, "modelid": self.modelid, "uniqueid": self.uniqueid, "function": self.function,
                   "state": self.state, "config": self.config, "protocol": self.protocol, "protocol_cfg": self.protocol_cfg}
         return result

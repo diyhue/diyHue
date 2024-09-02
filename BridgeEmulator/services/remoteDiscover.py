@@ -1,6 +1,5 @@
 import logManager
 import requests
-import json
 from time import sleep
 
 logging = logManager.logger.get_logger(__name__)

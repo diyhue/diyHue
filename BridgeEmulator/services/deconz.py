@@ -114,7 +114,7 @@ def websocketClient():
                             else:
                                 lightSensor.state["lightlevel"] = 25000
                             lightSensor.state["daylight"] = not lightSensor.state["dark"]
-                            lightSensor.state["lastupdated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+                            lightSensor.state["lastupdated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
                             if "dark" in message["state"]:
                                 del message["state"]["dark"]
 

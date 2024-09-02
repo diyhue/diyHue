@@ -23,8 +23,17 @@ wait
 
 echo -e "\033[32m Copying files to directories.\033[0m"
 cd /opt/tmp/diyHue/BridgeEmulator
-cp HueEmulator3.py updater githubInstall.sh githubUIInstall.sh /opt/hue-emulator/
-cp -r HueObjects configManager flaskUI functions lights logManager sensors services /opt/hue-emulator/
+cp -r flaskUI /opt/hue-emulator/
+cp -r functions /opt/hue-emulator/
+cp -r lights /opt/hue-emulator/
+cp -r sensors /opt/hue-emulator/
+cp -r HueObjects /opt/hue-emulator/
+cp -r services /opt/hue-emulator/
+cp -r configManager /opt/hue-emulator/
+cp -r logManager /opt/hue-emulator/
+cp -r HueEmulator3.py /opt/hue-emulator/
+cp -r githubInstall.sh /opt/hue-emulator/
+cp -r genCert.sh /opt/hue-emulator/
 
 echo -e "\033[32m Copy web interface files.\033[0m"
 curl -sL https://www.github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip

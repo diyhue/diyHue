@@ -1,7 +1,6 @@
 import logManager
 import json
 import time
-import random
 import threading
 from ws4py.client.threadedclient import WebSocketClient
 

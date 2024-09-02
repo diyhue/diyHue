@@ -1,7 +1,6 @@
 import logManager
 import socket
-from time import sleep
-from zeroconf import IPVersion, ServiceBrowser, ServiceInfo, Zeroconf
+from zeroconf import IPVersion, ServiceInfo, Zeroconf
 
 logging = logManager.logger.get_logger(__name__)
 

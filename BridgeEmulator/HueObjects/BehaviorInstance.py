@@ -35,7 +35,6 @@ class BehaviorInstance():
         result = {"configuration": self.configuration,
                   "dependees": [],
                   "enabled": self.enabled,
-                  "active": self.active,
                   "id": self.id_v2,
                   "last_error": "",
                   "metadata": {

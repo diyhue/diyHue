@@ -1,11 +1,5 @@
 import logManager
 import json
-import random
-import requests
-from datetime import datetime
-from time import strftime
-from threading import Thread
-import traceback
 
 # External
 import paho.mqtt.publish as publish

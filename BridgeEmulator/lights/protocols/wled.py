@@ -1,14 +1,12 @@
 import socket
 import urllib.request
 import json
-import random
 import math
-import sys
 import logManager
 import requests
-from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+from functions.colors import convert_rgb_xy, convert_xy
 from time import sleep
-from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf, ZeroconfServiceTypes
+from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf
 
 logging = logManager.logger.get_logger(__name__)
 

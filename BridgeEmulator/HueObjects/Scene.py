@@ -28,6 +28,7 @@ class Scene():
         self.speed = data["speed"] if "speed" in data else self.DEFAULT_SPEED
         self.group = data["group"] if "group" in data else None
         self.lights = data["lights"] if "lights" in data else []
+        self.status = data["status"] if "status" in data else "inactive"
         if "group" in data:
             self.storelightstate()
             self.lights = self.group().lights
@@ -54,17 +55,23 @@ class Scene():
 
     def activate(self, data):
         # activate dynamic scene
-        if "recall" in data and data["recall"]["action"] == "dynamic_palette":
-            lightIndex = 0
-            for light in self.lights:
-                if light():
-                    light().dynamics["speed"] = self.speed
-                    Thread(target=light().dynamicScenePlay, args=[
-                           self.palette, lightIndex]).start()
-                    lightIndex += 1
-
+        if "recall" in data:
+            if data["recall"]["action"] == "dynamic_palette":
+                self.status = data["recall"]["action"]
+                lightIndex = 0
+                for light in self.lights:
+                    if light():
+                        light().dynamics["speed"] = self.speed
+                        Thread(target=light().dynamicScenePlay, args=[
+                            self.palette, lightIndex]).start()
+                        lightIndex += 1
+            
+            if data["recall"]["action"] == "deactivate":
+                self.status = "inactive"
             return
+
         queueState = {}
+        self.status = data["recall"]["action"]
         for light, state in self.lightstates.items():
             logging.debug(state)
             light.state.update(state)
@@ -149,7 +156,7 @@ class Scene():
                 v2State["dimming"] = {
                     "brightness": round(float(bri_value) / 2.54, 2)
                 }
-                v2State["dimming_delta"] = {}
+                #v2State["dimming_delta"] = {}
 
             if "xy" in state:
                 v2State["color"] = {
@@ -184,6 +191,9 @@ class Scene():
         if self.palette:
             result["palette"] = self.palette
         result["speed"] = self.speed
+        result["auto_dynamic"] = False
+        result["status"] = {"active": self.status}
+        result["recall"] = {}
         return result
 
     def storelightstate(self):

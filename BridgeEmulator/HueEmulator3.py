@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from flask import Flask
-from flask.json import jsonify
 from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
@@ -15,7 +14,6 @@ from flaskUI.espDevices import Switch
 from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
-from pprint import pprint
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)

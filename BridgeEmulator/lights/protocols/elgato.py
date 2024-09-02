@@ -3,7 +3,7 @@ import json
 import logManager
 import requests
 from time import sleep
-from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf, ZeroconfServiceTypes
+from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf
 
 logging = logManager.logger.get_logger(__name__)
 

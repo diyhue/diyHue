@@ -78,9 +78,9 @@ class Sensor():
             if self.type == "ZLLPresence":
                 rtype = "motion"
             elif self.type == "ZLLLightLevel":
-                rtype = "temperature"
-            elif self.type == "ZLLTemperature":
                 rtype = "light_level"
+            elif self.type == "ZLLTemperature":
+                rtype = "temperature"
             return {
                 "rid": self.id_v2,
                 "rtype": rtype
@@ -155,6 +155,7 @@ class Sensor():
             result["type"] = "device"
         elif self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020":
             result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
             result["product_data"] = {"model_id": self.modelid,
                 "manufacturer_name": "Signify Netherlands B.V.",
                 "product_name": "Hue dimmer switch",
@@ -189,6 +190,7 @@ class Sensor():
             result["type"] = "device"
         elif self.modelid == "RDM002" and self.type != "ZLLRelativeRotary":
             result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
             result["product_data"] = {"model_id": self.modelid,
                 "manufacturer_name": "Signify Netherlands B.V.",
                 "product_name": "Hue tap dial switch",
@@ -223,6 +225,7 @@ class Sensor():
             result["type"] = "device"
         elif self.modelid == "RDM002" and self.type == "ZLLRelativeRotary":
             result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
             result["product_data"] = {"model_id": self.modelid,
                 "manufacturer_name": "Signify Netherlands B.V.",
                 "product_name": "Hue tap dial switch",
@@ -254,20 +257,66 @@ class Sensor():
     def getMotion(self):
         result = None
         if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {"enabled": self.config["on"],
-                      "id": str(uuid.uuid5(
-                          uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
-                      "id_v1": "/sensors/" + self.id_v1,
-                      "motion": {
-                "motion": True if self.state["presence"] else False,
-                "motion_valid": True
-            },
+            result = {
+                "enabled": self.config["on"],
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "motion": {
+                    "motion_report": {
+                        "changed": self.state["lastupdated"],
+                        "motion": True if self.state["presence"] else False,
+                    }
+                },
+                "sensitivity": {
+                    "status": "set",
+                    "sensitivity": 2,
+                    "sensitivity_max": 2
+                },
                 "owner": {
-                "rid": str(uuid.uuid5(
-                    uuid.NAMESPACE_URL, self.id_v2 + 'device')),
-                "rtype": "device"
-            },
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rtype": "device"
+                },
                 "type": "motion"}
+        return result
+    
+    def getTemperature(self):
+        result = None
+        if self.modelid == "SML001" and self.type == "ZLLTemperature":
+            result = {
+                "enabled": self.config["on"],
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "temperature": {
+                    "temperature_report":{
+                        "changed": self.state["lastupdated"],
+                        "temperature": self.state["temperature"]/100
+                    }
+                },
+                "owner": {
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rtype": "device"
+                },
+                "type": "temperature"}
+        return result
+    
+    def getLightlevel(self):
+        result = None
+        if self.modelid == "SML001" and self.type == "ZLLLightLevel":
+            result = {
+                "enabled": self.config["on"],
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'light_level')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "light": {
+                    "light_level_report":{
+                        "changed": self.state["lastupdated"],
+                        "light_level": self.state["lightlevel"]
+                    }
+                },
+                "owner": {
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rtype": "device"
+                },
+                "type": "light_level"}
         return result
 
     def getZigBee(self):

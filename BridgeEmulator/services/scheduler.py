@@ -4,7 +4,7 @@ import json
 import random
 from time import sleep
 from threading import Thread
-from datetime import datetime, timedelta, time, date, timezone
+from datetime import datetime, timedelta, time, timezone
 from functions.request import sendRequest
 from functions.daylightSensor import daylightSensor
 from functions.scripts import findGroup, triggerScript

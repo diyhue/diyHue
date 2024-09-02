@@ -5,10 +5,8 @@ import weakref
 import uuid
 import json
 import os
-import requests
 from subprocess import Popen
 from threading import Thread
-from time import sleep
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
@@ -24,7 +22,6 @@ try:
 except ImportError:
     tzset = None
 
-from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -344,7 +341,7 @@ class Element(Resource):
                 for state in putDict["state"].keys():
                     bridgeConfig["sensors"][resourceid].dxState[state] = currentTime
                 bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.now(timezone.utc
-                ).strftime("%Y-%m-%dT%H:%M:%S")
+                ).strftime("%Y-%m-%dT%H:%M:%S.000Z")
                 bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
         elif resource == "groups":
             if "lights" in putDict:
@@ -443,7 +440,7 @@ class ElementParam(Resource):
             for state in putDict.keys():
                 bridgeConfig["sensors"][resourceid].dxState[state] = currentTime
             bridgeConfig["sensors"][resourceid].state["lastupdated"] = datetime.now(timezone.utc
-            ).strftime("%Y-%m-%dT%H:%M:%S")
+            ).strftime("%Y-%m-%dT%H:%M:%S.000Z")
             bridgeConfig["sensors"][resourceid].dxState["lastupdated"] = currentTime
             rulesProcessor(bridgeConfig[resource][resourceid], currentTime)
         bridgeConfig[resource][resourceid].update_attr({param: putDict})

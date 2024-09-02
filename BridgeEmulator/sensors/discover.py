@@ -2,7 +2,6 @@ import logManager
 import configManager
 from HueObjects import Sensor
 import random
-from sensors.sensor_types import sensorTypes
 from functions.core import nextFreeId
 
 logging = logManager.logger.get_logger(__name__)

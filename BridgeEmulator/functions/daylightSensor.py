@@ -1,4 +1,3 @@
-import pytz
 from astral.sun import sun
 from astral import LocationInfo
 from functions.rules import rulesProcessor

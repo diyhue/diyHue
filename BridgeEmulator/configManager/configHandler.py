@@ -1,15 +1,12 @@
 from configManager import configInit
 from configManager.argumentHandler import parse_arguments
-from datetime import datetime
 import os
 import pathlib
 import subprocess
-import json
 import logManager
 import yaml
 import uuid
 import weakref
-from time import sleep
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
 try:
     from time import tzset

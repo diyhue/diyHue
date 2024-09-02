@@ -129,15 +129,21 @@ class Group():
     def update_state(self):
         all_on = True
         any_on = False
+        bri = 0
+        lights_on = 0
         if len(self.lights) == 0:
             all_on = False
         for light in self.lights:
             if light():
                 if light().state["on"]:
                     any_on = True
+                    bri = bri + light().state["bri"]
+                    lights_on = lights_on + 1
                 else:
                     all_on = False
-        return {"all_on": all_on, "any_on": any_on}
+        if any_on:
+            bri = (((bri/lights_on)/254)*100)
+        return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
 
     def setV2Action(self, state):
         v1State = v2StateToV1(state)
@@ -197,12 +203,12 @@ class Group():
             result["lightlevel"] = {"state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
                                               "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}}
         else:
-            result["class"] = self.icon_class.capitalize()
+            result["class"] = self.icon_class.capitalize() if len(self.icon_class) > 2 else self.icon_class.upper()
         result["action"] = self.action
         return result
 
     def getV2Room(self):
-        result = {"children": [], "grouped_services": [], "services": []}
+        result = {"children": [], "services": []}
         for light in self.lights:
             if light():
                 result["children"].append({
@@ -211,11 +217,10 @@ class Group():
                     "rtype": "device"
                 })
 
-        result["grouped_services"].append({
-            "rid": self.id_v2,
-            "rtype": "grouped_light"
-
-        })
+        #result["grouped_services"].append({
+        #    "rid": self.id_v2,
+        #    "rtype": "grouped_light"
+        #})
         result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'room'))
         result["id_v1"] = "/groups/" + self.id_v1
         result["metadata"] = {
@@ -238,7 +243,7 @@ class Group():
         return result
 
     def getV2Zone(self):
-        result = {"children": [], "grouped_services": [], "services": []}
+        result = {"children": [], "services": []}
         for light in self.lights:
             if light():
                 result["children"].append({
@@ -246,11 +251,10 @@ class Group():
                     "rtype": "light"
                 })
 
-        result["grouped_services"].append({
-            "rid": self.id_v2,
-            "rtype": "grouped_light"
-
-        })
+        #result["grouped_services"].append({
+        #    "rid": self.id_v2,
+        #    "rtype": "grouped_light"
+        #})
         result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zone'))
         result["id_v1"] = "/groups/" + self.id_v1
         result["metadata"] = {
@@ -280,7 +284,7 @@ class Group():
             ]
         }
         result["color"] = {}
-        result["dimming"] = {}
+        result["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         result["dimming_delta"] = {}
         result["dynamics"] = {}
         result["id"] = self.id_v2
@@ -291,6 +295,9 @@ class Group():
             result["owner"] = {"rid": self.owner.username, "rtype": "device"}
         else:
             result["owner"] = {"rid": self.id_v2, "rtype": "device"}
+        result["signaling"] = {"signal_values": [
+            "no_signal",
+            "on_off"]}
 
         return result
 

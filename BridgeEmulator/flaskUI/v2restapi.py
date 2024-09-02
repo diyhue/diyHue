@@ -13,7 +13,6 @@ from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
-from pprint import pprint
 from lights.discover import scanForLights
 from functions.daylightSensor import daylightSensor
 
@@ -23,7 +22,7 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
-"geofence_client": {}, "motion": {}}
+"geofence_client": {}, "motion": {}, "light_level": {}, "temperature": {}, "relative_rotary": {}, "button": {}}
 
 
 def getObject(element, v2uuid):
@@ -108,13 +107,18 @@ def v2BridgeZigBee():
 def v2BridgeZigBeeDiscovery():
     return{"id": str(uuid.uuid5(
         uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
-           "owner": {
-              "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-              "rtype": "device"
-       },
-       "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
-       "type": "zigbee_device_discovery",
-       }
+        "owner": {
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+            "rtype": "device"
+        },
+        "action": {
+            "action_type_values": [
+                "search"
+            ]
+        },
+        "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
+        "type": "zigbee_device_discovery",
+        }
 
 
 def v2GeofenceClient():
@@ -130,12 +134,13 @@ def v2GeofenceClient():
 def v2BridgeHome():
     result = {}
     result["children"] = []
-    result["grouped_services"] = []
-    if len(bridgeConfig["lights"]) > 0:
-        result["grouped_services"].append({
-            "rid": bridgeConfig["groups"]["0"].id_v2,
-            "rtype": "grouped_light"
-        })
+    result["children"].append({"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')), "rtype": "device"})
+    #result["grouped_services"] = []
+    #if len(bridgeConfig["lights"]) > 0:
+    #    result["grouped_services"].append({
+    #        "rid": bridgeConfig["groups"]["0"].id_v2,
+    #        "rtype": "grouped_light"
+    #    })
     result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
                                   bridgeConfig["groups"]["0"].id_v2 + 'bridge_home'))
     result["id_v1"] = "/groups/0"
@@ -160,7 +165,6 @@ def v2Bridge():
         "bridge_id": bridge_id.lower(),
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')),
         "id_v1": "",
-        "identify": {},
         "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
         "time_zone": {"time_zone": bridgeConfig["config"]["timezone"]},
         "type": "bridge"
@@ -184,6 +188,7 @@ def v2BridgeDevice():
     result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
     result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
+    result["identify"] = {}
     result["product_data"] = {
         "certified": True,
         "manufacturer_name": "Signify Netherlands B.V.",
@@ -199,6 +204,17 @@ def v2BridgeDevice():
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'entertainment')), "rtype": "entertainment"}
     ]
     return result
+
+def v2DiyHueBridge():
+    bridge_id = bridgeConfig["config"]["bridgeid"]
+    return {
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'diyhue')),
+        "id_v1": "",
+        "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
+        "type": "diyhue",
+        "Hue Essentials key": bridgeConfig["config"]["Hue Essentials key"], 
+        "Remote API enabled": bridgeConfig["config"]["Remote API enabled"]
+    }
 
 class AuthV1(Resource):
     def get(self):
@@ -229,6 +245,7 @@ class ClipV2(Resource):
                 data.append(sensor.getDevice())
         # bridge
         data.append(v2Bridge())
+        data.append(v2DiyHueBridge())
         # zigbee
         data.append(v2BridgeZigBee())
         for key, light in bridgeConfig["lights"].items():
@@ -256,9 +273,6 @@ class ClipV2(Resource):
                 data.append(group.getV2Room())
             elif group.type == "Zone":
                 data.append(group.getV2Zone())
-        # group
-        for key, group in bridgeConfig["groups"].items():
-            data.append(group.getV2GroupedLight())
         # behavior_instance
         for key, instance in bridgeConfig["behavior_instance"].items():
             data.append(instance.getV2Api())
@@ -266,6 +280,9 @@ class ClipV2(Resource):
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Entertainment":
                 data.append(group.getV2Api())
+        # group
+            else:
+                data.append(group.getV2GroupedLight())
         # bridge home
         data.append(v2BridgeHome())
         data.append(v2GeofenceClient())
@@ -276,20 +293,23 @@ class ClipV2(Resource):
             motion = sensor.getMotion()
             if motion != None:
                 data.append(motion)
-        for key, sensor in bridgeConfig["sensors"].items():
             buttons = sensor.getButtons()
             if len(buttons) != 0:
                 for button in buttons:
                     data.append(button)
-        for key, sensor in bridgeConfig["sensors"].items():
             power = sensor.getDevicePower()
             if power != None:
                 data.append(power)
-        for key, sensor in bridgeConfig["sensors"].items():
             rotarys = sensor.getRotary()
             if len(rotarys) != 0:
                 for rotary in rotarys:
                     data.append(rotary)
+            temperature = sensor.getTemperature()
+            if temperature != None:
+                data.append(temperature)
+            lightlevel = sensor.getLightlevel()
+            if lightlevel != None:
+                data.append(lightlevel)
 
         return {"errors": [], "data": data}
 
@@ -351,12 +371,16 @@ class ClipV2Resource(Resource):
             response["data"].append(v2BridgeZigBeeDiscovery())
         elif resource == "bridge":
             response["data"].append(v2Bridge())
+        elif resource == "diyhue":
+            response["data"].append(v2DiyHueBridge())
         elif resource == "bridge_home":
             response["data"].append(v2BridgeHome())
         elif resource == "homekit":
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
+        elif resource == "matter":
+            response["data"].append(matter())
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
@@ -387,6 +411,16 @@ class ClipV2Resource(Resource):
                 if len(rotarys) != 0:
                     for rotary in rotarys:
                         response["data"].append(rotary)
+        elif resource == "temperature":
+            for key, sensor in bridgeConfig["sensors"].items():
+                temperature = sensor.getTemperature()
+                if temperature != None:
+                    response["data"].append(temperature)
+        elif resource == "light_level":
+            for key, sensor in bridgeConfig["sensors"].items():
+                lightlevel = sensor.getLightlevel()
+                if lightlevel != None:
+                    response["data"].append(lightlevel)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
@@ -553,8 +587,17 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "bridge":
             return {"errors": [], "data": [v2Bridge()]}
+        elif resource == "motion":
+            return {"errors": [], "data": [object.getMotion()]}
         elif resource == "device_power":
             return {"errors": [], "data": [object.getDevicePower()]}
+        elif resource == "button":
+            return {"errors": [], "data": [object.getButtons()]}
+        elif resource == "relative_rotary":
+            return {"errors": [], "data": [object.getRotary()]}
+            return {"errors": [], "data": [object.getTemperature()]}
+        elif resource == "light_level":
+            return {"errors": [], "data": [object.getLightlevel()]}
 
     def put(self, resource, resourceid):
         logging.debug(request.headers)

@@ -1,8 +1,12 @@
 import json
 import logManager
 import socket
+from functions.colors import convert_xy, rgbBrightness
 
 logging = logManager.logger.get_logger(__name__)
+
+def pretty_json(data):
+    return json.dumps(data, sort_keys=True, indent=4, separators=(',', ': '))
 
 def set_light(light, data):
     msg = bytearray()
@@ -19,8 +23,8 @@ def set_light(light, data):
         logging.info(pretty_json(data))
         bri = data["bri"] if "bri" in data else light.state["bri"]
         xy = data["xy"] if "xy" in data else light.state["xy"]
-        if rgb:
-            color = rgbBrightness(rgb, bri)
+        if "rgb" in data:
+            color = rgbBrightness(data["rgb"], bri)
         else:
             color = convert_xy(xy[0], xy[1], bri)
         msg = bytearray([0x41, color[0], color[1], color[2], 0x00, 0xf0, 0x0f])

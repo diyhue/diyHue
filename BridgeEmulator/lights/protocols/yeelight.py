@@ -1,7 +1,6 @@
-import json
 import logManager
 import yeelight
-from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
+from functions.colors import convert_rgb_xy, convert_xy
 from time import sleep
 
 logging = logManager.logger.get_logger(__name__)

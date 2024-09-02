@@ -105,7 +105,7 @@ class Switch(Resource):
                                 result = {"fail": "unknown device"}
                             obj.dxState["lastupdated"] = current_time
                             obj.state["lastupdated"] = datetime.now(timezone.utc).strftime(
-                                "%Y-%m-%dT%H:%M:%S")
+                                "%Y-%m-%dT%H:%M:%S.000Z")
                             rulesProcessor(obj, current_time)
                             result = {"success": "command applied"}
                         else:

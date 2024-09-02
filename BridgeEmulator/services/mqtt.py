@@ -340,17 +340,17 @@ def on_message(client, userdata, msg):
                             device.config["battery"] = data["battery"]
                         if device.config["on"] == False:
                             return
-                        convertedPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")}
+                        convertedPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
                         if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
                             return
                         ### If is a motion sensor update the light level and temperature
                         if device.modelid in motionSensors:
                             convertedPayload["presence"] = data["occupancy"]
-                            lightPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")}
+                            lightPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
                             lightSensor = findLightSensor(device)
                             if "temperature" in data:
                                 tempSensor = findTempSensor(device)
-                                tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")}
+                                tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
                             if "illuminance_lux" in data:
                                 hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
                                 if hue_lightlevel > lightSensor.config["tholddark"]:

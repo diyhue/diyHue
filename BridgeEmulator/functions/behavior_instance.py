@@ -5,7 +5,6 @@ import random
 from datetime import datetime
 from threading import Thread
 from time import sleep
-from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 

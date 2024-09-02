@@ -1,5 +1,5 @@
 import logManager
-from flask import Flask, Response, stream_with_context, Blueprint
+from flask import Response, stream_with_context, Blueprint
 import json
 from time import sleep, time
 import HueObjects

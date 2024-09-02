@@ -1,6 +1,5 @@
 import json
 import logManager
-import random
 import re
 import socket
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb

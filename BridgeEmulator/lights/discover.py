@@ -5,7 +5,7 @@ import json
 import uuid
 from time import sleep
 from datetime import datetime, timezone
-from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native, native_single, native_multi, tasmota, shelly, esphome, tradfri, elgato
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato
 from services import homeAssistantWS
 from HueObjects import Light, StreamEvent
 from functions.core import nextFreeId
@@ -100,23 +100,27 @@ def manualAddLight(ip, protocol, config={}):
         config["ip"] = ip
         addNewLight(modelid, name, protocol, config)
 
-
-def scanForLights():  # scan for ESP8266 lights and strips
-    bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
+def discoveryEvent():
     streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "data": [{
-                            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
-                            "owner": {
-                                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-                                "rtype": "device"
-                            },
+                    "data": [{
+                        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
+                        "owner": {
+                            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+                            "rtype": "device"
+                        },
                         "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
                         "type": "zigbee_device_discovery"
                         }],
-                     "id": str(uuid.uuid4()),
-                     "type": "update"
-                     }
+                    "id": str(uuid.uuid4()),
+                    "type": "update"
+                    }
     StreamEvent(streamMessage)
+
+
+
+def scanForLights():  # scan for ESP8266 lights and strips
+    bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
+    discoveryEvent()
     detectedLights = []
 
     if bridgeConfig["config"]["port"]["enabled"]:
@@ -167,21 +171,6 @@ def scanForLights():  # scan for ESP8266 lights and strips
         elgato.discover(detectedLights, elgato_ips)
     bridgeConfig["temp"]["scanResult"]["lastscan"] = datetime.now().strftime(
         "%Y-%m-%dT%H:%M:%S")
-    bridgeConfig["config"]["zigbee_device_discovery_info"]["status"] = "ready"
-    streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "data": [{
-                            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
-                            "owner": {
-                                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-                                "rtype": "device"
-                            },
-                        "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
-                        "type": "zigbee_device_discovery"
-                        }],
-                     "id": str(uuid.uuid4()),
-                     "type": "update"
-                     }
-    StreamEvent(streamMessage)
     for light in detectedLights:
         # check if light is already present
         lightIsNew = True
@@ -232,4 +221,6 @@ def scanForLights():  # scan for ESP8266 lights and strips
                 light["modelid"], light["name"], light["protocol"], light["protocol_cfg"])
             bridgeConfig["temp"]["scanResult"][lightId] = {
                 "name": light["name"]}
+    bridgeConfig["config"]["zigbee_device_discovery_info"]["status"] = "ready"
+    discoveryEvent()
     return bridgeConfig["temp"]["scanResult"]
