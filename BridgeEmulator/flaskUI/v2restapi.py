@@ -595,6 +595,7 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getButtons()]}
         elif resource == "relative_rotary":
             return {"errors": [], "data": [object.getRotary()]}
+        elif resource == "temperature":
             return {"errors": [], "data": [object.getTemperature()]}
         elif resource == "light_level":
             return {"errors": [], "data": [object.getLightlevel()]}
