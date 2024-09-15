@@ -137,7 +137,7 @@ class Group():
             if light():
                 if light().state["on"]:
                     any_on = True
-                    bri = bri + light().state["bri"]
+                    bri = bri + light().state.get("bri", 0)
                     lights_on = lights_on + 1
                 else:
                     all_on = False
