@@ -60,7 +60,7 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Download container artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
 
@@ -112,7 +112,7 @@ jobs:
           fi
 
       - name: Download container artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
 
@@ -163,7 +163,7 @@ jobs:
           fi
 
       - name: Download container artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
 
