@@ -239,6 +239,7 @@ def checkBehaviorInstances(device):
                             
                     elif "time_based" in instance.configuration[button][buttonAction]:
                         if "slots" in instance.configuration[button][buttonAction]["time_based"]:
+                            print("to be done")
                     
             
                 
