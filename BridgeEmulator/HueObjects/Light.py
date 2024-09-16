@@ -29,25 +29,6 @@ class Light():
         self.effect = "no_effect"
         self.function = data["function"] if "function" in data else "mixed"
 
-        # entertainment
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": str(uuid.uuid5(
-                             uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
-        streamMessage["data"][0].update(self.getV2Entertainment())
-        StreamEvent(streamMessage)
-
-        # zigbee_connectivity
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getZigBee()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
-        StreamEvent(streamMessage)
-
         # light
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
@@ -56,46 +37,11 @@ class Light():
                          }
         StreamEvent(streamMessage)
 
-        # device
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getDevice()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
-        streamMessage["data"][0].update(self.getDevice())
-        StreamEvent(streamMessage)
 
     def __del__(self):
         ## light ##
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
-        StreamEvent(streamMessage)
-
-        ## device ##
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getDevice()["id"], "type": "device"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
-        StreamEvent(streamMessage)
-
-        # Zigbee Connectivity
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getZigBee()["id"], "type": "zigbee_connectivity"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
-        StreamEvent(streamMessage)
-
-        # Entertainment
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getV2Entertainment()["id"], "type": "entertainment"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
@@ -112,12 +58,12 @@ class Light():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getDevice()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
-        StreamEvent(streamMessage)
+        #streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        #                 "data": [self.getDevice()],
+        #                 "id": str(uuid.uuid4()),
+        #                 "type": "update"
+        #                 }
+        #StreamEvent(streamMessage)
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -211,58 +157,10 @@ class Light():
                          }
         streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        streamMessage["data"][0].update(
-            {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        #streamMessage["data"][0].update(
+        #    {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         StreamEvent(streamMessage)
 
-    def getDevice(self):
-        result = {"id": str(uuid.uuid5(
-            uuid.NAMESPACE_URL, self.id_v2 + 'device'))}
-        result["id_v1"] = "/lights/" + self.id_v1
-        result["identify"] = {}
-        result["metadata"] = {
-            "archetype": archetype[self.config["archetype"]],
-            "name": self.name
-        }
-        result["product_data"] = lightTypes[self.modelid]["device"]
-        result["product_data"]["model_id"] = self.modelid
-
-        result["services"] = [
-            {
-                "rid": self.id_v2,
-                "rtype": "light"
-            },
-            {
-                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
-                "rtype": "zigbee_connectivity"
-            },
-            {
-                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')),
-                "rtype": "entertainment"
-            }
-        ]
-        result["type"] = "device"
-        return result
-
-    def getZigBee(self):
-        result = {}
-        result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
-                                      self.id_v2 + 'zigbee_connectivity'))
-        result["id_v1"] = "/lights/" + self.id_v1
-        result["mac_address"] = self.uniqueid[:23]
-        result["owner"] = {
-            "rid": self.getDevice()["id"],
-            "rtype": "device"
-        }
-        result["status"] = "connected" if self.state["reachable"] else "connectivity_issue"
-        result["type"] = "zigbee_connectivity"
-        return result
-
-    def getBridgeHome(self):
-        return {
-            "rid": self.id_v2,
-            "rtype": "light"
-        }
 
     def getV2Api(self):
         result = {}
@@ -355,81 +253,6 @@ class Light():
             "on_off"]}
         result["powerup"] = {"preset": "last_on_state"}
         result["type"] = "light"
-        return result
-
-    def getV2Entertainment(self):
-        entertainmenUuid = str(uuid.uuid5(
-            uuid.NAMESPACE_URL, self.id_v2 + 'entertainment'))
-        result = {
-            "equalizer": True,
-            "id": entertainmenUuid,
-            "id_v1": "/lights/" + self.id_v1,
-            "proxy": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["proxy"],
-            "renderer": lightTypes[self.modelid]["v1_static"]["capabilities"]["streaming"]["renderer"],
-            "renderer_reference": {
-                "rid": self.id_v2,
-                "rtype": "light"
-            }
-        }
-        result["owner"] = {
-            "rid": self.getDevice()["id"], "rtype": "device"}
-        result["segments"] = {
-            "configurable": False
-        }
-        if self.modelid == "LCX002":
-            result["segments"]["max_segments"] = 7
-            result["segments"]["segments"] = [
-                {
-                    "length": 2,
-                    "start": 0
-                },
-                {
-                    "length": 2,
-                    "start": 2
-                },
-                {
-                    "length": 4,
-                    "start": 4
-                },
-                {
-                    "length": 4,
-                    "start": 8
-                },
-                {
-                    "length": 4,
-                    "start": 12
-                },
-                {
-                    "length": 2,
-                    "start": 16
-                },
-                {
-                    "length": 2,
-                    "start": 18
-                }]
-        elif self.modelid in ["915005987201", "LCX004", "LCX006"]:
-            result["segments"]["max_segments"] = 10
-            result["segments"]["segments"] = [
-                {
-                    "length": 3,
-                    "start": 0
-                },
-                {
-                    "length": 4,
-                    "start": 3
-                },
-                {
-                    "length": 3,
-                    "start": 7
-                }
-            ]
-        else:
-            result["segments"]["max_segments"] = 1
-            result["segments"]["segments"] = [{
-                "length": 1,
-                "start": 0
-            }]
-        result["type"] = "entertainment"
         return result
 
     def getObjectPath(self):

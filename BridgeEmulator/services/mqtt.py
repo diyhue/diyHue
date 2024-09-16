@@ -4,13 +4,13 @@ import json
 import math
 import weakref
 import ssl
-from HueObjects import Sensor
+from HueObjects import Sensor, Device
 import paho.mqtt.client as mqtt
 from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
-from sensors.discover import addHueMotionSensor
+from sensors.discover import addHueMotionSensor, addHueSecureContactSensor
 from sensors.sensor_types import sensorTypes
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
@@ -199,7 +199,6 @@ def getClient():
     return client
 
 def longPressButton(sensor, buttonevent):
-    print("running.....")
     logging.info("long press detected")
     sleep(1)
     while sensor.state["buttonevent"] == buttonevent:
@@ -224,19 +223,15 @@ def getObject(friendly_name):
         logging.debug("Cache Hit for " + friendly_name)
         return devices_ids[friendly_name]()
     else:
-        for resource in ["sensors", "lights"]:
-            for key, device in bridgeConfig[resource].items():
-                if device.protocol == "mqtt":
-                    if "friendly_name" in device.protocol_cfg and device.protocol_cfg["friendly_name"] == friendly_name:
-                        if device.modelid == "SML001" and device.type != "ZLLPresence":
-                            continue
-                        devices_ids[friendly_name] = weakref.ref(device)
-                        logging.debug("Cache Miss " + friendly_name)
-                        return device
-                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
-                        devices_ids[friendly_name] = weakref.ref(device)
-                        logging.debug("Cache Miss " + friendly_name)
-                        return device
+        for key, device in bridgeConfig["device"].items():
+            if device.protocol == "mqtt":
+                if "friendly_name" in device.protocol_cfg and device.protocol_cfg["friendly_name"] == friendly_name:
+                    devices_ids[friendly_name] = weakref.ref(device)
+                    return device
+                elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
+                    devices_ids[friendly_name] = weakref.ref(device)
+                    logging.debug("Cache Miss " + friendly_name)
+                    return device
         logging.debug("Device not found for " + friendly_name)
         return False
 
@@ -285,6 +280,11 @@ def on_autodiscovery_light(msg):
             addNewLight(modelid, lightName, "mqtt", protocol_cfg)
 
 
+def notifyEmail(sensorName):
+    if bridgeConfig["config"]["alarm"]["enabled"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < datetime.now().timestamp():
+        logging.info("Alarm triggered, sending email...")
+        requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": sensorName}, timeout=10)
+        bridgeConfig["config"]["alarm"]["lasttriggered"] = int(datetime.now().timestamp())
 
 def on_state_update(msg):
     logging.debug("MQTT: got state message on " + msg.topic)
@@ -296,7 +296,6 @@ def on_state_update(msg):
 def on_message(client, userdata, msg):
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         try:
-            current_time =  datetime.now()
             logging.debug("MQTT: got state message on " + msg.topic)
             data = json.loads(msg.payload)
             logging.debug(msg.payload)
@@ -304,24 +303,43 @@ def on_message(client, userdata, msg):
                 on_autodiscovery_light(msg)
             elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
-                    if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
-                        if getObject(key["friendly_name"]) == False: ## Add the new sensor
-                            logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
-                            if key["model_id"] in standardSensors:
+                    if "model_id" in key:
+                        if getObject(key["friendly_name"]) == False: ## Sensor not present in bridge config
+                            logging.info("MQTT: Found new mqtt sensor " + key["friendly_name"])
+                            ### check if is a motion sensor
+                            hadMotion, hasLightLevel, hasTemperature, hasContact = False, False, False, False
+                            for feature in key["definition"]["exposes"]:
+                                if "property" in feature:
+                                    if feature["property"] == "occupancy":
+                                        hadMotion = True
+                                    elif feature["property"] == "illuminance":
+                                        hasLightLevel = True
+                                    elif feature["property"] == "temperature":
+                                        hasTemperature = True
+                                    elif feature["property"] == "contact":
+                                        hasContact = True           
+                            if hadMotion:
+                                logging.info("MQTT: add new motion sensor " + key["model_id"])
+                                addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "off" if hasLightLevel else "on", "friendly_name": key["friendly_name"]})
+                            elif hasContact:
+                                logging.info("MQTT: add new contact sensor " + key["model_id"])
+                                addHueSecureContactSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "friendly_name": key["friendly_name"]})                      
+                            elif key["model_id"] in standardSensors:
                                 for sensor_type in sensorTypes[key["model_id"]].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
                                     #sensor_type = sensorTypes[key["model_id"]][sensor]
                                     uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
                                     sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
                                     bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(sensorData)
-                            ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
-                            elif key["model_id"] in motionSensors:
-                                    logging.info("MQTT: add new motion sensor " + key["model_id"])
-                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
+                                    newDeviceObj = Device.Device(sensorData)
+                                    newDeviceObj.type = "sensors" # to look for another name
+                                    newDeviceObj.add_element(sensorData["type"], bridgeConfig["sensors"][new_sensor_id])
+                                    bridgeConfig["device"][newDeviceObj.id_v2] = newDeviceObj
+                                    
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
             elif msg.topic == "zigbee2mqtt/bridge/log":
-                light = getObject(data["meta"]["friendly_name"])
+                light = getObject(data["meta"]["friendly_name"]).firstElement()
                 if data["type"] == "device_announced":
                     if light.config["startup"]["mode"] == "powerfail":
                         logging.info("set last state for " + light.name)
@@ -335,24 +353,26 @@ def on_message(client, userdata, msg):
                 device_friendlyname = msg.topic[msg.topic.index("/") + 1:]
                 device = getObject(device_friendlyname)
                 if device != False:
-                    if device.getObjectPath()["resource"] == "sensors":
+                    if device.group_v1 == "sensors":
+                        current_time =  datetime.now()
+                        lastupdated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
                         if "battery" in data and isinstance(data["battery"], int):
-                            device.config["battery"] = data["battery"]
-                        if device.config["on"] == False:
+                            device.firstElement().config["battery"] = data["battery"]
+                        if device.firstElement().config["on"] == False:
                             return
-                        convertedPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
                         if ("action" in data and data["action"] == "") or ("click" in data and data["click"] == ""):
                             return
                         ### If is a motion sensor update the light level and temperature
-                        if device.modelid in motionSensors:
-                            convertedPayload["presence"] = data["occupancy"]
-                            lightPayload = {"lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
-                            lightSensor = findLightSensor(device)
-                            if "temperature" in data:
-                                tempSensor = findTempSensor(device)
-                                tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
+                        if "occupancy" in data:
+                            motionSensor =  device.elements["ZLLPresence"]()
+                            motionSensor.state = {"presence": data["occupancy"], "lastupdated": lastupdated}
+                            # send email if alarm is enabled:
+                            notifyEmail(motionSensor.name)
+                        if "illuminance_lux" in data:
+                            lightSensor = device.elements["ZLLLightLevel"]()
+                            lightPayload = {"lastupdated": lastupdated}
                             if "illuminance_lux" in data:
-                                hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
+                                hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"]) + 1) if data["illuminance_lux"] != 0 else 0
                                 if hue_lightlevel > lightSensor.config["tholddark"]:
                                     lightPayload["dark"] = False
                                 else:
@@ -360,10 +380,7 @@ def on_message(client, userdata, msg):
                                 lightPayload["lightlevel"] = hue_lightlevel
                             elif lightSensor.protocol_cfg["lightSensor"] == "on":
                                 lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
-                                if  lightPayload["dark"]:
-                                    lightPayload["lightlevel"] = 6000
-                                else:
-                                    lightPayload["lightlevel"] = 25000
+                                lightPayload["lightlevel"] = 6000 if lightPayload["dark"] else 25000
                             else: # is always dark
                                 lightPayload["dark"] = True
                                 lightPayload["lightlevel"] = 6000
@@ -371,54 +388,42 @@ def on_message(client, userdata, msg):
                             if lightPayload["dark"] != lightSensor.state["dark"]:
                                 lightSensor.dxState["dark"] = current_time
                             lightSensor.state.update(lightPayload)
-                            # send email if alarm is enabled:
-                            if data["occupancy"] and bridgeConfig["config"]["alarm"]["enabled"] and bridgeConfig["config"]["alarm"]["lasttriggered"] + 300 < current_time.timestamp():
-                                logging.info("Alarm triggered, sending email...")
-                                requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": device.name}, timeout=10)
-                                bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
+                        if "temperature" in data:
+                            tempSensor = device.elements["ZLLTemperature"]()
+                            tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": lastupdated}
+                        if "contact" in data:
+                            contactSensor = device.elements["ZLLContact"]()
+                            contactSensor.state = {"contact": "contact" if data["contact"] else "no_contact", "lastupdated": lastupdated}
                         elif device.modelid in standardSensors:
+                            convertedPayload = {"lastupdated": lastupdated}
                             convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
-                        for key in convertedPayload.keys():
-                            if device.state[key] != convertedPayload[key]:
-                                device.dxState[key] = current_time
-                        device.state.update(convertedPayload)
-                        logging.debug(convertedPayload)
-                        if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
-                            Thread(target=longPressButton, args=[device, convertedPayload["buttonevent"]]).start()
-                        rulesProcessor(device, current_time)
+                            for key in convertedPayload.keys():
+                                if device.firstElement().state[key] != convertedPayload[key]:
+                                    device.firstElement().dxState[key] = current_time
+                            device.firstElement().state.update(convertedPayload)
+                            logging.debug(convertedPayload)
+                            if "buttonevent" in convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
+                                Thread(target=longPressButton, args=[device.firstElement(), convertedPayload["buttonevent"]]).start()
+                        rulesProcessor(device.firstElement(), current_time)
                         checkBehaviorInstances(device)
-                    elif device.getObjectPath()["resource"] == "lights":
+                    elif device.group_v1 == "lights":
+                        light = device.firstElement()
                         state = {"reachable": True}
                         v2State = {}
                         if "state" in data:
-                            if data["state"] == "ON":
-                                state["on"] = True
-                            else:
-                                state["on"] = False
+                            state["on"] = True if data["state"] == "ON" else False
                             v2State.update({"on":{"on": state["on"]}})
-                            device.genStreamEvent(v2State)
+                            light.genStreamEvent(v2State)
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
                             v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
-                            device.genStreamEvent(v2State)
-                        device.state.update(state)
+                            light.genStreamEvent(v2State)
+                        light.state.update(state)
                         streamGroupEvent(device, v2State)
 
                 on_state_update(msg)
         except Exception as e:
             logging.info("MQTT Exception | " + str(e))
-
-def findLightSensor(sensor):
-    lightSensorUID = sensor.uniqueid[:-1] + "0"
-    for key, obj in bridgeConfig["sensors"].items():
-        if obj.uniqueid == lightSensorUID:
-            return obj
-
-def findTempSensor(sensor):
-    lightSensorUID = sensor.uniqueid[:-1] + "2"
-    for key, obj in bridgeConfig["sensors"].items():
-        if obj.uniqueid == lightSensorUID:
-            return obj
 
 def convertHexToMac(hexValue):
     s = '{0:016x}'.format(int(hexValue,16))

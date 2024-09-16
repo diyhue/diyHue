@@ -7,7 +7,7 @@ from time import sleep
 from datetime import datetime, timezone
 from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato
 from services import homeAssistantWS
-from HueObjects import Light, StreamEvent
+from HueObjects import Light, StreamEvent, Device
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
 logging = logManager.logger.get_logger(__name__)
@@ -65,15 +65,19 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         light["protocol_cfg"] = protocol_cfg
         newObject = Light.Light(light)
         bridgeConfig["lights"][newLightID] = newObject
-        bridgeConfig["groups"]["0"].add_light(newObject)
+        light["group_v1"] = "lights"
+        newDevice = Device.Device(light)
+        newDevice.add_element("light", newObject)
+        bridgeConfig["groups"]["0"].add_light(newDevice)
+        bridgeConfig["device"][newDevice.id_v2] = newDevice
         # trigger stream messages
-        rooms = []
+        groups = []
         lights = []
         for group, obj in bridgeConfig["groups"].items():
-            rooms.append(obj.id_v2)
+            groups.append(obj)
         for light, obj in bridgeConfig["lights"].items():
-            lights.append(obj.id_v2)
-        bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
+            lights.append(obj)
+        bridgeConfig["groups"]["0"].groupZeroStream(groups, lights)
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
 
         return newLightID

@@ -7,7 +7,8 @@ import logManager
 import yaml
 import uuid
 import weakref
-from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
+from time import sleep
+from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene, Device
 try:
     from time import tzset
 except ImportError:
@@ -38,7 +39,7 @@ class Config:
             os.makedirs(self.configDir)
 
     def load_config(self):
-        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instance": {}, "geofence_clients": {}, "smart_scene": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
+        self.yaml_config = {"apiUsers": {}, "lights": {}, "groups": {}, "scenes": {}, "config": {}, "rules": {}, "resourcelinks": {}, "schedules": {}, "sensors": {}, "behavior_instance": {}, "geofence_clients": {}, "smart_scene": {}, "behavior_instance": {}, "device": {}, "temp": {"eventstream": [], "scanResult": {"lastscan": "none"}, "detectedLights": [], "gradientStripLights": {}}}
         try:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
@@ -77,18 +78,18 @@ class Config:
                     config["zigbee_device_discovery_info"] = {"status": "ready"}
                 if "swupdate2" not in config:
                     config["swupdate2"] = {"autoinstall": {
-                                                "on": False,
-                                                "updatetime": "T14:00:00"
-                                            },
-                                            "bridge": {
-                                                "lastinstall": "2020-12-11T17:08:55",
-                                                "state": "noupdates"
-                                            },
-                                            "checkforupdate": False,
-                                            "lastchange": "2020-12-13T10:30:15",
-                                            "state": "noupdates",
-                                            "install": False
-                                            }
+                            "on": False,
+                            "updatetime": "T14:00:00"
+                        },
+                        "bridge": {
+                            "lastinstall": "2020-12-11T17:08:55",
+                            "state": "noupdates"
+                        },
+                        "checkforupdate": False,
+                        "lastchange": "2020-12-13T10:30:15",
+                        "state": "noupdates",
+                        "install": False
+                        }
 
                 if int(config["swversion"]) < 1958077010:
                     config["swversion"] = "1965111030"
@@ -146,35 +147,82 @@ class Config:
                 for light, data in lights.items():
                     data["id_v1"] = light
                     self.yaml_config["lights"][light] = Light.Light(data)
-                    #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])
+            #sensors
+            if os.path.exists(self.configDir + "/sensors.yaml"):
+                sensors = _open_yaml(self.configDir + "/sensors.yaml")
+                for sensor, data in sensors.items():
+                    data["id_v1"] = sensor
+                    self.yaml_config["sensors"][sensor] = Sensor.Sensor(data)
+            else:
+                data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}
+                self.yaml_config["sensors"]["1"] = Sensor.Sensor(data)
+                
+             #device
+            if os.path.exists(self.configDir + "/device.yaml"):
+                devices = _open_yaml(self.configDir + "/device.yaml")
+                for device, data in devices.items():
+                    newDevice = Device.Device(data)
+                    self.yaml_config["device"][device] = newDevice
+                    for element in data["elements"]:
+                        obj = self.yaml_config[data["group_v1"]][element]
+                        if data["group_v1"] == "lights":
+                            self.yaml_config["device"][device].add_element("light", obj)
+                        else:
+                            self.yaml_config["device"][device].add_element(obj.type, obj)
+            else: # temporary for config migration
+                processedMotionsSensors = []
+                for key, sensor in self.yaml_config["sensors"].items():
+                    if sensor.uniqueid and ":" in sensor.uniqueid:
+                        if sensor.type not in ["ZLLLightLevel", "ZLLTemperature"]:
+                            data = {"name": sensor.name, "modelid": sensor.modelid, "type": "sensors", "id_v2": str(uuid.uuid5(uuid.NAMESPACE_URL, sensor.id_v2 + 'device')), "protocol": sensor.protocol, "protocol_cfg": sensor.protocol_cfg}
+                            newDevice = Device.Device(data)
+                            self.yaml_config["device"][newDevice.id_v2] = newDevice
+                            if sensor.modelid == "SML001":
+                                if sensor.id_v1 not in processedMotionsSensors:
+                                    # find all 3 sensors
+                                    for key, i in self.yaml_config["sensors"].items():
+                                        if i.modelid == "SML001":
+                                            if i.uniqueid[:26] == sensor.uniqueid[:26]:
+                                                newDevice.add_element(i.type, i)
+                                                processedMotionsSensors.append(i.id_v1)
+                            else:
+                                newDevice.add_element(sensor.type, sensor)
+                for key, light in self.yaml_config["lights"].items():
+                    data = {"name": light.name, "modelid": light.modelid, "type": "lights", "id_v2": str(uuid.uuid5(uuid.NAMESPACE_URL, light.id_v2 + 'device')), "protocol": light.protocol, "protocol_cfg": light.protocol_cfg}
+                    newDevice = Device.Device(data)
+                    newDevice.group_v1 = "lights"
+                    newDevice.add_element(key, light)
+                    self.yaml_config["groups"]["0"].add_light(newDevice)
+                    self.yaml_config["device"][newDevice.id_v2] = newDevice
             #groups
-            #create group 0
-            self.yaml_config["groups"]["0"] = Group.Group({"name":"Group 0","id_v1": "0","type":"LightGroup","state":{"all_on":False,"any_on":True},"recycle":False,"action":{"on":False,"bri":165,"hue":8418,"sat":140,"effect":"none","xy":[0.6635,0.2825],"ct":366,"alert":"select","colormode":"hs"}})
-            for key, light in self.yaml_config["lights"].items():
-                self.yaml_config["groups"]["0"].add_light(light)
             # create groups
             if os.path.exists(self.configDir + "/groups.yaml"):
                 groups = _open_yaml(self.configDir + "/groups.yaml")
+                if "0" not in list(groups.keys()):
+                    self.yaml_config["groups"]["0"] = Group.Group({"id_v1": "0"})
                 for group, data in groups.items():
                     data["id_v1"] = group
                     if data["type"] == "Entertainment":
                         self.yaml_config["groups"][group] = EntertainmentConfiguration.EntertainmentConfiguration(data)
-                        for light in data["lights"]:
-                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                        for device in data["lights"]:
+                            self.yaml_config["groups"][group].add_light(self.yaml_config["device"][device])
                         if "locations" in data:
                             for light, location in data["locations"].items():
                                 lightObj = self.yaml_config["lights"][light]
                                 self.yaml_config["groups"][group].locations[lightObj] = location
                     else:
-                        if "owner" in data and isinstance(data["owner"], dict):
-                            data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
-                        elif "owner" not in data:
-                            data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
-                        else:
-                            data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
                         self.yaml_config["groups"][group] = Group.Group(data)
-                        for light in data["lights"]:
-                            self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                        for device in data["lights"]:
+                            if device in self.yaml_config["device"]:
+                                self.yaml_config["groups"][group].add_light(self.yaml_config["device"][device])
+                                self.yaml_config["groups"]["0"].add_light(self.yaml_config["device"][device])
+                            else: # temporary! iterate lights to get the device of the light
+                                for key, devices in self.yaml_config["device"].items():
+                                    if devices.group_v1 == "lights" and devices.id_v2 == device:
+                                        self.yaml_config["groups"][group].add_light(devices)
+                                        self.yaml_config["groups"]["0"].add_light(devices)
+            else:
+                self.yaml_config["groups"]["0"] = Group.Group({"id_v1": "0"})
 
             #scenes
             if os.path.exists(self.configDir + "/scenes.yaml"):
@@ -216,17 +264,6 @@ class Config:
                 for schedule, data in schedules.items():
                     data["id_v1"] = schedule
                     self.yaml_config["schedules"][schedule] = Schedule.Schedule(data)
-            #sensors
-            if os.path.exists(self.configDir + "/sensors.yaml"):
-                sensors = _open_yaml(self.configDir + "/sensors.yaml")
-                for sensor, data in sensors.items():
-                    data["id_v1"] = sensor
-                    self.yaml_config["sensors"][sensor] = Sensor.Sensor(data)
-                    self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"][sensor])
-            else:
-                data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}
-                self.yaml_config["sensors"]["1"] = Sensor.Sensor(data)
-                self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"]["1"])
             #resourcelinks
             if os.path.exists(self.configDir + "/resourcelinks.yaml"):
                 resourcelinks = _open_yaml(self.configDir + "/resourcelinks.yaml")
@@ -264,17 +301,16 @@ class Config:
                 return
         saveResources = []
         if resource == "all":
-            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance", "smart_scene"]
+            saveResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance", "smart_scene", "device"]
         else:
             saveResources.append(resource)
         for object in saveResources:
             filePath = path + object + ".yaml"
             dumpDict = {}
             for element in self.yaml_config[object]:
-                if element != "0":
-                    savedData = self.yaml_config[object][element].save()
-                    if savedData:
-                        dumpDict[self.yaml_config[object][element].id_v1] = savedData
+                savedData = self.yaml_config[object][element].save()
+                if savedData:
+                    dumpDict[self.yaml_config[object][element].id_v1] = savedData
             _write_yaml(filePath, dumpDict)
             logging.debug("Dump config file " + filePath)
 

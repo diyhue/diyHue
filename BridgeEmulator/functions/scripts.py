@@ -66,9 +66,27 @@ def triggerScript(behavior_instance):
                 if behavior_instance.configuration["end_state"] ==  "turn_off":
                     group.setV1Action(state={"on": False})
                 logging.debug("Finish Go to Sleep")
+    # Timer   
+    elif behavior_instance.script_id == "e73bc72d-96b1-46f8-aa57-729861f80c78":
+      logging.debug("Start Timer " + behavior_instance.name)
+      secondsToCount = 0
+      if "duration" in behavior_instance.configuration:
+        if "minutes" in behavior_instance.configuration["duration"]:
+          secondsToCount = behavior_instance.configuration["duration"]["minutes"] * 60
+        if "seconds" in behavior_instance.configuration["duration"]:
+          secondsToCount += behavior_instance.configuration["duration"]["seconds"]
+        sleep(secondsToCount)
+      for element in behavior_instance.configuration["where"]:
+            if "group" in element:
+                group = findGroup(element["group"]["rid"])
+                group.setV1Action(state={"on": True, "bri": 254, "ct": 370}) # currently we apply Bright scene
+      behavior_instance.enabled = False
+      behavior_instance.active = False
+      
+      
 
     # Activate scene
-    elif behavior_instance.script_id == "7238c707-8693-4f19-9095-ccdc1444d228":
+    elif behavior_instance.script_id == "7238c707-8693-4f19-9095-ccdc1444d228": 
         logging.debug("Start routine " + behavior_instance.name)
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
