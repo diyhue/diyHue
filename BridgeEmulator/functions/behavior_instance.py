@@ -32,28 +32,53 @@ def findGroup(rid, rtype):
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + rtype)) == rid:
             return obj
     logging.info("Group not found!!!!")
+    
+    
+def findLight(rid, rtype):
+    for key, obj in bridgeConfig["lights"].items():
+        if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2)) == rid:
+            return obj
+    logging.info("Light not found!!!!")
 
-def threadNoMotion(actionsToExecute, device, group):
+def threadDelayAction(actionsToExecute, device, monitoredKey, monitoredValue, groupsAndLights):
     secondsCounter = 0
     if "after" in actionsToExecute:
         if "minutes" in actionsToExecute["after"]:
             secondsCounter = actionsToExecute["after"]["minutes"] * 60
         if "seconds" in actionsToExecute["after"]:
             secondsCounter += actionsToExecute["after"]["seconds"]
-    while device.state["presence"] == False:
+    elif "timer" in actionsToExecute:
+        if "minutes" in actionsToExecute["timer"]["duration"]:
+            secondsCounter =  actionsToExecute["timer"]["duration"]["minutes"] * 60
+        if "seconds" in  actionsToExecute["timer"]["duration"]:
+            secondsCounter +=  actionsToExecute["timer"]["duration"]["seconds"]
+    print("to wait " + str(secondsCounter))
+    while device.state[monitoredKey] == monitoredValue:
         if secondsCounter == 0:
-            if "recall_single" in actionsToExecute:
-                for action in actionsToExecute["recall_single"]:
-                    if action["action"] == "all_off":
-                        group.setV1Action({"on": False, "transistiontime": 100})
-                        logging.info("No motion, turning lights off" )
-                        return       
+            executeActions(actionsToExecute, groupsAndLights)
+            return  
         secondsCounter -= 1
         sleep(1)
     logging.info("Motion detected, cancel the counter..." )
     
 
+def executeActions(actionsToExecute, groupsAndLights):
+    recall = "recall"
+    if "recall_single" in actionsToExecute: # need to discover the differences between recall and recall_single
+        recall = ["recall_single"]
+    logging.info("execute routine action")
+    if recall in actionsToExecute:
+        for action in actionsToExecute[recall]:
+            if action["action"] == "all_off":
+                for resource in groupsAndLights:
+                    resource.setV1Action({"on": False, "transistiontime": 100})
+                    logging.info("routine turning lights off " + resource.name)
+            elif "recall" in action["action"] and action["action"]["recall"]["rtype"] == "scene":
+                callScene(action["action"]["recall"]["rid"])
+
+
 def checkBehaviorInstances(device):
+    print("enter checkBehaviorInstances")
     deviceUuid = device.id_v2 
     matchedInstances = []
     for key, instance in bridgeConfig["behavior_instance"].items():
@@ -67,20 +92,28 @@ def checkBehaviorInstances(device):
                         matchedInstances.append(instance)
             except KeyError:
                 pass
+            
+    
 
     for instance in matchedInstances:
-        if device.type == "ZLLSwitch": #Hue dimmer switch
+        lightsAndGroups = []
+        for resource in instance.configuration["where"]:
+            if "group" in resource:
+                lightsAndGroups.append(findGroup(resource["group"]["rid"], resource["group"]["rtype"]))
+            elif "light" in resource:
+                lightsAndGroups.append(findLight(resource["light"]["rid"], resource["light"]["rtype"]))
+        if device.modelid in ["RWL022", "RWL021", "RWL020"]: #Hue dimmer switch
             button = None
-            if device.state["buttonevent"] < 2000:
+            if device.firstElement().state["buttonevent"] < 2000:
               button = str(uuid.uuid5(uuid.NAMESPACE_URL, device.id_v2  + 'button1'))
-            elif device.state["buttonevent"] < 3000:
+            elif device.firstElement().state["buttonevent"] < 3000:
               button = str(uuid.uuid5(uuid.NAMESPACE_URL, device.id_v2  + 'button2'))
-            elif device.state["buttonevent"] < 4000:
+            elif device.firstElement().state["buttonevent"] < 4000:
               button = str(uuid.uuid5(uuid.NAMESPACE_URL, device.id_v2  + 'button3'))
             else:
               button = str(uuid.uuid5(uuid.NAMESPACE_URL, device.id_v2  + 'button4'))
             if button in instance.configuration["buttons"]:
-                lastDigit = device.state["buttonevent"] % 1000
+                lastDigit = device.firstElement().state["buttonevent"] % 1000
                 buttonAction = None
                 if lastDigit == 0:
                     buttonAction = "on_short_press"
@@ -93,12 +126,14 @@ def checkBehaviorInstances(device):
                 if buttonAction in instance.configuration["buttons"][button]:
                     if "time_based" in instance.configuration["buttons"][button][buttonAction]:
                         any_on = False
-                        for resource in instance.configuration["where"]:
-                            if "group" in resource:
-                                group = findGroup(resource["group"]["rid"], resource["group"]["rtype"])
-                                if group.update_state()["any_on"] == True:
+                        for resource in lightsAndGroups:
+                            if "any_on" in resource.state: # is group
+                                if resource.state["any_on"] == True:
                                     any_on = True
-                                    group.setV1Action({"on": False})
+                            if "on" in resource.state: # is light
+                                if resource.state["on"] == True:
+                                    any_on = True
+                            resource.setV1Action({"on": False})
                         if any_on == True:
                             return
                         allTimes = []
@@ -111,30 +146,27 @@ def checkBehaviorInstances(device):
                     elif "scene_cycle" in instance.configuration["buttons"][button][buttonAction]:
                         callScene(random.choice(instance.configuration["buttons"][button][buttonAction]["scene_cycle"])[0]["action"]["recall"]["rid"])
                     elif "action" in instance.configuration["buttons"][button][buttonAction]:
-                        for resource in instance.configuration["where"]:
-                            if "group" in resource:
-                                group = findGroup(resource["group"]["rid"], resource["group"]["rtype"])
-                                if instance.configuration["buttons"][button][buttonAction]["action"] == "all_off":
-                                    group.setV1Action({"on": False})
-                                elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_up":
-                                    group.setV1Action({"bri_inc": +30})
-                                elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_down":
-                                    group.setV1Action({"bri_inc": -30})
+                        for resource in lightsAndGroups:
+                            if instance.configuration["buttons"][button][buttonAction]["action"] == "all_off":
+                                resource.setV1Action({"on": False})
+                            elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_up":
+                                resource.setV1Action({"bri_inc": +30})
+                            elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_down":
+                                resource.setV1Action({"bri_inc": -30})
 
-        elif device.type == "ZLLPresence": # Motion Sensor
-            #if "settings" in instance.configuration:
-            #    if "daylight_sensitivity" in instance.configuration["settings"]:
-            #        if instance.configuration["settings"]["daylight_sensitivity"]["dark_threshold"] < device.state["lightlevel"]:
-            #            print("Light ok")
-            #        else:
-            #            print("Light ko")
-            #            return
-            motion = device.state["presence"]
+        elif device.modelid == "SML001": # Motion Sensor
+            if "settings" in instance.configuration:
+                if "daylight_sensitivity" in instance.configuration["settings"]:
+                    if instance.configuration["settings"]["daylight_sensitivity"]["dark_threshold"] >= device.elements["ZLLLightLevel"]().state["lightlevel"]:
+                        print("Light ok")
+                    else:
+                        print("Light ko")
+                        return
+            motion = device.elements["ZLLPresence"]().state["presence"]
             any_on = False
-            for resource in instance.configuration["where"]:
-                if "group" in resource:
-                    group = findGroup(resource["group"]["rid"], resource["group"]["rtype"])
-                    if group.update_state()["any_on"] == True:
+            for resource in lightsAndGroups:
+                if "any_on" in resource.state: # is group
+                    if resource.update_state()["any_on"] == True:
                         any_on = True
             
             if "timeslots" in instance.configuration["when"]:
@@ -144,12 +176,72 @@ def checkBehaviorInstances(device):
                 actions = findTriggerTime(allSlots)
                 if motion:
                     if any_on == False: # motion triggeredand lights are off
-                        if "recall_single" in actions["on_motion"]:
-                            for action in actions["on_motion"]["recall_single"]:
-                                if "recall" in action["action"]:
-                                    if action["action"]["recall"]["rtype"] == "scene":
-                                        callScene(action["action"]["recall"]["rid"])
+                        logging.info("Trigger motion routine " + instance.name)
+                        executeActions(actions["on_motion"],[])
                 else:
                     logging.info("no motion")
                     if any_on:
-                        Thread(target=threadNoMotion, args=[actions["on_no_motion"], device, group]).start()
+                        Thread(target=threadDelayAction, args=[actions["on_no_motion"], device.elements["ZLLPresence"](), "presence", False, lightsAndGroups]).start()
+        elif device.modelid == "SOC001": # secure contact sensor
+            actions = {}
+            if "timeslots" in instance.configuration["when"]:
+                allSlots = []
+                for slot in instance.configuration["when"]["timeslots"]:
+                    allSlots.append({"hour": slot["start_time"]["time"]["hour"], "minute": slot["start_time"]["time"]["minute"], "actions": {"on_open": slot["on_open"], "on_close": slot["on_close"]}})
+                actions = findTriggerTime(allSlots)
+            elif "always" in instance.configuration["when"]:
+                actions = {"on_open": instance.configuration["when"]["always"]["on_open"], "on_close": instance.configuration["when"]["always"]["on_close"]}
+            contact = "on_close" if device.elements["ZLLContact"]().state["contact"] == "contact" else "on_open"
+            if "timer" in actions[contact]:
+                monitoredValue = "contact" if contact == "on_close" else "no_contact"
+                logging.info("Trigger timer routine " + instance.name)
+                Thread(target=threadDelayAction, args=[actions[contact], device.elements["ZLLContact"](), "contact", monitoredValue, lightsAndGroups]).start()
+            else:
+                logging.info("Trigger routine " + instance.name)
+                executeActions(actions[contact], lightsAndGroups)
+        elif device.modelid == "RDM002": # Hue rotary switch
+            buttonDevice = device.elements["ZLLSwitch"]()
+            rotaryDevice = device.elements["ZLLRelativeRotary"]()
+            button = None
+            if buttonDevice.state["buttonevent"] < 2000:
+              action = 'button1'
+            elif buttonDevice.state["buttonevent"] < 3000:
+              button = 'button2'
+            elif buttonDevice.state["buttonevent"] < 4000:
+              button = 'button3'
+            else:
+              button = 'button4'
+            if button in instance.configuration:
+                lastDigit = buttonDevice.state["buttonevent"] % 1000
+                buttonAction = None
+                if lastDigit == 0:
+                    buttonAction = "on_short_press"
+                elif lastDigit == 1:
+                    buttonAction = "on_repeat"
+                elif lastDigit == 2:
+                    buttonAction = "on_short_release"
+                elif lastDigit == 3:
+                    buttonAction = "on_long_press"
+                if buttonAction in instance.configuration[button]:
+                    lightsAndGroups = []
+                    for resource in instance.configuration[button]["where"]:
+                        if "group" in resource:
+                            lightsAndGroups.append(findGroup(resource["group"]["rid"], resource["group"]["rtype"]))
+                        elif "light" in resource:
+                            lightsAndGroups.append(findLight(resource["light"]["rid"], resource["light"]["rtype"]))
+                    if "time_based_extended" in instance.configuration[button][buttonAction]:
+                        if "slots" in instance.configuration[button][buttonAction]["time_based_extended"]:
+                            allSlots = []
+                            for slot in instance.configuration[button][buttonAction]["time_based_extended"]["slots"]:
+                                allSlots.append({"hour": slot["start_time"]["hour"], "minute": slot["start_time"]["minute"], "actions": slot["actions"]})
+                            actions = findTriggerTime(allSlots)
+                            executeActions(actions,lightsAndGroups)
+                            
+                    elif "time_based" in instance.configuration[button][buttonAction]:
+                        if "slots" in instance.configuration[button][buttonAction]["time_based"]:
+                    
+            
+                
+            
+                    
+                    

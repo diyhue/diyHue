@@ -27,13 +27,13 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 def GroupZeroMessage():
-    rooms = []
+    groups = []
     lights = []
     for group, obj in bridgeConfig["groups"].items():
-        rooms.append(obj.id_v2)
+        groups.append(obj)
     for light, obj in bridgeConfig["lights"].items():
-        lights.append(obj.id_v2)
-    bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
+        lights.append(obj)
+    bridgeConfig["groups"]["0"].groupZeroStream(groups, lights)
 
 def authorize(username, resource='', resourceId='', resourceParam=''):
     if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
@@ -112,7 +112,7 @@ class EntireConfig(Resource):
         for resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
             result[resource] = {}
             for resource_id in bridgeConfig[resource]:
-                if resource_id != "0":
+                if resource_id != "0" and not (resource == "sensors" and "invisible_v1" in bridgeConfig[resource][resource_id].protocol_cfg):
                     result[resource][resource_id] = bridgeConfig[resource][resource_id].getV1Api().copy()
         return result
 
@@ -127,7 +127,8 @@ class ResourceElements(Resource):
                 response = {}
                 if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "apiUsers"]:
                     for object in bridgeConfig[resource]:
-                        response[object] = bridgeConfig[resource][object].getV1Api().copy()
+                        if resource != "sensors" and "invisible_v1" not in bridgeConfig[resource][object].protocol_cfg:
+                            response[object] = bridgeConfig[resource][object].getV1Api().copy()
                 elif resource == "config":
                     response = buildConfig()
                 return response

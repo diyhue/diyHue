@@ -31,7 +31,10 @@ class Scene():
         self.status = data["status"] if "status" in data else "inactive"
         if "group" in data:
             self.storelightstate()
-            self.lights = self.group().lights
+            self.lights = []
+            for device in self.group().lights:
+                if device():
+                    self.lights.append(device().elements["light"])
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
@@ -65,13 +68,14 @@ class Scene():
                         Thread(target=light().dynamicScenePlay, args=[
                             self.palette, lightIndex]).start()
                         lightIndex += 1
+                return
             
-            if data["recall"]["action"] == "deactivate":
+            elif data["recall"]["action"] == "deactivate":
                 self.status = "inactive"
-            return
+                return
+            self.status = data["recall"]["action"]
 
         queueState = {}
-        self.status = data["recall"]["action"]
         for light, state in self.lightstates.items():
             logging.debug(state)
             light.state.update(state)
@@ -199,9 +203,9 @@ class Scene():
     def storelightstate(self):
         lights = []
         if self.type == "GroupScene":
-            for light in self.group().lights:
-                if light():
-                    lights.append(light)
+            for device in self.group().lights:
+                if device():
+                    lights.append(weakref.ref(device().firstElement()))
         else:
             for light in self.lightstates.keys():
                 if light():

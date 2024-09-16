@@ -4,6 +4,8 @@ import time
 import threading
 from ws4py.client.threadedclient import WebSocketClient
 
+from pprint import pprint
+
 logging = logManager.logger.get_logger(__name__)
 
 
@@ -58,6 +60,7 @@ class HomeAssistantClient(WebSocketClient):
     def received_message(self, m):
         # logging.debug("Received message: {}".format(m))
         message_text = m.data.decode(m.encoding)
+        print(message_text)
         message = json.loads(message_text)
         if message.get('type', None) == "auth_required":
             self.do_auth_required(message)
@@ -173,11 +176,16 @@ class HomeAssistantClient(WebSocketClient):
             logging.exception("No event_type  in event")
 
     def do_state_changed(self, message):
+        pprint(message)
         try:
             entity_id = message['event']['data']['entity_id']
             new_state = message['event']['data']['new_state']
             if self._should_include(new_state):
-                logging.debug("State update recevied for {}, new state {}".format(
+                logging.debug("State update recevied for light {}, new state {}".format(
+                    entity_id, new_state))
+                latest_states[entity_id] = new_state
+            if self._should_include_sensor(new_state):
+                logging.debug("State update recevied for sensor {}, new state {}".format(
                     entity_id, new_state))
                 latest_states[entity_id] = new_state
         except KeyError as e:
@@ -277,7 +285,6 @@ def discover(detectedLights):
     # This only loops over discovered devices so we have already filtered out what we don't want
     for entity_id in latest_states.keys():
         ha_state = latest_states[entity_id]
-        device_new = True
         lightName = ha_state["attributes"]["friendly_name"] if "friendly_name" in ha_state["attributes"] else entity_id
 
         logging.info("HomeAssistant_ws: found light {}".format(lightName))
