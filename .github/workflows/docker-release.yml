@@ -42,7 +42,7 @@ jobs:
           docker save --output output.tar diyhue/diyhue:ci
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ci-${{ matrix.arch_friendly }}-${{ github.run_number }}.tar
           path: output.tar
