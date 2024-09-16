@@ -17,7 +17,7 @@ logging = logManager.logger.get_logger(__name__)
 
 def runScheduler():
     while True:
-        for schedule, obj in bridgeConfig["schedules"].items(): #v1 api
+        for schedule, obj in bridgeConfig["schedules"].items():
             try:
                 delay = 0
                 if obj.status == "enabled":
@@ -58,7 +58,7 @@ def runScheduler():
             except Exception as e:
                 logging.info("Exception while processing the schedule " + schedule + " | " + str(e))
 
-        for instance, obj in bridgeConfig["behavior_instance"].items(): #v2 api
+        for instance, obj in bridgeConfig["behavior_instance"].items():
             try:
                 delay = 0
                 if obj.enabled:
@@ -83,7 +83,7 @@ def runScheduler():
                                     seconds=fade_duration["seconds"] if "seconds" in fade_duration else 0)
                                 time_object = time_object + delta if "turn_lights_off_after" in obj.configuration and obj.active else time_object - delta
                             if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
-                                logging.info("execute routine: " + obj.name)
+                                logging.info("execute timmer: " + obj.name)
                                 Thread(target=triggerScript, args=[obj]).start()
 
                     elif "when_extended" in obj.configuration:
@@ -97,13 +97,8 @@ def runScheduler():
                                     minute = triggerTime["minute"],
                                     second = triggerTime["second"] if "second" in triggerTime else 0)
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
-                                    logging.info("execute routine: " + obj.name)
+                                    logging.info("execute timmer: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
-                    elif "duration" in obj.configuration:
-                        if obj.active == False and obj.enabled == True:
-                            logging.info("execute timer: " + obj.name)
-                            obj.active = True
-                            Thread(target=triggerScript, args=[obj]).start()
 
 
             except Exception as e:

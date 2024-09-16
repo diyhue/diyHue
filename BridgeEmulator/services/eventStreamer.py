@@ -19,7 +19,7 @@ def messageBroker():
 @stream.route('/eventstream/clip/v2')
 def streamV2Events():
     def generate():
-        counter = 2000 # 400 seconds
+        counter = 1000
         yield f": hi\n\n"
         while counter > 0:  # ensure we stop at some point
             if len(HueObjects.eventstream) > 0:

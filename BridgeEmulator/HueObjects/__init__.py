@@ -59,9 +59,9 @@ def setGroupAction(group, state, scene=None):
 
     else:
         state = incProcess(group.action, state)
-        for device in group.lights:
-            if device():
-                lightsState[device().firstElement().id_v1] = state
+        for light in group.lights:
+            if light():
+                lightsState[light().id_v1] = state
         if "xy" in state:
             group.action["colormode"] = "xy"
         elif "ct" in state:
@@ -73,34 +73,35 @@ def setGroupAction(group, state, scene=None):
             group.state["any_on"] = state["on"]
             group.state["all_on"] = state["on"]
         group.action.update(state)
+
     queueState = {}
-    for device in group.lights:
-        if device():
-            light = device().firstElement()
-            if light.id_v1 in lightsState:  # apply only if the light belong to this group
-                for key, value in lightsState[light.id_v1].items():
-                    if key in light.state:
-                        light.state[key] = value
-                light.updateLightState(lightsState[light.id_v1])
-                # apply max and min brightness limis
-                if "bri" in lightsState[light.id_v1]:
-                    if "min_bri" in light.protocol_cfg and light.protocol_cfg["min_bri"] > lightsState[light.id_v1]["bri"]:
-                        lightsState[light.id_v1]["bri"] = light.protocol_cfg["min_bri"]
-                    if "max_bri" in light.protocol_cfg and light.protocol_cfg["max_bri"] < lightsState[light.id_v1]["bri"]:
-                        lightsState[light.id_v1]["bri"] = light.protocol_cfg["max_bri"]
-                    if  light.protocol == "mqtt" and not light.state["on"]:
-                        continue
-                # end limits
-                if light.protocol in ["native_multi", "mqtt"]:
-                    if light.protocol_cfg["ip"] not in queueState:
-                        queueState[light.protocol_cfg["ip"]] = {
-                            "object": light, "lights": {}}
-                    if light.protocol == "native_multi":
-                        queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["light_nr"]] = lightsState[light.id_v1]
-                    elif light.protocol == "mqtt":
-                        queueState[light.protocol_cfg["ip"]]["lights"][light.protocol_cfg["command_topic"]] = lightsState[light.id_v1]
-                else:
-                    light.setV1State(lightsState[light.id_v1])
+    for light in group.lights:
+        if light() and light().id_v1 in lightsState:  # apply only if the light belong to this group
+            for key, value in lightsState[light().id_v1].items():
+                if key in light().state:
+                    light().state[key] = value
+            light().updateLightState(lightsState[light().id_v1])
+            # apply max and min brightness limis
+            if "bri" in lightsState[light().id_v1]:
+                if "min_bri" in light().protocol_cfg and light().protocol_cfg["min_bri"] > lightsState[light().id_v1]["bri"]:
+                    lightsState[light().id_v1]["bri"] = light().protocol_cfg["min_bri"]
+                if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < lightsState[light().id_v1]["bri"]:
+                    lightsState[light().id_v1]["bri"] = light().protocol_cfg["max_bri"]
+                if  light().protocol == "mqtt" and not light().state["on"]:
+                    continue
+            # end limits
+            if light().protocol in ["native_multi", "mqtt"]:
+                if light().protocol_cfg["ip"] not in queueState:
+                    queueState[light().protocol_cfg["ip"]] = {
+                        "object": light(), "lights": {}}
+                if light().protocol == "native_multi":
+                    queueState[light().protocol_cfg["ip"]]["lights"][light(
+                    ).protocol_cfg["light_nr"]] = lightsState[light().id_v1]
+                elif light().protocol == "mqtt":
+                    queueState[light().protocol_cfg["ip"]]["lights"][light(
+                    ).protocol_cfg["command_topic"]] = lightsState[light().id_v1]
+            else:
+                light().setV1State(lightsState[light().id_v1])
     for device, state in queueState.items():
         state["object"].setV1State(state)
 
