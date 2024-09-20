@@ -65,7 +65,7 @@ def threadDelayAction(actionsToExecute, device, monitoredKey, monitoredValue, gr
 def executeActions(actionsToExecute, groupsAndLights):
     recall = "recall"
     if "recall_single" in actionsToExecute: # need to discover the differences between recall and recall_single
-        recall = ["recall_single"]
+        recall = "recall_single"
     logging.info("execute routine action")
     if recall in actionsToExecute:
         for action in actionsToExecute[recall]:
