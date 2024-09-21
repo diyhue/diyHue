@@ -14,8 +14,8 @@ start() {
   fi
   sleep 5
   . /etc/profile > /dev/null
-  nohup python3 $SCRIPT_PATH/$SCRIPT_NAME $SCRIPT_PARAMS >/dev/null 2>&1 &
-  echo $! > $PID_FILE
+  cd $SCRIPT_PATH
+  ./$SCRIPT_NAME $SCRIPT_PARAMS >/dev/null 2>&1 & echo $! > $PID_FILE
   echo "Started $SCRIPT_NAME."
 }
 

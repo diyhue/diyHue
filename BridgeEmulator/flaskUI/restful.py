@@ -91,8 +91,12 @@ class NewUser(Resource):
                 configManager.bridgeConfig.save_config()
                 return response
             else:
+                logging.error("link button not pressed")
+                logging.error("last_button_press" + str(last_button_press))
+                logging.error("current time" + str(datetime.now().timestamp()))
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
+            logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
             return [{"error": {"type": 6, "address": "/api/" + list(postDict.keys())[0], "description":"parameter, " + list(postDict.keys())[0] + ", not available"}}]
 
 
@@ -143,8 +147,7 @@ class ResourceElements(Resource):
             return authorisation
 
         if resource in ["lights", "sensors"] and request.get_data(as_text=True) == "":
-            print("scan for light")
-            # if was a request to scan for lights of sensors
+            # if was a request to scan for lights or sensors
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)

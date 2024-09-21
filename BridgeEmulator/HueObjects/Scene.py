@@ -65,10 +65,10 @@ class Scene():
                         Thread(target=light().dynamicScenePlay, args=[
                             self.palette, lightIndex]).start()
                         lightIndex += 1
-            
-            if data["recall"]["action"] == "deactivate":
+                return
+            elif data["recall"]["action"] == "deactivate":
                 self.status = "inactive"
-            return
+                return
 
         queueState = {}
         self.status = data["recall"]["action"]

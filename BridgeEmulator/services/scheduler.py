@@ -90,6 +90,17 @@ def runScheduler():
                         if "recurrence_days" in  obj.configuration["when_extended"]:
                             if datetime.now().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
                                 continue
+                        if obj.active:
+                            if "end_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["end_at"] and obj.configuration["when_extended"]["end_at"]["time_point"]["type"] == "time":
+                                triggerTime = obj.configuration["when_extended"]["end_at"]["time_point"]["time"]
+                                time_object = time(
+                                    hour = triggerTime["hour"],
+                                    minute = triggerTime["minute"],
+                                    second = triggerTime["second"] if "second" in triggerTime else 0)
+                                if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
+                                    logging.info("end timmer: " + obj.name)
+                                    Thread(target=triggerScript, args=[obj]).start()
+                        else:
                             if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
                                 triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
                                 time_object = time(
@@ -99,6 +110,11 @@ def runScheduler():
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
                                     logging.info("execute timmer: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
+                    elif "duration" in obj.configuration:
+                        if obj.active == False and obj.enabled == True:
+                            logging.info("execute timer: " + obj.name)
+                            obj.active = True
+                            Thread(target=triggerScript, args=[obj]).start()
 
 
             except Exception as e:

@@ -50,6 +50,10 @@ def getObject(element, v2uuid):
                     logging.debug("Cache Miss " + element)
                     v2Resources[element][v2uuid] = weakref.ref(obj)
                     return obj
+                elif obj.id_v2 == v2uuid:
+                    logging.debug("Cache Miss " + element)
+                    v2Resources[element][v2uuid] = weakref.ref(obj)
+                    return obj
     logging.info("element not found!")
     return False
 
@@ -212,8 +216,9 @@ def v2DiyHueBridge():
         "id_v1": "",
         "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
         "type": "diyhue",
-        "Hue Essentials key": bridgeConfig["config"]["Hue Essentials key"], 
-        "Remote API enabled": bridgeConfig["config"]["Remote API enabled"]
+        "hue_essentials_key": bridgeConfig["config"]["Hue Essentials key"], 
+        "remote_api_enabled": bridgeConfig["config"]["Remote API enabled"],
+        "remote_discovery": bridgeConfig["config"]["discovery"]
     }
 
 class AuthV1(Resource):
@@ -379,8 +384,6 @@ class ClipV2Resource(Resource):
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
-        elif resource == "matter":
-            response["data"].append(matter())
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())

@@ -16,10 +16,10 @@ def mdnsListener(ip, port, modelid, brigeid):
 
     info = ServiceInfo(
         "_hue._tcp.local.",
-        "DIYHue._hue._tcp.local.",
+        "DIYHue-" + brigeid + "._hue._tcp.local.",
         addresses=[socket.inet_aton(ip)],
         port=port,
         properties=props,
-        server="DIYHue.local."
+        server="DIYHue-" + brigeid + ".local."
     )
     zeroconf.register_service(info) 
