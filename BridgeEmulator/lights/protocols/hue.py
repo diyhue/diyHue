@@ -1,6 +1,7 @@
 import json
 import logManager
 import requests
+from functions.colors import hsv_to_rgb, convert_rgb_xy
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -9,6 +10,20 @@ def set_light(light, data):
     payload = {}
     payload.update(data)
     color = {}
+    if "strictusexy" in light.protocol_cfg and light.protocol_cfg["strictusexy"] and ("sat" in payload or "hue" in payload):
+        if "sat" in payload and "hue" in payload:
+            rgb = hsv_to_rgb(payload["hue"], payload["sat"], light.state["bri"])
+            del(payload["sat"])
+            del(payload["hue"])
+        elif "hue" in payload:
+            rgb = hsv_to_rgb(payload["hue"], light.state["sat"], light.state["bri"])
+            del(payload["hue"])
+        elif "sat" in payload:
+            rgb = hsv_to_rgb(light.state["hue"], payload["sat"], light.state["bri"])
+            del(payload["sat"])
+        xy = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
+        color["colormode"] = 'xy'
+        color["xy"] = [xy[0], xy[1]]
     if "xy" in payload:
         color["xy"] = payload["xy"]
         del(payload["xy"])
@@ -46,6 +61,6 @@ def discover(detectedLights, credentials):
                         modelid = "LTW001"
                     elif light["type"] == "On/Off plug-in unit":
                         modelid = "LOM001"
-                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "id": id, "uniqueid": light["uniqueid"]}})
+                    detectedLights.append({"protocol": "hue", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["ip"], "hueUser": credentials["hueUser"], "modelid": light["modelid"], "id": id, "uniqueid": light["uniqueid"], "strictusexy": False}})
         except Exception as e:
             logging.info("Error connecting to Hue Bridge: %s", e)
