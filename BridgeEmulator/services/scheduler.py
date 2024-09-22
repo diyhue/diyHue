@@ -90,6 +90,17 @@ def runScheduler():
                         if "recurrence_days" in  obj.configuration["when_extended"]:
                             if datetime.now().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
                                 continue
+                        if obj.active:
+                            if "end_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["end_at"] and obj.configuration["when_extended"]["end_at"]["time_point"]["type"] == "time":
+                                triggerTime = obj.configuration["when_extended"]["end_at"]["time_point"]["time"]
+                                time_object = time(
+                                    hour = triggerTime["hour"],
+                                    minute = triggerTime["minute"],
+                                    second = triggerTime["second"] if "second" in triggerTime else 0)
+                                if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
+                                    logging.info("end timmer: " + obj.name)
+                                    Thread(target=triggerScript, args=[obj]).start()
+                        else:
                             if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
                                 triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
                                 time_object = time(
@@ -163,8 +174,8 @@ def runScheduler():
         if (datetime.now().strftime("T%H:%M:%S") == bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"]): #check for updates every day at updatetime
             updateManager.versionCheck()
             updateManager.githubCheck()
-            if (bridgeConfig["config"]["swupdate2"]["autoinstall"]["on"] == True): #install update if available every day at updatetime
-                updateManager.githubInstall()
+            #if (bridgeConfig["config"]["swupdate2"]["autoinstall"]["on"] == True): #install update if available every day at updatetime
+                #updateManager.githubInstall() #disable for dev
         if (datetime.now().strftime("%M:%S") == "00:10"): #auto save configuration every hour
             configManager.bridgeConfig.save_config()
             Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()

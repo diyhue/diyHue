@@ -69,7 +69,6 @@ class Scene():
                             self.palette, lightIndex]).start()
                         lightIndex += 1
                 return
-            
             elif data["recall"]["action"] == "deactivate":
                 self.status = "inactive"
                 return

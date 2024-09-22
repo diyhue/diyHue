@@ -201,8 +201,9 @@ def v2DiyHueBridge():
         "id_v1": "",
         "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
         "type": "diyhue",
-        "Hue Essentials key": bridgeConfig["config"]["Hue Essentials key"], 
-        "Remote API enabled": bridgeConfig["config"]["Remote API enabled"]
+        "hue_essentials_key": bridgeConfig["config"]["Hue Essentials key"], 
+        "remote_api_enabled": bridgeConfig["config"]["Remote API enabled"],
+        "remote_discovery": bridgeConfig["config"]["discovery"]
     }
 
 class AuthV1(Resource):

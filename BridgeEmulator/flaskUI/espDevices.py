@@ -7,6 +7,7 @@ from sensors.discover import addHueMotionSensor, addHueSwitch, addHueRotarySwitc
 from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
+from functions.behavior_instance import checkBehaviorInstances
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -107,6 +108,7 @@ class Switch(Resource):
                             obj.state["lastupdated"] = datetime.now(timezone.utc).strftime(
                                 "%Y-%m-%dT%H:%M:%S.000Z")
                             rulesProcessor(obj, current_time)
+                            checkBehaviorInstances(obj)
                             result = {"success": "command applied"}
                         else:
                             if result == {""} or result == {"fail": "no mac in list"}:

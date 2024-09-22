@@ -2,7 +2,7 @@ import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
 from lights.protocols import protocols
-from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent
+from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent, Device
 from datetime import datetime, timezone
 from copy import deepcopy
 from time import sleep
@@ -58,12 +58,12 @@ class Light():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        #streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        #                 "data": [self.getDevice()],
-        #                 "id": str(uuid.uuid4()),
-        #                 "type": "update"
-        #                 }
-        #StreamEvent(streamMessage)
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [Device.Device.getDevice(self)],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
+        StreamEvent(streamMessage)
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -151,14 +151,19 @@ class Light():
 
     def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "light"}],
+                         "data": [{"id": self.id_v2,"id_v1": "/lights/" + self.id_v1, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        #streamMessage["data"][0].update(
-        #    {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0})
+        streamMessage["data"][0].update({"owner": {"rid": Device.Device.getDevice(self)["id"], "rtype": "device"}})
+        StreamEvent(streamMessage)
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [Device.Device.getDevice(self)],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
         StreamEvent(streamMessage)
 
 
@@ -208,7 +213,7 @@ class Light():
             }
             result["color_temperature"]["mirek_valid"] = True if self.state[
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
-            #result["color_temperature_delta"] = {}
+            result["color_temperature_delta"] = {}
         if "bri" in self.state:
             bri_value = self.state["bri"]
             if bri_value is None or bri_value == "null":
@@ -220,18 +225,18 @@ class Light():
             result["dimming_delta"] = {}
         result["dynamics"] = self.dynamics
         result["effects"] = {
-        "effect_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ],
-        "status": "no_effect",
-        "status_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ]
-    }
+            "effect_values": [
+                "no_effect",
+                "candle",
+                "fire"
+            ],
+            "status": "no_effect",
+            "status_values": [
+                "no_effect",
+                "candle",
+                "fire"
+            ]
+        }
         result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
@@ -252,6 +257,7 @@ class Light():
             "no_signal",
             "on_off"]}
         result["powerup"] = {"preset": "last_on_state"}
+        result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result
 

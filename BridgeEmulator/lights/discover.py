@@ -123,6 +123,7 @@ def discoveryEvent():
 
 
 def scanForLights():  # scan for ESP8266 lights and strips
+    logging.info("scan for light")
     bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
     discoveryEvent()
     detectedLights = []
