@@ -153,10 +153,11 @@ def checkBehaviorInstances(device):
                                 resource.setV1Action({"bri_inc": +30})
                             elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_down":
                                 resource.setV1Action({"bri_inc": -30})
-
         elif device.modelid == "SML001": # Motion Sensor
             if "settings" in instance.configuration:
                 if "daylight_sensitivity" in instance.configuration["settings"]:
+                    if device.elements["ZLLLightLevel"]().protocol_cfg["lightSensor"] == "on":
+                        device.elements["ZLLLightLevel"]().state["lightlevel"] = 25000 if bridgeConfig["sensors"]["1"].state["daylight"] else 6000
                     if instance.configuration["settings"]["daylight_sensitivity"]["dark_threshold"] >= device.elements["ZLLLightLevel"]().state["lightlevel"]:
                         logging.debug("Light ok")
                     else:

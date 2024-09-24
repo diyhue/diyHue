@@ -150,6 +150,7 @@ class Group():
         v2State = v1StateToV2(state)
         self.genStreamEvent(v2State)
 
+
     def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                "data": [],
@@ -163,7 +164,7 @@ class Group():
                     "id": light.id_v2,
                     "id_v1": "/lights/" + light.id_v1,
                     "owner": {
-                        "rid": light().getDevice()["id"],
+                        "rid": self.id_v2,
                         "rtype":"device"
                     },
                     "service_id": light.protocol_cfg["light_nr"]-1 if "light_nr" in light.protocol_cfg else 0,
