@@ -131,8 +131,8 @@ class Group():
                 light = device().firstElement()
                 if light.state["on"]:
                     any_on = True
-                    if "bri" in light().state:
-                        bri = bri + light().state["bri"]
+                    if "bri" in light.state:
+                        bri = bri + light.state["bri"]
                         lights_on = lights_on + 1
                 else:
                     all_on = False
