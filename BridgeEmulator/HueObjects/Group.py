@@ -137,7 +137,7 @@ class Group():
                 else:
                     all_on = False
         if any_on:
-            bri = (((bri/lights_on)/254)*100)
+            bri = (((bri/lights_on)/254)*100) if bri > 0 else 0
         return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
 
     def setV2Action(self, state):
