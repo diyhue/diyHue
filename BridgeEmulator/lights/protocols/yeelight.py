@@ -22,6 +22,8 @@ def discover(detectedLights):
             modelid = "LCT015"
         elif light["capabilities"]["ct"]:
             modelid = "LTW001"
+        elif light["capabilities"]["xy"]:
+            modelid = "LLC010"
         detectedLights.append({"protocol": "yeelight", "name": light["capabilities"]["name"] if light["capabilities"]["name"] != '' else 'Yeelight ' + light["capabilities"]["id"], "modelid": modelid, "protocol_cfg": {"ip": light["ip"], "id": light["capabilities"]["id"], "backlight": False, "model": light["capabilities"]["model"]}})
 
     return detectedLights

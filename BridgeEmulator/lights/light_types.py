@@ -55,6 +55,15 @@ lightTypes["LTW001"]["device"] = {"certified": True, "manufacturer_name": "Signi
 lightTypes["LTW001"]["state"] = {"on": False, "colormode": "ct", "alert": "none", "mode": "homeautomation", "reachable": True, "bri": 254, "ct": 230}
 lightTypes["LTW001"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
+## Hue Iris
+lightTypes["LLC010"] = {"v1_static": {"type": "Color Gamut light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.104.2"}}
+lightTypes["LLC010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LLC010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.215,0.711],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 600,"mindimlevel": 5000},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LLC010"]["config"] = {"archetype": "hueiris","function": "functional","direction": "omnidirectional", "startup":{"mode":"safety","configured":True}}
+lightTypes["LLC010"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "hueiris", "product_name": "Dimmable light", "software_version": "1.76.6"}
+lightTypes["LLC010"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none", "hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0, "xy": [0.408,0.517]}
+lightTypes["LLC010"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+
 ## Hue Gradient TV Lightstrip
 lightTypes["LCX002"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue play gradient lightstrip","swversion": "1.104.2","swconfigid": "C74E5108","productid": "Philips-LCX002-1-LedStripPXv1"}}
 lightTypes["LCX002"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-11-02T19:46:12"}

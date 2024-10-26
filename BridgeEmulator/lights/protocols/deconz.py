@@ -47,6 +47,8 @@ def discover(detectedLights, credentials):
                         modelid = "LTW001"
                     elif light["type"] == "On/Off plug-in unit":
                         modelid = "LOM001"
+                    elif light["type"] == "Color light":
+                        modelid = "LLC010"
                     detectedLights.append({"protocol": "deconz", "name": light["name"], "modelid": modelid, "protocol_cfg": {"ip": credentials["deconzHost"] + ":" + str(credentials["deconzPort"]), "deconzUser": credentials["deconzUser"], "modelid": light["modelid"], "deconzId": id, "uniqueid": light["uniqueid"]}})
         except Exception as e:
             logging.info("Error connecting to Deconz: %s", e)

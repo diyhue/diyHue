@@ -125,7 +125,7 @@ class Light():
         result["state"] = {"on": self.state["on"]}
         if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
             result["state"]["bri"] = int(self.state["bri"]) if self.state["bri"] is not None else 1
-        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001"]:
+        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LLC010"]:
             result["state"]["ct"] = self.state["ct"]
             result["state"]["colormode"] = self.state["colormode"]
         if "xy" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LWB010"]:
@@ -291,7 +291,7 @@ class Light():
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {

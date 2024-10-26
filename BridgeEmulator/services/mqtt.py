@@ -261,14 +261,16 @@ def on_autodiscovery_light(msg):
 
             # Device capabilities
             keys = data.keys()
-            light_color = "xy" in keys and data["xy"] == True
+            light_xy = "xy" in keys and data["xy"] == True
             light_brightness = "brightness" in keys and data["brightness"] == True
             light_ct = "color_temp" in keys and data["color_temp"] == True
 
             modelid = None
-            if light_color and light_ct:
+            if light_xy and light_ct:
                 modelid = "LCT015"
-            elif light_color: # Every light as LCT001? Or also support other lights
+            elif light_xy and not light_ct:
+                modelid = "LLC010"
+            elif light_xy: # Every light as LCT001? Or also support other lights
                 modelid = "LCT001"
             elif light_ct:
                 modelid = "LTW001"

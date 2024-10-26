@@ -286,7 +286,7 @@ class Sensor():
                 "temperature": {
                     "temperature_report":{
                         "changed": self.state["lastupdated"],
-                        "temperature": self.state["temperature"]/100
+                        "temperature": self.state["temperature"]/100 if type(self.state["temperature"]) == int else self.state["temperature"]
                     }
                 },
                 "owner": {
