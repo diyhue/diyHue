@@ -98,7 +98,7 @@ def runScheduler():
                                     minute = triggerTime["minute"],
                                     second = triggerTime["second"] if "second" in triggerTime else 0)
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
-                                    logging.info("end timmer: " + obj.name)
+                                    logging.info("end routine: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
                         else:
                             if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
@@ -108,7 +108,7 @@ def runScheduler():
                                     minute = triggerTime["minute"],
                                     second = triggerTime["second"] if "second" in triggerTime else 0)
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
-                                    logging.info("execute timmer: " + obj.name)
+                                    logging.info("execute routine: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
                     elif "duration" in obj.configuration:
                         if obj.active == False and obj.enabled == True:

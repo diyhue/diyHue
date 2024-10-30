@@ -15,15 +15,13 @@ class Light():
         self.modelid = data["modelid"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id(
-        )
+        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
         self.state = data["state"] if "state" in data else deepcopy(
             lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
         self.config = data["config"] if "config" in data else deepcopy(
             lightTypes[self.modelid]["config"])
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
@@ -181,10 +179,12 @@ class Light():
                 except Exception as e:
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
-                return
         if advertise:
-            v2State = v1StateToV2(state)
-            self.genStreamEvent(v2State)
+            if "lights" in state:
+                for item in state["lights"]:
+                    light_state = state["lights"][item]
+                    v2State = v1StateToV2(light_state)
+                    self.genStreamEvent(v2State)
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
@@ -359,7 +359,19 @@ class Light():
         result["signaling"] = {"signal_values": [
             "no_signal",
             "on_off"]}
-        result["powerup"] = {"preset": "last_on_state"}
+        result["powerup"] = {
+            "preset": "last_on_state",
+            "configured": True,
+            "on": {
+                 "mode": "on",
+                 "on": {
+                      "on": True
+                }
+            },
+            "dimming": {
+                "mode": "previous"
+            }
+        }
         result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result

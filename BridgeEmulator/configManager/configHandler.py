@@ -1,5 +1,5 @@
 from configManager import configInit
-from configManager.argumentHandler import parse_arguments
+from configManager.argumentHandler import parse_arguments, generate_certificate
 import os
 import pathlib
 import subprocess
@@ -7,6 +7,7 @@ import logManager
 import yaml
 import uuid
 import weakref
+from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
 try:
     from time import tzset
@@ -30,7 +31,8 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    configDir = parse_arguments()["CONFIG_PATH"]
+    argsDict = parse_arguments()
+    configDir = argsDict["CONFIG_PATH"]
     runningDir = str(pathlib.Path(__file__)).replace("/configManager/configHandler.py","")
 
     def __init__(self):
@@ -43,6 +45,9 @@ class Config:
             #load config
             if os.path.exists(self.configDir + "/config.yaml"):
                 config = _open_yaml(self.configDir + "/config.yaml")
+                if "timezone" not in config:
+                    logging.warn("No Time Zone in config, please set Time Zone in webui, default to Europe/London")
+                    config["timezone"] = "Europe/London"
                 os.environ['TZ'] = config["timezone"]
                 if tzset is not None:
                     tzset()
@@ -51,6 +56,14 @@ class Config:
                     self.yaml_config["apiUsers"][user] = ApiUser.ApiUser(user, data["name"], data["client_key"], data["create_date"], data["last_use_date"])
                 del config["whitelist"]
                 # updgrade config
+                if "discovery" not in config:
+                    config["discovery"] = False
+                if "IP_RANGE" not in config:
+                    config["IP_RANGE"] = {
+                        "IP_RANGE_START": 0,
+                        "IP_RANGE_END": 255,
+                        "SUB_IP_RANGE_START": int(self.argsDict["HOST_IP"].split('.')[2]),
+                        "SUB_IP_RANGE_END": int(self.argsDict["HOST_IP"].split('.')[2])}
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
                 if "yeelight" not in config:
@@ -110,7 +123,7 @@ class Config:
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
                     "swversion":"1965111030",
-                    "timezone":parse_arguments()["TZ"],
+                    "timezone": "Europe/London",
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                     "hue": {},
@@ -138,7 +151,13 @@ class Config:
                                     "lastchange": "2020-12-13T10:30:15",
                                     "state": "noupdates",
                                     "install": False
-                                    }
+                    },
+                    "IP_RANGE": {
+                        "IP_RANGE_START": 0,
+                        "IP_RANGE_END": 255,
+                        "SUB_IP_RANGE_START": int(self.argsDict["HOST_IP"].split('.')[2]),
+                        "SUB_IP_RANGE_END": int(self.argsDict["HOST_IP"].split('.')[2])
+                    }
                 }
             # load lights
             if os.path.exists(self.configDir + "/lights.yaml"):
@@ -287,6 +306,15 @@ class Config:
         self.load_config()
         return backup
 
+    def remove_cert(self):
+        try:
+            os.popen('mv ' + self.configDir + '/cert.pem ' + self.configDir + '/backup/')
+            logging.info("Certificate removed")
+        except:
+            logging.exception("Something went wrong when deleting the certificate")
+        generate_certificate(self.argsDict["MAC"], self.argsDict["CONFIG_PATH"])
+        return
+
     def restore_backup(self):
         try:
             os.popen('rm -r ' + self.configDir + '/*.yaml')
@@ -308,11 +336,23 @@ class Config:
         return self.configDir + "/diyhue_log.tar"
 
     def download_debug(self):
-        _write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
-        debug = _open_yaml(self.configDir + "/config_debug.yaml")
+        #_write_yaml(self.configDir + "/config_debug.yaml", self.yaml_config["config"])
+        #debug = _open_yaml(self.configDir + "/config_debug.yaml")
+        debug = deepcopy(self.yaml_config["config"])
         debug["whitelist"] = "privately"
         debug["Hue Essentials key"] = "privately"
         debug["users"] = "privately"
+        if debug["mqtt"]["enabled"]:
+            debug["mqtt"]["mqttPassword"] = "privately"
+        if debug["homeassistant"]["enabled"]:
+            debug["homeassistant"]["homeAssistantToken"] = "privately"
+        if debug["hue"]:
+            debug["hue"]["hueUser"] = "privately"
+            debug["hue"]["hueKey"] = "privately"
+        if debug["tradfri"]:
+            debug["tradfri"]["psk"] = "privately"
+        if debug["alarm"]["enabled"]:
+            debug["alarm"]["email"] = "privately"
         info = {}
         info["OS"] = os.uname().sysname
         info["Architecture"] = os.uname().machine
@@ -320,6 +360,7 @@ class Config:
         info["os_release"] = os.uname().release
         info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
         info["WebUI Version"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+        info["arguments"] = self.argsDict
         _write_yaml(self.configDir + "/config_debug.yaml", debug)
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +

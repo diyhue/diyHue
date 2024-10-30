@@ -53,8 +53,8 @@ def githubCheck():
     except:
             logging.error("No connection to github")
 
-    logging.info("creation_time diyHue : " + str(creation_time))
-    logging.info("publish_time  diyHue : " + str(publish_time))
+    logging.debug("creation_time diyHue : " + str(creation_time))
+    logging.debug("publish_time  diyHue : " + str(publish_time))
 
     if publish_time > creation_time:
         logging.info("update on github")
@@ -91,8 +91,8 @@ def githubUICheck():
     except:
             logging.error("No connection to github")
 
-    logging.info("creation_time UI : " + str(creation_time))
-    logging.info("publish_time  UI : " + str(publish_time))
+    logging.debug("creation_time UI : " + str(creation_time))
+    logging.debug("publish_time  UI : " + str(publish_time))
 
     if publish_time > creation_time:
         return True
