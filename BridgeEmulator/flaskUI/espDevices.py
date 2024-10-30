@@ -7,6 +7,7 @@ from sensors.discover import addHueMotionSensor, addHueSwitch, addHueRotarySwitc
 from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
+from functions.behavior_instance import checkBehaviorInstances
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -89,10 +90,12 @@ class Switch(Resource):
                                     obj.dxState["temperature"] = current_time
                             elif obj.type in ["ZLLSwitch", "ZGPSwitch"]:
                                 if "button" in args:
-                                    obj.state["buttonevent"] = int(args["button"])
+                                    obj.update_attr({"state":{"buttonevent":int(args["button"])}})
+                                    #obj.state["buttonevent"] = int(args["button"])
                                     obj.dxState["buttonevent"] = current_time
                                 if "battery" in args:
-                                    obj.config["battery"] = int(args["battery"])
+                                    obj.update_attr({"config":{"battery":int(args["battery"])}})
+                                    #obj.config["battery"] = int(args["battery"])
                             elif obj.type == "ZLLRelativeRotary":
                                 if "rotary" in args:
                                     obj.state["rotaryevent"] = int(args["rotary"])
@@ -107,6 +110,7 @@ class Switch(Resource):
                             obj.state["lastupdated"] = datetime.now(timezone.utc).strftime(
                                 "%Y-%m-%dT%H:%M:%S.000Z")
                             rulesProcessor(obj, current_time)
+                            checkBehaviorInstances(obj)
                             result = {"success": "command applied"}
                         else:
                             if result == {""} or result == {"fail": "no mac in list"}:
