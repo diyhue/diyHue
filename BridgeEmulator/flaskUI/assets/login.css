@@ -17,7 +17,7 @@ body {
   width: 100%;
   scroll-behavior: smooth;
   font-family: "Lato", sans-serif;
-  background: url(images/login_dark_blur.jpg) no-repeat;
+  background: url(images/login_dark_blur.webp) no-repeat;
   background-size: cover;
   background-attachment: fixed;
   background-position: bottom center;

@@ -94,8 +94,8 @@ class NewUser(Resource):
                 return response
             else:
                 logging.error("link button not pressed")
-                logging.error("last_button_press" + str(last_button_press))
-                logging.error("current time" + str(datetime.now().timestamp()))
+                logging.error("last_button_press " + str(last_button_press))
+                logging.error("current time " + str(datetime.now().timestamp()))
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
             logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
