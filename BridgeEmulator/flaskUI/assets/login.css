@@ -136,7 +136,7 @@ body {
 
 @media screen and (max-width: 750px) {
   body {
-    background-image: url("images/mobile_background.png");
+    background-image: url("images/mobile_background.webp");
   }
   .loginContainer {
     width: 100%;
