@@ -28,20 +28,24 @@ def scanHost(host, port):
 
 
 def iter_ips(port):
-    argsDict = configManager.runtimeConfig.arg
-    HOST_IP = argsDict["HOST_IP"]
-    scan_on_host_ip = argsDict["scanOnHostIP"]
-    ip_range_start = argsDict["IP_RANGE_START"]
-    ip_range_end = argsDict["IP_RANGE_END"]
+    rangeConfig = bridgeConfig["config"]["IP_RANGE"]
+    HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
+    scan_on_host_ip = bridgeConfig["config"]["scanonhostip"]
+    ip_range_start = rangeConfig["IP_RANGE_START"]
+    ip_range_end = rangeConfig["IP_RANGE_END"]
+    sub_ip_range_start = rangeConfig["SUB_IP_RANGE_START"]
+    sub_ip_range_end = rangeConfig["SUB_IP_RANGE_END"]
     host = HOST_IP.split('.')
     if scan_on_host_ip:
         yield ('127.0.0.1', port)
         return
-    for addr in range(ip_range_start, ip_range_end + 1):
-        host[3] = str(addr)
-        test_host = '.'.join(host)
-        if test_host != HOST_IP:
-            yield (test_host, port)
+    for sub_addr in range(sub_ip_range_start, sub_ip_range_end + 1):
+        host[2] = str(sub_addr)
+        for addr in range(ip_range_start, ip_range_end + 1):
+            host[3] = str(addr)
+            test_host = '.'.join(host)
+            if test_host != HOST_IP:
+                yield (test_host, port)
 
 
 def find_hosts(port):
@@ -133,9 +137,6 @@ def scanForLights():  # scan for ESP8266 lights and strips
         # return all host that listen on port 80
         device_ips = find_hosts(80)
 
-
-    # return all host that listen on port 80
-    #device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         # brioadcast MQTT message, lights will be added by the service
@@ -155,12 +156,14 @@ def scanForLights():  # scan for ESP8266 lights and strips
         # Most of the other discoveries are disabled by having no IP address (--disable-network-scan)
         # But wled does an mdns discovery as well.
         wled.discover(detectedLights, device_ips)
-    hue.discover(detectedLights, bridgeConfig["config"]["hue"])
+    if bridgeConfig["config"]["hue"]:
+        hue.discover(detectedLights, bridgeConfig["config"]["hue"])
     if bridgeConfig["config"]["shelly"]["enabled"]:
         shelly.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["esphome"]["enabled"]:
         esphome.discover(detectedLights, device_ips)
-    tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
+    if bridgeConfig["config"]["tradfri"]:
+        tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
     if bridgeConfig["config"]["hyperion"]["enabled"]:
         hyperion.discover(detectedLights)
     if bridgeConfig["config"]["tpkasa"]["enabled"]:

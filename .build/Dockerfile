@@ -40,8 +40,8 @@ RUN curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueU
     && mkdir diyhueUI \
     && unzip -qo diyHueUI.zip -d diyhueUI \
     && rm diyHueUI.zip \
-    && mv diyhueUI/index.html flaskUI/templates/ \
-    && cp -r diyhueUI/static flaskUI/ \
+    && mv diyhueUI/dist/index.html flaskUI/templates/ \
+    && cp -r diyhueUI/dist/assets flaskUI/ \
     && rm -r diyhueUI
 
 ## Copy correct (compiled) C file from previous image

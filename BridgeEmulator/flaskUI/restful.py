@@ -56,9 +56,11 @@ def buildConfig():
     result = staticConfig()
     config = bridgeConfig["config"]
     result.update({"Hue Essentials key": config["Hue Essentials key"], "Remote API enabled": config["Remote API enabled"], "apiversion": config["apiversion"], "bridgeid": config["bridgeid"],
-                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"], "swupdate2": config["swupdate2"], "timezone": config["timezone"], "discovery": config["discovery"]})
+                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"],
+                   "swupdate2": config["swupdate2"], "timezone": config["timezone"], "discovery": config["discovery"]})
     result["UTC"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    result["LogLevel"] = logManager.logger.get_level_name()
     result["whitelist"] = {}
     for key, user in bridgeConfig["apiUsers"].items():
         result["whitelist"][key] = {"create date": user.create_date,
@@ -92,8 +94,8 @@ class NewUser(Resource):
                 return response
             else:
                 logging.error("link button not pressed")
-                logging.error("last_button_press" + str(last_button_press))
-                logging.error("current time" + str(datetime.now().timestamp()))
+                logging.error("last_button_press " + str(last_button_press))
+                logging.error("current time " + str(datetime.now().timestamp()))
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
             logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
@@ -146,14 +148,15 @@ class ResourceElements(Resource):
         if "success" not in authorisation:
             return authorisation
 
-        if resource in ["lights", "sensors"] and request.get_data(as_text=True) == "":
-            # if was a request to scan for lights or sensors
-            Thread(target=scanForLights).start()
-            return [{"success": {"/" + resource: "Searching for new devices"}}]
-        postDict = request.get_json(force=True)
+        postDict = request.get_json(force=True) if request.get_data(as_text=True) != "" else {}
         logging.info(postDict)
-        if resource == "lights":  # add light manually from the web interface
-            Thread(target=manualAddLight, args=[postDict["ip"], postDict["protocol"], postDict["config"]]).start()
+        if resource in ["lights", "sensors"]:
+            if len(postDict) == 0 or "deviceid" in postDict:
+                # if was a request to scan for lights or sensors
+                Thread(target=scanForLights).start()
+            elif all(i in postDict for i in ["ip", "protocol", "config"]):
+                # add light manually from the web interface
+                Thread(target=manualAddLight, args=[postDict["ip"], postDict["protocol"], postDict["config"]]).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         v2Resource = None
         # find the first unused id for new object
@@ -285,6 +288,9 @@ class ResourceElements(Resource):
                     for email, hash in bridgeConfig["config"]["users"].items():
                         if putDict["users"][key] == bridgeConfig["config"]["users"][email]:
                             bridgeConfig["config"]["users"][email]["password"] = generate_password_hash(str(value['password']))
+            if "loglevel" in putDict:
+                logManager.logger.configure_logger(putDict["loglevel"])
+                logging.info("Change log level to: " + str(logManager.logger.get_level_name()))
 
         # build response list
         responseList = []

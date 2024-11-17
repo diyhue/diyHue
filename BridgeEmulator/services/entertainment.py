@@ -6,6 +6,7 @@ import socket, json, uuid
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
 import paho.mqtt.publish as publish
+import time
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
@@ -65,6 +66,9 @@ def entertainmentService(group, user):
     lights_v1 = {}
     hueGroup  = -1
     hueGroupLights = {}
+    prev_frame_time = 0
+    new_frame_time = 0
+    prev_frameID = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
         if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
@@ -277,6 +281,12 @@ def entertainmentService(group, user):
                             sock.sendto(udpdata, (ip.split(":")[0], 21324))
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
+                    new_frame_time = time.time()
+                    if new_frame_time - prev_frame_time > 1:
+                        fps = frameID - prev_frameID
+                        prev_frame_time = new_frame_time
+                        prev_frameID = frameID
+                        logging.info("Entertainment FPS: " + str(fps))
                 else:
                     logging.info("HueStream was missing in the frame")
                     p.kill()

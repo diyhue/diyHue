@@ -19,7 +19,7 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 _ = logManager.logger.get_logger("werkzeug")
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
-app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/static", static_folder='flaskUI/static')
+app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/assets", static_folder='flaskUI/assets')
 api = Api(app)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
 
