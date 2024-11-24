@@ -90,10 +90,12 @@ class Switch(Resource):
                                     obj.dxState["temperature"] = current_time
                             elif obj.type in ["ZLLSwitch", "ZGPSwitch"]:
                                 if "button" in args:
-                                    obj.state["buttonevent"] = int(args["button"])
+                                    obj.update_attr({"state":{"buttonevent":int(args["button"])}})
+                                    #obj.state["buttonevent"] = int(args["button"])
                                     obj.dxState["buttonevent"] = current_time
                                 if "battery" in args:
-                                    obj.config["battery"] = int(args["battery"])
+                                    obj.update_attr({"config":{"battery":int(args["battery"])}})
+                                    #obj.config["battery"] = int(args["battery"])
                             elif obj.type == "ZLLRelativeRotary":
                                 if "rotary" in args:
                                     obj.state["rotaryevent"] = int(args["rotary"])

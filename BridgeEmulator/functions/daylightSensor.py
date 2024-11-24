@@ -39,14 +39,14 @@ def daylightSensor(tz, sensor):#tz = timezone
             logging.debug("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
             sensor.state = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
             sensor.dxState["daylight"] = current_time
-            rulesProcessor(["sensors","1"], current_time)
+            rulesProcessor(sensor, current_time)
         elif deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
             logging.info("will start the sleep for sunrise")
             sleep(deltaSunriseOffset)
             logging.debug("sleep finish at " + current_time.strftime("%Y-%m-%dT%H:%M:%S"))
             sensor.state = {"daylight":True,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
             sensor.dxState["daylight"] = current_time
-            rulesProcessor(["sensors","1"], current_time)
+            rulesProcessor(sensor, current_time)
         # v2 api routines
         for key, instance in bridgeConfig["behavior_instance"].items():
             if "when_extended" in instance.configuration:

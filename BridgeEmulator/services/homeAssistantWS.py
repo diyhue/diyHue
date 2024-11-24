@@ -303,10 +303,12 @@ def discover(detectedLights):
         supported_colourmodes = ha_state.get('attributes', {}).get('supported_color_modes', [])
 
         model_id = None
-        if HS in supported_colourmodes or XY in supported_colourmodes or RGB in supported_colourmodes or RGBW in supported_colourmodes or RGBWW in supported_colourmodes:
+        if HS in supported_colourmodes or XY in supported_colourmodes or RGB in supported_colourmodes or RGBW in supported_colourmodes or RGBWW in supported_colourmodes and COLOR_TEMP in supported_colourmodes:
             model_id = "LCT015"
         elif COLOR_TEMP in supported_colourmodes:
             model_id = "LTW001"
+        elif XY in supported_colourmodes:
+            model_id = "LLC010"
         elif BRIGHTNESS in supported_colourmodes:
             model_id = "LWB010"
         else:

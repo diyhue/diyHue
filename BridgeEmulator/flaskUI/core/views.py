@@ -94,6 +94,14 @@ def reset_config():
     configManager.bridgeConfig.reset_config()
     return "config reset\n"
 
+@core.route('/remove_cert')
+@flask_login.login_required
+def remove_cert():
+    configManager.bridgeConfig.remove_cert()
+    logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
+    os.execl(sys.executable, sys.executable, *sys.argv)
+    return "Certificate removed, restart python with args"
+
 @core.route('/restore_config')
 @flask_login.login_required
 def restore_config():

@@ -117,7 +117,7 @@ unzip -qo diyHue.zip
 cd diyHue-$branchSelection/BridgeEmulator/
 
 echo -e "\033[36m Installing Python Dependencies.\033[0m"
-
+python3 -m pip install --upgrade pip
 pip3 install -r ../requirements.txt --break-system-packages
 
 
@@ -151,9 +151,9 @@ cp -r HueEmulator3.py githubInstall.sh HueObjects configManager flaskUI function
 
 curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 unzip -qo diyHueUI.zip
-mv index.html /opt/hue-emulator/flaskUI/templates/
-cp -r static /opt/hue-emulator/flaskUI/
-rm -r static
+mv dist/index.html /opt/hue-emulator/flaskUI/templates/
+cp -r dist/assets /opt/hue-emulator/flaskUI/
+rm -r dist
 
 cp hue-emulator.service /lib/systemd/system/
 cd ../../

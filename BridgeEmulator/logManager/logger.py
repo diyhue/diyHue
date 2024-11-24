@@ -46,3 +46,13 @@ class Logger:
         if name not in self.loggers:
             self.loggers[name] = self._setup_logger(name)
         return self.loggers[name]
+
+    def get_level_name(self):
+        INFO = 20
+        DEBUG = 10
+
+        _levelToName = {
+            INFO: 'INFO',
+            DEBUG: 'DEBUG',
+        }
+        return _levelToName.get(self.logLevel)

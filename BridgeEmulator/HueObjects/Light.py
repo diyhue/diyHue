@@ -15,15 +15,13 @@ class Light():
         self.modelid = data["modelid"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id(
-        )
+        self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
         self.state = data["state"] if "state" in data else deepcopy(
             lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
         self.config = data["config"] if "config" in data else deepcopy(
             lightTypes[self.modelid]["config"])
-        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {
-        }
+        self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
@@ -71,7 +69,7 @@ class Light():
         result["state"] = {"on": self.state["on"]}
         if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
             result["state"]["bri"] = int(self.state["bri"]) if self.state["bri"] is not None else 1
-        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001"]:
+        if "ct" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LLC010"]:
             result["state"]["ct"] = self.state["ct"]
             result["state"]["colormode"] = self.state["colormode"]
         if "xy" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010", "LTW001", "LWB010"]:
@@ -134,6 +132,9 @@ class Light():
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
+        if "effects_v2" in state and "action" in state["effects_v2"]:
+            v1State["effect"] = state["effects_v2"]["action"]["effect"]
+            self.effect = v1State["effect"]
         if "effects" in state:
             v1State["effect"] = state["effects"]["effect"]
             self.effect = v1State["effect"]
@@ -189,7 +190,7 @@ class Light():
                                   "points_capable": self.protocol_cfg["points_capable"]}
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -256,7 +257,19 @@ class Light():
         result["signaling"] = {"signal_values": [
             "no_signal",
             "on_off"]}
-        result["powerup"] = {"preset": "last_on_state"}
+        result["powerup"] = {
+            "preset": "last_on_state",
+            "configured": True,
+            "on": {
+                 "mode": "on",
+                 "on": {
+                      "on": True
+                }
+            },
+            "dimming": {
+                "mode": "previous"
+            }
+        }
         result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result

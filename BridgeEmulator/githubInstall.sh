@@ -29,8 +29,8 @@ curl -sL https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-re
 #curl -sL https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 unzip -qo diyHueUI.zip -d diyhueUI
 rm diyHueUI.zip
-cp -r diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
-cp -r diyhueUI/static /opt/hue-emulator/flaskUI/
+cp -r diyhueUI/dist/index.html /opt/hue-emulator/flaskUI/templates/
+cp -r diyhueUI/dist/assets /opt/hue-emulator/flaskUI/
 rm -r diyhueUI
 
 curl -s $1/restart
