@@ -186,6 +186,9 @@ class Light():
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
+        if "effects_v2" in state and "action" in state["effects_v2"]:
+            v1State["effect"] = state["effects_v2"]["action"]["effect"]
+            self.effect = v1State["effect"]
         if "effects" in state:
             v1State["effect"] = state["effects"]["effect"]
             self.effect = v1State["effect"]

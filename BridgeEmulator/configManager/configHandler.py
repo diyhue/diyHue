@@ -346,9 +346,9 @@ class Config:
         debug["apiUsers"] = "privately"
         debug["Hue Essentials key"] = "privately"
         debug["users"] = "privately"
-        if debug["mqtt"]["enabled"]:
+        if debug["mqtt"]["enabled"] or "mqttPassword" in debug["mqtt"]:
             debug["mqtt"]["mqttPassword"] = "privately"
-        if debug["homeassistant"]["enabled"]:
+        if debug["homeassistant"]["enabled"] or "homeAssistantToken" in debug["homeassistant"]:
             debug["homeassistant"]["homeAssistantToken"] = "privately"
         if debug["hue"]:
             debug["hue"]["hueUser"] = "privately"

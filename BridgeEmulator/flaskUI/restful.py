@@ -95,7 +95,9 @@ class NewUser(Resource):
             else:
                 logging.error("link button not pressed")
                 logging.error("last_button_press " + str(last_button_press))
-                logging.error("current time " + str(datetime.now().timestamp()))
+                logging.error("current_time      " + str(datetime.now().timestamp()))
+                if last_button_press != datetime.now().timestamp():
+                    logging.error("last_button_press is not current_time, please check timezone setting")
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
             logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
