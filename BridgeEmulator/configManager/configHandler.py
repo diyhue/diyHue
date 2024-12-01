@@ -9,7 +9,6 @@ import uuid
 import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
-from lights.protocols import wled
 try:
     from time import tzset
 except ImportError:
@@ -28,17 +27,6 @@ def _open_yaml(path):
 def _write_yaml(path, contents):
     with open(path, 'w', encoding="utf-8") as fp:
         yaml.dump(contents, fp , Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False )
-
-def reAddWled(old_light):
-    detectedLights = []
-    wled.discover(detectedLights, old_light["protocol_cfg"]["ip"])
-    for light in detectedLights:
-        if light["name"] == old_light["name"] and light["protocol_cfg"]["ip"] == old_light["protocol_cfg"]["ip"] and light["protocol_cfg"]["segmentId"] == old_light["protocol_cfg"]["segmentId"]:
-            logging.info("Update Wled " + light["name"])
-            old_light["protocol_cfg"]["ledCount"] = light["protocol_cfg"]["ledCount"]
-            old_light["protocol_cfg"]["segment_start"] = light["protocol_cfg"]["segment_start"]
-            old_light["protocol_cfg"]["udp_port"] = light["protocol_cfg"]["udp_port"]
-            return old_light
 
 class Config:
     yaml_config = None
@@ -179,8 +167,6 @@ class Config:
             if os.path.exists(self.configDir + "/lights.yaml"):
                 lights = _open_yaml(self.configDir + "/lights.yaml")
                 for light, data in lights.items():
-                    if data["protocol"] == "wled" and "segment_start" not in data["protocol_cfg"]:
-                        data = reAddWled(data)
                     data["id_v1"] = light
                     self.yaml_config["lights"][light] = Light.Light(data)
                     #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])

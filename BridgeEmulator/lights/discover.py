@@ -209,6 +209,9 @@ def scanForLights():  # scan for ESP8266 lights and strips
                     if lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.protocol_cfg["segmentId"] == light["protocol_cfg"]["segmentId"] and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        lightObj.protocol_cfg["ledCount"] = light["protocol_cfg"]["ledCount"]
+                        lightObj.protocol_cfg["segment_start"] = light["protocol_cfg"]["segment_start"]
+                        lightObj.protocol_cfg["udp_port"] = light["protocol_cfg"]["udp_port"]
                         lightIsNew = False
                 elif light["protocol"] == "homeassistant_ws":
                     # Check based on entity_id and modelid
