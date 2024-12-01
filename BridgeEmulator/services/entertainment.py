@@ -230,10 +230,12 @@ def entertainmentService(group, user):
                         elif proto == "wled":
                             if light.protocol_cfg["ip"] not in wledLights:
                                 wledLights[light.protocol_cfg["ip"]] = {}
-                                wledLights[light.protocol_cfg["ip"]
-                                           ]["ledCount"] = light.protocol_cfg["ledCount"]
-                            wledLights[light.protocol_cfg["ip"]
-                                       ]["color"] = [r, g, b]
+                            if light.protocol_cfg["segmentId"] not in wledLights[light.protocol_cfg["ip"]]:
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]] = {}
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["ledCount"] = light.protocol_cfg["ledCount"]
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["start"] = light.protocol_cfg["segment_start"]
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["udp_port"] = light.protocol_cfg["udp_port"]
+                            wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["color"] = [r, g, b]
                         elif proto == "hue" and int(light.protocol_cfg["id"]) in hueGroupLights:
                             hueGroupLights[int(light.protocol_cfg["id"])] = [r,g,b]
                         else:
@@ -271,14 +273,16 @@ def entertainmentService(group, user):
                             auth = {'username':bridgeConfig["config"]["mqtt"]["mqttUser"], 'password':bridgeConfig["config"]["mqtt"]["mqttPassword"]}
                         publish.multiple(mqttLights, hostname=bridgeConfig["config"]["mqtt"]["mqttServer"], port=bridgeConfig["config"]["mqtt"]["mqttPort"], auth=auth)
                     if len(wledLights) != 0:
-                        wled_udpmode = 2
+                        wled_udpmode = 4 #DNRGB mode
                         wled_secstowait = 2
                         for ip in wledLights.keys():
-                            udphead = [wled_udpmode, wled_secstowait]
-                            color = wledLights[ip]["color"] * int(wledLights[ip]["ledCount"])
-                            udpdata = bytes(udphead+color)
-                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                            sock.sendto(udpdata, (ip.split(":")[0], 21324))
+                            for segments in wledLights[ip]:
+                                udphead = bytes([wled_udpmode, wled_secstowait])
+                                start_seg = wledLights[ip][segments]["start"].to_bytes(2,"big")
+                                color = bytes(wledLights[ip][segments]["color"] * int(wledLights[ip][segments]["ledCount"]))
+                                udpdata = udphead+start_seg+color
+                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                sock.sendto(udpdata, (ip.split(":")[0], wledLights[ip][segments]["udp_port"]))
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
                     new_frame_time = time.time()

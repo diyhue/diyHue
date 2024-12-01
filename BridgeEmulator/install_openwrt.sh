@@ -45,8 +45,8 @@ curl -sL https://www.github.com/diyhue/diyHueUI/releases/latest/download/DiyHueU
 wait
 unzip -qo diyHueUI.zip -d diyhueUI
 wait
-mv diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
-cp -r diyhueUI/static /opt/hue-emulator/flaskUI/
+mv diyhueUI/dist/index.html /opt/hue-emulator/flaskUI/templates/
+cp -r diyhueUI/dist/assets /opt/hue-emulator/flaskUI/
 
 echo -e "\033[32m Creating certificate.\033[0m"
 cd /opt/hue-emulator

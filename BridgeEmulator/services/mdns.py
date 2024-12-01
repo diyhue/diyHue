@@ -16,7 +16,7 @@ def mdnsListener(ip, port, modelid, brigeid):
 
     info = ServiceInfo(
         "_hue._tcp.local.",
-        "DIYHue-" + brigeid + "._hue._tcp.local.",
+        "DIYHue-" + brigeid[-6:] + "._hue._tcp.local.",
         addresses=[socket.inet_aton(ip)],
         port=port,
         properties=props,

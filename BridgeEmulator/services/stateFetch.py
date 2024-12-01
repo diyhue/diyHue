@@ -13,7 +13,7 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
         for key, light in bridgeConfig["lights"].items():
             protocol_name = light.protocol
             for protocol in protocols:
-                if "lights.protocols." + protocol_name == protocol.__name__ and protocol_name not in ["mqtt", "flex", "mi_box"]:
+                if "lights.protocols." + protocol_name == protocol.__name__ and protocol_name not in ["mqtt", "flex", "mi_box", "dummy"]:
                     try:
                         logging.debug("fetch " + light.name)
                         newState = protocol.get_light_state(light)

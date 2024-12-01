@@ -38,7 +38,6 @@ def iter_ips(port):
     host = HOST_IP.split('.')
     if scan_on_host_ip:
         yield ('127.0.0.1', port)
-        return
     for sub_addr in range(sub_ip_range_start, sub_ip_range_end + 1):
         host[2] = str(sub_addr)
         for addr in range(ip_range_start, ip_range_end + 1):

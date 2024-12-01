@@ -293,6 +293,9 @@ class ResourceElements(Resource):
             if "loglevel" in putDict:
                 logManager.logger.configure_logger(putDict["loglevel"])
                 logging.info("Change log level to: " + str(logManager.logger.get_level_name()))
+            if "linkbutton" in putDict:
+                if type(putDict["linkbutton"]) == bool:
+                    bridgeConfig["config"]["linkbutton"] = {"lastlinkbuttonpushed": datetime.now().timestamp()}
 
         # build response list
         responseList = []

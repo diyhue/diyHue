@@ -20,7 +20,7 @@ jobs:
             arch_friendly: armv6
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Enable qemu
         run: |
@@ -380,6 +380,6 @@ jobs:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
     steps:
-    - uses: geekyeggo/delete-artifact@v1
+    - uses: geekyeggo/delete-artifact@v5
       with:
         name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar
