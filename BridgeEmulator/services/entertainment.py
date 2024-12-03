@@ -124,6 +124,8 @@ def entertainmentService(group, user):
                 esphomeLights = {}
                 mqttLights = []
                 wledLights = {}
+                non_UDP_lights = []
+                non_UDP_update_counter = 0
                 if data[:9].decode('utf-8') == "HueStream":
                     i = 0
                     apiVersion = 0
@@ -239,12 +241,8 @@ def entertainmentService(group, user):
                         elif proto == "hue" and int(light.protocol_cfg["id"]) in hueGroupLights:
                             hueGroupLights[int(light.protocol_cfg["id"])] = [r,g,b]
                         else:
-                            if frameID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
-                                operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
-                                if operation == 1:
-                                    light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
-                                elif operation == 2:
-                                    light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+                            if light not in non_UDP_lights:
+                                non_UDP_lights.append(light)
 
                         frameID += 1
                         if frameID == 25:
@@ -285,6 +283,15 @@ def entertainmentService(group, user):
                                 sock.sendto(udpdata, (ip.split(":")[0], wledLights[ip][segments]["udp_port"]))
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
+                    if len(non_UDP_lights) != 0:
+                        light = non_UDP_lights[non_UDP_update_counter]
+                        operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
+                        if operation == 1:
+                            light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
+                        elif operation == 2:
+                            light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+                        non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
+
                     new_frame_time = time.time()
                     if new_frame_time - prev_frame_time > 1:
                         fps = frameID - prev_frameID
