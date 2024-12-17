@@ -576,6 +576,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "room":
             return {"errors": [], "data": [object.getV2Room()]}
+        elif resource == "zone":
+            return {"errors": [], "data": [object.getV2Zone()]}
         elif resource == "grouped_light":
             return {"errors": [], "data": [object.getV2GroupedLight()]}
         elif resource == "device":

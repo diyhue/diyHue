@@ -15,7 +15,7 @@ class Group():
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         if "owner" in data:
             self.owner = data["owner"]
-        self.icon_class = data["class"] if "class" in data else "Other"
+        self.icon_class = data["class"] if "class" in data else data["icon_class"] if "icon_class" in data else "Other"
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
             0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"}

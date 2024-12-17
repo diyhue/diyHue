@@ -89,7 +89,7 @@ class NewUser(Resource):
 
                     response[0]["success"]["clientkey"] = client_key
                 bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, postDict["devicetype"], client_key)
-                logging.debug(response)
+                logging.info(response)
                 configManager.bridgeConfig.save_config()
                 return response
             else:
@@ -172,6 +172,10 @@ class ResourceElements(Resource):
                     bridgeConfig[resource][new_object_id] = Group.Group(postDict)
                 elif postDict["type"] == "Room":
                     v2Resource = "room"
+                    bridgeConfig[resource][new_object_id] = Group.Group(postDict)
+                elif postDict["type"] == "LightGroup":
+                    postDict["type"] = "Zone"
+                    v2Resource = "zone"
                     bridgeConfig[resource][new_object_id] = Group.Group(postDict)
                 elif postDict["type"] == "Entertainment":
                     v2Resource = "entertainment_configuration"

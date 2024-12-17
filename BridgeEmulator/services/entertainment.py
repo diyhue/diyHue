@@ -68,7 +68,7 @@ def entertainmentService(group, user):
     hueGroupLights = {}
     prev_frame_time = 0
     new_frame_time = 0
-    prev_frameID = 0
+    non_UDP_update_counter = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
         if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
@@ -103,6 +103,7 @@ def entertainmentService(group, user):
     p.stdout.read(1) # read one byte so the init function will correctly detect the frameBites
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
+            new_frame_time = time.time()
             if not init:
                 readByte = p.stdout.read(1)
                 logging.debug(readByte)
@@ -125,7 +126,6 @@ def entertainmentService(group, user):
                 mqttLights = []
                 wledLights = {}
                 non_UDP_lights = []
-                non_UDP_update_counter = 0
                 if data[:9].decode('utf-8') == "HueStream":
                     i = 0
                     apiVersion = 0
@@ -292,11 +292,9 @@ def entertainmentService(group, user):
                             light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
                         non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
-                    new_frame_time = time.time()
                     if new_frame_time - prev_frame_time > 1:
-                        fps = frameID - prev_frameID
+                        fps = 1.0 / (time.time() - new_frame_time)
                         prev_frame_time = new_frame_time
-                        prev_frameID = frameID
                         logging.info("Entertainment FPS: " + str(fps))
                 else:
                     logging.info("HueStream was missing in the frame")
