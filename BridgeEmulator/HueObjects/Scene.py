@@ -32,20 +32,23 @@ class Scene():
         if "group" in data:
             self.storelightstate()
             self.lights = self.group().lights
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         streamMessage["data"][0].update(self.getV2Api())
         StreamEvent(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "scene"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "scene"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/scenes/" + self.id_v1
         StreamEvent(streamMessage)
         logging.info(self.name + " scene was destroyed.")
@@ -88,8 +91,7 @@ class Scene():
                 if transitiontime > 0:
                     state["transitiontime"] = transitiontime
                 if "recall" in data and "duration" in data["recall"]:
-                    state["transitiontime"] = int(
-                        data["recall"]["duration"] / 100)
+                    state["transitiontime"] = int(data["recall"]["duration"] / 100)
 
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:
@@ -164,15 +166,13 @@ class Scene():
             if "ct" in state:
                 v2State["color_temperature"] = {
                     "mirek": state["ct"]}
-            result["actions"].append(
-                {
-                    "action": v2State,
-                    "target": {
-                        "rid": light.id_v2,
-                        "rtype": "light",
-                    },
+            result["actions"].append({
+                "action": v2State,
+                "target": {
+                    "rid": light.id_v2,
+                    "rtype": "light"
                 }
-            )
+            })
 
         if self.type == "GroupScene":
             if self.group():
@@ -182,8 +182,7 @@ class Scene():
                 }
         result["metadata"] = {}
         if self.image != None:
-            result["metadata"]["image"] = {"rid": self.image,
-                                           "rtype": "public_image"}
+            result["metadata"]["image"] = {"rid": self.image, "rtype": "public_image"}
         result["metadata"]["name"] = self.name
         result["id"] = self.id_v2
         result["id_v1"] = "/scenes/" + self.id_v1

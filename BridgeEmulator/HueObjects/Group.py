@@ -7,7 +7,6 @@ from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, Stre
 logging = logManager.logger.get_logger(__name__)
 
 class Group():
-
     def __init__(self, data):
         self.name = data["name"] if "name" in data else "Group " + \
             data["id_v1"]
@@ -24,79 +23,84 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         StreamEvent(streamMessage)
 
     def groupZeroStream(self, rooms, lights):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         for room in rooms:
-            streamMessage["data"][0]["children"].append(
-                {"rid": room, "rtype": "room"})
+            streamMessage["data"][0]["children"].append({"rid": room, "rtype": "room"})
         for light in lights:
-            streamMessage["data"][0]["children"].append(
-                {"rid": light, "rtype": "light"})
+            streamMessage["data"][0]["children"].append({"rid": light, "rtype": "light"})
         StreamEvent(streamMessage)
 
     def __del__(self):
         # Groupper light
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2,  "id_v1": "/groups/" + self.id_v1, "type": "grouped_light"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         StreamEvent(streamMessage)
+
         ### room / zone ####
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         StreamEvent(streamMessage)
         logging.info(self.name + " group was destroyed.")
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
+        elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
         elementType = "room" if self.type == "Room" else "zone"
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         StreamEvent(streamMessage)
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
 
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"grouped_services": [{"rid": self.id_v2, "rtype": "grouped_light"}], "id": elementId, "id_v1": "/groups/" + self.id_v1, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         StreamEvent(streamMessage)
+
         groupChildrens = []
         groupServices = []
         for light in self.lights:
             if light():
-                groupChildrens.append(
-                    {"rid": light().getDevice()["id"], "rtype": "device"})
+                groupChildrens.append({"rid": light().getDevice()["id"], "rtype": "device"})
                 groupServices.append({"rid": light().id_v2, "rtype": "light"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         StreamEvent(streamMessage)
 
     def add_sensor(self, sensor):
@@ -115,11 +119,16 @@ class Group():
             else:
                 setattr(self, key, value)
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+            "owner": {
+                "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                "rtype": "room" if self.type == "Room" else "zone"
+            },
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         StreamEvent(streamMessage)
 
     def update_state(self):
@@ -153,11 +162,12 @@ class Group():
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                               "data": [],
-                                 "id": str(uuid.uuid4()),
-                                 "type": "update"
-                                 }
+        streamMessage = {
+        	"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         for num, light in enumerate(self.lights):
             if light():
                 streamMessage["data"].insert(num,{
@@ -175,16 +185,15 @@ class Group():
 
         if "on" in v2State:
             v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
-                                   "owner": {
-                                       "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-                                       "rtype": "room" if self.type == "Room" else "zone"
-                                   }
-                                   }],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage["data"] = [{
+            "id": self.id_v2,
+            "id_v1": "/groups/" + self.id_v1,
+           	"type": "grouped_light",
+            "owner": {
+                "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
+                "rtype": "room" if self.type == "Room" else "zone"
+            }
+        }]
         streamMessage["data"][0].update(v2State)
         StreamEvent(streamMessage)
 
@@ -193,6 +202,7 @@ class Group():
         result["name"] = self.name
         if hasattr(self, "owner"):
             result["owner"] = self.owner.username
+
         lights = []
         for light in self.lights:
             if light():
@@ -208,9 +218,12 @@ class Group():
         result["recycle"] = False
         if self.id_v1 == "0":
             result["presence"] = {
-                "state": {"presence": None, "presence_all": None, "lastupdated": "none"}}
-            result["lightlevel"] = {"state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
-                                              "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}}
+                "state": {"presence": None, "presence_all": None, "lastupdated": "none"}
+            }
+            result["lightlevel"] = {
+                "state": {"dark": None, "dark_all": None, "daylight": None, "daylight_any": None,
+                "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}
+            }
         else:
             result["class"] = self.icon_class.capitalize() if len(self.icon_class) > 2 else self.icon_class.upper()
         result["action"] = self.action
@@ -221,8 +234,7 @@ class Group():
         for light in self.lights:
             if light():
                 result["children"].append({
-                    "rid": str(uuid.uuid5(
-                        uuid.NAMESPACE_URL, light().id_v2 + 'device')),
+                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, light().id_v2 + 'device')),
                     "rtype": "device"
                 })
 
@@ -298,15 +310,15 @@ class Group():
         result["dynamics"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
-        result["on"] = {"on": self.update_state()["any_on"]}
+        result["on"] = { "on": self.update_state()["any_on"] }
         result["type"] = "grouped_light"
+        result["signaling"] = {
+          "signal_values": [ "no_signal", "on_off" ]
+        }
         if hasattr(self, "owner"):
             result["owner"] = {"rid": self.owner.username, "rtype": "device"}
         else:
             result["owner"] = {"rid": self.id_v2, "rtype": "device"}
-        result["signaling"] = {"signal_values": [
-            "no_signal",
-            "on_off"]}
 
         return result
 
@@ -314,8 +326,10 @@ class Group():
         return {"resource": "groups", "id": self.id_v1}
 
     def save(self):
-        result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type}
+        result = {
+            "id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
+            "lights": [], "action": self.action, "type": self.type
+        }
         if hasattr(self, "owner"):
             result["owner"] = self.owner.username
         for light in self.lights:

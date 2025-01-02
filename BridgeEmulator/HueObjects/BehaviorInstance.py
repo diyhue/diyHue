@@ -15,19 +15,21 @@ class BehaviorInstance():
         self.active = data["active"] if "active" in data else False
         self.script_id = data["script_id"] if "script_id" in data else ""
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "add"
+        }
         StreamEvent(streamMessage)
 
     def __del__(self):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "behavior_instance"}],
-                         "id": str(uuid.uuid4()),
-                         "type": "delete"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [{"id": self.id_v2, "type": "behavior_instance"}],
+            "id": str(uuid.uuid4()),
+            "type": "delete"
+        }
         StreamEvent(streamMessage)
         logging.info(self.name + " behaviour instance was destroyed.")
 
@@ -70,16 +72,19 @@ class BehaviorInstance():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Api()],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage = {
+            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [self.getV2Api()],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
         StreamEvent(streamMessage)
 
     def save(self):
-        result = {"id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration, "enabled": self.enabled, "active": self.active,
-                  "script_id": self.script_id}
+        result = {
+            "id": self.id_v2, "metadata": {"name": self.name}, "configuration": self.configuration,
+            "enabled": self.enabled, "active": self.active, "script_id": self.script_id
+        }
         if self.name != None:
             result["metadata"] = {"name": self.name}
 

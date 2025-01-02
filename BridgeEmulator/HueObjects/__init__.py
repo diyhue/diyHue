@@ -92,14 +92,11 @@ def setGroupAction(group, state, scene=None):
             # end limits
             if light().protocol in ["native_multi", "mqtt"]:
                 if light().protocol_cfg["ip"] not in queueState:
-                    queueState[light().protocol_cfg["ip"]] = {
-                        "object": light(), "lights": {}}
+                    queueState[light().protocol_cfg["ip"]] = {"object": light(), "lights": {}}
                 if light().protocol == "native_multi":
-                    queueState[light().protocol_cfg["ip"]]["lights"][light(
-                    ).protocol_cfg["light_nr"]] = lightsState[light().id_v1]
+                    queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["light_nr"]] = lightsState[light().id_v1]
                 elif light().protocol == "mqtt":
-                    queueState[light().protocol_cfg["ip"]]["lights"][light(
-                    ).protocol_cfg["command_topic"]] = lightsState[light().id_v1]
+                    queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["command_topic"]] = lightsState[light().id_v1]
             else:
                 light().setV1State(lightsState[light().id_v1])
     for device, state in queueState.items():
