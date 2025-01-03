@@ -72,6 +72,7 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         light["group_v1"] = "lights"
         newDevice = Device.Device(light)
         newDevice.add_element("light", newObject)
+        newObject.owner = newDevice.id_v2
         bridgeConfig["groups"]["0"].add_light(newDevice)
         bridgeConfig["device"][newDevice.id_v2] = newDevice
         # trigger stream messages

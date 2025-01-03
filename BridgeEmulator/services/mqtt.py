@@ -57,6 +57,9 @@ standardSensors = {
             "brightness_up": {"buttonevent": 1001},
             "brightness_down": {"buttonevent": 2001},
             "brightness_stop": {"buttonevent": 3001},
+            "brightness_move_up": {"buttonevent": 1001},
+            "brightness_move_down": {"buttonevent": 2001},
+            "": {"buttonevent": 1000}
         }
     },
     "TRADFRI wireless dimmer": {
@@ -422,7 +425,6 @@ def on_message(client, userdata, msg):
                             light.genStreamEvent(v2State)
                         light.state.update(state)
                         streamGroupEvent(device, v2State)
-
                 on_state_update(msg)
         except Exception as e:
             logging.info("MQTT Exception | " + str(e))

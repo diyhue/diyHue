@@ -2,7 +2,7 @@ import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
 from lights.protocols import protocols
-from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent, Device
+from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
 from time import sleep
@@ -26,6 +26,7 @@ class Light():
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
         self.function = data["function"] if "function" in data else "mixed"
+        self.owner = None
 
         # light
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -56,12 +57,6 @@ class Light():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [Device.Device.getDevice(self)],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
-        StreamEvent(streamMessage)
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -158,13 +153,7 @@ class Light():
                          }
         streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0})
-        streamMessage["data"][0].update({"owner": {"rid": Device.Device.getDevice(self)["id"], "rtype": "device"}})
-        StreamEvent(streamMessage)
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [Device.Device.getDevice(self)],
-                         "id": str(uuid.uuid4()),
-                         "type": "update"
-                         }
+        streamMessage["data"][0].update({"owner": {"rid": self.owner, "rtype": "device"}})
         StreamEvent(streamMessage)
 
 
@@ -250,7 +239,7 @@ class Light():
             "on": self.state["on"]
         }
         result["owner"] = {
-            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+            "rid": self.owner,
             "rtype": "device"
         }
         result["product_data"] = {"function": "mixed"}

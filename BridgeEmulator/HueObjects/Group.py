@@ -278,7 +278,7 @@ class Group():
         result["id"] = self.id_v2
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
-        if self.id_v1 == 0:     
+        if self.id_v1 == "0":
             result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')), "rtype": "bridge_home"}
         elif self.type == "Room":
             result["owner"] = {"rid": self.getV2Room()["id"], "rtype": "room"}

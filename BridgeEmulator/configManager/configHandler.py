@@ -189,6 +189,7 @@ class Config:
                         obj = self.yaml_config[data["group_v1"]][element]
                         if data["group_v1"] == "lights":
                             self.yaml_config["device"][device].add_element("light", obj)
+                            obj.owner = data["id"]
                         else:
                             self.yaml_config["device"][device].add_element(obj.type, obj)
             else: # temporary for config migration

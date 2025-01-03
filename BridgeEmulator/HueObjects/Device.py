@@ -5,7 +5,6 @@ from sensors.sensor_types import sensorTypes
 from lights.light_types import lightTypes, archetype
 from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
-from pprint import pprint
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -259,6 +258,18 @@ class Device():
             }
         ]
         return result
+    
+    def getGenericDevice(self):
+        result = {}
+        result["product_data"] = {"model_id": self.modelid,
+                                  "product_name": "Hue secure contact sensor",
+                                  "manufacturer_name": sensorTypes[self.modelid]["ZHASwitch"]["static"]["manufacturername"],
+                                  "product_archetype": "unknown_archetype",
+                                  "certified": False,
+                                  "software_version": sensorTypes[self.modelid]["ZHASwitch"]["static"]["swversion"],
+                                  }
+        result["services"] = []
+        return result
 
     def getDevice(self):
         result = {}
@@ -272,14 +283,14 @@ class Device():
             result = self.getContactData()
         elif self.group_v1 == "lights":
             result = self.getLightData()
-
+        else:
+            result = self.getGenericDevice()
         result["metadata"] = {"name": self.name,
                               "archetype": "unknown_archetype"}  # for sensors
         if self.group_v1 == "lights":
             result["metadata"]["archetype"] = archetype[self.firstElement(
             ).config["archetype"]]
             result["metadata"]["function"] = "mixed"
-
         result["id"] = self.id_v2
         if "invisible_v1" not in self.firstElement().protocol_cfg:
             result["id_v1"] = "/" + self.type + "/" + self.firstElement().id_v1
@@ -290,10 +301,6 @@ class Device():
     def getMotion(self):
         result = None
         if self.modelid == "SML001":
-            try:
-                print(self.elements["ZLLPresence"]().id_v1)
-            except:
-                print("fail with " + self.name)
             result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
                       "id_v1": "/sensors/" + self.elements["ZLLPresence"]().id_v1,
                       "owner": {
