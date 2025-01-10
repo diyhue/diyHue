@@ -63,6 +63,8 @@ def get_light_types():
         bridgeConfig["lights"][lightId].modelid = modelId
         bridgeConfig["lights"][lightId].state = lightTypes[modelId]["state"]
         bridgeConfig["lights"][lightId].config = lightTypes[modelId]["config"]
+        if modelId in ["LCX002", "915005987201", "LCX004", "LCX006"]:
+            bridgeConfig["lights"][lightId].protocol_cfg["points_capable"] = 5
         return "success"
 
 @core.route('/tradfri', methods=['POST'])
