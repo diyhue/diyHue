@@ -16,10 +16,13 @@ def get_environment_variable(var, boolean=False):
     return value
 
 
-def generate_certificate(mac, path):
+def generate_certificate(mac, conf_path):
     logging.info("Generating certificate")
     serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
-    call(["/usr/bin/env", "bash", "/opt/hue-emulator/genCert.sh", serial, path])
+    # Get the absolute directory of the current script
+    script_dir = path.dirname(path.abspath(__file__))
+    gen_cert_path = path.join(script_dir, "..", "genCert.sh")
+    call(["/usr/bin/env", "bash", gen_cert_path, serial, conf_path])
     logging.info("Certificate created")
 
 
