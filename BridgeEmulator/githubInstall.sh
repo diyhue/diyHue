@@ -1,4 +1,25 @@
 curl -s $1/save
+
+### installing dependencies
+if type apt &> /dev/null; then
+  # Debian-based distro
+  apt-get update
+  apt-get install --no-install-recommends -y curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime
+elif type pacman &> /dev/null; then
+  # Arch linux
+  pacman -Syq --noconfirm || exit 1
+  pacman -Sq --noconfirm python3-pip python3-setuptools python3-dev gcc || exit 1
+elif type opkg &> /dev/null; then
+  # openwrt
+  opkg update
+  opkg install python3-pip python3-setuptools python3-dev gcc
+else
+  # Or assume that packages are already installed (possibly with user confirmation)?
+  # Or check them?
+  echo -e "\033[31mUnable to detect package manager, aborting\033[0m"
+  exit 1
+fi
+
 cd /
 if [ $2 = allreadytoinstall ]; then
     echo "diyhue + ui update"
@@ -6,6 +27,11 @@ if [ $2 = allreadytoinstall ]; then
     #curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
     unzip -qo diyhue.zip
     rm diyhue.zip
+
+    python3 -m pip install --upgrade pip
+    python3 -m pip install --upgrade pip --break-system-packages
+    pip3 install -r diyHue-master/requirements.txt --no-cache-dir --break-system-packages
+
     cp -r diyHue-master/BridgeEmulator/flaskUI /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/functions /opt/hue-emulator/
     cp -r diyHue-master/BridgeEmulator/lights /opt/hue-emulator/
