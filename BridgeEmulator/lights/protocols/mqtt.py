@@ -69,4 +69,4 @@ def discover(mqtt_config):
             publish.single("zigbee2mqtt/bridge/request/permit_join", json.dumps({"value": True, "time": 120}), hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
             publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
         except Exception as e:
-            print (str(e))
+            logging.error("MQTT publish failed: " + str(e))

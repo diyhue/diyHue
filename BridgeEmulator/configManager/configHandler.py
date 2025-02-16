@@ -85,6 +85,8 @@ class Config:
                     config["tpkasa"] = {"enabled": True}
                 if "elgato" not in config:
                     config["elgato"] = {"enabled": True}
+                if "govee" not in config:
+                    config["govee"] = {"enabled": False}
                 if "port" not in config:
                     config["port"] = {"enabled": False,"ports": [80]}
                 if "zigbee_device_discovery_info" not in config:
@@ -142,6 +144,7 @@ class Config:
                     "hyperion": {"enabled":True},
                     "tpkasa": {"enabled":True},
                     "elgato": {"enabled":True},
+                    "govee": {"enabled": False},
                     "zigbee_device_discovery_info": {"status": "ready"},
                     "swupdate2": {  "autoinstall": {
                                         "on": False,
@@ -356,8 +359,10 @@ class Config:
             debug["hue"]["hueKey"] = "privately"
         if debug["tradfri"]:
             debug["tradfri"]["psk"] = "privately"
-        if debug["alarm"]["enabled"]:
+        if debug["alarm"]["enabled"] or "email" in debug["alarm"]:
             debug["alarm"]["email"] = "privately"
+        if debug["govee"]["enabled"] or "api_key" in debug["govee"]:
+            debug["govee"]["api_key"] = "privately"
         info = {}
         info["OS"] = os.uname().sysname
         info["Architecture"] = os.uname().machine

@@ -442,7 +442,7 @@ def on_connect(client, userdata, flags, rc):
 
 def mqttServer():
 
-    logging.info("Strting MQTT service...")
+    logging.info("Starting MQTT service...")
     # ================= MQTT CLIENT Connection========================
     # Set user/password on client if supplied
 

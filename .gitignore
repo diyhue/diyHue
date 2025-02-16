@@ -18,3 +18,9 @@ Sensors/*
 # Ignore userdata
 BridgeEmulator/export/
 BridgeEmulator/cert.pem
+/config
+*.log
+*.js
+*.css
+*.webp
+BridgeEmulator/flaskUI/templates/index.html
