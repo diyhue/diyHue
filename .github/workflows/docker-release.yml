@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ github.ref }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-${{ matrix.arch }}-
 
