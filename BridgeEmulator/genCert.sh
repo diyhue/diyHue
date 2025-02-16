@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 mac=$1
 config="${2:-/opt/hue-emulator/config}"
 dec_serial=`python3 -c "print(int(\"$mac\".strip('\u200e'), 16))"`
