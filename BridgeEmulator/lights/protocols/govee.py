@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 
 logging = logManager.logger.get_logger(__name__)
 
-BASE_URL = "https://openapi.api.govee.com/router/api/v1/"
+BASE_URL = "https://openapi.api.govee.com/router/api/v1"
 BASE_TYPE = "devices.capabilities."
 
 def get_headers() -> Dict[str, str]:
