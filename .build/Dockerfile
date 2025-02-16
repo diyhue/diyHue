@@ -1,13 +1,13 @@
 # This image just moves the correct bins to a specific folder.
 # Can also be used to compile the binaries (for an even better experience)
-FROM busybox as binselector
+FROM busybox AS binselector
 WORKDIR /opt/hue-emulator
 
 # Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
 ARG TARGETPLATFORM
 
 # ============================ Actual image from here ====================
-FROM debian:stable-slim as prod
+FROM debian:stable-slim AS prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
@@ -15,8 +15,9 @@ COPY requirements.txt ./
 
 ## Install requirements
 RUN apt update \
+    && dpkg --configure -a \
     && apt install --no-install-recommends -y \
-        curl unzip python3-minimal python3-pip python3-dev python3-setuptools gcc \
+        curl unzip python3 python3-pip python3-dev python3-setuptools gcc \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && pip3 install -r requirements.txt --no-cache-dir --break-system-packages \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
