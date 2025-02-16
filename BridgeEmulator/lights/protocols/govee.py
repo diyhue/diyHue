@@ -48,10 +48,12 @@ def discover(detectedLights: List[Dict[str, Any]]) -> None:
     """
     logging.debug("Govee: <discover> invoked!")
     try:
-        response = requests.get(f"{BASE_URL}/devices", headers=get_headers())
+        response = requests.get(f"{BASE_URL}/user/devices", headers=get_headers())
         response.raise_for_status()
         if response.content and is_json(response.content):  # Check if response content is valid JSON
             devices = response.json().get("data", {})
+            logging.debug(f"Govee: Found {len(devices)} devices")
+            logging.debug(f"Govee: {devices}")
             for device in devices:
                 device_id = device["device"]
                 device_name = device.get("deviceName", f'{device["sku"]}-{device_id.replace(":","")[10:]}')
