@@ -1,7 +1,11 @@
 import logManager
+import asyncio
 from functions.colors import convert_xy
 logging = logManager.logger.get_logger(__name__)
 Connections = {}
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 ### libhueble ###
 ### https://github.com/alexhorn/libhueble/ ###
@@ -88,26 +92,39 @@ class Lamp(object):
         x, y = self.converter.rgb_to_xy(r, g, b)
         await self.set_color_xy(x, y)
 
-def connect(light):
+async def connect(light, reconnect=False):
     ip = light.protocol_cfg["ip"]
-    if ip in Connections:
+    if ip in Connections and not reconnect:
         c = Connections[ip]
     else:
         c = Lamp(ip)
-        c.connect()
+        await c.connect()
         Connections[ip] = c
     return c
 
+async def set_light_async(light, data, retry=False):
+    c = await connect(light)
+    try:
+        for key, value in data.items():
+            if key == "on":
+                await c.set_power(value)
+            if key == "bri":
+                await c.set_brightness(value / 254)
+            if key == "xy":
+                # not all models support color
+                try:
+                    color = convert_xy(value[0], value[1], light.state["bri"])
+                    await c.set_color_rgb(color[0] / 254, color[1] / 254, color[2] / 254)
+                except Exception as e:
+                    logging.debug(e)
+    except:
+        # reconnect and try again once
+        await connect(light, reconnect=True)
+        if not retry:
+            await set_light_async(light, data, retry=True)
+
 def set_light(light, data):
-    c = connect(light)
-    for key, value in data.items():
-        if key == "on":
-            c.set_power(value)
-        if key == "bri":
-            c.set_brightness(value / 254)
-        if key == "xy":
-            color = convert_xy(value[0], value[1], light.state["bri"])
-            c.set_color_rgb(color[0] / 254, color[1] / 254, color[2] / 254)
+    loop.run_until_complete(set_light_async(light, data))
 
 def get_light_state(light):
     return {}
