@@ -195,39 +195,6 @@ standardSensors["9290035001"] = standardSensors["RDM002"]
 standardSensors["9290035003"] = standardSensors["RDM002"]
 
 
-def renameAbbreviations(d):
-    """
-    :param d: old dict
-    :type d: dict
-    """
-    abbreviationsMap = {
-        "uniq_id": "unique_id",
-        "stat_t": "state_topic",
-        "cmd_t": "command_topic",
-        "bri_cmd_t": "brightness_command_topic",
-        "bri_stat_t": "brightness_state_topic",
-        "bri_scl": "brightness_scale",
-        "ct": "color_temp",
-        "ids": "identifiers",
-        "mf": "manufacturer",
-        "sw": "sw_version"
-    }
-    new_dict = {}
-    for key, value in zip(d.keys(), d.values()):
-        new_key = abbreviationsMap.get(key, key)
-        new_dict[new_key] = d[key]
-    return new_dict
-
-def jsnCheck(jsn: str) -> bool:
-    try:
-        if str(jsn).find("{") == -1:
-            return False
-        in_jsn = json.loads(jsn)
-        print(json.dumps(in_jsn, indent=4))
-    except (json.decoder.JSONDecodeError) as errh:
-        return False
-    return True
-
 def getClient():
     return client
 
@@ -266,10 +233,6 @@ def getObject(friendly_name):
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
                         return device
-                    elif "uid" in device.protocol_cfg and device.protocol_cfg["uid"] == friendly_name:
-                        devices_ids[friendly_name] = weakref.ref(device)
-                        logging.debug("Cache Miss " + friendly_name)
-                        return device
                     elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
@@ -282,7 +245,6 @@ def on_autodiscovery_light(msg):
     data = json.loads(msg.payload)
     logging.info("Auto discovery message on: " + msg.topic)
     #logging.debug(json.dumps(data, indent=4))
-    data = renameAbbreviations(data)
     discoveredDevices[data['unique_id']] = data
     for key, data in discoveredDevices.items():
         device_new = True
@@ -291,15 +253,10 @@ def on_autodiscovery_light(msg):
                 device_new = False
                 obj.protocol_cfg["command_topic"] = data["command_topic"]
                 obj.protocol_cfg["state_topic"] = data["state_topic"]
-                if "brightness_scale" in data:
-                    obj.protocol_cfg["brightness_scale"] = data["brightness_scale"]
                 break
 
         if device_new:
-            if "device" in data:
-                lightName = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
-            else:
-                lightName = data["name"]
+            lightName = data["device"]["name"] if data["device"]["name"] is not None else data["name"]
             logging.debug("MQTT: Adding light " + lightName)
 
             # Device capabilities
@@ -327,19 +284,13 @@ def on_autodiscovery_light(msg):
                                     "command_topic": data["command_topic"],
                                     "mqtt_server": bridgeConfig["config"]["mqtt"]}
 
-            if "brightness_scale" in data:
-                protocol_cfg["brightness_scale"] = data["brightness_scale"]
             addNewLight(modelid, lightName, "mqtt", protocol_cfg)
-            client.subscribe(data["state_topic"])
 
 
 
 def on_state_update(msg):
     logging.debug("MQTT: got state message on " + msg.topic)
-    if (jsnCheck(msg.payload)):
-        data = json.loads(msg.payload)
-    else:
-        return False
+    data = json.loads(msg.payload)
     latestStates[msg.topic] = data
     logging.debug(json.dumps(data, indent=4))
 
@@ -349,12 +300,9 @@ def on_message(client, userdata, msg):
         try:
             current_time =  datetime.now()
             logging.debug("MQTT: got state message on " + msg.topic)
+            data = json.loads(msg.payload)
             logging.debug(msg.payload)
-            if (jsnCheck(msg.payload)):
-                data = json.loads(msg.payload)
-            else:
-                return False
-            if msg.topic.startswith(discoveryPrefix + "/light/") or msg.topic.startswith(discoveryPrefix + "/switch/"):
+            if msg.topic.startswith(discoveryPrefix + "/light/"):
                 on_autodiscovery_light(msg)
             elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
@@ -387,8 +335,6 @@ def on_message(client, userdata, msg):
                     light.state["reachable"] = False
             else:
                 device_friendlyname = msg.topic[msg.topic.index("/") + 1:]
-                if device_friendlyname.find("/") != -1:
-                    device_friendlyname = device_friendlyname[:device_friendlyname.index("/")]
                 device = getObject(device_friendlyname)
                 if device != False:
                     if device.getObjectPath()["resource"] == "sensors":
@@ -455,10 +401,7 @@ def on_message(client, userdata, msg):
                             device.genStreamEvent(v2State)
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
-                            if "brightness_scale" in device.protocol_cfg:
-                                v2State.update({"dimming": {"brightness": round(state["bri"] / 254 * device.protocol_cfg["brightness_scale"])}})
-                            else:
-                                v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
+                            v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
                             device.genStreamEvent(v2State)
                         device.state.update(state)
                         streamGroupEvent(device, v2State)
@@ -490,19 +433,12 @@ def on_connect(client, userdata, flags, rc):
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    # Start autodetection on lights and switches
-    #autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
-    client.subscribe(discoveryPrefix + "/light/#")
-    client.subscribe(discoveryPrefix + "/switch/#")
-    #client.subscribe("zigbee2mqtt/+")
+    # Start autodetection on lights
+    autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
+    client.subscribe(autodiscoveryTopic)
+    client.subscribe("zigbee2mqtt/+")
     client.subscribe("zigbee2mqtt/bridge/devices")
     client.subscribe("zigbee2mqtt/bridge/log")
-    for resource in ["sensors", "lights"]:
-        for key, device in bridgeConfig[resource].items():
-            if device.protocol == "mqtt":
-                if "state_topic" in device.protocol_cfg:
-                    logging.info("Subscribing to %s", device.protocol_cfg['state_topic'])
-                    client.subscribe(device.protocol_cfg['state_topic'])
 
 def mqttServer():
 

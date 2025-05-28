@@ -26,8 +26,6 @@ def set_light(light, data):
             if key == "on":
                 payload['state'] = "ON" if value == True else "OFF"
             if key == "bri":
-                if "brightness_scale" in light.protocol_cfg:
-                    value = value * light.protocol_cfg["brightness_scale"] / 254
                 payload['brightness'] = value
             if key == "xy":
                 payload['color'] = {'x': value[0], 'y': value[1]}
