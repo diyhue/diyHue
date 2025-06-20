@@ -240,8 +240,29 @@ def getObject(friendly_name):
         logging.debug("Device not found for " + friendly_name)
         return False
 
+def should_include_device(device_name, device_id):
+    if not bridgeConfig['config']['mqtt']['explicitInclude']:
+        return True
+    return device_name in bridgeConfig['config']['mqtt']['includeList'] or device_id in bridgeConfig['config']['mqtt']['includeList']
+
+def should_include_discovery_device(msg):
+    data = json.loads(msg.payload)
+    if not bridgeConfig['config']['mqtt']['includeGroups'] and data['device']['model'] == "Group":
+        logging.info("Ignoring discovered group on: " + msg.topic)
+        return False
+    
+    if bridgeConfig['config']['mqtt']['explicitInclude']:
+        device_name = data['device']['name']
+        device_id = data['unique_id'].split('_')[0]
+        return should_include_device(device_name, device_id)
+        
+    return True
+
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):
+    if not should_include_discovery_device(msg):
+        return
+
     data = json.loads(msg.payload)
     logging.info("Auto discovery message on: " + msg.topic)
     #logging.debug(json.dumps(data, indent=4))
@@ -286,8 +307,6 @@ def on_autodiscovery_light(msg):
 
             addNewLight(modelid, lightName, "mqtt", protocol_cfg)
 
-
-
 def on_state_update(msg):
     logging.debug("MQTT: got state message on " + msg.topic)
     data = json.loads(msg.payload)
@@ -306,6 +325,11 @@ def on_message(client, userdata, msg):
                 on_autodiscovery_light(msg)
             elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
+                    if "friendly_name" in key and "ieee_address" in key:
+                        if not should_include_device(key['friendly_name'], key['ieee_address']):
+                            logging.info("MQTT: bypassing device " + key['friendly_name'])
+                            continue
+
                     if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
                         if getObject(key["friendly_name"]) == False: ## Add the new sensor
                             logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
@@ -463,6 +487,13 @@ def mqttServer():
         bridgeConfig["config"]["mqtt"]["mqttTls"] = False
     if 'mqttTlsInsecure' not in bridgeConfig["config"]["mqtt"]:
         bridgeConfig["config"]["mqtt"]["mqttTlsInsecure"] = False
+    if 'explicitInclude' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["explicitInclude"] = False
+    if 'includeGroups' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["includeGroups"] = True
+    if 'includeList' not in bridgeConfig["config"]["mqtt"]:
+        bridgeConfig["config"]["mqtt"]["includeList"] = []
+    
     # TLS set?
     if bridgeConfig["config"]["mqtt"]["mqttTls"]:
         mqttTlsVersion = ssl.PROTOCOL_TLS
