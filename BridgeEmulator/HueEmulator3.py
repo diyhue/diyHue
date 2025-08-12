@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
 import ssl
+import socket
 import configManager
 import logManager
 import flask_login
@@ -15,6 +16,19 @@ from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 
+# Custom WSGI request handler for better SSL connection handling
+class CustomWSGIRequestHandler(WSGIRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timeout = 300  # 5 minutes timeout for long-running connections
+    
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except (ssl.SSLError, socket.error) as e:
+            logging.warning(f"SSL/Socket error in request handler: {e}")
+            self.close_connection = True
+
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 _ = logManager.logger.get_logger("werkzeug")
@@ -25,6 +39,11 @@ cors = CORS(app, resources={r"*": {"origins": "*"}})
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
 api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}
+
+# Configure Flask for better SSL and long-running connections
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 login_manager = flask_login.LoginManager()
 # We can now pass in our app to the login manager
@@ -92,9 +111,17 @@ def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ctx.load_cert_chain(certfile=CONFIG_PATH + "/cert.pem")
     ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
-    ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256')
+    ctx.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1  # Disable older TLS versions
+    ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256')
     ctx.set_ecdh_curve('prime256v1')
-    app.run(host=BIND_IP, port=HOST_HTTPS_PORT, ssl_context=ctx)
+    
+    # Configure Flask for better SSL handling
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    
+    # Use threaded mode for better SSL connection handling
+    app.run(host=BIND_IP, port=HOST_HTTPS_PORT, ssl_context=ctx, threaded=True, 
+            request_handler=CustomWSGIRequestHandler, use_reloader=False)
 
 def runHttp(BIND_IP, HOST_HTTP_PORT):
     app.run(host=BIND_IP, port=HOST_HTTP_PORT)
