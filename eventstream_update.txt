@@ -1,0 +1,35 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     6    0     6    0     0      5      0 --:--:--  0:00:01 --:--:--     5100     6    0     6    0     0      2      0 --:--:--  0:00:02 --:--:--     2100     6    0     6    0     0      1      0 --:--:--  0:00:03 --:--:--     1100     6    0     6    0     0      1      0 --:--:--  0:00:04 --:--:--     1100     6    0     6    0     0      1      0 --:--:--  0:00:05 --:--:--     1100     6    0     6    0     0      0      0 --:--:--  0:00:06 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:07 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:08 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:09 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:10 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:11 --:--:--     0: hi
+
+id: 1754921823:0
+data: [{"creationtime":"2025-08-11T15:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"4901c412-7883-4e10-a30b-6fd4e2c720be","type":"update"}]
+
+id: 1754921823:1
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"6b8529de-102d-4397-bae6-95a77682d8c3","type":"update"}]
+
+id: 1754921823:2
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":0},"dimming_delta":{},"dynamics":{},"id":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","id_v1":"/groups/3","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"4eab3104-5c03-45a2-b43e-c43d1df4ba60","type":"update"}]
+
+id: 1754921823:0
+data: [{"creationtime":"2025-08-11T15:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"4901c412-7883-4e10-a30b-6fd4e2c720be","type":"update"}]
+
+id: 1754921823:1
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"6b8529de-102d-4397-bae6-95a77682d8c3","type":"update"}]
+
+id: 1754921823:2
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":0},"dimming_delta":{},"dynamics":{},"id":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","id_v1":"/groups/3","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"4eab3104-5c03-45a2-b43e-c43d1df4ba60","type":"update"}]
+
+id: 1754921823:0
+data: [{"creationtime":"2025-08-11T15:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"4901c412-7883-4e10-a30b-6fd4e2c720be","type":"update"}]
+
+id: 1754921823:1
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"6b8529de-102d-4397-bae6-95a77682d8c3","type":"update"}]
+
+id: 1754921823:2
+data: [{"creationtime":"2025-08-11T14:17:03Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":0},"dimming_delta":{},"dynamics":{},"id":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","id_v1":"/groups/3","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"4eab3104-5c03-45a2-b43e-c43d1df4ba60","type":"update"}]
+
+id: 1754921823:0
+data: [{"creationtime":"2025-08-11T15:17:03Z","data":[{"children":[],"services":[{"rid":"b9cc0db4-01c9-4e5a-b10a-0f5cab86a79c","rtype":"grouped_light"}],"id":"df16280d-8f2e-5479-967a-675cdee724d4","id_v1":"/groups/3","metadata":{"archetype":"living_room","name":"Updated Living Room"},"type":"room"}],"id":"4901c412-7883-4e10-a30b-6fd4e2c720be","type":"update"}]
+
+id: 175100  4942    0  4942    0     0    413      0 --:--:--  0:00:11 --:--:--  1006100  6176    0  6176    0     0    473      0 --:--:--  0:00:13 --:--:--  1233100  6176    0  6176    0     0    439      0 --:--:--  0:00:14 --:--:--  1234100  6176    0  6176    0     0    410      0 --:--:--  0:00:15 --:--:--  1234100  6176    0  6176    0     0    384      0 --:--:--  0:00:16 --:--:--  1234100  6176    0  6176    0     0    361      0 --:--:--  0:00:17 --:--:--   240100  6176    0  6176    0     0    341      0 --:--:--  0:00:18 --:--:--     0100  6176    0  6176    0     0    323      0 --:--:--  0:00:19 --:--:--     0100  6830    0  6830    0     0    342      0 --:--:--  0:00:19 --:--:--   134100  8138    0  8138    0     0    387      0 --:--:--  0:00:21 --:--:--   394100  8138    0  8138    0     0    369      0 --:--:--  0:00:22 --:--:--   394100  8138    0  8138    0     0    353      0 --:--:--  0:00:23 --:--:--   394100  8138    0  8138    0     0    338      0 --:--:--  0:00:24 --:--:--   394100  8138    0  8138    0     0    324      0 --:--:--  0:00:25 --:--:--   255100  8138    0  8138    0     0    312      0 --:--:--  0:00:26 --:--:--     0100  8138    0  8138    0     0    300      0 --:--:--  0:00:27 --:--:--     0

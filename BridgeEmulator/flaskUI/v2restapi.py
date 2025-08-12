@@ -154,8 +154,6 @@ def v2BridgeHome():
     for key, group in bridgeConfig["groups"].items():
         if group.type == "Room":
             result["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
-    result["services"] = []
-    result["services"].append({"rid": bridgeConfig["groups"]["0"].id_v2 ,"rtype": "grouped_light"})
     result["type"] = "bridge_home"
     return result
 
@@ -540,6 +538,65 @@ class ClipV2Resource(Resource):
             "rtype": resource}
         ], "errors": []}
 
+        # Trigger events for object creation
+        try:
+            import HueObjects
+            if resource in ["room", "zone"]:
+                # Add room/zone creation event (matches original bridge)
+                # Let event streamer generate proper sequential ID
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [newObject.getV2Room() if resource == "room" else newObject.getV2Zone()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "add"
+                }
+                HueObjects.eventstream.append(event_data)
+                logging.debug(f"Added room creation event for {resource} {newObject.id_v2}")
+                
+                # Add bridge home update event (matches original bridge)
+                # This updates the bridge_home with the new room/zone
+                bridge_home_update = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [v2BridgeHome()],  # Get updated bridge home with new room
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(bridge_home_update)
+                
+            elif resource == "scene":
+                # Add scene creation event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [newObject.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "add"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "smart_scene":
+                # Add smart scene creation event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [newObject.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "add"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "entertainment_configuration":
+                # Add entertainment configuration creation event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [newObject.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "add"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            logging.debug(f"Added {resource} creation event to eventstream")
+        except Exception as e:
+            logging.error(f"Error adding event to eventstream: {e}")
+
         logging.debug(json.dumps(returnMessage, sort_keys=True, indent=4))
         return returnMessage
 
@@ -675,7 +732,9 @@ class ClipV2ResourceId(Resource):
                             element.name = putDict["metadata"]["name"]
                     elif resourceid == v2BridgeDevice()["id"]:
                         bridgeConfig["config"]["name"] = putDict["metadata"]["name"]
-                        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        # Add bridge config update event to eventstream
+                        import HueObjects
+                        event_data = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                         "data": [{
                                             "id": resourceid,
                                             "metadata": {
@@ -683,10 +742,10 @@ class ClipV2ResourceId(Resource):
                                                 },
                                             "type": "device"
                                         }],
-                                        "id": str(uuid.uuid4()),
+                                        "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
                                         "type": "update"
                                         }
-                        StreamEvent(streamMessage)
+                        HueObjects.eventstream.append(event_data)
                     configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
             object.setDevice("ZLLPresence", putDict)
@@ -709,6 +768,62 @@ class ClipV2ResourceId(Resource):
             "rid": resourceid,
             "rtype": resource
         }]}
+
+        # Trigger events for object updates
+        try:
+            import HueObjects
+            if resource in ["room", "zone"]:
+                # Add room/zone update event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [object.getV2Room() if resource == "room" else object.getV2Zone()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+                # Add grouped light update event
+                grouped_light_event = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [object.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(grouped_light_event)
+                
+            elif resource == "scene":
+                # Add scene update event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [object.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "smart_scene":
+                # Add smart scene update event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [object.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "light":
+                # Add light update event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [object.getV2Api()],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "update"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            logging.debug(f"Added {resource} update event to eventstream")
+        except Exception as e:
+            logging.error(f"Error adding update event to eventstream: {e}")
 
         return response
 
@@ -733,4 +848,52 @@ class ClipV2ResourceId(Resource):
             "rid": resourceid,
             "rtype": resource
         }]}
+
+        # Trigger events for object deletion
+        try:
+            import HueObjects
+            if resource == "room" or resource == "zone":
+                # Add room/zone deletion event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": resourceid, "type": resource}],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "delete"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "scene":
+                # Add scene deletion event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": resourceid, "type": resource}],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "delete"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "smart_scene":
+                # Add smart scene deletion event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": resourceid, "type": resource}],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "delete"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            elif resource == "light":
+                # Add light deletion event
+                event_data = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": resourceid, "type": resource}],
+                    "id": str(uuid.uuid4()),  # Each event needs its own ID like original bridge
+                    "type": "delete"
+                }
+                HueObjects.eventstream.append(event_data)
+                
+            logging.debug(f"Added {resource} deletion event to eventstream")
+        except Exception as e:
+            logging.error(f"Error adding deletion event to eventstream: {e}")
+
         return response

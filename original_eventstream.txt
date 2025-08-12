@@ -1,0 +1,17 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   432  100   432    0     0  34584      0 --:--:-- --:--:-- --:--:-- 36000
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+    <title>hue personal wireless lighting</title>
+    <link rel="stylesheet" type="text/css" href="/index.css">
+</head>
+<body>
+    <div class="header">
+      <h1>hue personal wireless lighting</h1>
+      <img src="/hue-color-line.png" class="colorline" />
+    </div>
+    <div class="error">Oops, there appears to be no lighting here</div>
+</body>
+</html>

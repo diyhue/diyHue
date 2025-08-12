@@ -1,0 +1,1 @@
+import{j as s,m as a}from"./index-BGcdHbbG.js";const x=({iconName:n,title:o,color:e,size:c,onClick:i,label:t})=>{const r=n;return s.jsx("div",{className:`iconbtn ${c} ${e}`,children:s.jsxs(a.div,{whileHover:{scale:1.2},whileTap:{scale:.9},children:[s.jsx(r,{title:o,onClick:i}),s.jsx("p",{children:t})]})})};export{x as I};
