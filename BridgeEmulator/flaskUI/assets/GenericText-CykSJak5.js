@@ -1,1 +1,0 @@
-import{j as t}from"./index-BGcdHbbG.js";const c=({label:e="",value:s="",placeholder:i="",readOnly:n=!1,type:o="text",onChange:r=void 0,pattern:x="",autoComplete:a="off"})=>t.jsxs(t.Fragment,{children:[t.jsx("label",{htmlFor:e,children:e}),t.jsx("input",{id:e,readOnly:n,type:o,pattern:x,placeholder:i,value:s,onChange:j=>r&&r(j.target.value),autoComplete:a})]});export{c as G};

@@ -238,28 +238,25 @@ class ResourceElements(Resource):
             bridgeConfig[resource][new_object_id] = Schedule.Schedule(postDict)
         newObject = bridgeConfig[resource][new_object_id]
         if v2Resource != "none":
-            # Don't auto-generate events for rooms/zones - V2 API handles this
-            # Only generate events for entertainment configurations and other group types
-            if v2Resource not in ["room", "zone"]:
-                streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "data": [],
-                                 "id_v1": "/" + resource + "/" + new_object_id,
-                                 "id": str(uuid.uuid4()),
-                                 "type": "add"
-                                 }
-                if resource == "groups":
-                    if v2Resource == "room":
-                        streamMessage["data"].append(newObject.getV2Room())
-                    elif v2Resource == "zone":
-                        streamMessage["data"].append(newObject.getV2Zone())
-                    elif  v2Resource == "entertainment_configuration":
-                        streamMessage["data"].append(newObject.getV2Api())
-                    else:
-                        streamMessage["data"].append(newObject.getV2GroupedLight())
-                elif hasattr(newObject, 'getV2Api'):
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                             "data": [],
+                             "id_v1": "/" + resource + "/" + new_object_id,
+                             "id": str(uuid.uuid4()),
+                             "type": "add"
+                             }
+            if resource == "groups":
+                if v2Resource == "room":
+                    streamMessage["data"].append(newObject.getV2Room())
+                elif v2Resource == "zone":
+                    streamMessage["data"].append(newObject.getV2Zone())
+                elif  v2Resource == "entertainment_configuration":
                     streamMessage["data"].append(newObject.getV2Api())
-                bridgeConfig["temp"]["eventstream"].append(streamMessage)
-                logging.debug(streamMessage)
+                else:
+                    streamMessage["data"].append(newObject.getV2GroupedLight())
+            elif hasattr(newObject, 'getV2Api'):
+                streamMessage["data"].append(newObject.getV2Api())
+            bridgeConfig["temp"]["eventstream"].append(streamMessage)
+            logging.debug(streamMessage)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
                                 sort_keys=True, indent=4, separators=(',', ': ')))
         configManager.bridgeConfig.save_config(backup=False, resource=resource)

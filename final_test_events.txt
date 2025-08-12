@@ -1,32 +1,0 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0: hi
-
-100     6    0     6    0     0      5      0 --:--:--  0:00:01 --:--:--     5100     6    0     6    0     0      2      0 --:--:--  0:00:02 --:--:--     2100     6    0     6    0     0      1      0 --:--:--  0:00:03 --:--:--     1100     6    0     6    0     0      1      0 --:--:--  0:00:04 --:--:--     1100     6    0     6    0     0      1      0 --:--:--  0:00:05 --:--:--     1100     6    0     6    0     0      0      0 --:--:--  0:00:06 --:--:--     0100     6    0     6    0     0      0      0 --:--:--  0:00:07 --:--:--     0id: 1754934871:0
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"a1080046-aec5-4d65-84f2-ecbd41760ef7","type":"add"}]
-
-id: 1754934871:1
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"7f04a8f2-8874-4722-b202-f23571c2a064","type":"add"}]
-
-id: 1754934871:2
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":100},"dimming_delta":{},"dynamics":{},"id":"7a5cea4e-1d23-453d-8792-9435ad959cfa","id_v1":"/groups/7","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"828d5df0-76a2-46de-af1a-c13d4f39edab","type":"add"}]
-
-100  1217    0  1217    0     0    162      0 --:--:--  0:00:07 --:--:--   271id: 1754934871:0
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"a1080046-aec5-4d65-84f2-ecbd41760ef7","type":"add"}]
-
-id: 1754934871:1
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"7f04a8f2-8874-4722-b202-f23571c2a064","type":"add"}]
-
-id: 1754934871:2
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":100},"dimming_delta":{},"dynamics":{},"id":"7a5cea4e-1d23-453d-8792-9435ad959cfa","id_v1":"/groups/7","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"828d5df0-76a2-46de-af1a-c13d4f39edab","type":"add"}]
-
-id: 1754934871:0
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"a1080046-aec5-4d65-84f2-ecbd41760ef7","type":"add"}]
-
-id: 1754934871:1
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"children":[],"services":[{"rid":"7a5cea4e-1d23-453d-8792-9435ad959cfa","rtype":"grouped_light"}],"id":"12483c04-aaeb-5545-b5e7-d523fb52002e","id_v1":"/groups/7","metadata":{"archetype":"bedroom","name":"Final Test Room"},"type":"room"}],"id":"7f04a8f2-8874-4722-b202-f23571c2a064","type":"add"}]
-
-id: 1754934871:2
-data: [{"creationtime":"2025-08-11T17:54:31Z","data":[{"alert":{"action_values":["breathe"]},"color":{},"dimming":{"brightness":100},"dimming_delta":{},"dynamics":{},"id":"7a5cea4e-1d23-453d-8792-9435ad959cfa","id_v1":"/groups/7","on":{"on":false},"type":"grouped_light","owner":{"rid":"e073b8e676b211f0abea722fe95fd7f5","rtype":"device"},"signaling":{"signal_values":["no_signal","on_off"]}}],"id":"828d5df0-76a2-46de-af1a-c13d4f39edab","type":"add"}]
-
-100  3639    0  3639    0     0    417      0 --:--:--  0:00:08 --:--:--   779100  3639    0  3639    0     0    374      0 --:--:--  0:00:09 --:--:--   779100  3639    0  3639    0     0    339      0 --:--:--  0:00:10 --:--:--   780

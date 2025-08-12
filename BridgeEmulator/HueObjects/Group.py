@@ -21,15 +21,12 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        # Don't auto-generate events for rooms/zones - V2 API handles this
-        # Only generate events for entertainment configurations and other group types
-        if self.type not in ["Room", "Zone"]:
-            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                             "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                             "id": str(uuid.uuid4()),
-                             "type": "add"
-                             }
-            StreamEvent(streamMessage)
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                         "id": str(uuid.uuid4()),
+                         "type": "add"
+                         }
+        StreamEvent(streamMessage)
 
     def groupZeroStream(self, groups, lights):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -141,7 +138,7 @@ class Group():
                     all_on = False
         if any_on:
             bri = (((bri/lights_on)/254)*100) if bri > 0 else 0
-        return {"all_on": all_on, "any_on": any_on}
+        return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
 
     def setV2Action(self, state):
         v1State = v2StateToV1(state)
@@ -176,8 +173,7 @@ class Group():
                 streamMessage["data"][num].update(v2State)
         StreamEvent(streamMessage)
         if "on" in v2State:
-            # Use a default brightness value since avr_bri was removed
-            v2State["dimming"] = {"brightness": 100}
+            v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
                                    "owner": {
@@ -214,11 +210,7 @@ class Group():
                                               "lightlevel": None, "lightlevel_min": None, "lightlevel_max": None, "lastupdated": "none"}}
         else:
             result["class"] = self.icon_class.capitalize() if len(self.icon_class) > 2 else self.icon_class.upper()
-        if self.id_v1 == "0":
-            result["action"] = self.action
-        else:
-            # Simplify action object for rooms/zones to match original bridge
-            result["action"] = {"on": self.action.get("on", False), "alert": self.action.get("alert", "none")}
+        result["action"] = self.action
         return result
 
     def getV2Room(self):
@@ -280,7 +272,7 @@ class Group():
             ]
         }
         result["color"] = {}
-        result["dimming"] = {"brightness": 100}
+        result["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         result["dimming_delta"] = {}
         result["dynamics"] = {}
         result["id"] = self.id_v2
