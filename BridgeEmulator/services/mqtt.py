@@ -280,7 +280,8 @@ def on_autodiscovery_light(msg):
                                     "ip":"mqtt",
                                     "state_topic": data["state_topic"],
                                     "command_topic": data["command_topic"],
-                                    "mqtt_server": bridgeConfig["config"]["mqtt"]}
+                                    "mqtt_server": bridgeConfig["config"]["mqtt"],
+                                    "min_bri": 2}
 
             addNewLight(modelid, lightName, "mqtt", protocol_cfg)
 
@@ -373,17 +374,16 @@ def on_message(client, userdata, msg):
                             motionSensor.state = {"presence": data["occupancy"], "lastupdated": lastupdated}
                             # send email if alarm is enabled:
                             notifyEmail(motionSensor.name)
-                        if "illuminance_lux" in data:
+                        if "illuminance" in data:
                             lightSensor = device.elements["ZLLLightLevel"]()
                             lightPayload = {"lastupdated": lastupdated}
-                            if "illuminance_lux" in data:
-                                hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"]) + 1) if data["illuminance_lux"] != 0 else 0
-                                if hue_lightlevel > lightSensor.config["tholddark"]:
-                                    lightPayload["dark"] = False
-                                else:
-                                    lightPayload["dark"] = True
-                                lightPayload["lightlevel"] = hue_lightlevel
-                            elif lightSensor.protocol_cfg["lightSensor"] == "on":
+                            hue_lightlevel = int(10000 * math.log10(data["illuminance"]) + 1) if data["illuminance"] != 0 else 0
+                            if hue_lightlevel > lightSensor.config["tholddark"]:
+                                lightPayload["dark"] = False
+                            else:
+                                lightPayload["dark"] = True
+                            lightPayload["lightlevel"] = hue_lightlevel
+                            if lightSensor.protocol_cfg["lightSensor"] == "on":
                                 lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
                                 lightPayload["lightlevel"] = 6000 if lightPayload["dark"] else 25000
                             else: # is always dark

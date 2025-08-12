@@ -7,7 +7,7 @@ from threading import Thread
 from time import sleep
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
-
+from pprint import pprint
 
 def findTriggerTime(times):
     numberOfIntervals = len(times)
@@ -42,6 +42,7 @@ def findLight(rid, rtype):
 
 def threadDelayAction(actionsToExecute, device, monitoredKey, monitoredValue, groupsAndLights):
     secondsCounter = 0
+    storeBriLevel = {}
     if "after" in actionsToExecute:
         if "minutes" in actionsToExecute["after"]:
             secondsCounter = actionsToExecute["after"]["minutes"] * 60
@@ -58,8 +59,29 @@ def threadDelayAction(actionsToExecute, device, monitoredKey, monitoredValue, gr
             executeActions(actionsToExecute, groupsAndLights)
             return  
         secondsCounter -= 1
+        if secondsCounter == 30:
+            print("#### Seconds Counter 30." )
+            #try:
+            if actionsToExecute["recall_single"][0]["action"] == "all_off":
+                for resource in groupsAndLights:
+                    if hasattr(resource, 'action'): # it is a group
+                        print("#### It is group." )
+                        for lightDevice in resource.lights: 
+                            storeBriLevel[lightDevice().firstElement()] = lightDevice().firstElement().state["bri"]
+                            resource.setV1Action({"bri_inc": -128})
+                    else: # it is a light
+                        storeBriLevel[resource] = resource.state["bri"]
+                        resource.setV1State({"bri_inc": -128})
+            #except KeyError:
+            #    print("#####ERROR")
+            #    pass
         sleep(1)
-    logging.info("Motion detected, cancel the counter..." )
+    logging.info("Motion detected " + device.name + ", cancel the counter..." )
+    if storeBriLevel: #lighs dimming was applied
+        for light in storeBriLevel.keys():
+            logging.info("Restore the light " + light.name + " level to " + str(storeBriLevel[light]))
+            light.setV1State({"bri": storeBriLevel[light]})
+        
     
 
 def executeActions(actionsToExecute, groupsAndLights):
@@ -71,7 +93,7 @@ def executeActions(actionsToExecute, groupsAndLights):
         for action in actionsToExecute[recall]:
             if action["action"] == "all_off":
                 for resource in groupsAndLights:
-                    resource.setV1Action({"on": False, "transistiontime": 100})
+                    resource.setV1Action({"on": False})
                     logging.info("routine turning lights off " + resource.name)
             elif "recall" in action["action"] and action["action"]["recall"]["rtype"] == "scene":
                 callScene(action["action"]["recall"]["rid"])
@@ -180,7 +202,7 @@ def checkBehaviorInstances(device):
                         logging.info("Trigger motion routine " + instance.name)
                         executeActions(actions["on_motion"],[])
                 else:
-                    logging.info("no motion")
+                    logging.info("no motion " + device.name)
                     if any_on:
                         Thread(target=threadDelayAction, args=[actions["on_no_motion"], device.elements["ZLLPresence"](), "presence", False, lightsAndGroups]).start()
         elif device.modelid == "SOC001": # secure contact sensor
