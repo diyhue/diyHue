@@ -10,10 +10,10 @@ def _generate_unique_id():
 
 def write_args(args, yaml_config):
 
-    result = subprocess.run(["ip route | grep default | head -n 1 | cut -d ' ' -f 3"], shell=True, capture_output=True, text=True)
+    #result = subprocess.run(["ip route | grep default | head -n 1 | cut -d ' ' -f 3"], shell=True, capture_output=True, text=True)
 
     host_ip = args["HOST_IP"]
-    ip_pieces = result.stdout.split(".")#host_ip.split(".")
+    ip_pieces = host_ip.split(".")
     yaml_config["config"]["ipaddress"] = host_ip
     yaml_config["config"]["gateway"] = ip_pieces[0] + "." + ip_pieces[1] + "." + ip_pieces[2] + "." + ip_pieces[3].replace("\n", "")#".1"
     yaml_config["config"]["mac"] = args["FULLMAC"]

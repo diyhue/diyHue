@@ -13,6 +13,7 @@ class Group():
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.icon_class = data["class"] if "class" in data else "Other"
+        logging.debug(f"Group {data.get('id_v1', 'unknown')} created with icon_class: {self.icon_class}")
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
             0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"}
@@ -21,12 +22,16 @@ class Group():
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
 
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "id": str(uuid.uuid4()),
-                         "type": "add"
-                         }
-        StreamEvent(streamMessage)
+        # Only send stream events for non-V2 API created groups
+        # V2 API handles its own event streaming
+        self._skip_stream_event = data.get('_skip_stream_event', False)
+        if not self._skip_stream_event:
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                             "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                             "id": str(uuid.uuid4()),
+                             "type": "add"
+                             }
+            StreamEvent(streamMessage)
 
     def groupZeroStream(self, groups, lights):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -34,14 +39,24 @@ class Group():
                             "id": str(uuid.uuid4()),
                             "type": "update"
                             }
+        room_count = 0
+        zone_count = 0
         for group in groups:
+            # Skip groups without type or with invalid type
+            if not hasattr(group, 'type') or group.type is None:
+                logging.debug(f"Skipping group {group.id_v1} - no type attribute")
+                continue
             if group.type == "Room":
                 streamMessage["data"][0]["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
+                room_count += 1
             elif group.type == "Zone":
                 streamMessage["data"][0]["children"].append({"rid": group.getV2Zone()["id"], "rtype": "zone"})
+                zone_count += 1
         for light in lights:
             streamMessage["data"][0]["children"].append(
                 {"rid": light, "rtype": "light"})
+        
+        logging.debug(f"Bridge_home update: {room_count} rooms, {zone_count} zones, {len(lights)} lights")
         StreamEvent(streamMessage)
 
     def __del__(self):
@@ -54,9 +69,12 @@ class Group():
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         StreamEvent(streamMessage)
         ### room / zone ####
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
-        elementType = "room" if self.type == "Room" else "zone"
+        if hasattr(self, 'type') and self.type is not None:
+            elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
+            elementType = "room" if self.type == "Room" else "zone"
+        else:
+            elementId = self.id_v2
+            elementType = "group"
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
@@ -67,9 +85,12 @@ class Group():
 
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
-        elementType = "room" if self.type == "Room" else "zone"
+        if hasattr(self, 'type') and self.type is not None:
+            elementId = self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"]
+            elementType = "room" if self.type == "Room" else "zone"
+        else:
+            elementId = self.id_v2
+            elementType = "group"
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
                          "id": str(uuid.uuid4()),
@@ -113,7 +134,7 @@ class Group():
                 setattr(self, key, value)
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                         "data": [self.getV2Room() if (hasattr(self, 'type') and self.type == "Room") else self.getV2Zone()],
                          "id": str(uuid.uuid4()),
                          "type": "update"
         }
@@ -223,14 +244,17 @@ class Group():
                 })
         result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'room'))
         result["id_v1"] = "/groups/" + self.id_v1
+        archetype = self.icon_class.replace(" ", "_").replace("'", "").lower()
         result["metadata"] = {
-            "archetype": self.icon_class.replace(" ", "_").replace("'", "").lower(),
+            "archetype": archetype,
             "name": self.name
         }
-        result["services"].append({
-            "rid": self.id_v2,
-            "rtype": "grouped_light"
-        })
+        logging.debug(f"getV2Room: icon_class='{self.icon_class}' -> archetype='{archetype}'")
+        # Match original bridge: empty services array for rooms
+        # result["services"].append({
+        #     "rid": self.id_v2,
+        #     "rtype": "grouped_light"
+        # })
 
         result["type"] = "room"
         return result
@@ -280,9 +304,9 @@ class Group():
         result["on"] = {"on": self.update_state()["any_on"]}
         if self.id_v1 == "0":
             result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')), "rtype": "bridge_home"}
-        elif self.type == "Room":
+        elif hasattr(self, 'type') and self.type == "Room":
             result["owner"] = {"rid": self.getV2Room()["id"], "rtype": "room"}
-        elif self.type == "Zone":
+        elif hasattr(self, 'type') and self.type == "Zone":
             result["owner"] = {"rid": self.getV2Zone()["id"], "rtype": "zone"}
         result["type"] = "grouped_light"
         result["signaling"] = {"signal_values": [

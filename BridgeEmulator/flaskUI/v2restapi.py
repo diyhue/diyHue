@@ -506,9 +506,18 @@ class ClipV2Resource(Resource):
                 "name": postDict["metadata"]["name"],
             }
             objCreation["type"] = "Room" if resource == "room" else "Zone"
-            if "archetype" in postDict["metadata"]:
-                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ").capitalize()
+            logging.debug(f"Before update: objCreation={objCreation}")
             objCreation.update(postDict)
+            logging.debug(f"After update: objCreation={objCreation}")
+            # Ensure archetype is properly mapped to icon_class after update
+            if "metadata" in objCreation and "archetype" in objCreation["metadata"]:
+                objCreation["class"] = objCreation["metadata"]["archetype"]
+                logging.debug(f"Setting class to: {objCreation['class']} from archetype: {objCreation['metadata']['archetype']}")
+            else:
+                logging.warning(f"No archetype found in metadata: {objCreation.get('metadata', {})}")
+            logging.debug(f"Final objCreation before Group creation: {objCreation}")
+            # Mark this group as created via V2 API to prevent duplicate events
+            objCreation["_skip_stream_event"] = True
             newObject = Group.Group(objCreation)
             if "children" in postDict:
                 for children in postDict["children"]:
@@ -517,6 +526,60 @@ class ClipV2Resource(Resource):
                     newObject.add_light(obj)
 
             bridgeConfig["groups"][new_object_id] = newObject
+            
+            # Create a combined event message with both room creation and bridge_home update
+            logging.debug(f"Creating combined event message for room creation and bridge_home update")
+            try:
+                # Get the bridge_home update data
+                bridge_home_data = None
+                if "groups" in bridgeConfig and "0" in bridgeConfig["groups"] and bridgeConfig["groups"]["0"] is not None:
+                    bridge_home_data = {
+                        "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["groups"]["0"].id_v2 + 'bridge_home')), "id_v1": "/groups/0", "type": "bridge_home"}],
+                        "id": str(uuid.uuid4()),
+                        "type": "update"
+                    }
+                    
+                    # Add only the newly created room to children (not all existing rooms)
+                    bridge_home_data["data"][0]["children"].append({"rid": newObject.getV2Room()["id"], "rtype": "room"})
+                    
+                    # Add the bridge itself as a device (this is what the original bridge does)
+                    # The bridge should be represented as a device in the children list
+                    bridge_device_id = str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["groups"]["0"].id_v2 + 'bridge_device'))
+                    bridge_home_data["data"][0]["children"].append({"rid": bridge_device_id, "rtype": "device"})
+                    
+                    logging.debug(f"Bridge_home update: 1 new room + 1 bridge device")
+                
+                # Create combined event message
+                if bridge_home_data:
+                    combined_message = [
+                        {
+                            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            "data": [newObject.getV2Room()],
+                            "id": str(uuid.uuid4()),
+                            "type": "add"
+                        },
+                        bridge_home_data
+                    ]
+                    
+                    # Send combined message directly to event stream to avoid double wrapping
+                    import HueObjects
+                    HueObjects.eventstream.append(combined_message)
+                    logging.debug(f"Combined event message sent successfully")
+                else:
+                    logging.warning("Could not create bridge_home data, falling back to separate events")
+                    # Fallback to separate events if bridge_home is not available
+                    from flaskUI.restful import GroupZeroMessage
+                    GroupZeroMessage()
+                    
+            except Exception as e:
+                logging.error(f"Failed to create combined event message: {e}")
+                # Fallback to separate events
+                try:
+                    from flaskUI.restful import GroupZeroMessage
+                    GroupZeroMessage()
+                except Exception as e2:
+                    logging.error(f"Fallback also failed: {e2}")
         elif resource == 'geofence_client':
             new_object_id = nextFreeId(bridgeConfig, "geofence_clients")
             objCreation = {
@@ -535,8 +598,18 @@ class ClipV2Resource(Resource):
             }, 500
 
         # return message
+        if resource == "room":
+            # For rooms, return the room ID (not the grouped_light ID)
+            rid = str(uuid.uuid5(uuid.NAMESPACE_URL, newObject.id_v2 + 'room'))
+        elif resource == "zone":
+            # For zones, return the zone ID (not the grouped_light ID)
+            rid = str(uuid.uuid5(uuid.NAMESPACE_URL, newObject.id_v2 + 'zone'))
+        else:
+            # For other resources, use the object's V2 ID
+            rid = newObject.id_v2
+            
         returnMessage = {"data": [{
-            "rid": newObject.id_v2,
+            "rid": rid,
             "rtype": resource}
         ], "errors": []}
 

@@ -24,7 +24,13 @@ def streamV2Events():
         while counter > 0:  # ensure we stop at some point
             if len(HueObjects.eventstream) > 0:
                 for index, messages in enumerate(HueObjects.eventstream):
-                    yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
+                    # Check if messages is already an array (combined message)
+                    if isinstance(messages, list):
+                        # It's already an array, don't wrap it again
+                        yield f"id: {int(time()) }:{index}\ndata: {json.dumps(messages, separators=(',', ':'))}\n\n"
+                    else:
+                        # Single message, wrap it in an array
+                        yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
                 sleep(0.2)
             sleep(0.2)
             counter -= 1
