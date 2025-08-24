@@ -75,6 +75,8 @@ class Config:
                     config["tasmota"] = {"enabled": True}
                 if "wled" not in config:
                     config["wled"] = {"enabled": True}
+                if "hue_bl" not in config:
+                    config["hue_bl"] = {"enabled": False}
                 if "shelly" not in config:
                     config["shelly"] = {"enabled": True}
                 if "esphome" not in config:
@@ -133,6 +135,7 @@ class Config:
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                     "hue": {},
+                    "hue_bl": {"enabled": False},
                     "tradfri": {},
                     "homeassistant": {"enabled":False},
                     "yeelight": {"enabled":True},
