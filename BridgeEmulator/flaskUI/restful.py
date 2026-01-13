@@ -55,12 +55,28 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
 def buildConfig():
     result = staticConfig()
     config = bridgeConfig["config"]
-    result.update({"Hue Essentials key": config["Hue Essentials key"], "Remote API enabled": config["Remote API enabled"], "apiversion": config["apiversion"], "bridgeid": config["bridgeid"],
-                   "ipaddress": config["ipaddress"], "netmask": config["netmask"], "gateway": config["gateway"], "mac": config["mac"], "name": config["name"], "swversion": config["swversion"],
-                   "swupdate2": config["swupdate2"], "timezone": config["timezone"], "discovery": config["discovery"]})
+    # Update with config values (excluding some diyHue-specific fields, but keeping Hue Essentials key)
+    result.update({
+        "Hue Essentials key": config["Hue Essentials key"],
+        "apiversion": config["apiversion"],
+        "bridgeid": config["bridgeid"],
+        "ipaddress": config["ipaddress"],
+        "netmask": config["netmask"],
+        "gateway": config["gateway"],
+        "mac": config["mac"],
+        "name": config["name"],
+        "swversion": config["swversion"],
+        "swupdate2": config["swupdate2"],
+        "timezone": config["timezone"]
+    })
+    # Remove install field from swupdate2 if present (not in original bridge)
+    if "install" in result["swupdate2"]:
+        del result["swupdate2"]["install"]
+    # Remove starterkitid from full config (only present in short config)
+    if "starterkitid" in result:
+        del result["starterkitid"]
     result["UTC"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    result["LogLevel"] = logManager.logger.get_level_name()
     result["whitelist"] = {}
     for key, user in bridgeConfig["apiUsers"].items():
         result["whitelist"][key] = {"create date": user.create_date,
@@ -107,7 +123,18 @@ class NewUser(Resource):
 class ShortConfig(Resource):
     def get(self):
         config = bridgeConfig["config"]
-        return {"apiversion": config["apiversion"], "bridgeid": config["bridgeid"], "datastoreversion": staticConfig()["datastoreversion"], "factorynew": False, "mac": config["mac"], "modelid": "BSB002", "name": config["name"], "replacesbridgeid": None, "starterkitid": "", "swversion": config["swversion"]}
+        return {
+            "apiversion": config["apiversion"],
+            "bridgeid": config["bridgeid"],
+            "datastoreversion": staticConfig()["datastoreversion"],
+            "factorynew": False,
+            "mac": config["mac"],
+            "modelid": "BSB002",
+            "name": config["name"],
+            "replacesbridgeid": None,
+            "starterkitid": "",
+            "swversion": config["swversion"]
+        }
 
 
 class EntireConfig(Resource):

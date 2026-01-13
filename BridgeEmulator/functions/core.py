@@ -25,6 +25,7 @@ def staticConfig():
         "modelid": "BSB002",
         "portalconnection": "disconnected",
         "portalservices": False,
+        "analyticsconsent": False,
         "portalstate": {
             "communication": "disconnected",
             "incoming": False,
@@ -49,7 +50,7 @@ def staticConfig():
         "swupdate2": {
             "autoinstall": {
                 "on": True,
-                "updatetime": "T14:00:00"
+                "updatetime": "T00:00:00"
             },
             "bridge": {
                 "lastinstall": "2020-12-11T17:08:55",

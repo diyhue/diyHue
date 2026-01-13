@@ -93,8 +93,8 @@ class Config:
                     config["zigbee_device_discovery_info"] = {"status": "ready"}
                 if "swupdate2" not in config:
                     config["swupdate2"] = {"autoinstall": {
-                            "on": False,
-                            "updatetime": "T14:00:00"
+                            "on": True,
+                            "updatetime": "T00:00:00"
                         },
                         "bridge": {
                             "lastinstall": "2020-12-11T17:08:55",
@@ -145,8 +145,8 @@ class Config:
                     "elgato": {"enabled":True},
                     "zigbee_device_discovery_info": {"status": "ready"},
                     "swupdate2": {  "autoinstall": {
-                                        "on": False,
-                                        "updatetime": "T14:00:00"
+                                        "on": True,
+                                        "updatetime": "T00:00:00"
                                     },
                                     "bridge": {
                                         "lastinstall": "2020-12-11T17:08:55",
