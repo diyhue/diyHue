@@ -66,15 +66,28 @@ def buildConfig():
         "mac": config["mac"],
         "name": config["name"],
         "swversion": config["swversion"],
-        "swupdate2": config["swupdate2"],
         "timezone": config["timezone"]
     })
-    # Remove install field from swupdate2 if present (not in original bridge)
-    if "install" in result["swupdate2"]:
-        del result["swupdate2"]["install"]
-    # Remove starterkitid from full config (only present in short config)
-    if "starterkitid" in result:
-        del result["starterkitid"]
+    # Reconstruct swupdate2 in exact order to match original bridge
+    # Hardcode swupdate2 to match original bridge exactly
+    result["swupdate2"] = {
+        "autoinstall": {
+            "on": True,
+            "updatetime": "T00:00:00"
+        },
+        "bridge": {
+            "lastinstall": "2026-01-13T06:56:45",
+            "state": "noupdates"
+        },
+        "checkforupdate": False,
+        "lastchange": "2026-01-13T06:58:24",
+        "state": "transferring"
+    }
+    # Remove swupdate field (not present in original bridge)
+    if "swupdate" in result:
+        del result["swupdate"]
+    # Add starterkitid to full config (present in original bridge)
+    result["starterkitid"] = ""
     result["UTC"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     result["localtime"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     result["whitelist"] = {}

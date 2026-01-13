@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 
 def nextFreeId(bridgeConfig, element):
     i = 1
@@ -12,7 +13,7 @@ def staticConfig():
             "errorcode": 0,
             "status": "idle"
         },
-        "datastoreversion": "126",
+        "datastoreversion": "182",
         "dhcp": True,
         "factorynew": False,
         "internetservices": {
@@ -35,30 +36,18 @@ def staticConfig():
         "proxyaddress": "none",
         "proxyport": 0,
         "replacesbridgeid": None,
-        "swupdate": {
-            "checkforupdate": False,
-            "devicetypes": {
-                "bridge": False,
-                "lights": [],
-                "sensors": []
-            },
-            "notify": True,
-            "text": "",
-            "updatestate": 0,
-            "url": ""
-        },
         "swupdate2": {
             "autoinstall": {
                 "on": True,
                 "updatetime": "T00:00:00"
             },
             "bridge": {
-                "lastinstall": "2020-12-11T17:08:55",
+                "lastinstall": "2026-01-13T06:56:45",
                 "state": "noupdates"
             },
             "checkforupdate": False,
-            "lastchange": "2020-12-13T10:30:15",
-            "state": "noupdates"
+            "lastchange": "2026-01-13T06:58:24",
+            "state": "transferring"
         },
         "zigbeechannel": 25
     }

@@ -8,6 +8,7 @@ import yaml
 import uuid
 import weakref
 from time import sleep
+from datetime import datetime, timezone
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene, Device
 from copy import deepcopy
 try:
@@ -92,25 +93,42 @@ class Config:
                 if "zigbee_device_discovery_info" not in config:
                     config["zigbee_device_discovery_info"] = {"status": "ready"}
                 if "swupdate2" not in config:
-                    config["swupdate2"] = {"autoinstall": {
+                    config["swupdate2"] = {
+                        "autoinstall": {
                             "on": True,
                             "updatetime": "T00:00:00"
                         },
                         "bridge": {
-                            "lastinstall": "2020-12-11T17:08:55",
+                            "lastinstall": "2026-01-13T06:56:45",
                             "state": "noupdates"
                         },
                         "checkforupdate": False,
-                        "lastchange": "2020-12-13T10:30:15",
-                        "state": "noupdates",
+                        "lastchange": "2026-01-13T06:58:24",
+                        "state": "transferring",
                         "install": False
-                        }
+                    }
+                else:
+                    # Update existing swupdate2 to match original bridge exactly (hardcoded values)
+                    config["swupdate2"] = {
+                        "autoinstall": {
+                            "on": True,
+                            "updatetime": "T00:00:00"
+                        },
+                        "bridge": {
+                            "lastinstall": "2026-01-13T06:56:45",
+                            "state": "noupdates"
+                        },
+                        "checkforupdate": False,
+                        "lastchange": "2026-01-13T06:58:24",
+                        "state": "transferring",
+                        "install": config["swupdate2"].get("install", False)  # Keep install field for internal use
+                    }
 
                 # Only upgrade to newer versions, never downgrade
-                if int(config["swversion"]) < 1972076030:
-                    config["swversion"] = "1972076030"
-                if float(config["apiversion"][:3]) < 1.72:
-                    config["apiversion"] = "1.72.0"
+                if int(config["swversion"]) < 1975104000:
+                    config["swversion"] = "1975104000"
+                if float(config["apiversion"][:3]) < 1.75:
+                    config["apiversion"] = "1.75.0"
 
                 self.yaml_config["config"] = config
             else:
@@ -124,10 +142,10 @@ class Config:
                     "alarm":{"enabled": False,"lasttriggered": 0},
                     "port":{"enabled": False,"ports": [80]},
                     "apiUsers":{},
-                    "apiversion":"1.72.0",
+                    "apiversion":"1.75.0",
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
-                    "swversion":"1972076030",
+                    "swversion":"1975104000",
                     "timezone": "Europe/London",
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
@@ -144,18 +162,19 @@ class Config:
                     "tpkasa": {"enabled":True},
                     "elgato": {"enabled":True},
                     "zigbee_device_discovery_info": {"status": "ready"},
-                    "swupdate2": {  "autoinstall": {
-                                        "on": True,
-                                        "updatetime": "T00:00:00"
-                                    },
-                                    "bridge": {
-                                        "lastinstall": "2020-12-11T17:08:55",
-                                        "state": "noupdates"
-                                    },
-                                    "checkforupdate": False,
-                                    "lastchange": "2020-12-13T10:30:15",
-                                    "state": "noupdates",
-                                    "install": False
+                    "swupdate2": {
+                        "autoinstall": {
+                            "on": True,
+                            "updatetime": "T00:00:00"
+                        },
+                        "bridge": {
+                            "lastinstall": "2026-01-13T06:56:45",
+                            "state": "noupdates"
+                        },
+                        "checkforupdate": False,
+                        "lastchange": "2026-01-13T06:58:24",
+                        "state": "transferring",
+                        "install": False
                     },
                     "IP_RANGE": {
                         "IP_RANGE_START": 0,
