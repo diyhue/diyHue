@@ -549,8 +549,9 @@ class ClipV2Resource(Resource):
 
             bridgeConfig["groups"][new_object_id] = newObject
             
-            # Create a combined event message with both room creation and bridge_home update
-            logging.debug(f"Creating combined event message for room creation and bridge_home update")
+            # Create a combined event message with both room/zone creation and bridge_home update
+            element_type = "room" if newObject.type == "Room" else "zone"
+            logging.debug(f"Creating combined event message for {element_type} creation and bridge_home update")
             try:
                 # Get the bridge_home update data
                 bridge_home_data = None
@@ -562,22 +563,27 @@ class ClipV2Resource(Resource):
                         "type": "update"
                     }
                     
-                    # Add only the newly created room to children (not all existing rooms)
-                    bridge_home_data["data"][0]["children"].append({"rid": newObject.getV2Room()["id"], "rtype": "room"})
+                    # Add only the newly created room/zone to children (not all existing ones)
+                    if newObject.type == "Room":
+                        bridge_home_data["data"][0]["children"].append({"rid": newObject.getV2Room()["id"], "rtype": "room"})
+                    elif newObject.type == "Zone":
+                        bridge_home_data["data"][0]["children"].append({"rid": newObject.getV2Zone()["id"], "rtype": "zone"})
                     
                     # Add the bridge itself as a device (this is what the original bridge does)
                     # The bridge should be represented as a device in the children list
                     bridge_device_id = str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["groups"]["0"].id_v2 + 'bridge_device'))
                     bridge_home_data["data"][0]["children"].append({"rid": bridge_device_id, "rtype": "device"})
                     
-                    logging.debug(f"Bridge_home update: 1 new room + 1 bridge device")
+                    logging.debug(f"Bridge_home update: 1 new {element_type} + 1 bridge device")
                 
                 # Create combined event message
                 if bridge_home_data:
+                    # Get the appropriate V2 API data based on type
+                    v2_data = newObject.getV2Room() if newObject.type == "Room" else newObject.getV2Zone()
                     combined_message = [
                         {
                             "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                            "data": [newObject.getV2Room()],
+                            "data": [v2_data],
                             "id": str(uuid.uuid4()),
                             "type": "add"
                         },
