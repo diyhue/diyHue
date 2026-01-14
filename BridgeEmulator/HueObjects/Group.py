@@ -107,11 +107,20 @@ class Group():
         groupChildrens = []
         groupServices = []
         for device in self.lights:
-            if device() and device().group_v1 == "lights":
-                light = device().firstElement()
-                groupChildrens.append(
-                    {"rid": device().getDevice()["id"], "rtype": "device"})
-                groupServices.append({"rid": light.id_v2, "rtype": "light"})
+            if device():
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
+                    # It's a Device object, get the light from it
+                    light = device().firstElement()
+                    groupChildrens.append(
+                        {"rid": device().getDevice()["id"], "rtype": "device"})
+                    groupServices.append({"rid": light.id_v2, "rtype": "light"})
+                elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly - use owner if available, otherwise skip device entry
+                    if hasattr(device(), 'owner') and device().owner:
+                        groupChildrens.append(
+                            {"rid": device().owner, "rtype": "device"})
+                    groupServices.append({"rid": device().id_v2, "rtype": "light"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
@@ -148,15 +157,27 @@ class Group():
         if len(self.lights) == 0:
             all_on = False
         for device in self.lights:
-            if device() and device().group_v1 == "lights":
-                light = device().firstElement()
-                if light.state["on"]:
-                    any_on = True
-                    if "bri" in light.state:
-                        bri = bri + light.state["bri"]
-                        lights_on = lights_on + 1
-                else:
-                    all_on = False
+            if device():
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
+                    # It's a Device object, get the light from it
+                    light = device().firstElement()
+                    if light.state["on"]:
+                        any_on = True
+                        if "bri" in light.state:
+                            bri = bri + light.state["bri"]
+                            lights_on = lights_on + 1
+                    else:
+                        all_on = False
+                elif hasattr(device(), 'state') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly
+                    if device().state["on"]:
+                        any_on = True
+                        if "bri" in device().state:
+                            bri = bri + device().state["bri"]
+                            lights_on = lights_on + 1
+                    else:
+                        all_on = False
         if any_on:
             bri = (((bri/lights_on)/254)*100) if bri > 0 else 0
         return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
@@ -179,19 +200,35 @@ class Group():
                                  "type": "update"
                                  }
         for num, device in enumerate(self.lights):
-            if device() and device().group_v1 == "lights":
-                light = device().firstElement()
-                streamMessage["data"].insert(num,{
-                    "id": light.id_v2,
-                    "id_v1": "/lights/" + light.id_v1,
-                    "owner": {
-                        "rid": self.id_v2,
-                        "rtype":"device"
-                    },
-                    "service_id": light.protocol_cfg["light_nr"]-1 if "light_nr" in light.protocol_cfg else 0,
-                    "type": "light"
-                })
-                streamMessage["data"][num].update(v2State)
+            if device():
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
+                    # It's a Device object, get the light from it
+                    light = device().firstElement()
+                    streamMessage["data"].insert(num,{
+                        "id": light.id_v2,
+                        "id_v1": "/lights/" + light.id_v1,
+                        "owner": {
+                            "rid": self.id_v2,
+                            "rtype":"device"
+                        },
+                        "service_id": light.protocol_cfg["light_nr"]-1 if "light_nr" in light.protocol_cfg else 0,
+                        "type": "light"
+                    })
+                    streamMessage["data"][num].update(v2State)
+                elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly
+                    streamMessage["data"].insert(num,{
+                        "id": device().id_v2,
+                        "id_v1": "/lights/" + device().id_v1,
+                        "owner": {
+                            "rid": self.id_v2,
+                            "rtype":"device"
+                        },
+                        "service_id": device().protocol_cfg["light_nr"]-1 if "light_nr" in device().protocol_cfg else 0,
+                        "type": "light"
+                    })
+                    streamMessage["data"][num].update(v2State)
         StreamEvent(streamMessage)
         if "on" in v2State:
             v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
@@ -215,10 +252,15 @@ class Group():
         sensors = []
         for device in self.lights:
             if device():
-                if device().group_v1 == "lights":
-                    lights.append(device().firstElement().id_v1)
-                elif device().group_v1 == "sensors":
-                    sensors.append(device().firstElement().id_v1)
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1'):
+                    if device().group_v1 == "lights":
+                        lights.append(device().firstElement().id_v1)
+                    elif device().group_v1 == "sensors":
+                        sensors.append(device().firstElement().id_v1)
+                elif hasattr(device(), 'id_v1') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly
+                    lights.append(device().id_v1)
         result["lights"] = lights
         result["sensors"] = sensors
         result["type"] = self.type.capitalize()
@@ -262,11 +304,21 @@ class Group():
     def getV2Zone(self):
         result = {"children": [], "services": []}
         for device in self.lights:
-            if device() and device().group_v1 == "lights":
-                result["children"].append({
-                    "rid": device().firstElement().id_v2,
-                    "rtype": "light"
-                })
+            if device():
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
+                    # It's a Device object, get the light from it
+                    light = device().firstElement()
+                    result["children"].append({
+                        "rid": light.id_v2,
+                        "rtype": "light"
+                    })
+                elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly
+                    result["children"].append({
+                        "rid": device().id_v2,
+                        "rtype": "light"
+                    })
         result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zone'))
         result["id_v1"] = "/groups/" + self.id_v1
         result["metadata"] = {
@@ -274,11 +326,21 @@ class Group():
             "name": self.name
         }
         for device in self.lights:
-            if device() and device().group_v1 == "lights":
-                result["services"].append({
-                    "rid": device().firstElement().id_v2,
-                    "rtype": "light"
-                })
+            if device():
+                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
+                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
+                    # It's a Device object, get the light from it
+                    light = device().firstElement()
+                    result["services"].append({
+                        "rid": light.id_v2,
+                        "rtype": "light"
+                    })
+                elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
+                    # It's a Light object directly
+                    result["services"].append({
+                        "rid": device().id_v2,
+                        "rtype": "light"
+                    })
 
         result["services"].append({
             "rid": self.id_v2,

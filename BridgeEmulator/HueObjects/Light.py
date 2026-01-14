@@ -175,8 +175,16 @@ class Light():
                     "fire"
                 ]
             }
-            result["gradient"] = {"points": self.state["gradient"]["points"],
-                                  "points_capable": self.protocol_cfg["points_capable"]}
+            # Gradient object - aiohue expects only 'points', not 'points_capable' inside
+            # points_capable is moved to a separate property for aiohue compatibility
+            gradient_points = self.state.get("gradient", {}).get("points", [])
+            if gradient_points:
+                result["gradient"] = {"points": gradient_points}
+            else:
+                # If no points, set gradient to None to avoid validation issues
+                result["gradient"] = None
+            # Store points_capable separately (aiohue compatibility - not in gradient object)
+            result["gradient_points_capable"] = self.protocol_cfg.get("points_capable", 5)
 
         # color lights only
         if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010"]:

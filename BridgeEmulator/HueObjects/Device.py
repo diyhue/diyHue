@@ -341,7 +341,7 @@ class Device():
                 "temperature": {
                 "temperature": temperature,
                 "temperature_valid": True,
-                "temperature_report": {
+                "temperature_report": None if (not self.elements["ZLLTemperature"]().state.get("lastupdated") or self.elements["ZLLTemperature"]().state.get("lastupdated") == "none") else {
                     "changed": self.elements["ZLLTemperature"]().state["lastupdated"],
                     "temperature": temperature
                 }
@@ -399,7 +399,7 @@ class Device():
                 "light": {
                     "light_level": self.elements["ZLLLightLevel"]().state["lightlevel"],
                     "light_level_valid": True,
-                    "light_level_report": {
+                    "light_level_report": None if (not self.elements["ZLLLightLevel"]().state.get("lastupdated") or self.elements["ZLLLightLevel"]().state.get("lastupdated") == "none") else {
                         "changed": self.elements["ZLLLightLevel"]().state["lastupdated"],
                         "light_level": self.elements["ZLLLightLevel"]().state["lightlevel"]
                     }
