@@ -6,7 +6,7 @@ from functions.colors import convert_xy, rgbBrightness
 logging = logManager.logger.get_logger(__name__)
 
 def set_light(light, data, rgb = None):
-    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&idx=" + light.protocol_cfg["domoticzID"]
+    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&idx=" + str(light.protocol_cfg["domoticzID"])
 
     if "on" in data:
         onUrl = url + "&param=switchlight&switchcmd="
@@ -42,7 +42,7 @@ def set_light(light, data, rgb = None):
 
 
 def get_light_state(light):
-    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=devices&rid=" + light.protocol_cfg["domoticzID"]).json()
+    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&param=getdevices&rid=" + str(light.protocol_cfg["domoticzID"])).json()
     state = {}
     if light_data["result"][0]["Status"] == "Off":
          state["on"] = False
