@@ -42,7 +42,11 @@ def set_light(light, data, rgb = None):
 
 
 def get_light_state(light):
-    light_data = requests.get("http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&param=getdevices&rid=" + str(light.protocol_cfg["domoticzID"])).json()
+    url = "http://" + light.protocol_cfg["ip"] + "/json.htm?type=command&param=getdevices&rid=" + str(light.protocol_cfg["domoticzID"])
+    logging.debug(url)
+    r = requests.get(url, timeout=3)
+    logging.debug(r.text)
+    light_data = json.loads(r.text)
     state = {}
     if light_data["result"][0]["Status"] == "Off":
          state["on"] = False
