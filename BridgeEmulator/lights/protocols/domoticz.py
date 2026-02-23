@@ -7,9 +7,10 @@ logging = logManager.logger.get_logger(__name__)
 
 def is_plug(light):
     plug = False
-    if "config" in light:
-        if "archetype" in light["config"]:
-            if light["config"]["archetype"] == "plug":
+    data = light.getV2Api()
+    if "metadata" in data:
+        if "archetype" in data["metadata"]:
+            if light["metadata"]["archetype"] == "plug":
                 plug = True
     return plug
     
