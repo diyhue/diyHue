@@ -10,7 +10,7 @@ def is_plug(light):
     data = light.getV2Api()
     if "metadata" in data:
         if "archetype" in data["metadata"]:
-            if light["metadata"]["archetype"] == "plug":
+            if data["metadata"]["archetype"] == "plug":
                 plug = True
     return plug
     
