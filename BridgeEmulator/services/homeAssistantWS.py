@@ -128,7 +128,7 @@ class HomeAssistantClient(WebSocketClient):
         color_from_hsv = False
         for key, value in data.items():
             if key == "ct":
-                service_data['color_temp'] = value
+                service_data['color_temp_kelvin'] = 1000000 / value
             if key == "bri":
                 service_data['brightness'] = value
             if key == "xy":
