@@ -48,14 +48,27 @@ class BehaviorInstance():
         if self.name != None:
             result["metadata"]["name"] = self.name
 
-        for resource in self.configuration["where"]:
-            result["dependees"].append({"level": "critical",
-                                        "target": {
-                                            "rid": resource[list(resource.keys())[0]]["rid"],
-                                            "rtype": resource[list(resource.keys())[0]]["rtype"]
-                                        },
-                                        "type": "ResourceDependee"
-                                        })
+        where_lists = []
+        if "where" in self.configuration:
+            where_lists.append(self.configuration["where"])
+        else:
+            for val in self.configuration.values():
+                if isinstance(val, dict) and "where" in val:
+                    where_lists.append(val["where"])
+        seen_rids = set()
+        for where_list in where_lists:
+            for resource in where_list:
+                key = list(resource.keys())[0]
+                rid = resource[key]["rid"]
+                if rid not in seen_rids:
+                    seen_rids.add(rid)
+                    result["dependees"].append({"level": "critical",
+                                                "target": {
+                                                    "rid": rid,
+                                                    "rtype": resource[key]["rtype"]
+                                                },
+                                                "type": "ResourceDependee"
+                                                })
 
         return result
 
