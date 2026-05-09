@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from sensors.discover import addHueMotionSensor
-from sensors.sensor_types import sensorTypes
+from sensors.sensor_types import sensorTypes, MODEL_ALIASES
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 from functions.behavior_instance import checkBehaviorInstances
@@ -159,6 +159,9 @@ standardSensors = {
             "dial_rotate_right_step": {"rotaryevent": 1},
             "dial_rotate_right_slow": {"rotaryevent": 2},
             "dial_rotate_right_fast": {"rotaryevent": 2},
+            "brightness_step_up": {"rotaryevent": 1},
+            "brightness_step_down": {"rotaryevent": 1},
+            "rotaryevent": {},
             "expectedrotation":90,
             "expectedeventduration":400
         }
@@ -187,12 +190,11 @@ standardSensors = {
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
-standardSensors["RWL020"] = standardSensors["RWL021"]
-standardSensors["RWL022"] = standardSensors["RWL021"]
-standardSensors["8719514440937"] = standardSensors["RDM002"]
-standardSensors["8719514440999"] = standardSensors["RDM002"]
-standardSensors["9290035001"] = standardSensors["RDM002"]
-standardSensors["9290035003"] = standardSensors["RDM002"]
+# Register the same model aliases used in sensorTypes so that MQTT auto-discovery
+# can look up MQTT action mappings by the same alternative model IDs.
+for _alias, _canonical in MODEL_ALIASES.items():
+    if _canonical in standardSensors:
+        standardSensors[_alias] = standardSensors[_canonical]
 
 
 def getClient():
@@ -239,6 +241,14 @@ def getObject(friendly_name):
                         return device
         logging.debug("Device not found for " + friendly_name)
         return False
+
+def getSensorsByIeeeAddr(ieee_address):
+    """Return all sensor objects whose protocol_cfg.ieeeAddr matches."""
+    result = []
+    for key, device in bridgeConfig["sensors"].items():
+        if device.protocol == "mqtt" and device.protocol_cfg.get("ieeeAddr") == ieee_address:
+            result.append(device)
+    return result
 
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):
@@ -307,15 +317,47 @@ def on_message(client, userdata, msg):
             elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
                     if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
-                        if getObject(key["friendly_name"]) == False: ## Add the new sensor
+                        # Check by IEEE address first to catch sensors registered under a stale friendly name
+                        existing = getSensorsByIeeeAddr(key["ieee_address"])
+                        if existing:
+                            new_name = key["friendly_name"]
+                            # Deduplicate: keep one sensor per type, prefer correctly-named entry
+                            by_type = {}
+                            for s in existing:
+                                by_type.setdefault(s.type, []).append(s)
+                            for sensor_type, sensors_of_type in by_type.items():
+                                correct = [s for s in sensors_of_type if s.protocol_cfg.get("friendly_name") == new_name]
+                                stale = [s for s in sensors_of_type if s.protocol_cfg.get("friendly_name") != new_name]
+                                keeper = correct[0] if correct else stale[0]
+                                for s in sensors_of_type:
+                                    if s is not keeper:
+                                        logging.info("MQTT: removing duplicate sensor %s (id_v1=%s)", s.name, s.id_v1)
+                                        devices_ids.pop(s.name, None)
+                                        devices_ids.pop(s.protocol_cfg.get("friendly_name"), None)
+                                        del bridgeConfig["sensors"][s.id_v1]
+                                if keeper.name != new_name or keeper.protocol_cfg.get("friendly_name") != new_name:
+                                    logging.info("MQTT: renaming sensor %s -> %s", keeper.name, new_name)
+                                    devices_ids.pop(keeper.name, None)
+                                    keeper.name = new_name
+                                    keeper.protocol_cfg["friendly_name"] = new_name
+                                    devices_ids[new_name] = keeper
+                        elif getObject(key["friendly_name"]) == False: ## Add the new sensor
                             logging.info("MQTT: Add new mqtt sensor " + key["friendly_name"])
                             if key["model_id"] in standardSensors:
-                                for sensor_type in sensorTypes[key["model_id"]].keys():
+                                model_id = key["model_id"]
+                                # MODEL_ALIASES in sensor_types.py already adds every
+                                # variant ID to sensorTypes, so a plain lookup works.
+                                sensor_model_key = model_id
+                                switch_id_v2 = None
+                                for sensor_type in sensorTypes[sensor_model_key].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                                    #sensor_type = sensorTypes[key["model_id"]][sensor]
                                     uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
-                                    sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
+                                    sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": model_id, "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
+                                    if sensor_type == "ZLLRelativeRotary" and switch_id_v2:
+                                        sensorData["parent_id_v2"] = switch_id_v2
                                     bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(sensorData)
+                                    if sensor_type != "ZLLRelativeRotary":
+                                        switch_id_v2 = bridgeConfig["sensors"][new_sensor_id].id_v2
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["model_id"] in motionSensors:
                                     logging.info("MQTT: add new motion sensor " + key["model_id"])
@@ -380,12 +422,28 @@ def on_message(client, userdata, msg):
                                 bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
                         elif device.modelid in standardSensors:
                             convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
+                        # For RDM002: extract rotation direction and route rotary events to ZLLRelativeRotary
+                        if "rotaryevent" in convertedPayload:
+                            action = data.get("action", "")
+                            if action.startswith("dial_rotate_"):
+                                # brightness_step_* is the canonical per-detent event; skip dial_rotate_* to avoid double-firing
+                                return
+                            convertedPayload["direction"] = "counter_clock_wise" if "down" in action else "clock_wise"
+                            convertedPayload["rotary_step_size"] = data.get("action_step_size", 8)
+                            if device.type != "ZLLRelativeRotary":
+                                for _k, _s in bridgeConfig["sensors"].items():
+                                    if _s.protocol == "mqtt" and _s.protocol_cfg.get("friendly_name") == device_friendlyname and _s.type == "ZLLRelativeRotary":
+                                        device = _s
+                                        break
                         for key in convertedPayload.keys():
-                            if device.state[key] != convertedPayload[key]:
+                            if key in device.state and device.state[key] != convertedPayload[key]:
                                 device.dxState[key] = current_time
                         device.state.update(convertedPayload)
                         logging.debug(convertedPayload)
-                        if "buttonevent" in  convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
+                        z2m_sends_hold_repeats = device.modelid in standardSensors and any(
+                            k.endswith("_hold") for k in standardSensors[device.modelid]["dataConversion"]
+                        )
+                        if "buttonevent" in convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001] and not z2m_sends_hold_repeats:
                             Thread(target=longPressButton, args=[device, convertedPayload["buttonevent"]]).start()
                         rulesProcessor(device, current_time)
                         checkBehaviorInstances(device)

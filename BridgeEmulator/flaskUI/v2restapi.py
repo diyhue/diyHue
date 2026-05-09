@@ -483,6 +483,9 @@ class ClipV2Resource(Resource):
                             if "gradient" in scene:
                                 sceneState["gradient"] = scene["gradient"]
                             newObject.lightstates[lightObj] = sceneState
+            # Persist immediately so the scene survives a bridge restart.
+            # The v1 REST API always saved after scene writes; the v2 path was missing this.
+            configManager.bridgeConfig.save_config(backup=False, resource="scenes")
         elif resource == "smart_scene":
             new_object_id = nextFreeId(bridgeConfig, "smart_scene")
             objCreation = {
@@ -500,6 +503,9 @@ class ClipV2Resource(Resource):
         elif resource == "behavior_instance":
             newObject = BehaviorInstance.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
+            # Persist immediately — behavior instances define which switch buttons do what.
+            # Without this save they are lost on restart, breaking all physical controls.
+            configManager.bridgeConfig.save_config(backup=False, resource="behavior_instance")
         elif resource == "entertainment_configuration":
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
@@ -661,6 +667,8 @@ class ClipV2ResourceId(Resource):
             daylightSensor(bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"])
         elif resource == "behavior_instance":
             object.update_attr(putDict)
+            # Keep the on-disk config in sync so edits survive a bridge restart.
+            configManager.bridgeConfig.save_config(backup=False, resource="behavior_instance")
         elif resource in ["room", "zone"]:
             v1Api = {}
             if "metadata" in putDict:
@@ -669,10 +677,37 @@ class ClipV2ResourceId(Resource):
                 if "archetype" in putDict["metadata"]:
                     v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ").capitalize()
             if "children" in putDict:
-                for children in putDict["children"]:
-                    obj = getObject(
-                        children["rtype"], children["rid"])
-                    object.add_light(obj)
+                light_ids = set(bridgeConfig["lights"].keys())
+                new_light_map = {}
+                new_device_children = []
+                for child in putDict["children"]:
+                    obj = getObject(child["rtype"], child["rid"])
+                    if obj and any(obj is bridgeConfig["lights"][k] for k in light_ids):
+                        new_light_map[child["rid"]] = obj
+                    elif child["rtype"] == "device":
+                        new_device_children.append(child["rid"])
+                # Remove lights no longer in the new children list, deduplicate
+                seen_ids = set()
+                deduped = []
+                for ref in object.lights:
+                    if ref():
+                        dev_info = ref().getDevice()
+                        if dev_info and dev_info["id"] in new_light_map and dev_info["id"] not in seen_ids:
+                            seen_ids.add(dev_info["id"])
+                            deduped.append(ref)
+                object.lights = deduped
+                # Add only lights not already present
+                existing_device_ids = set()
+                for ref in object.lights:
+                    if ref():
+                        dev_info = ref().getDevice()
+                        if dev_info:
+                            existing_device_ids.add(dev_info["id"])
+                for rid, obj in new_light_map.items():
+                    if rid not in existing_device_ids:
+                        object.add_light(obj)
+                # Replace non-light device children (switches, sensors) wholesale
+                object.device_children = new_device_children
             object.update_attr(v1Api)
         elif resource == 'geofence_client':
             attrs = {}
@@ -737,6 +772,13 @@ class ClipV2ResourceId(Resource):
                              ][object.getObjectPath()["id"]]
         else:
             del bridgeConfig[resource][resourceid]
+
+        # Persist deletions immediately for resources whose in-memory state must
+        # survive a bridge restart (scenes, behavior instances).
+        if resource == "behavior_instance":
+            configManager.bridgeConfig.save_config(backup=False, resource="behavior_instance")
+        elif resource == "scene":
+            configManager.bridgeConfig.save_config(backup=False, resource="scenes")
 
         response = {"data": [{
             "rid": resourceid,
