@@ -344,7 +344,9 @@ class Light():
             ]
         }
         if self.protocol == "wled":
-            wled_effect_values = [e for e in wled.HUE_EFFECT_TO_WLED_FX if e != "none"]
+            # "none" is a v1-only internal alias for "no_effect"; "sunbeam" is a
+            # silent input alias for "sunrise" (see wled.py) -- neither is advertised.
+            wled_effect_values = [e for e in wled.HUE_EFFECT_TO_WLED_FX if e not in ("none", "sunbeam")]
             result["effects_v2"] = {
                 "action": {"effect_values": wled_effect_values},
                 "status": {
