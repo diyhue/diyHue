@@ -332,13 +332,15 @@ class Light():
             "effect_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ],
-            "status": "no_effect",
+            "status": self.effect,
             "status_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ]
         }
         result["timed_effects"] = {}

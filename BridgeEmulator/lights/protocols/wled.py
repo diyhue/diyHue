@@ -13,6 +13,16 @@ logging = logManager.logger.get_logger(__name__)
 discovered_lights = []
 Connections = {}
 
+# Hue effect name -> WLED built-in effect ID (seg.fx). IDs come from WLED's
+# stable built-in effect list and may need adjusting for other firmware versions.
+HUE_EFFECT_TO_WLED_FX = {
+    "no_effect": 0,   # Solid
+    "none": 0,        # classic v1 API "off" value
+    "candle": 88,      # Candle
+    "fire": 45,        # Fire Flicker
+    "colorloop": 8,    # Colorloop
+}
+
 
 def on_mdns_discover(zeroconf, service_type, name, state_change):
     global discovered_lights
@@ -114,6 +124,15 @@ def send_light_data(c, light, data):
         elif k == "xy":
             color = convert_xy(v[0], v[1], 255)
             seg["col"] = [[color[0], color[1], color[2]]]
+        elif k == "effect":
+            fx = HUE_EFFECT_TO_WLED_FX.get(v)
+            if fx is not None:
+                seg["fx"] = fx
+                speed = light.dynamics.get("speed")
+                if speed:
+                    seg["sx"] = round(clamp(speed, 0, 1) * 255)
+            else:
+                logging.warning("<WLED> Unknown Hue effect '%s', ignoring", v)
         elif k == "alert" and v != "none":
             state = c.getSegState(light.protocol_cfg['segmentId'])
             c.setBriSeg(0, light.protocol_cfg['segmentId'])
