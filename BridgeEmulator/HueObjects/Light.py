@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
-from lights.protocols import protocols
+from lights.protocols import protocols, wled
 from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -343,6 +343,15 @@ class Light():
                 "colorloop"
             ]
         }
+        if self.protocol == "wled":
+            wled_effect_values = [e for e in wled.HUE_EFFECT_TO_WLED_FX if e != "none"]
+            result["effects_v2"] = {
+                "action": {"effect_values": wled_effect_values},
+                "status": {
+                    "effect": self.effect,
+                    "effect_values": wled_effect_values
+                }
+            }
         result["timed_effects"] = {}
         result["identify"] = {}
         result["id"] = self.id_v2

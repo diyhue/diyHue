@@ -13,14 +13,24 @@ logging = logManager.logger.get_logger(__name__)
 discovered_lights = []
 Connections = {}
 
-# Hue effect name -> WLED built-in effect ID (seg.fx). IDs come from WLED's
-# stable built-in effect list and may need adjusting for other firmware versions.
+# Hue effect name -> WLED segment parameters (seg.fx/sx/ix/pal). fx IDs and
+# palette IDs come from WLED's stable built-in lists and may need adjusting
+# for other firmware versions. sx/ix are defaults used only when the request
+# doesn't supply dynamics.speed (for sx) -- see send_light_data().
 HUE_EFFECT_TO_WLED_FX = {
-    "no_effect": 0,   # Solid
-    "none": 0,        # classic v1 API "off" value
-    "candle": 88,      # Candle
-    "fire": 45,        # Fire Flicker
-    "colorloop": 8,    # Colorloop
+    "no_effect":  {"fx": 0},                                    # Solid
+    "none":       {"fx": 0},                                    # classic v1 API "off" value
+    "candle":     {"fx": 88,  "sx": 128, "ix": 128},             # Candle
+    "fire":       {"fx": 45,  "sx": 128, "ix": 128, "pal": 35},  # Fire Flicker + Fire palette
+    "colorloop":  {"fx": 8,   "sx": 128, "ix": 128},             # Colorloop
+    "sparkle":    {"fx": 20,  "sx": 128, "ix": 128},             # Sparkle
+    "glisten":    {"fx": 22,  "sx": 180, "ix": 200},             # Sparkle+, faster/more intense per Hue's own description
+    "prism":      {"fx": 67,  "sx": 128, "ix": 128, "pal": 12},  # Colorwaves + Rainbow Bands palette
+    "opal":       {"fx": 75,  "sx": 60,  "ix": 100, "pal": 20},  # Lake + Pastel palette, slow and gentle
+    "cosmos":     {"fx": 2,   "sx": 40,  "ix": 128},             # Breathe (slow), pulses base colour off<->full per Hue's description
+    "sunbeam":    {"fx": 166, "sx": 128, "ix": 128, "pal": 13},  # Sun Radiation + Sunset palette
+    "enchant":    {"fx": 51,  "sx": 100, "ix": 128, "pal": 59},  # Fairytwinkle + Fairy Reaf palette
+    "underwater": {"fx": 101, "sx": 80,  "ix": 128, "pal": 9},   # Pacifica + Ocean palette
 }
 
 
@@ -125,12 +135,18 @@ def send_light_data(c, light, data):
             color = convert_xy(v[0], v[1], 255)
             seg["col"] = [[color[0], color[1], color[2]]]
         elif k == "effect":
-            fx = HUE_EFFECT_TO_WLED_FX.get(v)
-            if fx is not None:
-                seg["fx"] = fx
+            effect_cfg = HUE_EFFECT_TO_WLED_FX.get(v)
+            if effect_cfg is not None:
+                seg["fx"] = effect_cfg["fx"]
+                if "pal" in effect_cfg:
+                    seg["pal"] = effect_cfg["pal"]
                 speed = light.dynamics.get("speed")
                 if speed:
                     seg["sx"] = round(clamp(speed, 0, 1) * 255)
+                elif "sx" in effect_cfg:
+                    seg["sx"] = effect_cfg["sx"]
+                if "ix" in effect_cfg:
+                    seg["ix"] = effect_cfg["ix"]
             else:
                 logging.warning("<WLED> Unknown Hue effect '%s', ignoring", v)
         elif k == "alert" and v != "none":
