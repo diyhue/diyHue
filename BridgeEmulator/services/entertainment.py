@@ -75,7 +75,7 @@ def entertainmentService(group, user):
     hueGroup  = -1
     hueGroupLights = {}
     prev_frame_time = 0
-    new_frame_time = 0
+    fps_frame_count = 0
     non_UDP_update_counter = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
@@ -113,7 +113,6 @@ def entertainmentService(group, user):
     host_ip = bridgeConfig["config"]["ipaddress"]
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
-            new_frame_time = time.time()
             if not init:
                 readByte = p.stdout.read(1)
                 if not readByte:                           # EOF — DTLS process died
@@ -153,6 +152,7 @@ def entertainmentService(group, user):
 
             else:
                 data = p.stdout.read(frameBites)
+                new_frame_time = time.time()  # capture AFTER read for true inter-frame interval
                 if not data or len(data) < 9:
                     logging.info("Entertainment DTLS client disconnected (EOF)")
                     break
@@ -327,10 +327,15 @@ def entertainmentService(group, user):
                             light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
                         non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
-                    if new_frame_time - prev_frame_time > 1:
-                        fps = 1.0 / (time.time() - new_frame_time)
+                    fps_frame_count += 1
+                    if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
+                        fps = fps_frame_count / (new_frame_time - prev_frame_time)
+                        logging.info("Entertainment FPS: %.1f", fps)
                         prev_frame_time = new_frame_time
-                        logging.info("Entertainment FPS: " + str(fps))
+                        fps_frame_count = 0
+                    elif prev_frame_time == 0:
+                        prev_frame_time = new_frame_time
+                        fps_frame_count = 0
                 else:
                     logging.info("HueStream was missing in the frame, client disconnected")
                     break
