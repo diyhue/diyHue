@@ -89,6 +89,7 @@ def entertainmentService(group, user):
     logging.debug(lights_v2)
     opensslCmd = ['openssl', 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
@@ -106,8 +107,8 @@ def entertainmentService(group, user):
             new_frame_time = time.time()
             if not init:
                 readByte = p.stdout.read(1)
-                if not readByte:                           # skip empty reads — DTLS pipe not ready yet
-                    continue
+                if not readByte:                           # EOF — DTLS process died
+                    break
                 headerBuf += readByte
                 if len(headerBuf) > 64:                   # keep only the trailing window, prevent unbounded growth
                     headerBuf = headerBuf[-64:]
@@ -132,6 +133,13 @@ def entertainmentService(group, user):
                         headerBuf = b''
                         continue
                     logging.info("entertainment: init complete, frameBites=%d, api_version=%d", frameBites, api_ver)
+                    # Sync to the next frame boundary: we've consumed 16 header
+                    # bytes (9 magic + 7 rest). Read the remaining bytes of
+                    # this frame (rest of header + payload) so the parse loop
+                    # starts aligned to frame 2.
+                    sync_bytes = frameBites - 16
+                    if sync_bytes > 0:
+                        p.stdout.read(sync_bytes)
                     init = True
 
             else:

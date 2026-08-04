@@ -628,8 +628,9 @@ class ClipV2ResourceId(Resource):
                     logging.info("stop entertainment")
                     for light in object.lights:
                         light().update_attr({"state": {"mode": "homeautomation"}})
-                    # stream.active = False causes the entertainment thread
-                    # to exit its while-loop and clean up its own openssl subprocess
+                    proc = object.stream.get("_proc")
+                    if proc:
+                        proc.kill()
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
             if "recall" in putDict:

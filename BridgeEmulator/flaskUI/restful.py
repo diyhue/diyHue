@@ -369,12 +369,14 @@ class Element(Resource):
                 if "active" in putDict["stream"]:
                     if putDict["stream"]["active"]:
                         logging.info("start hue entertainment")
+                        bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": True}})
                         Thread(target=entertainmentService, args=[
                                bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
                     else:
                         logging.info("stop hue entertainent")
-                        # stream.active = False causes the entertainment thread
-                        # to exit its while-loop and clean up its own openssl subprocess
+                        proc = bridgeConfig["groups"][resourceid].stream.get("_proc")
+                        if proc:
+                            proc.kill()
                         bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": False}})
             if "action" in putDict:
                 bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
