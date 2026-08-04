@@ -88,6 +88,26 @@ faketime '2017-01-01 00:00:00' openssl req ...  # same command as above
 
 ## Launch
 
+**The bridge MUST run on ports 80 and 443** for Hue apps to discover and connect. On macOS this requires `sudo`. Always launch with:
+
+```bash
+source .venv/bin/activate
+cd BridgeEmulator
+
+sudo .venv/bin/python3 HueEmulator3.py \
+  --config_path ../config \
+  --mac 84:2f:57:23:f9:32 \
+  --debug
+```
+
+This uses the default ports (80 for HTTP, 443 for HTTPS) and auto-detects the bind IP. The `--config_path` points to `../config` when running from inside `BridgeEmulator/`.
+
+**Important:** Ports other than 80/443 will NOT work with Hue apps. Apps discover the bridge via SSDP on port 1900/udp and hardcode port 80 for the API. Some third-party apps let you enter a custom IP:port, but official apps do not.
+
+### Dev-only: non-privileged port (8080)
+
+For quick development when you don't need app compatibility, you can run without `sudo` on port 8080. **Only the CLI and direct API calls will work — no app will discover or connect to the bridge:**
+
 ```bash
 source .venv/bin/activate
 cd BridgeEmulator
@@ -106,20 +126,12 @@ python3 HueEmulator3.py \
 |------|---------|
 | `--config_path` | Where config YAML files and cert.pem live. Default `/opt/hue-emulator/config` (Linux path, doesn't exist on macOS) |
 | `--mac` | Bridge MAC address. Required on macOS — the auto-detection uses Linux `ip` and `/sys/class/net` |
-| `--http-port` | HTTP port. Default `80` (requires `sudo` on macOS) |
-| `--https-port` | HTTPS port. Default `443` (requires `sudo` on macOS) |
-| `--no-serve-https` | Skip HTTPS entirely |
+| `--http-port` | HTTP port. Default `80`. Override only for dev (see warning above) |
+| `--https-port` | HTTPS port. Default `443` |
+| `--no-serve-https` | Skip HTTPS entirely. Useful for dev |
 | `--debug` | Verbose logging |
 | `--bind-ip` | IP to listen on. Default `0.0.0.0` |
 | `--no-link-button` | Skip link-button pairing (insecure — any app can connect) |
-
-For a full launch with standard Hue ports:
-```bash
-sudo .venv/bin/python3 BridgeEmulator/HueEmulator3.py \
-  --config_path ./config \
-  --mac 84:2f:57:23:f9:32 \
-  --debug
-```
 
 ## Required ports
 
@@ -131,21 +143,21 @@ sudo .venv/bin/python3 BridgeEmulator/HueEmulator3.py \
 | 2100 | UDP | SSDP/UPnP |
 | 1982 | UDP | diyHue discovery |
 
-Hue apps (official and third-party) discover the bridge via SSDP on port 1900/udp and expect the API on port 80. Using port 8080 works for direct API access but apps won't auto-discover the bridge — you'd need to enter the IP:port manually (if the app supports it).
+Hue apps (official and third-party) discover the bridge via SSDP on port 1900/udp and expect the API on port 80. Using any other port breaks app compatibility — apps will not discover or connect to the bridge.
 
 ## Web UI
 
-`http://127.0.0.1:8080` (or `http://<host-ip>:8080`)
+`http://<bridge-ip>` (e.g. `http://192.168.8.34`)
 
 Default login: `admin@diyhue.org` — password is hashed in `config/config.yaml` (auto-generated on first run).
 
 ## macOS caveats
 
+- **Ports 80/443 require `sudo`** — the bridge MUST run on these ports for app compatibility. Non-privileged ports (8080) only work for direct API access.
 - **No `ip` command** — the MAC auto-detection in `argumentHandler.py` calls `ip -o addr` which is Linux-only. Always pass `--mac` explicitly with your real interface MAC from `ifconfig en0 | grep ether`.
 - **No `faketime`** (by default) — `genCert.sh` uses it to backdate certs to 2017-01-01. Install via `brew install libfaketime` or pre-generate the cert manually as shown above.
-- **No `coap-client`** (by default) — install via `brew install libcoap`. Used for某些 Hue protocol features.
+- **No `coap-client`** (by default) — install via `brew install libcoap`. Used for certain Hue protocol features.
 - **No `nmap`** (by default) — install via `brew install nmap`. Required for automatic light discovery.
-- **Ports 80/443 require `sudo`** — use `--http-port 8080 --no-serve-https` for dev, or `sudo` for full functionality.
 - **No `/sys/class/net/`** — the `install.sh` and Docker entrypoint scripts read MAC from sysfs, which doesn't exist on macOS.
 - **Docker is the officially supported method** — manual install is Linux-only and community-maintained. We run via Python directly for development.
 
