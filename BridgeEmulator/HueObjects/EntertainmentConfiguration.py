@@ -128,7 +128,7 @@ class EntertainmentConfiguration():
             if light.id_v1 in lights:
                 result["locations"][light.id_v1] = [
                     location[0]["x"], location[0]["y"], location[0]["z"]]
-        result["stream"] = self.stream
+        result["stream"] = {k: v for k, v in self.stream.items() if k != "_proc"}
         return result
 
     def getV2Api(self):

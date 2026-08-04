@@ -3,6 +3,8 @@ from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
+import signal
+import sys
 import ssl
 import configManager
 import logManager
@@ -110,6 +112,14 @@ def main():
     CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
     DISABLE_HTTPS = configManager.runtimeConfig.arg["noServeHttps"]
     updateManager.startupCheck()
+
+    def shutdown(signum, frame):
+        logging.info("Received signal %s, saving config and shutting down", signum)
+        configManager.bridgeConfig.save_config()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
