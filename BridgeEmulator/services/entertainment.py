@@ -3,11 +3,19 @@ import logManager
 import configManager
 import requests
 import socket, json, uuid
+import os
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
 import paho.mqtt.publish as publish
 import time
 logging = logManager.logger.get_logger(__name__)
+
+# macOS ships LibreSSL which lacks PSK support. Use Homebrew's OpenSSL if available.
+_OPENSSL_BIN = "openssl"
+for _candidate in ["/opt/homebrew/opt/openssl/bin/openssl", "/usr/local/opt/openssl/bin/openssl"]:
+    if os.path.isfile(_candidate):
+        _OPENSSL_BIN = _candidate
+        break
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller than this values
@@ -87,7 +95,7 @@ def entertainmentService(group, user):
         lights_v2.append({"light": lightObj, "lightNr": v2LightNr[lightObj.id_v1]})
     logging.debug(lights_v1)
     logging.debug(lights_v2)
-    opensslCmd = ['openssl', 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
+    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
@@ -475,7 +483,7 @@ class HueConnection(object):
         r = requests.put(url, json={"stream":{"active":True}})
         logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
         try:
-            _opensslCmd = ['openssl', 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
+            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
             self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=None) # Open a dtls connection to the Hue bridge
             self._connected = True
             sleep(1) # Wait a bit to catch errors
