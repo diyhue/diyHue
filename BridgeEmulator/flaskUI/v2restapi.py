@@ -515,6 +515,12 @@ class ClipV2Resource(Resource):
                         newObject.add_light(obj)
                         newObject.locations[obj] = element["positions"]
             bridgeConfig["groups"][new_object_id] = newObject
+            # Fire update so clients see lights/channels added after constructor's initial empty event
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                             "data": [newObject.getV2Api()],
+                             "id": str(uuid.uuid4()),
+                             "type": "update"}
+            StreamEvent(streamMessage)
         elif resource in ["room", "zone"]:
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
