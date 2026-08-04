@@ -79,9 +79,11 @@ def entertainmentService(group, user):
     non_UDP_update_counter = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
-        if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
-            hueGroup = get_hue_entertainment_group(light(), group.name)
-            hueGroupLights[int(light().protocol_cfg["id"])] = [] # Add light id to list
+        if light().protocol == "hue":
+            matched_group = get_hue_entertainment_group(light(), group.name)
+            if matched_group != -1:
+                hueGroup = matched_group
+                hueGroupLights[int(light().protocol_cfg["id"])] = [] # Add light id to list
         bridgeConfig["lights"][light().id_v1].state["mode"] = "streaming"
         bridgeConfig["lights"][light().id_v1].state["on"] = True
         bridgeConfig["lights"][light().id_v1].state["colormode"] = "xy"
@@ -95,9 +97,34 @@ def entertainmentService(group, user):
         lights_v2.append({"light": lightObj, "lightNr": v2LightNr[lightObj.id_v1]})
     logging.debug(lights_v1)
     logging.debug(lights_v2)
+    # Kill any stale openssl s_server left on port 2100 from a previous cycle
+    import subprocess as _sp
+    try:
+        result = _sp.run(['lsof', '-ti', ':2100'], capture_output=True, text=True, timeout=5)
+        for _pid in result.stdout.strip().split('\n'):
+            if not _pid:
+                continue
+            # Only kill s_server, not s_client or user apps
+            ps_result = _sp.run(['ps', '-p', _pid, '-o', 'args='], capture_output=True, text=True)
+            if 's_server' in ps_result.stdout:
+                logging.warning("Killing stale openssl s_server on port 2100 (pid %s)", _pid)
+                os.kill(int(_pid), 9)
+    except Exception:
+        pass
+
     opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
+    # Log any s_server stderr output (startup errors, handshake failures)
+    def _log_stderr(proc, name):
+        try:
+            for line in proc.stderr:
+                if line:
+                    logging.error("openssl s_server [%s] stderr: %s", name, line.decode('utf-8', errors='replace').strip())
+        except Exception:
+            pass
+    import threading as _thr
+    _thr.Thread(target=_log_stderr, args=[p, group.name], daemon=True).start()
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
@@ -343,16 +370,19 @@ def entertainmentService(group, user):
         logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
 
     p.kill()
-    bridgeConfig["groups"][group.id_v1].stream["owner"] = None
-    try:
-        h.disconnect()
-    except UnboundLocalError:
-        pass
-    bridgeConfig["groups"][group.id_v1].stream.pop("_hue", None)
-    bridgeConfig["groups"][group.id_v1].stream.pop("_proc", None)
-    bridgeConfig["groups"][group.id_v1].stream["active"] = False
-    for light in group.lights:
-         bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
+    # Only clean up if we own the stored references (prevent stale thread
+    # from corrupting a new session that started after us)
+    if bridgeConfig["groups"][group.id_v1].stream.get("_proc") is p:
+        bridgeConfig["groups"][group.id_v1].stream["owner"] = None
+        try:
+            h.disconnect()
+        except UnboundLocalError:
+            pass
+        bridgeConfig["groups"][group.id_v1].stream.pop("_hue", None)
+        bridgeConfig["groups"][group.id_v1].stream.pop("_proc", None)
+        bridgeConfig["groups"][group.id_v1].stream["active"] = False
+        for light in group.lights:
+             bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
     logging.info("Entertainment service stopped")
 
 def enableMusic(ip, host_ip):
@@ -492,12 +522,24 @@ class HueConnection(object):
         logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
         try:
             _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
-            self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=None) # Open a dtls connection to the Hue bridge
-            self._connected = True
-            sleep(1) # Wait a bit to catch errors
+            self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=PIPE)
+            sleep(1) # Wait for DTLS handshake
             err = self._connection.poll()
-            if err != None:
-                raise ConnectionError(err)
+            if err is not None:
+                stderr_data = self._connection.stderr.read().decode('utf-8', errors='replace') if self._connection.stderr else ''
+                logging.error("Hue bridge DTLS s_client exited with code %d: %s", err, stderr_data.strip())
+                self._connected = False
+                self.disconnect()
+                return
+            # Log stderr for diagnostics (non-empty is normal on macOS)
+            import select as _sel
+            if self._connection.stderr:
+                ready, _, _ = _sel.select([self._connection.stderr], [], [], 0)
+                if ready:
+                    stderr_data = self._connection.stderr.read(4096).decode('utf-8', errors='replace')
+                    if stderr_data.strip():
+                        logging.debug("Hue bridge s_client stderr: %s", stderr_data.strip())
+            self._connected = True
         except Exception as e:
             logging.info("Error connecting to Hue bridge for entertainment. Is a proper hueKey set? openssl connection returned: %s", e)
             self.disconnect()
