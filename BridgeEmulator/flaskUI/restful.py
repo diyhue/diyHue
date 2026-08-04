@@ -420,6 +420,7 @@ class Element(Resource):
                 if bridgeConfig["scenes"][scene].type == "GroupScene":
                     if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
+            configManager.bridgeConfig.mark_dirty("scenes")  # cascaded scene deletions
         if resource in ["groups", "lights"]:
             GroupZeroMessage() # trigger stream messages
         if resource == "lights":
