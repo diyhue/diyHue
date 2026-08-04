@@ -4,7 +4,6 @@ from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstanc
 import uuid
 import json
 import weakref
-from subprocess import Popen
 from flask_restful import Resource
 from flask import request
 from services.entertainment import entertainmentService
@@ -619,17 +618,18 @@ class ClipV2ResourceId(Resource):
             if "action" in putDict:
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
-                    Thread(target=entertainmentService, args=[
-                           object, authorisation["user"]]).start()
                     for light in object.lights:
                         light().update_attr({"state": {"mode": "streaming"}})
                     object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
+                    Thread(target=entertainmentService, args=[
+                           object, authorisation["user"]]).start()
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     for light in object.lights:
                         light().update_attr({"state": {"mode": "homeautomation"}})
-                    Popen(["killall", "openssl"])
+                    # stream.active = False causes the entertainment thread
+                    # to exit its while-loop and clean up its own openssl subprocess
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
             if "recall" in putDict:

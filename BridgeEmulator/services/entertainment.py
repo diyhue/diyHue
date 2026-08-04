@@ -96,31 +96,49 @@ def entertainmentService(group, user):
             hueGroupLights = {} # on a failed connection, empty the list
 
     init = False
-    frameBites = 10
+    frameBites = 0
     frameID = 1
-    initMatchBytes = 0
+    headerBuf = b''
+    HUE_STREAM_MAGIC = b'HueStream'
     host_ip = bridgeConfig["config"]["ipaddress"]
-    p.stdout.read(1) # read one byte so the init function will correctly detect the frameBites
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             new_frame_time = time.time()
             if not init:
                 readByte = p.stdout.read(1)
-                logging.debug(readByte)
-                if readByte in b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d':
-                    initMatchBytes += 1
-                else:
-                    initMatchBytes = 0
-                if initMatchBytes == 9:
-                    frameBites = frameID - 8
-                    logging.debug("frameBites: " + str(frameBites))
-                    p.stdout.read(frameBites - 9) # sync streaming bytes
+                if not readByte:                           # skip empty reads — DTLS pipe not ready yet
+                    continue
+                headerBuf += readByte
+                if len(headerBuf) > 64:                   # keep only the trailing window, prevent unbounded growth
+                    headerBuf = headerBuf[-64:]
+                if headerBuf.endswith(HUE_STREAM_MAGIC):
+                    # Read the rest of the header to determine frame size.
+                    # After the 9-byte magic, byte 9 carries the API version.
+                    rest_header = p.stdout.read(7)        # bytes 9–15 (API v1 header ends at 15)
+                    if not rest_header or len(rest_header) < 7:
+                        logging.warning("entertainment: incomplete frame header, retrying init")
+                        headerBuf = b''
+                        continue
+                    full_header = HUE_STREAM_MAGIC + rest_header
+                    api_ver = full_header[9]
+                    if api_ver == 1:
+                        # v1: 16-byte header + N * 9 bytes per light
+                        frameBites = 16 + len(lights_v1) * 9
+                    elif api_ver == 2:
+                        # v2: 52-byte header + N * 7 bytes per channel
+                        frameBites = 52 + len(lights_v2) * 7
+                    else:
+                        logging.error("entertainment: unknown API version " + str(api_ver))
+                        headerBuf = b''
+                        continue
+                    logging.info("entertainment: init complete, frameBites=%d, api_version=%d", frameBites, api_ver)
                     init = True
-                frameID += 1
 
             else:
                 data = p.stdout.read(frameBites)
-                #logging.debug(",".join('{:02x}'.format(x) for x in data))
+                if not data or len(data) < 9:
+                    logging.info("Entertainment DTLS client disconnected (EOF)")
+                    break
                 nativeLights = {}
                 esphomeLights = {}
                 mqttLights = []
@@ -297,14 +315,10 @@ def entertainmentService(group, user):
                         prev_frame_time = new_frame_time
                         logging.info("Entertainment FPS: " + str(fps))
                 else:
-                    logging.info("HueStream was missing in the frame")
-                    p.kill()
-                    try:
-                        h.disconnect()
-                    except UnboundLocalError:
-                        pass
-    except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
-        logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
+                    logging.info("HueStream was missing in the frame, client disconnected")
+                    break
+    except Exception as e:
+        logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
 
     p.kill()
     bridgeConfig["groups"][group.id_v1].stream["owner"] = None

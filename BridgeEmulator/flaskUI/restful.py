@@ -5,7 +5,6 @@ import weakref
 import uuid
 import json
 import os
-from subprocess import Popen
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
@@ -374,7 +373,9 @@ class Element(Resource):
                                bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
                     else:
                         logging.info("stop hue entertainent")
-                        Popen(["killall", "openssl"])
+                        # stream.active = False causes the entertainment thread
+                        # to exit its while-loop and clean up its own openssl subprocess
+                        bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": False}})
             if "action" in putDict:
                 bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
             # lights where removed from group, delete scenes
