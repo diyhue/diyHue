@@ -110,7 +110,7 @@ def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: Dict) -> U
         rooms = [obj.id_v2 for obj in bridgeConfig["groups"].values()]
         lights = [obj.id_v2 for obj in bridgeConfig["lights"].values()]
         bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
-        configManager.bridgeConfig.save_config(backup=False, resource="lights")
+        configManager.bridgeConfig.mark_dirty("lights")
         return newLightID
     return False
 

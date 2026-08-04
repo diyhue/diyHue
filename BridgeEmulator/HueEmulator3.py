@@ -130,7 +130,13 @@ def main():
                     except Exception:
                         pass
                 group.stream["active"] = False
-        configManager.bridgeConfig.save_config()
+        # Full save — catches everything including undirtied background mutations.
+        # blocking=True ensures we wait if restore/reset is in progress.
+        try:
+            configManager.bridgeConfig.save_config(backup=False, blocking=True)
+            configManager.bridgeConfig.save_config(backup=True, blocking=True)
+        except Exception as e:
+            logging.error(f"Shutdown save failed: {e}")
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)

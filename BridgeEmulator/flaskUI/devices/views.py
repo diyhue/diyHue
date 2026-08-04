@@ -62,6 +62,8 @@ def sensors():
                     device.protocol_cfg["configured"]["option"] = formFields["config-" + device.id_v1]
             elif "motion-" + device.id_v1 in formFields:
                 device.protocol_cfg["lightSensor"] = formFields["motion-" + device.id_v1]
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.mark_dirty("sensors")
+        configManager.bridgeConfig.mark_dirty("rules")
+        configManager.bridgeConfig.mark_dirty("resourcelinks")
 
     return render_template('devices.html', groups=groups, devicesConfig=devicesConfig, motionSensors=motionSensorsConfig, form=form)
