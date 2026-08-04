@@ -115,6 +115,21 @@ def main():
 
     def shutdown(signum, frame):
         logging.info("Received signal %s, saving config and shutting down", signum)
+        for group in bridgeConfig["groups"].values():
+            if hasattr(group, 'stream') and group.stream.get("active"):
+                h = group.stream.get("_hue")
+                if h:
+                    try:
+                        h.disconnect()
+                    except Exception:
+                        pass
+                proc = group.stream.get("_proc")
+                if proc:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                group.stream["active"] = False
         configManager.bridgeConfig.save_config()
         sys.exit(0)
 

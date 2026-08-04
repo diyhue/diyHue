@@ -101,6 +101,7 @@ def entertainmentService(group, user):
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
+        bridgeConfig["groups"][group.id_v1].stream["_hue"] = h  # store for shutdown cleanup
         if h._connected == False:
             hueGroupLights = {} # on a failed connection, empty the list
 
@@ -342,6 +343,8 @@ def entertainmentService(group, user):
         h.disconnect()
     except UnboundLocalError:
         pass
+    bridgeConfig["groups"][group.id_v1].stream.pop("_hue", None)
+    bridgeConfig["groups"][group.id_v1].stream.pop("_proc", None)
     bridgeConfig["groups"][group.id_v1].stream["active"] = False
     for light in group.lights:
          bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
