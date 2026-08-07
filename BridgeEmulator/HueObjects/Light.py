@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
-from lights.protocols import protocols
+from lights.protocols import protocols, wled
 from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -332,15 +332,28 @@ class Light():
             "effect_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ],
-            "status": "no_effect",
+            "status": self.effect,
             "status_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ]
         }
+        if self.protocol == "wled":
+            # "none" is a v1-only internal alias for "no_effect"; "sunbeam" is a
+            # silent input alias for "sunrise" (see wled.py) -- neither is advertised.
+            wled_effect_values = [e for e in wled.HUE_EFFECT_TO_WLED_FX if e not in ("none", "sunbeam")]
+            result["effects_v2"] = {
+                "action": {"effect_values": wled_effect_values},
+                "status": {
+                    "effect": self.effect,
+                    "effect_values": wled_effect_values
+                }
+            }
         result["timed_effects"] = {}
         result["identify"] = {}
         result["id"] = self.id_v2
