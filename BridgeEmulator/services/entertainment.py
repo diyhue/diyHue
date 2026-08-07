@@ -138,6 +138,9 @@ def entertainmentService(group, user):
     headerBuf = b''
     HUE_STREAM_MAGIC = b'HueStream'
     host_ip = bridgeConfig["config"]["ipaddress"]
+    _last_frame_ts = 0.0          # timestamp of previous frame for inter-frame interval
+    _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking
+    _light_frame_count = {}       # per-light frame update count for FPS interval
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
@@ -523,22 +526,23 @@ class HueConnection(object):
         try:
             _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
             self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=PIPE)
+            # Drain stderr in a daemon thread to prevent pipe buffer from filling
+            # and deadlocking the openssl process (stderr pipe is OS-buffered and
+            # will block the child if never consumed).
+            def _drain_stderr(proc):
+                try:
+                    for _line in proc.stderr:
+                        pass
+                except Exception:
+                    pass
+            import threading as _thr
+            _thr.Thread(target=_drain_stderr, args=[self._connection], daemon=True).start()
             sleep(1) # Wait for DTLS handshake
             err = self._connection.poll()
             if err is not None:
-                stderr_data = self._connection.stderr.read().decode('utf-8', errors='replace') if self._connection.stderr else ''
-                logging.error("Hue bridge DTLS s_client exited with code %d: %s", err, stderr_data.strip())
                 self._connected = False
                 self.disconnect()
                 return
-            # Log stderr for diagnostics (non-empty is normal on macOS)
-            import select as _sel
-            if self._connection.stderr:
-                ready, _, _ = _sel.select([self._connection.stderr], [], [], 0)
-                if ready:
-                    stderr_data = self._connection.stderr.read(4096).decode('utf-8', errors='replace')
-                    if stderr_data.strip():
-                        logging.debug("Hue bridge s_client stderr: %s", stderr_data.strip())
             self._connected = True
         except Exception as e:
             logging.info("Error connecting to Hue bridge for entertainment. Is a proper hueKey set? openssl connection returned: %s", e)
@@ -578,5 +582,10 @@ class HueConnection(object):
             self._connection.stdin.flush()
         except:
             logging.debug("Reconnecting to Hue bridge to sync. This is normal.") #Reconnect if the connection timed out
-            self.disconnect()
             self.connect(hueGroup)
+            # Retry sending the frame once after reconnect
+            try:
+                self._connection.stdin.write(arr)
+                self._connection.stdin.flush()
+            except Exception as e:
+                logging.debug("Hue bridge send failed after reconnect: %s", e)

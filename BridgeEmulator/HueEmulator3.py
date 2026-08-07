@@ -5,6 +5,7 @@ from flask_restful import Api
 from threading import Thread
 import signal
 import sys
+import os
 import ssl
 import configManager
 import logManager
@@ -137,7 +138,7 @@ def main():
             configManager.bridgeConfig.save_config(backup=True, blocking=True)
         except Exception as e:
             logging.error(f"Shutdown save failed: {e}")
-        sys.exit(0)
+        os._exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
