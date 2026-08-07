@@ -1,4 +1,5 @@
 from time import sleep
+import logging as _logging
 import logManager
 import configManager
 import requests
@@ -138,9 +139,10 @@ def entertainmentService(group, user):
     headerBuf = b''
     HUE_STREAM_MAGIC = b'HueStream'
     host_ip = bridgeConfig["config"]["ipaddress"]
-    _last_frame_ts = 0.0          # timestamp of previous frame for inter-frame interval
-    _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking
-    _light_frame_count = {}       # per-light frame update count for FPS interval
+    _last_frame_ts = 0.0          # timestamp of previous frame for inter-frame interval (debug only)
+    _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking (debug only)
+    _light_frame_count = {}       # per-light frame update count for FPS interval (debug only)
+    _hue_send_count = 0           # sampled counter for hue bridge relay log (debug only)
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
@@ -183,6 +185,9 @@ def entertainmentService(group, user):
             else:
                 data = p.stdout.read(frameBites)
                 new_frame_time = time.time()  # capture AFTER read for true inter-frame interval
+                if logManager.logger.logLevel <= _logging.DEBUG:
+                    frame_interval_ms = (new_frame_time - _last_frame_ts) * 1000 if _last_frame_ts > 0 else 0.0
+                    _last_frame_ts = new_frame_time
                 if not data or len(data) < 9:
                     logging.info("Entertainment DTLS client disconnected (EOF)")
                     break
@@ -243,6 +248,22 @@ def entertainmentService(group, user):
                             logging.info("error in light identification")
                             break
                         logging.debug("Frame: " + str(frameID) + " Light:" + str(light.name) + " RED: " + str(r) + ", GREEN: " + str(g) + ", BLUE: " + str(b) )
+                        # Track per-light transition deltas for summary logging (debug only)
+                        if logManager.logger.logLevel <= _logging.DEBUG:
+                            lid = light.id_v1
+                            prev = _light_prev_state.get(lid)
+                            bri_val = int((r + g + b) / 3) if bri == 0 else bri
+                            if prev:
+                                dr = abs(r - prev[0])
+                                dg = abs(g - prev[1])
+                                db = abs(b - prev[2])
+                                dbri = abs(bri_val - prev[3])
+                                if dr > 0 or dg > 0 or db > 0 or dbri > 0:
+                                    logging.debug("Transition  Light:%s  ΔRGB:(%+d,%+d,%+d)  ΔBri:%+d  interval:%.1fms",
+                                                 light.name, r - prev[0], g - prev[1], b - prev[2],
+                                                 bri_val - prev[3], frame_interval_ms)
+                                    _light_frame_count[lid] = _light_frame_count.get(lid, 0) + 1
+                            _light_prev_state[lid] = (r, g, b, bri_val)
                         proto = light.protocol
                         if r == 0 and  g == 0 and  b == 0:
                             light.state["on"] = False
@@ -347,6 +368,11 @@ def entertainmentService(group, user):
                                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                                 sock.sendto(udpdata, (ip.split(":")[0], wledLights[ip][segments]["udp_port"]))
                     if len(hueGroupLights) != 0:
+                        if logManager.logger.logLevel <= _logging.DEBUG:
+                            _hue_send_count += 1
+                            if _hue_send_count % 30 == 1:  # sample ~every 30 frames (~0.5s at 56fps)
+                                logging.debug("Hue relay: sending 1 batch DTLS frame with %d light(s) to bridge %s (frame #%d)",
+                                             len(hueGroupLights), bridgeConfig["config"]["hue"]["ip"], _hue_send_count)
                         h.send(hueGroupLights, hueGroup)
                     if len(non_UDP_lights) != 0:
                         light = non_UDP_lights[non_UDP_update_counter]
@@ -357,15 +383,36 @@ def entertainmentService(group, user):
                             light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
                         non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
-                    fps_frame_count += 1
-                    if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
-                        fps = fps_frame_count / (new_frame_time - prev_frame_time)
-                        logging.info("Entertainment FPS: %.1f", fps)
-                        prev_frame_time = new_frame_time
-                        fps_frame_count = 0
-                    elif prev_frame_time == 0:
-                        prev_frame_time = new_frame_time
-                        fps_frame_count = 0
+                    if logManager.logger.logLevel <= _logging.DEBUG:
+                        fps_frame_count += 1
+                        if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
+                            fps = fps_frame_count / (new_frame_time - prev_frame_time)
+                            avg_interval_ms = (new_frame_time - prev_frame_time) / fps_frame_count * 1000
+                            summary_parts = []
+                            for lid, count in sorted(_light_frame_count.items()):
+                                light_name = lights_v1.get(lid)
+                                if light_name:
+                                    light_name = light_name.name
+                                else:
+                                    # try v2 lights
+                                    for v2entry in lights_v2:
+                                        if v2entry["light"].id_v1 == lid:
+                                            light_name = v2entry["light"].name
+                                            break
+                                    else:
+                                        light_name = lid
+                                summary_parts.append(f"{light_name}:{count}/s")
+                            if summary_parts:
+                                logging.debug("Entertainment FPS: %.1f  interval: %.1fms  transitions: %s",
+                                             fps, avg_interval_ms, "  ".join(summary_parts))
+                            else:
+                                logging.debug("Entertainment FPS: %.1f  interval: %.1fms", fps, avg_interval_ms)
+                            _light_frame_count.clear()
+                            prev_frame_time = new_frame_time
+                            fps_frame_count = 0
+                        elif prev_frame_time == 0:
+                            prev_frame_time = new_frame_time
+                            fps_frame_count = 0
                 else:
                     logging.info("HueStream was missing in the frame, client disconnected")
                     break
