@@ -13,6 +13,7 @@ import glob
 import shutil
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
+from sensors.sensor_types import SUB_SENSOR_TYPES
 try:
     from time import tzset
 except ImportError:
@@ -217,6 +218,8 @@ class Config:
                 config["tasmota"] = {"enabled": True}
             if "wled" not in config:
                 config["wled"] = {"enabled": True}
+            if "hue_bl" not in config:
+                config["hue_bl"] = {"enabled": False}
             if "shelly" not in config:
                 config["shelly"] = {"enabled": True}
             if "esphome" not in config:
@@ -275,6 +278,7 @@ class Config:
                 "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                 "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                 "hue": {},
+                "hue_bl": {"enabled": False},
                 "tradfri": {},
                 "homeassistant": {"enabled":False},
                 "yeelight": {"enabled":True},
@@ -447,6 +451,17 @@ class Config:
                         self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"][sensor])
                     except Exception as e:
                         logging.error(f"Skipping corrupt sensor {sensor}: {e}")
+                # Link ZLLRelativeRotary sensors to their ZLLSwitch partner by uniqueid
+                switch_by_uniqueid = {
+                    obj.uniqueid: obj
+                    for obj in self.yaml_config["sensors"].values()
+                    if obj.type not in SUB_SENSOR_TYPES and obj.uniqueid
+                }
+                for obj in self.yaml_config["sensors"].values():
+                    if obj.type in SUB_SENSOR_TYPES and not obj.parent_id_v2:
+                        partner = switch_by_uniqueid.get(obj.uniqueid)
+                        if partner:
+                            obj.parent_id_v2 = partner.id_v2
             # Create default daylight sensor if missing
             if "1" not in self.yaml_config["sensors"]:
                 data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}

@@ -13,6 +13,29 @@ logging = logManager.logger.get_logger(__name__)
 discovered_lights = []
 Connections = {}
 
+# Hue effect name -> WLED segment parameters (seg.fx/sx/ix/pal). fx/pal IDs
+# are WLED's real FX_MODE_*/palette constants (verified against WLED's
+# upstream FX.h) and aligned with the equivalent mapping in the netmindz
+# PhilipsHueV2 WLED usermod so all integration paths produce consistent
+# WLED effects. sx/ix are defaults used only when the request doesn't
+# supply dynamics.speed (for sx) -- see send_light_data().
+HUE_EFFECT_TO_WLED_FX = {
+    "no_effect":  {"fx": 0},                                     # Solid (FX_MODE_STATIC)
+    "none":       {"fx": 0},                                     # classic v1 API "off" value
+    "candle":     {"fx": 102, "sx": 128, "ix": 128, "pal": 2},    # Candle Multi (FX_MODE_CANDLE_MULTI) + Color 1 -- NOT plain Candle (88), which has a WLED bug: dereferences uninitialised data on first call after a mode change
+    "fire":       {"fx": 66,  "sx": 128, "ix": 128, "pal": 2},    # Fire 2012 (FX_MODE_FIRE_2012) + Color 1
+    "colorloop":  {"fx": 8,   "sx": 128, "ix": 128},              # Rainbow (FX_MODE_RAINBOW) -- classic v1 API "colorloop"; WLED has no effect literally named "Colorloop"
+    "sparkle":    {"fx": 20,  "sx": 128, "ix": 128, "pal": 2},    # Sparkle (FX_MODE_SPARKLE) + Color 1
+    "prism":      {"fx": 9,   "sx": 128, "ix": 128},              # Rainbow Cycle (FX_MODE_RAINBOW_CYCLE) -- uses its own colours
+    "opal":       {"fx": 2,   "sx": 60,  "ix": 100, "pal": 2},    # Breath (FX_MODE_BREATH) + Color 1, slow and gentle
+    "glisten":    {"fx": 80,  "sx": 180, "ix": 200, "pal": 2},    # Twinkle Fox (FX_MODE_TWINKLEFOX) + Color 1, faster/more intense per Hue's own description
+    "sunrise":    {"fx": 104, "sx": 128, "ix": 128},              # Sunrise (FX_MODE_SUNRISE) -- uses its own colours; this is the field name observed on the wire by sibling usermods
+    "sunbeam":    {"fx": 104, "sx": 128, "ix": 128},              # alias for "sunrise" in case the Bridge sends this name instead -- not advertised (see Light.py)
+    "cosmos":     {"fx": 2,   "sx": 40,  "ix": 128, "pal": 2},    # Breath (FX_MODE_BREATH) + Color 1, pulses base colour off<->full per Hue's description
+    "enchant":    {"fx": 51,  "sx": 100, "ix": 128, "pal": 2},    # Fairytwinkle (FX_MODE_FAIRYTWINKLE) + Color 1, whimsical multicolor twinkle
+    "underwater": {"fx": 101, "sx": 80,  "ix": 128},              # Pacifica (FX_MODE_PACIFICA) -- uses its own ocean-themed colours
+}
+
 
 def on_mdns_discover(zeroconf, service_type, name, state_change):
     global discovered_lights
@@ -114,6 +137,21 @@ def send_light_data(c, light, data):
         elif k == "xy":
             color = convert_xy(v[0], v[1], 255)
             seg["col"] = [[color[0], color[1], color[2]]]
+        elif k == "effect":
+            effect_cfg = HUE_EFFECT_TO_WLED_FX.get(v)
+            if effect_cfg is not None:
+                seg["fx"] = effect_cfg["fx"]
+                if "pal" in effect_cfg:
+                    seg["pal"] = effect_cfg["pal"]
+                speed = light.dynamics.get("speed")
+                if speed:
+                    seg["sx"] = round(clamp(speed, 0, 1) * 255)
+                elif "sx" in effect_cfg:
+                    seg["sx"] = effect_cfg["sx"]
+                if "ix" in effect_cfg:
+                    seg["ix"] = effect_cfg["ix"]
+            else:
+                logging.warning("<WLED> Unknown Hue effect '%s', ignoring", v)
         elif k == "alert" and v != "none":
             state = c.getSegState(light.protocol_cfg['segmentId'])
             c.setBriSeg(0, light.protocol_cfg['segmentId'])

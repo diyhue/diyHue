@@ -5,7 +5,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Tuple, Union, Generator
-from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato, govee
+from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, hue_bl, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato, govee
 from services import homeAssistantWS
 from HueObjects import Light, StreamEvent
 from functions.core import nextFreeId
@@ -198,7 +198,7 @@ def is_light_matching(lightObj: Light.Light, light: Dict) -> bool:
         return lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"] and lightObj.modelid == light["modelid"]
     if protocol in ["shelly", "native", "native_single", "esphome", "elgato"]:
         return lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.modelid == light["modelid"]
-    if protocol in ["hue", "deconz"]:
+    if protocol in ["hue", "hue_bl", "deconz"]:
         return lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"] and lightObj.modelid == light["modelid"]
     if protocol == "wled":
         return (lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and
@@ -251,6 +251,8 @@ def discover_lights(detectedLights: List[Dict], device_ips: List[str]) -> None:
         wled.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["hue"]:
         hue.discover(detectedLights, bridgeConfig["config"]["hue"])
+    if bridgeConfig["config"]["hue_bl"]["enabled"]:
+        hue_bl.discover(detectedLights)
     if bridgeConfig["config"]["shelly"]["enabled"]:
         shelly.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["esphome"]["enabled"]:
