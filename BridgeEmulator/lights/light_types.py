@@ -126,6 +126,15 @@ lightTypes["LOM010"]["state"] = {"on": False,"alert": "select","mode": "homeauto
 lightTypes["LOM010"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
 lightTypes["LOM010"]["dynamics"] = {"status": "none", "status_values": ["none"]}
 
+# Hue Spot
+lightTypes["LCG001"] = {"v1_static": {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.104.2"}}
+lightTypes["LCG001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LCG001"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}}
+lightTypes["LCG001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.","product_archetype": "sultan_bulb","product_name": "Hue color spot","software_version": "1.104.2"}
+lightTypes["LCG001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
+lightTypes["LCG001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "safety"}}
+lightTypes["LCG001"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
+
 
 archetype = {"tableshade":"table_shade",
     "flexiblelamp":"flexible_lamp",
