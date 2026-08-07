@@ -9,6 +9,7 @@ import uuid
 import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
+from sensors.sensor_types import SUB_SENSOR_TYPES
 try:
     from time import tzset
 except ImportError:
@@ -249,6 +250,17 @@ class Config:
                     data["id_v1"] = sensor
                     self.yaml_config["sensors"][sensor] = Sensor.Sensor(data)
                     self.yaml_config["groups"]["0"].add_sensor(self.yaml_config["sensors"][sensor])
+                # Link ZLLRelativeRotary sensors to their ZLLSwitch partner by uniqueid
+                switch_by_uniqueid = {
+                    obj.uniqueid: obj
+                    for obj in self.yaml_config["sensors"].values()
+                    if obj.type not in SUB_SENSOR_TYPES and obj.uniqueid
+                }
+                for obj in self.yaml_config["sensors"].values():
+                    if obj.type in SUB_SENSOR_TYPES and not obj.parent_id_v2:
+                        partner = switch_by_uniqueid.get(obj.uniqueid)
+                        if partner:
+                            obj.parent_id_v2 = partner.id_v2
             else:
                 data = {"modelid": "PHDL00", "name": "Daylight", "type": "Daylight", "id_v1": "1"}
                 self.yaml_config["sensors"]["1"] = Sensor.Sensor(data)

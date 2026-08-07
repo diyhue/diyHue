@@ -71,7 +71,11 @@ class Scene():
                 return
 
         queueState = {}
-        self.status = data["recall"]["action"]
+        # "recall" is only present when the scene is triggered via the v2 REST API
+        # (PUT /clip/v2/resource/scene with a recall action).  Internal callers such
+        # as behavior_instance automation pass a plain transition dict instead, so we
+        # fall back to "active" when the key is absent.
+        self.status = data["recall"]["action"] if "recall" in data else "active"
         for light, state in self.lightstates.items():
             logging.debug(state)
             light.state.update(state)
@@ -207,6 +211,8 @@ class Scene():
                 if light():
                     lights.append(light)
         for light in lights:
+            if "on" not in light().state:
+                continue
             state = {}
             state["on"] = light().state["on"]
             if "colormode" in light().state:
