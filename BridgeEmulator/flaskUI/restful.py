@@ -5,7 +5,6 @@ import weakref
 import uuid
 import json
 import os
-from subprocess import Popen
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
@@ -90,7 +89,7 @@ class NewUser(Resource):
                     response[0]["success"]["clientkey"] = client_key
                 bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, postDict["devicetype"], client_key)
                 logging.info(response)
-                configManager.bridgeConfig.save_config()
+                configManager.bridgeConfig.mark_dirty("config")
                 return response
             else:
                 logging.error("link button not pressed")
@@ -262,7 +261,7 @@ class ResourceElements(Resource):
             logging.debug(streamMessage)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
                                 sort_keys=True, indent=4, separators=(',', ': ')))
-        configManager.bridgeConfig.save_config(backup=False, resource=resource)
+        configManager.bridgeConfig.mark_dirty(resource)
         return [{"success": {"id": new_object_id}}]
 
     def put(self, username, resource):
@@ -307,7 +306,7 @@ class ResourceElements(Resource):
         for key, value in putDict.items():
             responseList.append({"success": {response_location + key: value}})
         logging.debug(responseList)
-        configManager.bridgeConfig.save_config(backup=False, resource=resource)
+        configManager.bridgeConfig.mark_dirty(resource)
         return responseList
 
 
@@ -370,11 +369,15 @@ class Element(Resource):
                 if "active" in putDict["stream"]:
                     if putDict["stream"]["active"]:
                         logging.info("start hue entertainment")
+                        bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": True}})
                         Thread(target=entertainmentService, args=[
                                bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
                     else:
                         logging.info("stop hue entertainent")
-                        Popen(["killall", "openssl"])
+                        proc = bridgeConfig["groups"][resourceid].stream.get("_proc")
+                        if proc:
+                            proc.kill()
+                        bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": False}})
             if "action" in putDict:
                 bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
             # lights where removed from group, delete scenes
@@ -403,7 +406,7 @@ class Element(Resource):
                         del bridgeConfig[pices[1]][pices[2]]
                 except:
                     logging.info("link not found")
-            configManager.bridgeConfig.save_config()
+            configManager.bridgeConfig.mark_dirty("resourcelinks")
         # delete also light and temperature sensor
         if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid == "SML001":
             for sensor in list(bridgeConfig["sensors"].keys()):
@@ -417,12 +420,13 @@ class Element(Resource):
                 if bridgeConfig["scenes"][scene].type == "GroupScene":
                     if bridgeConfig["scenes"][scene].group().id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
+            configManager.bridgeConfig.mark_dirty("scenes")  # cascaded scene deletions
         if resource in ["groups", "lights"]:
             GroupZeroMessage() # trigger stream messages
         if resource == "lights":
-            configManager.bridgeConfig.save_config(backup=False, resource='groups')
-            configManager.bridgeConfig.save_config(backup=False, resource='scenes')
-        configManager.bridgeConfig.save_config(backup=False, resource=resource)
+            configManager.bridgeConfig.mark_dirty("groups")
+            configManager.bridgeConfig.mark_dirty("scenes")
+        configManager.bridgeConfig.mark_dirty(resource)
         return [{"success": "/" + resource + "/" + resourceid + " deleted."}]
 
 
@@ -475,6 +479,7 @@ class ElementParam(Resource):
         if "success" not in authorisation:
             return authorisation
         if resourceid == "whitelist":
+            affected = set()
             for config in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors"]:
                 for object in bridgeConfig[config]:
                     if "owner" in bridgeConfig[config][object].getV1Api():
@@ -482,15 +487,18 @@ class ElementParam(Resource):
                         if current_owner == param:
                             logging.debug("transfer ownership from: " + str(current_owner) + " to: " + str(username))
                             bridgeConfig[config][object].owner = bridgeConfig["apiUsers"][username]
+                            affected.add(config)
             logging.debug("Deleted api user: " + str(param) + " " + bridgeConfig["apiUsers"][param].name)
             del bridgeConfig["apiUsers"][param]
-            configManager.bridgeConfig.save_config()
+            configManager.bridgeConfig.mark_dirty("config")
+            for r in affected:
+                configManager.bridgeConfig.mark_dirty(r)
             return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
         if param not in bridgeConfig[resource][resourceid]:
             return [{"error": {"type": 4, "address": "/" + resource + "/" + resourceid, "description": "method, DELETE, not available for resource,  " + resource + "/" + resourceid}}]
 
         del bridgeConfig[resource][resourceid][param]
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.mark_dirty(resource)
         return [{"success": "/" + resource + "/" + resourceid + "/" + param + " deleted."}]
 
 class ElementParamId(Resource):

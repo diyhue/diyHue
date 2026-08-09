@@ -29,7 +29,7 @@ def get_key():
         # generate a new user for the web interface
         username = str(uuid.uuid1()).replace('-', '')
         bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, 'WebUi', None)
-        configManager.bridgeConfig.save_config()
+        configManager.bridgeConfig.mark_dirty("config")
     return list(bridgeConfig["apiUsers"])[0]
 
 @core.route('/lights')

@@ -3,6 +3,9 @@ from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
+import signal
+import sys
+import os
 import ssl
 import configManager
 import logManager
@@ -110,6 +113,35 @@ def main():
     CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
     DISABLE_HTTPS = configManager.runtimeConfig.arg["noServeHttps"]
     updateManager.startupCheck()
+
+    def shutdown(signum, frame):
+        logging.info("Received signal %s, saving config and shutting down", signum)
+        for group in bridgeConfig["groups"].values():
+            if hasattr(group, 'stream') and group.stream.get("active"):
+                h = group.stream.get("_hue")
+                if h:
+                    try:
+                        h.disconnect()
+                    except Exception:
+                        pass
+                proc = group.stream.get("_proc")
+                if proc:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                group.stream["active"] = False
+        # Full save — catches everything including undirtied background mutations.
+        # blocking=True ensures we wait if restore/reset is in progress.
+        try:
+            configManager.bridgeConfig.save_config(backup=False, blocking=True)
+            configManager.bridgeConfig.save_config(backup=True, blocking=True)
+        except Exception as e:
+            logging.error(f"Shutdown save failed: {e}")
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
