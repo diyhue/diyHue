@@ -5,6 +5,11 @@ services:
     # This makes for more convienient naming, but only allows one instance of the image
     container_name: diyHue
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     environment:
       # Uncomment to enable debug mode 
