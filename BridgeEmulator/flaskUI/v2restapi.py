@@ -590,9 +590,9 @@ class ClipV2Resource(Resource):
                         bridge_home_data
                     ]
                     
-                    # Send combined message directly to event stream to avoid double wrapping
-                    import HueObjects
-                    HueObjects.eventstream.append(combined_message)
+                    # Send the combined message through the shared event stream
+                    # so all connected clients can consume it independently.
+                    StreamEvent(combined_message)
                     logging.debug(f"Combined event message sent successfully")
                 else:
                     logging.warning("Could not create bridge_home data, falling back to separate events")
