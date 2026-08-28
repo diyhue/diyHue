@@ -92,6 +92,17 @@ class Light():
 
     def setV1State(self, state, advertise=True):
         if "lights" not in state:
+
+            # OFF must terminate a dynamic scene regardless of
+            # whether the command arrived through V1, V2 or a group.
+            # Otherwise the scene worker can send another colour/
+            # brightness command after OFF and wake the lamp again.
+            if (
+                state.get("on") is False
+                and self.dynamics["status"] == "dynamic_palette"
+            ):
+                self.dynamics["status"] = "none"
+
             state = incProcess(self.state, state)
             self.updateLightState(state)
             for key, value in state.items():
@@ -127,6 +138,16 @@ class Light():
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
+
+        # Native Hue behaviour: manually switching the light off
+        # terminates a running dynamic scene for this light.
+        if (
+            "on" in state
+            and state["on"].get("on") is False
+            and self.dynamics["status"] == "dynamic_palette"
+        ):
+            self.dynamics["status"] = "none"
+
         if "effects_v2" in state and "action" in state["effects_v2"]:
             v1State["effect"] = state["effects_v2"]["action"]["effect"]
             self.effect = v1State["effect"]
@@ -278,9 +299,27 @@ class Light():
         logging.debug("Start Dynamic scene play for " + self.name)
         if "dynamic_palette" in self.dynamics["status_values"]:
             self.dynamics["status"] = "dynamic_palette"
-        while self.dynamics["status"] == "dynamic_palette":
-            transition = int(30 / self.dynamics["speed"])
-            logging.debug("using transistiontime " + str(transition))
+        while (
+            self.dynamics["status"] == "dynamic_palette"
+            and self.state.get("on", True)
+        ):
+            try:
+                current_speed = float(self.dynamics["speed"])
+            except (TypeError, ValueError):
+                current_speed = 0.6269841194152832
+
+            # diyHue's existing Hue-like timing model.
+            # Avoid division by zero but otherwise preserve Hue's
+            # incoming dynamics.speed value unchanged.
+            current_speed = max(0.01, current_speed)
+            transition = max(1, int(30 / current_speed))
+
+            logging.debug(
+                "Dynamic scene %s speed %.4f transition %.1fs",
+                self.name,
+                current_speed,
+                transition / 10
+            )
             if self.modelid in ["LCT001", "LCT015", "LST002", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005"]:
                 if index == len(palette["color"]):
                     index = 0
@@ -312,7 +351,40 @@ class Light():
                 lightState = palette["dimming"][index]
                 lightState["transitiontime"] = transition
                 self.setV2State(lightState)
-            sleep(transition / 10)
+            # Wait in short slices instead of one long sleep.
+            # This lets Hue speed changes and OFF commands take effect
+            # immediately instead of after the current transition.
+            remaining = transition / 10
+
+            while (
+                remaining > 0
+                and self.dynamics["status"] == "dynamic_palette"
+                and self.state.get("on", True)
+            ):
+                try:
+                    new_speed = max(
+                        0.01,
+                        float(self.dynamics["speed"])
+                    )
+                except (TypeError, ValueError):
+                    new_speed = current_speed
+
+                # Hue changed the live speed: recalculate immediately.
+                if abs(new_speed - current_speed) > 0.0001:
+                    break
+
+                chunk = min(0.1, remaining)
+                sleep(chunk)
+                remaining -= chunk
+
+            # OFF or scene deactivation means the worker is finished.
+            if (
+                self.dynamics["status"] != "dynamic_palette"
+                or not self.state.get("on", True)
+            ):
+                self.dynamics["status"] = "none"
+                break
+
             index += 1
             logging.debug("Step forward dynamic scene " + self.name)
         logging.debug("Dynamic Scene " + self.name + " stopped.")
