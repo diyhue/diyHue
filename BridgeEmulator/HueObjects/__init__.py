@@ -1,12 +1,38 @@
 import uuid
 import logManager
 import random
+from threading import Lock
 
 logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
+_eventstream_seq = 0
+
+_eventstream_lock = Lock()
+
 def StreamEvent(message):
-    eventstream.append(message)
+    global _eventstream_seq
+
+    with _eventstream_lock:
+        _eventstream_seq += 1
+        eventstream.append((_eventstream_seq, message))
+
+        # Keep a bounded history so slower clients can catch up
+        # without allowing memory usage to grow indefinitely.
+        if len(eventstream) > 2000:
+            del eventstream[:-2000]
+
+def EventStreamSequence():
+    with _eventstream_lock:
+        return _eventstream_seq
+
+def EventStreamSnapshot(after_seq):
+    with _eventstream_lock:
+        return [
+            (seq, message)
+            for seq, message in eventstream
+            if seq > after_seq
+        ]
 
 def v1StateToV2(v1State):
     v2State = {}

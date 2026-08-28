@@ -8,31 +8,44 @@ logging = logManager.logger.get_logger(__name__)
 stream = Blueprint('stream', __name__)
 
 def messageBroker():
+    # Events are retained in a bounded sequence history.
+    # Do not clear them globally because connected clients may
+    # not have consumed them yet.
     while True:
-        if len(HueObjects.eventstream) > 0:
-            for event in HueObjects.eventstream:
-                logging.debug(event)
-            sleep(0.3)  # ensure all devices connected receive the events
-            HueObjects.eventstream = []
-        sleep(0.2)
+        sleep(60)
 
 @stream.route('/eventstream/clip/v2')
 def streamV2Events():
     def generate():
-        counter = 2000 # 400 seconds
-        yield f": hi\n\n"
-        while counter > 0:  # ensure we stop at some point
-            if len(HueObjects.eventstream) > 0:
-                for index, messages in enumerate(HueObjects.eventstream):
-                    # Check if messages is already an array (combined message)
-                    if isinstance(messages, list):
-                        # It's already an array, don't wrap it again
-                        yield f"id: {int(time()) }:{index}\ndata: {json.dumps(messages, separators=(',', ':'))}\n\n"
-                    else:
-                        # Single message, wrap it in an array
-                        yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
-                sleep(0.2)
-            sleep(0.2)
-            counter -= 1
+        # Each client tracks its own position in the event history.
+        last_seq = HueObjects.EventStreamSequence()
+        last_heartbeat = time()
 
-    return Response(stream_with_context(generate()), mimetype='text/event-stream; charset=utf-8')
+        yield ": hi\n\n"
+
+        while True:
+            events = HueObjects.EventStreamSnapshot(last_seq)
+
+            for seq, messages in events:
+                if isinstance(messages, list):
+                    payload = messages
+                else:
+                    payload = [messages]
+
+                yield (
+                    f"id: {seq}\n"
+                    f"data: {json.dumps(payload, separators=(',', ':'))}\n\n"
+                )
+
+                last_seq = seq
+
+            if time() - last_heartbeat >= 15:
+                yield ": keepalive\n\n"
+                last_heartbeat = time()
+
+            sleep(0.1)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream; charset=utf-8'
+    )
