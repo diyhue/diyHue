@@ -34,6 +34,45 @@ def v2StateToV1(v2State):
         if "xy" in v2State["color"]:
             v1State["xy"] = [v2State["color"]["xy"]
                              ["x"], v2State["color"]["xy"]["y"]]
+    # Preserve Hue effects_v2 parameters for non-Hue protocols.
+    if "effects_v2" in v2State:
+        action = v2State["effects_v2"].get("action", {})
+        parameters = action.get("parameters", {})
+
+        # Effect colour (XY)
+        color = parameters.get("color", {})
+        xy = color.get("xy")
+        if (
+            isinstance(xy, dict)
+            and "x" in xy
+            and "y" in xy
+        ):
+            v1State["xy"] = [
+                float(xy["x"]),
+                float(xy["y"])
+            ]
+
+        # Effect colour temperature
+        color_temperature = parameters.get(
+            "color_temperature",
+            {}
+        )
+        if isinstance(color_temperature, dict):
+            mirek = color_temperature.get("mirek")
+            if mirek is not None:
+                v1State["ct"] = int(mirek)
+
+        # Native Hue semantics: 0.0 = slowest, 1.0 = fastest.
+        if "speed" in parameters:
+            try:
+                speed = float(parameters["speed"])
+                v1State["effect_speed"] = max(
+                    0.0,
+                    min(1.0, speed)
+                )
+            except (TypeError, ValueError):
+                pass
+
     if "gradient" in v2State:
         v1State["gradient"] = v2State["gradient"]
     if "transitiontime" in v2State:  # to be replaced once api will be public
