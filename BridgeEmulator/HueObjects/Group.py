@@ -194,44 +194,15 @@ class Group():
 
 
     def genStreamEvent(self, v2State):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                               "data": [],
-                                 "id": str(uuid.uuid4()),
-                                 "type": "update"
-                                 }
-        for num, device in enumerate(self.lights):
-            if device():
-                # Handle both Device objects (with group_v1) and Light objects (without group_v1)
-                if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
-                    # It's a Device object, get the light from it
-                    light = device().firstElement()
-                    streamMessage["data"].insert(num,{
-                        "id": light.id_v2,
-                        "id_v1": "/lights/" + light.id_v1,
-                        "owner": {
-                            "rid": self.id_v2,
-                            "rtype":"device"
-                        },
-                        "service_id": light.protocol_cfg["light_nr"]-1 if "light_nr" in light.protocol_cfg else 0,
-                        "type": "light"
-                    })
-                    streamMessage["data"][num].update(v2State)
-                elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
-                    # It's a Light object directly
-                    streamMessage["data"].insert(num,{
-                        "id": device().id_v2,
-                        "id_v1": "/lights/" + device().id_v1,
-                        "owner": {
-                            "rid": self.id_v2,
-                            "rtype":"device"
-                        },
-                        "service_id": device().protocol_cfg["light_nr"]-1 if "light_nr" in device().protocol_cfg else 0,
-                        "type": "light"
-                    })
-                    streamMessage["data"][num].update(v2State)
-        StreamEvent(streamMessage)
+        # Do not mirror one light state onto every light in the group.
+        # Individual light events are already emitted by Light.genStreamEvent().
+        v2State = dict(v2State)
+
         if "on" in v2State:
-            v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
+            group_state = self.update_state()
+            v2State["on"] = {"on": group_state["any_on"]}
+            v2State["dimming"] = {"brightness": group_state["avr_bri"]}
+
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
                                    "owner": {
