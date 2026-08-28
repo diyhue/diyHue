@@ -2,6 +2,7 @@ import logManager
 import configManager
 import json
 import math
+import importlib
 import weakref
 import ssl
 from HueObjects import Sensor, Device
@@ -415,9 +416,60 @@ def on_message(client, userdata, msg):
                         light = device.firstElement()
                         state = {"reachable": True}
                         v2State = {}
+
+                        # Candle/Fire animation frames originate from
+                        # diyHue itself and must not be treated as
+                        # external user state changes.
+                        try:
+                            protocol_mqtt = importlib.import_module(
+                                "lights.protocols.mqtt"
+                            )
+
+                            effect_feedback = (
+                                protocol_mqtt
+                                ._is_emulated_effect_feedback(
+                                    light.protocol_cfg[
+                                        "command_topic"
+                                    ],
+                                    data
+                                )
+                            )
+                        except Exception:
+                            effect_feedback = False
+
+                        if effect_feedback:
+                            on_state_update(msg)
+                            return
+
                         if "state" in data:
                             state["on"] = True if data["state"] == "ON" else False
                             v2State.update({"on":{"on": state["on"]}})
+
+                            # External OFF may bypass set_light().
+                            # Stop the effect before another animation
+                            # frame can switch the physical light on.
+                            if state["on"] is False:
+                                try:
+                                    protocol_mqtt = (
+                                        importlib.import_module(
+                                            "lights.protocols.mqtt"
+                                        )
+                                    )
+
+                                    protocol_mqtt._stop_emulated_effect(
+                                        light.protocol_cfg[
+                                            "command_topic"
+                                        ]
+                                    )
+
+                                except Exception as e:
+                                    logging.warning(
+                                        "MQTT external OFF "
+                                        "effect-stop failed for %s: %s",
+                                        light.name,
+                                        e,
+                                    )
+
                             light.genStreamEvent(v2State)
                         if "brightness" in data:
                             state["bri"] = data["brightness"]
