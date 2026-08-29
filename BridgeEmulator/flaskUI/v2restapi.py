@@ -724,6 +724,58 @@ class ClipV2ResourceId(Resource):
                     Popen(["killall", "openssl"])
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
+            # Existing scenes are edited through the V2 "actions" list.
+            # Previously this was handled when creating a scene but ignored
+            # on PUT, so edits made in the Hue app did not update lightstates.
+            if "actions" in putDict:
+                lightstates = weakref.WeakKeyDictionary()
+
+                for action in putDict["actions"]:
+                    target = action.get("target", {})
+
+                    if target.get("rtype") != "light":
+                        continue
+
+                    lightObj = getObject(
+                        "light",
+                        target.get("rid")
+                    )
+
+                    if not lightObj:
+                        continue
+
+                    scene = action.get("action", {})
+                    sceneState = {}
+
+                    if "on" in scene:
+                        sceneState["on"] = scene["on"]["on"]
+
+                    if "dimming" in scene:
+                        sceneState["bri"] = int(
+                            scene["dimming"]["brightness"] * 2.54
+                        )
+
+                    if "color" in scene:
+                        if "xy" in scene["color"]:
+                            sceneState["xy"] = [
+                                scene["color"]["xy"]["x"],
+                                scene["color"]["xy"]["y"]
+                            ]
+
+                    if "color_temperature" in scene:
+                        if "mirek" in scene["color_temperature"]:
+                            sceneState["ct"] = (
+                                scene["color_temperature"]["mirek"]
+                            )
+
+                    if "gradient" in scene:
+                        sceneState["gradient"] = scene["gradient"]
+
+                    lightstates[lightObj] = sceneState
+
+                object.lightstates = lightstates
+                configManager.bridgeConfig.mark_dirty("scenes")
+
             # Hue scene speed is 0.0..1.0. Apply it BEFORE recall
             # and propagate changes to an already running dynamic scene.
             if "speed" in putDict:

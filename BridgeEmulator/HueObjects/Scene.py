@@ -63,11 +63,31 @@ class Scene():
                 self.status = data["recall"]["action"]
                 lightIndex = 0
                 for light in self.lights:
-                    if light():
-                        light().dynamics["speed"] = self.speed
-                        Thread(target=light().dynamicScenePlay, args=[
-                            self.palette, lightIndex]).start()
-                        lightIndex += 1
+                    if not light():
+                        continue
+
+                    lightObj = light()
+                    sceneState = self.lightstates.get(lightObj)
+
+                    # GroupScene.lights contains every light in the room.
+                    # Only lights represented by the saved scene actions
+                    # should participate in dynamic playback.
+                    if sceneState is None:
+                        continue
+
+                    # Hue stores lights disabled in the scene as on:false.
+                    # Keep those lights off instead of starting a dynamic
+                    # scene worker for them.
+                    if sceneState.get("on") is False:
+                        lightObj.setV1State({"on": False})
+                        continue
+
+                    lightObj.dynamics["speed"] = self.speed
+                    Thread(
+                        target=lightObj.dynamicScenePlay,
+                        args=[self.palette, lightIndex]
+                    ).start()
+                    lightIndex += 1
                 return
             elif data["recall"]["action"] == "deactivate":
                 self.status = "inactive"
