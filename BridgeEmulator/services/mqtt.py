@@ -445,10 +445,12 @@ def on_message(client, userdata, msg):
                             state["on"] = True if data["state"] == "ON" else False
                             v2State.update({"on":{"on": state["on"]}})
 
-                            # External OFF may bypass set_light().
-                            # Stop the effect before another animation
-                            # frame can switch the physical light on.
+                            # External OFF may bypass Light.setV1State()
+                            # and Light.setV2State(). Stop a running
+                            # dynamic scene as well as any emulated effect.
                             if state["on"] is False:
+                                light.dynamics["status"] = "none"
+
                                 try:
                                     protocol_mqtt = (
                                         importlib.import_module(

@@ -724,14 +724,51 @@ class ClipV2ResourceId(Resource):
                     Popen(["killall", "openssl"])
                     object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
-            if "recall" in putDict:
-                object.activate(putDict)
+            # Hue scene speed is 0.0..1.0. Apply it BEFORE recall
+            # and propagate changes to an already running dynamic scene.
             if "speed" in putDict:
-                object.speed = putDict["speed"]
+                try:
+                    requested_speed = max(
+                        0.0,
+                        min(1.0, float(putDict["speed"]))
+                    )
+                    object.speed = requested_speed
+
+                    for light_ref in object.lights:
+                        light = light_ref()
+                        if (
+                            light
+                            and light.dynamics["status"]
+                                == "dynamic_palette"
+                        ):
+                            # diyHue's existing scene player divides by
+                            # speed; treat zero as essentially stationary
+                            # rather than raising ZeroDivisionError.
+                            light.dynamics["speed"] = max(
+                                requested_speed,
+                                0.01
+                            )
+                except (TypeError, ValueError):
+                    pass
+
+            if "recall" in putDict:
+                # Scene.activate() copies object.speed to every light.
+                # Preserve API speed=0 while supplying a safe execution
+                # floor to diyHue's current 30/speed implementation.
+                original_speed = object.speed
+                if original_speed <= 0:
+                    object.speed = 0.01
+
+                try:
+                    object.activate(putDict)
+                finally:
+                    object.speed = original_speed
+
             if "palette" in putDict:
                 object.palette = putDict["palette"]
             if "metadata" in putDict:
                 object.name = putDict["metadata"]["name"]
+                configManager.bridgeConfig.mark_dirty("scenes")
         elif resource == "smart_scene":
             if "recall" in putDict and "action" in putDict["recall"]:
                 object.activate(putDict)
