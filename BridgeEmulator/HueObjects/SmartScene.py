@@ -44,12 +44,38 @@ class SmartScene():
         StreamEvent(streamMessage)
         logging.info(self.name + " smart_scene was destroyed.")
 
+    def _set_state(self, state):
+        if self.state == state:
+            return
+        self.state = state
+        self.lastupdated = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S"
+        )
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
+            "data": [{
+                "id": self.id_v2,
+                "type": "smart_scene",
+                "state": self.state
+            }],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        }
+        StreamEvent(streamMessage)
+        import configManager
+        configManager.bridgeConfig.save_config(
+            backup=False,
+            resource="smart_scene"
+        )
+
     def activate(self, data):
         # activate smart scene
         if "recall" in data:
             if data["recall"]["action"] == "activate":
                 logging.debug("activate smart_scene: " + self.name + " scene: " + str(self.active_timeslot))
-                self.state = "active"
+                self._set_state("active")
                 if datetime.now().strftime("%A").lower() in self.recurrence:
                     from flaskUI.v2restapi import getObject
                     target_object = getObject(self.timeslots[self.active_timeslot]["target"]["rtype"], self.timeslots[self.active_timeslot]["target"]["rid"])
@@ -57,11 +83,8 @@ class SmartScene():
                     target_object.activate(putDict)
                 return
             if data["recall"]["action"] == "deactivate":
-                from functions.scripts import findGroup
-                group = findGroup(self.group["rid"])
-                group.setV1Action(state={"on": False})
                 logging.debug("deactivate smart_scene: " + self.name)
-                self.state = "inactive"
+                self._set_state("inactive")
                 return
 
 
