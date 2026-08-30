@@ -327,7 +327,7 @@ class Light():
                 if self.modelid in ["LCX002", "915005987201", "LCX004", "LCX006"]:
                     # for gradient lights
                     gradientIndex = index
-                    for x in range(self.protocol_cfg["points_capable"]):
+                    for x in range(self.protocol_cfg.get("points_capable", 5)):
                         points.append(palette["color"][gradientIndex])
                         gradientIndex += 1
                         if gradientIndex == len(palette["color"]):
