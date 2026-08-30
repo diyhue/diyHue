@@ -774,7 +774,7 @@ class ClipV2ResourceId(Resource):
                     lightstates[lightObj] = sceneState
 
                 object.lightstates = lightstates
-                configManager.bridgeConfig.mark_dirty("scenes")
+                configManager.bridgeConfig.save_config(backup=False, resource="scenes")
 
             # Hue scene speed is 0.0..1.0. Apply it BEFORE recall
             # and propagate changes to an already running dynamic scene.
@@ -820,7 +820,7 @@ class ClipV2ResourceId(Resource):
                 object.palette = putDict["palette"]
             if "metadata" in putDict:
                 object.name = putDict["metadata"]["name"]
-                configManager.bridgeConfig.mark_dirty("scenes")
+                configManager.bridgeConfig.save_config(backup=False, resource="scenes")
         elif resource == "smart_scene":
             if "recall" in putDict and "action" in putDict["recall"]:
                 object.activate(putDict)
