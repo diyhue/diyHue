@@ -209,6 +209,9 @@ def scanForLights():  # scan for ESP8266 lights and strips
                     if lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"]  and lightObj.modelid == light["modelid"]:
                         logging.info("Update IP for light " + light["name"])
                         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
+                        if light["protocol"] == "hue":
+                            lightObj.protocol_cfg["hueUser"] = light["protocol_cfg"]["hueUser"]
+                            lightObj.protocol_cfg["scheme"] = light["protocol_cfg"]["scheme"]
                         lightIsNew = False
                 elif light["protocol"] in ["wled"]:
                     # Check based on mac and segment and modelid
