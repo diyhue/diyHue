@@ -8,7 +8,7 @@ import configManager
 import logManager
 import flask_login
 from flaskUI.core import User #dummy import for flaks_login module
-from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId
+from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId, HueBridgeLink
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.espDevices import Switch
 from flaskUI.Credits import Credits
@@ -64,6 +64,7 @@ api.add_resource(Switch, '/switch')
 ### HUE API
 api.add_resource(NewUser, '/api/', strict_slashes=False)
 api.add_resource(ShortConfig, '/api/config', strict_slashes=False)
+api.add_resource(HueBridgeLink, '/api/<string:username>/config/hue/link', strict_slashes=False)
 api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
 api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
 api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)

@@ -5,10 +5,12 @@ import weakref
 import uuid
 import json
 import os
+import ipaddress
 from subprocess import Popen
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
+from lights.protocols import hue
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
 from flask import request
@@ -131,6 +133,71 @@ class NewUser(Resource):
         else:
             logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
             return [{"error": {"type": 6, "address": "/api/" + list(postDict.keys())[0], "description":"parameter, " + list(postDict.keys())[0] + ", not available"}}]
+
+
+def _hue_link_error(description, error_type=901):
+    return [{
+        "error": {
+            "type": error_type,
+            "address": "/config/hue/link",
+            "description": description,
+        }
+    }]
+
+
+class HueBridgeLink(Resource):
+    def post(self, username):
+        authorisation = authorize(username, "config")
+        if "success" not in authorisation:
+            return authorisation
+
+        postDict = request.get_json(force=True)
+
+        try:
+            host = postDict["ip"].strip()
+            address = ipaddress.ip_address(host)
+
+            if (
+                address.version != 4
+                or address.is_loopback
+                or address.is_multicast
+                or address.is_unspecified
+                or not (address.is_private or address.is_link_local)
+            ):
+                raise ValueError
+        except (AttributeError, KeyError, ValueError):
+            return _hue_link_error(
+                "invalid local Hue Bridge IPv4 address",
+                7,
+            )
+
+        try:
+            result, scheme = hue.link_bridge(host)
+        except ConnectionError:
+            logging.warning("Unable to connect to Hue Bridge at %s", host)
+            return _hue_link_error("unable to connect to Hue Bridge")
+
+        if "success" not in result[0]:
+            return result
+
+        success = result[0]["success"]
+        if not success.get("username"):
+            return _hue_link_error("Hue Bridge returned no username")
+
+        bridgeConfig["config"]["hue"].update({
+            "ip": host,
+            "scheme": scheme,
+            "hueUser": success["username"],
+            "hueKey": success.get("clientkey", ""),
+        })
+
+        configManager.bridgeConfig.save_config(
+            backup=False,
+            resource="config",
+        )
+
+        success["scheme"] = scheme
+        return result
 
 
 class ShortConfig(Resource):
