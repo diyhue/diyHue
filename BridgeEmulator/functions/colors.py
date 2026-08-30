@@ -102,4 +102,4 @@ def hsv_to_rgb(h, s, v):
         g = 0
         b = x
 
-    return clampRGB([r * 255, g * 255, b * 255])
+    return clampRGB([(r + m) * 255, (g + m) * 255, (b + m) * 255])
