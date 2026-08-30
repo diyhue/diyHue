@@ -24,7 +24,7 @@ class NoAliasDumper(yaml.SafeDumper):
 
 def _open_yaml(path):
     with open(path, 'r', encoding="utf-8") as fp:
-        return yaml.load(fp, Loader=yaml.FullLoader)
+        return yaml.load(fp, Loader=yaml.FullLoader) or {}
 
 def _write_yaml(path, contents):
     with open(path, 'w', encoding="utf-8") as fp:
