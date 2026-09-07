@@ -1,6 +1,7 @@
 import uuid
 import logManager
 import weakref
+import math
 from datetime import datetime, timezone
 from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent
 
@@ -54,6 +55,69 @@ class EntertainmentConfiguration():
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
         self.locations[light] = [{"x": 0, "y": 0, "z": 0}]
+
+    def update_configuration(self, data, resolve_service):
+        """Validate the entire v2 placement edit before changing any state.
+
+        service_locations is the complete membership list. Keep existing channel
+        order for retained lights; append newly selected lights in request order.
+        Persistence and the update event are the caller's responsibility.
+        """
+        name = self.name
+        configuration_type = self.configuration_type
+        locations = None
+        if "metadata" in data:
+            metadata = data["metadata"]
+            if not isinstance(metadata, dict):
+                raise ValueError("metadata must be an object")
+            if "name" in metadata:
+                name = metadata["name"]
+                if not isinstance(name, str) or not name.strip():
+                    raise ValueError("metadata.name must be a non-empty string")
+        if "configuration_type" in data:
+            configuration_type = data["configuration_type"]
+            if configuration_type not in ("screen", "monitor", "3dspace"):
+                raise ValueError("Invalid entertainment configuration_type")
+        if "locations" in data:
+            container = data["locations"]
+            if not isinstance(container, dict) or not isinstance(container.get("service_locations"), list):
+                raise ValueError("locations.service_locations must be an array")
+            locations = {}
+            for entry in container["service_locations"]:
+                if not isinstance(entry, dict) or not isinstance(entry.get("service"), dict):
+                    raise ValueError("A location requires an entertainment service")
+                service = entry["service"]
+                if service.get("rtype") != "entertainment" or not isinstance(service.get("rid"), str):
+                    raise ValueError("Invalid entertainment service reference")
+                light = resolve_service("entertainment", service["rid"])
+                if not light:
+                    raise ValueError("Unknown entertainment service")
+                if light in locations:
+                    raise ValueError("Duplicate entertainment service")
+                # positions is current v2; position is the legacy single point.
+                points = entry.get("positions", [entry["position"]] if "position" in entry else None)
+                if not isinstance(points, list) or not points:
+                    raise ValueError("Each service requires at least one position")
+                copied = []
+                for point in points:
+                    if not isinstance(point, dict) or any(
+                        type(point.get(axis)) not in (int, float) or not math.isfinite(point[axis])
+                        for axis in ("x", "y", "z")
+                    ):
+                        raise ValueError("Positions require finite numeric x, y and z coordinates")
+                    copied.append({axis: point[axis] for axis in ("x", "y", "z")})
+                locations[light] = copied
+        changed = any(key in data for key in ("metadata", "configuration_type", "locations"))
+        if changed and self.stream["active"]:
+            raise ValueError("Stop entertainment streaming before editing its configuration")
+        if locations is not None:
+            retained = list(dict.fromkeys(ref() for ref in self.lights if ref() in locations))
+            ordered = retained + [light for light in locations if light not in retained]
+            self.lights = [weakref.ref(light) for light in ordered]
+            self.locations = weakref.WeakKeyDictionary(locations)
+        self.name = name
+        self.configuration_type = configuration_type
+        return changed
 
     def update_attr(self, newdata):
         if "lights" in newdata:  # update of the lights must be done using add_light function

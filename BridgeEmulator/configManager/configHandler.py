@@ -250,9 +250,11 @@ class Config:
                         for device in data["lights"]:
                             self.yaml_config["groups"][group].add_light(self.yaml_config["device"][device])
                         if "locations" in data:
-                            for light, location in data["locations"].items():
-                                lightObj = self.yaml_config["lights"][light]
-                                self.yaml_config["groups"][group].locations[lightObj] = location
+                            # Entertainment membership and saved locations both
+                            # reference devices, not legacy v1 light identifiers.
+                            for device, location in data["locations"].items():
+                                deviceObj = self.yaml_config["device"][device]
+                                self.yaml_config["groups"][group].locations[deviceObj] = location
                     else:
                         self.yaml_config["groups"][group] = Group.Group(data)
                         for device in data["lights"]:

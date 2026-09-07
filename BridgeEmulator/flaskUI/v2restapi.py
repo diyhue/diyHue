@@ -698,7 +698,7 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getTamper()]}
 
     def put(self, resource, resourceid):
-        logging.debug(request.headers)
+        # Request headers contain the application key; never log them.
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -708,6 +708,21 @@ class ClipV2ResourceId(Resource):
         if resource == "light":
             object.setV2State(putDict)
         elif resource == "entertainment_configuration":
+            if not object:
+                return {"errors": [{"description": "Entertainment configuration not found"}], "data": []}, 404
+            # A layout edit must not alter channels underneath a running stream.
+            edits_layout = any(key in putDict for key in ("metadata", "configuration_type", "locations"))
+            if edits_layout and (object.stream["active"] or "action" in putDict):
+                return {"errors": [{"description": "Stop streaming, then edit the entertainment configuration separately"}], "data": []}, 409
+            try:
+                changed = object.update_configuration(putDict, getObject)
+            except ValueError as error:
+                return {"errors": [{"description": str(error)}], "data": []}, 400
+            if changed:
+                # Done in the Hue app must persist the placement before success
+                # is returned. Use the target branch's existing storage API.
+                configManager.bridgeConfig.save_config(backup=False, resource="groups")
+                object.update_attr({})  # publish the complete, saved v2 layout
             if "action" in putDict:
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
