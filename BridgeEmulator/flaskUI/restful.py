@@ -11,7 +11,13 @@ from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
 from lights.protocols import hue
-from functions.core import capabilities, staticConfig, nextFreeId
+from functions.core import (
+    bridgeReportedApiversion,
+    bridgeReportedSwversion,
+    capabilities,
+    staticConfig,
+    nextFreeId,
+)
 from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
@@ -55,19 +61,19 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
 
 
 def buildConfig():
-    result = staticConfig()
     config = bridgeConfig["config"]
+    result = staticConfig(config)
     # Update with config values (excluding some diyHue-specific fields, but keeping Hue Essentials key)
     result.update({
         "Hue Essentials key": config["Hue Essentials key"],
-        "apiversion": config["apiversion"],
+        "apiversion": bridgeReportedApiversion(config),
         "bridgeid": config["bridgeid"],
         "ipaddress": config["ipaddress"],
         "netmask": config["netmask"],
         "gateway": config["gateway"],
         "mac": config["mac"],
         "name": config["name"],
-        "swversion": config["swversion"],
+        "swversion": bridgeReportedSwversion(config),
         "timezone": config["timezone"]
     })
     # Reconstruct swupdate2 in exact order to match original bridge
@@ -203,17 +209,18 @@ class HueBridgeLink(Resource):
 class ShortConfig(Resource):
     def get(self):
         config = bridgeConfig["config"]
+        identity = staticConfig(config)
         return {
-            "apiversion": config["apiversion"],
+            "apiversion": bridgeReportedApiversion(config),
             "bridgeid": config["bridgeid"],
-            "datastoreversion": staticConfig()["datastoreversion"],
+            "datastoreversion": identity["datastoreversion"],
             "factorynew": False,
             "mac": config["mac"],
-            "modelid": "BSB002",
+            "modelid": identity["modelid"],
             "name": config["name"],
             "replacesbridgeid": None,
             "starterkitid": "",
-            "swversion": config["swversion"]
+            "swversion": bridgeReportedSwversion(config)
         }
 
 
@@ -250,7 +257,8 @@ class ResourceElements(Resource):
         elif resource == "config":
             config = bridgeConfig["config"]
 
-            return {"name": config["name"], "datastoreversion": staticConfig()["datastoreversion"], "swversion": config["swversion"], "apiversion": config["apiversion"], "mac": config["mac"], "bridgeid": config["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": staticConfig()["modelid"], "starterkitid": ""}
+            identity = staticConfig(config)
+            return {"name": config["name"], "datastoreversion": identity["datastoreversion"], "swversion": bridgeReportedSwversion(config), "apiversion": bridgeReportedApiversion(config), "mac": config["mac"], "bridgeid": config["bridgeid"], "factorynew": False, "replacesbridgeid": None, "modelid": identity["modelid"], "starterkitid": ""}
         return [{"error": {"type": 1, "address": "/", "description": "unauthorized user"}}]
 
     def post(self, username, resource):
