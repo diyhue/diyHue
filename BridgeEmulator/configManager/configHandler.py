@@ -1,4 +1,5 @@
 from configManager import configInit
+from motionAwareConfig import normalize_motion_aware_config
 from configManager.argumentHandler import parse_arguments, generate_certificate
 import os
 import pathlib
@@ -68,6 +69,8 @@ class Config:
                         "SUB_IP_RANGE_END": int(self.argsDict["HOST_IP"].split('.')[2])}
                 if "scanonhostip" not in config:
                     config["scanonhostip"] = False
+                if "bridge_profile" not in config:
+                    config["bridge_profile"] = "classic"
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
                 if "yeelight" not in config:
@@ -130,6 +133,12 @@ class Config:
                 if float(config["apiversion"][:3]) < 1.75:
                     config["apiversion"] = "1.75.0"
 
+                # Normalize legacy MotionAware persistence without treating
+                # config presence as a capability or enabling the feature.
+                _, motion_aware_issues = normalize_motion_aware_config(config)
+                for issue in motion_aware_issues:
+                    logging.warning("MotionAware config migration: %s", issue)
+
                 self.yaml_config["config"] = config
             else:
                 self.yaml_config["config"] = {
@@ -137,6 +146,7 @@ class Config:
                     "Hue Essentials key": str(uuid.uuid1()).replace('-', ''),
                     "discovery": True,
                     "scanonhostip": False,
+                    "bridge_profile": "classic",
                     "mqtt":{"enabled":False},
                     "deconz":{"enabled":False},
                     "alarm":{"enabled": False,"lasttriggered": 0},
