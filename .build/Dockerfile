@@ -22,7 +22,7 @@ RUN apt update \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && curl -fsSL https://bootstrap.pypa.io/get-pip.py | python3 - --break-system-packages \
     && python3 -m pip install -r requirements.txt --no-cache-dir --break-system-packages --ignore-installed \
-    && python3 -m pip uninstall -y pip setuptools wheel \
+    && python3 -m pip uninstall -y pip setuptools wheel --break-system-packages \
     && apt purge -y python3-dev gcc \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
