@@ -18,6 +18,11 @@ def write_args(args, yaml_config):
     yaml_config["config"]["gateway"] = ip_pieces[0] + "." + ip_pieces[1] + "." + ip_pieces[2] + "." + ip_pieces[3].replace("\n", "")#".1"
     yaml_config["config"]["mac"] = args["FULLMAC"]
     yaml_config["config"]["bridgeid"] = (args["MAC"][:6] + 'FFFE' + args["MAC"][-6:]).upper()
+    # Command-line/environment selection is applied to the active bridge
+    # configuration. The regular config manager persists it on its normal
+    # save path, so a selected profile remains explicit across restarts.
+    if args.get("BRIDGE_PROFILE") is not None:
+        yaml_config["config"]["bridge_profile"] = args["BRIDGE_PROFILE"]
     return yaml_config
 
 def generate_security_key(yaml_config):
