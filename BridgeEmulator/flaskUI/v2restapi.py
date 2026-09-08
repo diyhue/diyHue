@@ -32,6 +32,29 @@ logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
+
+def _identifyMotionAwareLight(device):
+    """Execute the V2 identify action through the existing light interface.
+
+    MQTT lights that explicitly advertise a ``blink`` effect get the native
+    one-shot effect; all other protocols retain the standard Hue ``select``
+    alert fallback.  No protocol-specific transport is introduced here.
+    """
+    light = device.firstElement() if hasattr(device, "firstElement") else device
+    protocol_cfg = getattr(light, "protocol_cfg", {})
+    capabilities = protocol_cfg.get("z2m_capabilities", {}) if isinstance(protocol_cfg, dict) else {}
+    effects = capabilities.get("effect_list", []) if isinstance(capabilities, dict) else []
+    command = {"effect": "blink"} if (
+        getattr(light, "protocol", None) == "mqtt" and "blink" in effects
+    ) else {"alert": "select"}
+    light.setV1State(command)
+    logging.info(
+        "MOTION_IDENTIFY light=%s protocol=%s action=%s",
+        getattr(light, "id_v1", "unknown"),
+        getattr(light, "protocol", "unknown"),
+        command,
+    )
+
 PRO_MOTION_RESOURCE_TYPES = SERVED_MOTION_RESOURCE_TYPES
 
 # Resource types reported by the `clip` capability resource on a
@@ -1151,7 +1174,7 @@ class ClipV2ResourceId(Resource):
                 Thread(target=scanForLights).start()
         elif resource == "device":
             if "identify" in putDict and putDict["identify"]["action"] == "identify":
-                object.firstElement().setV1State({"alert": "select"})
+                _identifyMotionAwareLight(object)
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
                     if object:
