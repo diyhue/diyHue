@@ -18,7 +18,7 @@ COPY requirements.txt ./
 # pulls python3-typeguard, whose postinst segfaults under QEMU (linux/arm64 CI).
 RUN apt update \
     && apt install --no-install-recommends -y \
-        curl unzip python3-minimal python3-dev gcc \
+        ca-certificates curl unzip python3-minimal python3-dev gcc \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --break-system-packages \
     && pip3 install -r requirements.txt --no-cache-dir --break-system-packages --ignore-installed \
