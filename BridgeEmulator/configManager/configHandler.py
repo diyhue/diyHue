@@ -69,6 +69,8 @@ class Config:
                         "SUB_IP_RANGE_END": int(self.argsDict["HOST_IP"].split('.')[2])}
                 if "scanonhostip" not in config:
                     config["scanonhostip"] = False
+                if config.get("bridge_profile") not in ("classic", "pro"):
+                    config["bridge_profile"] = "classic"
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
                 if "yeelight" not in config:
@@ -144,6 +146,7 @@ class Config:
                     "Hue Essentials key": str(uuid.uuid1()).replace('-', ''),
                     "discovery": True,
                     "scanonhostip": False,
+                    "bridge_profile": "classic",
                     "mqtt":{"enabled":False},
                     "deconz":{"enabled":False},
                     "alarm":{"enabled": False,"lasttriggered": 0},
