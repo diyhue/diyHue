@@ -36,6 +36,7 @@ COPY ./BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
 COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
 COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
 COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
+COPY ./BridgeEmulator/motionAwareConfig.py /opt/hue-emulator/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 COPY ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 
