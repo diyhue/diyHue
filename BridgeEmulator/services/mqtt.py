@@ -5,16 +5,29 @@ import math
 import importlib
 import weakref
 import ssl
+import time
+import statistics
+from collections import deque
 from HueObjects import Sensor, Device
 import paho.mqtt.client as mqtt
 from datetime import datetime, timezone
-from threading import Thread
+from threading import Thread, Lock
 from time import sleep
 from functions.core import nextFreeId
 from sensors.discover import addHueMotionSensor, addHueSecureContactSensor
 from sensors.sensor_types import sensorTypes
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
+from functions.motionAware import (
+    isMotionAwareAvailable,
+    motionAwareSnapshot,
+    motionAwareStoredArea,
+    motionAwareStoredAreas,
+    streamMotionAwareTransitions,
+    v2MotionAreaDevices,
+    groupForMotionAwareReference,
+    _legacyGroupForArea,
+)
 from functions.behavior_instance import checkBehaviorInstances
 import requests
 
@@ -28,6 +41,19 @@ devices_ids = {}
 discoveryPrefix = "homeassistant"
 latestStates = {}
 discoveredDevices = {}
+
+# MotionAware RF/LQI runtime.  This is intentionally process-local; only
+# user configuration is persisted by motionAware.py.
+_motionaware_radio_lock = Lock()
+_motionaware_radio_samples = {}
+_motionaware_radio_history = {}
+_motionaware_radio_last_motion = {}
+_motionaware_radio_state = {}
+_motionaware_radio_worker_running = False
+_MOTIONAWARE_BASELINE_SAMPLES = 12
+_MOTIONAWARE_POLL_INTERVAL = 2.0
+_MOTIONAWARE_RESPONSE_WINDOW = 1.2
+_MOTIONAWARE_HOLD_SECONDS = 4.0
 
 
 motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001"]
@@ -248,7 +274,10 @@ def on_autodiscovery_light(msg):
     for key, data in discoveredDevices.items():
         device_new = True
         for light, obj in bridgeConfig["lights"].items():
-            if obj.protocol == "mqtt" and obj.protocol_cfg["uid"] == key:
+            # Manually configured MQTT lights may not have a discovery uid.
+            # Do not abort processing every incoming MQTT message in that
+            # case; match discovered devices only when a uid is present.
+            if obj.protocol == "mqtt" and obj.protocol_cfg.get("uid") == key:
                 device_new = False
                 obj.protocol_cfg["command_topic"] = data["command_topic"]
                 obj.protocol_cfg["state_topic"] = data["state_topic"]
@@ -299,12 +328,188 @@ def on_state_update(msg):
     latestStates[msg.topic] = data
     logging.debug(json.dumps(data, indent=4))
 
+
+def _motionaware_radio_thresholds(sensitivity):
+    thresholds = {
+        0: (14.0, 3.0),
+        1: (12.0, 2.7),
+        2: (10.0, 2.4),
+        3: (9.0, 2.2),
+        4: (8.0, 2.0),
+    }
+    try:
+        value = int(sensitivity)
+    except (TypeError, ValueError):
+        value = 2
+    return thresholds[max(0, min(4, value))]
+
+
+def _motionaware_radio_observe(topic, data):
+    if not isMotionAwareAvailable() or not isinstance(data, dict):
+        return
+    value = data.get("linkquality")
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return
+    if not isinstance(topic, str) or not topic.startswith("zigbee2mqtt/"):
+        return
+    with _motionaware_radio_lock:
+        _motionaware_radio_samples[topic] = (time.monotonic(), float(value))
+
+
+def _motionaware_radio_area_specs():
+    if not isMotionAwareAvailable():
+        return []
+    result = []
+    for area_id, area in motionAwareStoredAreas().items():
+        if not isinstance(area, dict) or area.get("enabled") is False:
+            continue
+        group = groupForMotionAwareReference(area.get("group"))
+        if group is None:
+            group = _legacyGroupForArea(area_id)
+        if group is None:
+            continue
+        devices = v2MotionAreaDevices(group, area_id)
+        topics = sorted({
+            device.protocol_cfg.get("state_topic")
+            for device in devices
+            if getattr(device, "protocol", None) == "mqtt"
+            and isinstance(getattr(device, "protocol_cfg", None), dict)
+            and isinstance(device.protocol_cfg.get("state_topic"), str)
+            and device.protocol_cfg.get("state_topic").startswith("zigbee2mqtt/")
+        })
+        if len(topics) < 3:
+            continue
+        sensitivities = []
+        enabled_services = 0
+        for resource_type in ("convenience_area_motion", "security_area_motion"):
+            service = area.get(resource_type, {})
+            if isinstance(service, dict):
+                if service.get("enabled", True) is not False:
+                    enabled_services += 1
+                if isinstance(service.get("sensitivity"), int):
+                    sensitivities.append(service["sensitivity"])
+            else:
+                enabled_services += 1
+        if not enabled_services:
+            continue
+        result.append({
+            "area_id": area_id,
+            "name": getattr(group, "name", area_id),
+            "topics": topics,
+            "sensitivity": max(sensitivities) if sensitivities else 2,
+        })
+    return result
+
+
+def _motionaware_radio_robust_spread(values):
+    if len(values) < 4:
+        return 1.0
+    center = statistics.median(values)
+    return max(1.0, 1.4826 * statistics.median(abs(value - center) for value in values))
+
+
+def _motionaware_radio_set_state(area_id, value):
+    value = bool(value)
+    with _motionaware_radio_lock:
+        previous = _motionaware_radio_state.get(area_id)
+        if previous == value:
+            return
+        _motionaware_radio_state[area_id] = value
+    try:
+        from functions.motionAware import setMotionAwareRuntimeMotion
+        setMotionAwareRuntimeMotion(area_id, value, source="zigbee-lqi")
+    except Exception:
+        logging.exception("MotionAware RF state update failed for %s", area_id)
+
+
+def _motionaware_radio_evaluate(spec, round_started):
+    fresh = {}
+    with _motionaware_radio_lock:
+        for topic in spec["topics"]:
+            sample = _motionaware_radio_samples.get(topic)
+            if sample is not None and sample[0] >= round_started:
+                fresh[topic] = sample[1]
+    if len(fresh) < 2:
+        return
+
+    absolute, multiplier = _motionaware_radio_thresholds(spec["sensitivity"])
+    active_count = 0
+    scored_topics = 0
+    for topic, value in fresh.items():
+        key = (spec["area_id"], topic)
+        history = _motionaware_radio_history.setdefault(
+            key, deque(maxlen=_MOTIONAWARE_BASELINE_SAMPLES)
+        )
+        if len(history) < _MOTIONAWARE_BASELINE_SAMPLES:
+            history.append(value)
+            continue
+        baseline = statistics.median(history)
+        threshold = max(absolute, multiplier * _motionaware_radio_robust_spread(history))
+        scored_topics += 1
+        if abs(value - baseline) >= threshold:
+            active_count += 1
+
+    if scored_topics < 2:
+        return
+    now = time.monotonic()
+    detected = active_count >= 2
+    if detected:
+        _motionaware_radio_last_motion[spec["area_id"]] = now
+    motion = now - _motionaware_radio_last_motion.get(spec["area_id"], float("-inf")) <= _MOTIONAWARE_HOLD_SECONDS
+    _motionaware_radio_set_state(spec["area_id"], motion)
+    if not motion:
+        for topic, value in fresh.items():
+            _motionaware_radio_history.setdefault(
+                (spec["area_id"], topic),
+                deque(maxlen=_MOTIONAWARE_BASELINE_SAMPLES),
+            ).append(value)
+
+
+def _motionaware_radio_worker(mqtt_client):
+    global _motionaware_radio_worker_running
+    logging.info("MotionAware RF worker started")
+    try:
+        while True:
+            specs = _motionaware_radio_area_specs()
+            if not specs:
+                sleep(_MOTIONAWARE_POLL_INTERVAL)
+                continue
+            started = time.monotonic()
+            for spec in specs:
+                for topic in spec["topics"]:
+                    mqtt_client.publish(topic + "/get", json.dumps({"state": ""}))
+            sleep(_MOTIONAWARE_RESPONSE_WINDOW)
+            for spec in specs:
+                try:
+                    _motionaware_radio_evaluate(spec, started)
+                except Exception:
+                    logging.exception("MotionAware RF evaluation failed for %s", spec["area_id"])
+            elapsed = time.monotonic() - started
+            sleep(max(0.05, _MOTIONAWARE_POLL_INTERVAL - elapsed))
+    finally:
+        _motionaware_radio_worker_running = False
+
+
+def _start_motionaware_radio_worker(mqtt_client):
+    global _motionaware_radio_worker_running
+    if not isMotionAwareAvailable() or _motionaware_radio_worker_running:
+        return False
+    _motionaware_radio_worker_running = True
+    Thread(
+        target=_motionaware_radio_worker,
+        args=(mqtt_client,),
+        name="diyHue-MotionAware-radio",
+        daemon=True,
+    ).start()
+    return True
+
 # on_message handler (linked to client below)
 def on_message(client, userdata, msg):
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         try:
             logging.debug("MQTT: got state message on " + msg.topic)
             data = json.loads(msg.payload)
+            _motionaware_radio_observe(msg.topic, data)
             logging.debug(msg.payload)
             if msg.topic.startswith(discoveryPrefix + "/light/"):
                 on_autodiscovery_light(msg)
@@ -371,8 +576,10 @@ def on_message(client, userdata, msg):
                             return
                         ### If is a motion sensor update the light level and temperature
                         if "occupancy" in data:
+                            motion_aware_before = motionAwareSnapshot()
                             motionSensor =  device.elements["ZLLPresence"]()
                             motionSensor.state = {"presence": data["occupancy"], "lastupdated": lastupdated}
+                            streamMotionAwareTransitions(motion_aware_before)
                             # send email if alarm is enabled:
                             notifyEmail(motionSensor.name)
                         if "illuminance" in data:
@@ -500,6 +707,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("zigbee2mqtt/+")
     client.subscribe("zigbee2mqtt/bridge/devices")
     client.subscribe("zigbee2mqtt/bridge/log")
+    _start_motionaware_radio_worker(client)
 
 def mqttServer():
 
