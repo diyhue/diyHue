@@ -3,11 +3,14 @@ import configManager
 import uuid
 import random
 from datetime import datetime
-from threading import Thread
+from threading import Thread, RLock
 from time import sleep
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 from pprint import pprint
+
+_motion_area_lock = RLock()
+_motion_area_generation = {}
 
 def findTriggerTime(times):
     numberOfIntervals = len(times)
@@ -93,10 +96,162 @@ def executeActions(actionsToExecute, groupsAndLights):
         for action in actionsToExecute[recall]:
             if action["action"] == "all_off":
                 for resource in groupsAndLights:
+                    if resource is None:
+                        continue
                     resource.setV1Action({"on": False})
                     logging.info("routine turning lights off " + resource.name)
             elif "recall" in action["action"] and action["action"]["recall"]["rtype"] == "scene":
                 callScene(action["action"]["recall"]["rid"])
+
+
+def _motionAreaTargets(configuration):
+    """Resolve the Hue behavior `motion.where` targets."""
+    motion = configuration.get("motion", {})
+    where = motion.get("where", []) if isinstance(motion, dict) else []
+    if not where:
+        where = configuration.get("where", [])
+
+    targets = []
+    for resource in where:
+        if not isinstance(resource, dict):
+            continue
+        if isinstance(resource.get("group"), dict):
+            group_ref = resource["group"]
+            target = findGroup(group_ref.get("rid"), group_ref.get("rtype"))
+        elif isinstance(resource.get("light"), dict):
+            light_ref = resource["light"]
+            target = findLight(light_ref.get("rid"), light_ref.get("rtype"))
+        else:
+            target = None
+        if target is not None:
+            targets.append(target)
+    return targets
+
+
+def _motionAreaSlotActions(configuration, event):
+    """Select the current Hue timeslot and return its motion actions."""
+    motion = configuration.get("motion", {})
+    when = motion.get("when", {}) if isinstance(motion, dict) else {}
+    slots = when.get("timeslots", []) if isinstance(when, dict) else []
+    if not isinstance(slots, list) or not slots:
+        return {}
+
+    normalized = []
+    for slot in slots:
+        if not isinstance(slot, dict):
+            continue
+        start_time = slot.get("start_time", {})
+        time_value = start_time.get("time", start_time)
+        if not isinstance(time_value, dict):
+            continue
+        try:
+            hour = int(time_value["hour"])
+            minute = int(time_value["minute"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        normalized.append({
+            "hour": hour,
+            "minute": minute,
+            "actions": slot.get("on_motion" if event else "on_no_motion", {}),
+        })
+
+    if not normalized:
+        return {}
+    return findTriggerTime(normalized)
+
+
+def _motionAreaDelaySeconds(actions):
+    for key in ("after", "timer"):
+        value = actions.get(key) if isinstance(actions, dict) else None
+        if not isinstance(value, dict):
+            continue
+        if key == "timer":
+            value = value.get("duration", {})
+        if not isinstance(value, dict):
+            continue
+        try:
+            return int(value.get("minutes", 0)) * 60 + int(value.get("seconds", 0))
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+
+def _motionAreaDelayedNoMotion(area_id, actions, targets, generation):
+    delay = _motionAreaDelaySeconds(actions)
+    if delay:
+        sleep(delay)
+    with _motion_area_lock:
+        if _motion_area_generation.get(area_id) != generation:
+            return
+    executeActions(actions, targets)
+
+
+def checkMotionAwareBehaviorInstances(area_id, motion):
+    """Execute Hue-created local behaviors for a MotionAware transition.
+
+    MotionAware is a service source, not a physical sensor device, so the
+    existing ``checkBehaviorInstances(device)`` dispatcher cannot reach these
+    instances.  This narrow adapter consumes the stock behavior shape and
+    reuses the established scene/group executor.
+    """
+    if not isinstance(area_id, str) or not isinstance(motion, bool):
+        return 0
+
+    with _motion_area_lock:
+        generation = _motion_area_generation.get(area_id, 0) + 1
+        _motion_area_generation[area_id] = generation
+
+    # Editing/recreating an area can leave historical instances in the
+    # datastore.  They share the same MotionArea source but may recall stale
+    # scenes.  The last persisted matching instance is the current app
+    # configuration; dispatch only that one.
+    matching = []
+    for instance in bridgeConfig.get("behavior_instance", {}).values():
+        if not getattr(instance, "enabled", False):
+            continue
+        configuration = getattr(instance, "configuration", {})
+        if not isinstance(configuration, dict):
+            continue
+        source = configuration.get("source", {})
+        if (
+            not isinstance(source, dict)
+            or source.get("rtype") != "motion_area_configuration"
+            or source.get("rid") != area_id
+        ):
+            continue
+
+        matching.append(instance)
+
+    if not matching:
+        return 0
+
+    executed = 0
+    for instance in matching[-1:]:
+        configuration = getattr(instance, "configuration", {})
+
+        targets = _motionAreaTargets(configuration)
+        if not targets:
+            logging.warning(
+                "MotionAware behavior %s has no resolvable targets",
+                getattr(instance, "id_v2", "unknown"),
+            )
+            continue
+
+        actions = _motionAreaSlotActions(configuration, motion)
+        if not isinstance(actions, dict):
+            continue
+
+        if motion:
+            executeActions(actions, targets)
+        else:
+            Thread(
+                target=_motionAreaDelayedNoMotion,
+                args=(area_id, actions, targets, generation),
+                daemon=True,
+            ).start()
+        executed += 1
+
+    return executed
 
 
 def checkBehaviorInstances(device):
