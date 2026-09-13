@@ -113,7 +113,7 @@ def entertainmentService(group, user):
     except Exception:
         pass
 
-    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
+    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls1_2', '-cipher', 'PSK:@SECLEVEL=0', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
     # Log any s_server stderr output (startup errors, handshake failures)
@@ -571,7 +571,7 @@ class HueConnection(object):
         r = requests.put(url, json={"stream":{"active":True}})
         logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
         try:
-            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
+            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls1_2', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
             self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=PIPE)
             # Drain stderr in a daemon thread to prevent pipe buffer from filling
             # and deadlocking the openssl process (stderr pipe is OS-buffered and
