@@ -16,13 +16,14 @@ COPY requirements.txt ./
 ## Install requirements
 # Use get-pip.py instead of apt's python3-pip/setuptools: Debian's setuptools
 # pulls python3-typeguard, whose postinst segfaults under QEMU (linux/arm64 CI).
+# Keep the bootstrap tooling: its post-install uninstaller can also segfault
+# under QEMU linux/arm64 after dependencies have been installed.
 RUN apt update \
     && apt install --no-install-recommends -y \
         ca-certificates curl unzip python3-minimal python3-dev gcc \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && curl -fsSL https://bootstrap.pypa.io/get-pip.py | python3 - --break-system-packages \
     && python3 -m pip install -r requirements.txt --no-cache-dir --break-system-packages --ignore-installed \
-    && python3 -m pip uninstall -y pip setuptools wheel --break-system-packages \
     && apt purge -y python3-dev gcc \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
