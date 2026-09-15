@@ -8,9 +8,13 @@ BRIDGE_EMULATOR = pathlib.Path(__file__).parents[1] / "BridgeEmulator"
 sys.path.insert(0, str(BRIDGE_EMULATOR))
 
 from functions.core import (  # noqa: E402
+    bridgeDiscoverySettings,
     bridgeIdentity,
     bridgeReportedApiversion,
     bridgeReportedSwversion,
+    bridgeV2ProductData,
+    shouldCheckPhilipsFirmware,
+    shouldServeLegacyDescription,
     staticConfig,
 )
 
@@ -38,6 +42,63 @@ class BridgeProfileTests(unittest.TestCase):
         self.assertEqual(bridgeReportedApiversion(config), "1.78.0")
         self.assertEqual(bridgeReportedSwversion(config), "2071442000")
         self.assertEqual(staticConfig(config)["modelid"], "BSB003")
+
+    def test_discovery_policy_preserves_classic_and_requires_https_for_pro(self):
+        classic = bridgeDiscoverySettings({}, 80, 443, https_enabled=False)
+        self.assertEqual(
+            classic,
+            {
+                "advertise_ssdp": True,
+                "mdns_enabled": True,
+                "mdns_port": 80,
+                "modelid": "BSB002",
+            },
+        )
+
+        pro = bridgeDiscoverySettings({"bridge_profile": "pro"}, 80, 443, https_enabled=True)
+        self.assertEqual(
+            pro,
+            {
+                "advertise_ssdp": False,
+                "mdns_enabled": True,
+                "mdns_port": 443,
+                "modelid": "BSB003",
+            },
+        )
+        self.assertFalse(
+            bridgeDiscoverySettings({"bridge_profile": "pro"}, 80, 443, https_enabled=False)["mdns_enabled"]
+        )
+
+    def test_v2_product_data_and_firmware_policy_follow_profile(self):
+        classic = {"swversion": "1972076030"}
+        self.assertEqual(
+            bridgeV2ProductData(classic),
+            {
+                "certified": True,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "model_id": "BSB002",
+                "product_archetype": "bridge_v2",
+                "product_name": "Philips hue",
+                "software_version": "1.97.2076030",
+            },
+        )
+        self.assertTrue(shouldCheckPhilipsFirmware(classic))
+        self.assertTrue(shouldServeLegacyDescription(classic))
+
+        pro = {"bridge_profile": "pro", "swversion": "1972076030"}
+        self.assertEqual(
+            bridgeV2ProductData(pro),
+            {
+                "certified": True,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "model_id": "BSB003",
+                "product_archetype": "bridge_v3",
+                "product_name": "Hue Bridge",
+                "software_version": "1.78.2071442000",
+            },
+        )
+        self.assertFalse(shouldCheckPhilipsFirmware(pro))
+        self.assertFalse(shouldServeLegacyDescription(pro))
 
     def test_runtime_profile_selection_is_explicit(self):
         config = {"config": {"bridge_profile": "classic"}}

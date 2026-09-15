@@ -10,7 +10,11 @@ def bridgeIdentity(config=None):
             "product_name": "Hue Bridge",
             "swversion": "2071442000",
             "apiversion": "1.78.0",
-            "software_version": "1.78.2071442000"
+            "software_version": "1.78.2071442000",
+            "advertise_ssdp": False,
+            "mdns_transport": "https",
+            "serve_legacy_description": False,
+            "check_philips_firmware": False,
         }
 
     return {
@@ -20,7 +24,11 @@ def bridgeIdentity(config=None):
         "product_name": "Philips hue",
         "swversion": None,
         "apiversion": None,
-        "software_version": None
+        "software_version": None,
+        "advertise_ssdp": True,
+        "mdns_transport": "http",
+        "serve_legacy_description": True,
+        "check_philips_firmware": True,
     }
 
 
@@ -34,6 +42,48 @@ def bridgeReportedApiversion(config):
     """Return the externally reported API version for the active profile."""
     identity = bridgeIdentity(config)
     return identity["apiversion"] or config["apiversion"]
+
+
+def bridgeDiscoverySettings(config, http_port, https_port, https_enabled):
+    """Return the discovery transport selected by the persisted profile."""
+    identity = bridgeIdentity(config)
+    mdns_uses_https = identity["mdns_transport"] == "https"
+    return {
+        "advertise_ssdp": identity["advertise_ssdp"],
+        "mdns_enabled": not mdns_uses_https or https_enabled,
+        "mdns_port": https_port if mdns_uses_https else http_port,
+        "modelid": identity["modelid"],
+    }
+
+
+def bridgeV2ProductData(config):
+    """Build the profile-owned portion of the V2 bridge device resource."""
+    identity = bridgeIdentity(config)
+    software_version = identity["software_version"]
+    if software_version is None:
+        swversion = str(config["swversion"])
+        if len(swversion) == 10:
+            software_version = f"{swversion[0]}.{swversion[1:3]}.{swversion[3:]}"
+        else:
+            software_version = swversion
+    return {
+        "certified": True,
+        "manufacturer_name": "Signify Netherlands B.V.",
+        "model_id": identity["modelid"],
+        "product_archetype": identity["archetype"],
+        "product_name": identity["product_name"],
+        "software_version": software_version,
+    }
+
+
+def shouldCheckPhilipsFirmware(config=None):
+    """Whether the selected profile uses the classic Philips firmware feed."""
+    return bridgeIdentity(config)["check_philips_firmware"]
+
+
+def shouldServeLegacyDescription(config=None):
+    """Whether the selected profile exposes the classic SSDP description."""
+    return bridgeIdentity(config)["serve_legacy_description"]
 
 
 def nextFreeId(bridgeConfig, element):

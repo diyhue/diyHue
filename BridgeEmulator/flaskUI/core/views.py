@@ -14,6 +14,7 @@ import os
 import sys
 import logManager
 import subprocess
+from functions.core import shouldServeLegacyDescription
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core',__name__)
@@ -164,6 +165,9 @@ def login():
 
 @core.route('/description.xml')
 def description_xml():
+    if not shouldServeLegacyDescription(bridgeConfig["config"]):
+        return "", 404
+
     HOST_HTTP_PORT = configManager.runtimeConfig.arg["HTTP_PORT"]
     mac = configManager.runtimeConfig.arg["MAC"]
     resp = make_response(render_template('description.xml', mimetype='text/xml', port=HOST_HTTP_PORT, name=bridgeConfig["config"]["name"], ipaddress=bridgeConfig["config"]["ipaddress"], serial=mac))
