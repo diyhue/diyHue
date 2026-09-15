@@ -10,7 +10,7 @@ from flask import request
 from services.entertainment import entertainmentService
 from threading import Thread
 from time import sleep
-from functions.core import nextFreeId
+from functions.core import bridgeIdentity, bridgeV2ProductData, nextFreeId
 from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
 from lights.discover import scanForLights
@@ -174,30 +174,12 @@ def geoLocation():
 def v2BridgeDevice():
     config = bridgeConfig["config"]
     bridge_id = config["bridgeid"]
+    identity = bridgeIdentity(config)
     result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
-    result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
+    result["metadata"] = {"archetype": identity["archetype"], "name": config["name"]}
     result["identify"] = {}
-    # Convert swversion to software_version format to match original bridge
-    # swversion is a 10-digit number (e.g., "1972076030")
-    # software_version should be in semantic version format
-    # TODO: Verify exact format by comparing with original bridge response
-    # Current implementation: convert "1972076030" -> "1.97.2076030"
-    swversion_str = config["swversion"]
-    if len(swversion_str) == 10:
-        # Convert 10-digit swversion to semantic version: X.XX.XXXXXX
-        software_version = f"{swversion_str[0]}.{swversion_str[1:3]}.{swversion_str[3:]}"
-    else:
-        # Fallback: use swversion as-is if format is unexpected
-        software_version = swversion_str
-    result["product_data"] = {
-        "certified": True,
-        "manufacturer_name": "Signify Netherlands B.V.",
-        "model_id": "BSB002",
-        "product_archetype": "bridge_v2",
-        "product_name": "Philips hue",
-        "software_version": software_version
-    }
+    result["product_data"] = bridgeV2ProductData(config)
     result["services"] = [
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')), "rtype": "bridge"},
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_connectivity')), "rtype": "zigbee_connectivity"},
