@@ -35,7 +35,8 @@ def process_arguments(configDir, args):
 
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
-                    "noLinkButton": False, "noServeHttps": False}
+                    "noLinkButton": False, "noServeHttps": False,
+                    "BRIDGE_PROFILE": None}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -47,6 +48,8 @@ def parse_arguments():
     ap.add_argument("--http-port", help="The port to listen on for HTTP (Docker)", type=int)
     ap.add_argument("--https-port", help="The port to listen on for HTTPS (Docker)", type=int)
     ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
+    ap.add_argument("--bridge-profile", choices=("classic", "pro"),
+                    help="Bridge capability profile (classic or pro)")
     ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
     ap.add_argument("--ip-range", help="Deprecated use webui, Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
     ap.add_argument("--sub-ip-range", help="Deprecated use webui, Set SUB IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
@@ -67,6 +70,17 @@ def parse_arguments():
 
     if args.no_serve_https:
         argumentDict["noServeHttps"] = True
+
+    bridge_profile = args.bridge_profile or get_environment_variable(
+        "BRIDGE_PROFILE"
+    )
+    if bridge_profile:
+        bridge_profile = bridge_profile.strip().lower()
+        if bridge_profile not in ("classic", "pro"):
+            raise SystemExit(
+                "BRIDGE_PROFILE must be either 'classic' or 'pro'"
+            )
+        argumentDict["BRIDGE_PROFILE"] = bridge_profile
 
     if args.debug or get_environment_variable('DEBUG', True):
         argumentDict["DEBUG"] = True
