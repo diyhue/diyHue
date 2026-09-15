@@ -7,6 +7,7 @@ from HueObjects import Sensor
 import json
 from threading import Thread
 from functions.rules import rulesProcessor
+from functions.motionAware import motionAwareSnapshot, streamMotionAwareTransitions
 from ws4py.client.threadedclient import WebSocketClient
 from sensors.discover import addHueMotionSensor
 from functions.core import nextFreeId
@@ -124,7 +125,19 @@ def websocketClient():
                             else:
                                 message["state"]["dark"] = True
 
+                        motion_aware_before = (
+                            motionAwareSnapshot()
+                            if "presence" in message["state"]
+                            else None
+                        )
+
                         bridgeSensor.state.update(message["state"])
+
+                        if motion_aware_before is not None:
+                            streamMotionAwareTransitions(
+                                motion_aware_before
+                            )
+
                         current_time = datetime.now()
                         for key in message["state"].keys():
                             bridgeSensor.dxState[key] = current_time
