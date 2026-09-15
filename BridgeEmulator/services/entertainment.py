@@ -113,7 +113,7 @@ def entertainmentService(group, user):
     except Exception:
         pass
 
-    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls1_2', '-cipher', 'PSK:@SECLEVEL=0', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
+    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls1_2', '-cipher', 'PSK-AES128-GCM-SHA256:@SECLEVEL=0', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '0.0.0.0:2100', '-quiet']
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
     # Log any s_server stderr output (startup errors, handshake failures)
@@ -383,36 +383,15 @@ def entertainmentService(group, user):
                             light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
                         non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
-                    if logManager.logger.logLevel <= _logging.DEBUG:
-                        fps_frame_count += 1
-                        if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
-                            fps = fps_frame_count / (new_frame_time - prev_frame_time)
-                            avg_interval_ms = (new_frame_time - prev_frame_time) / fps_frame_count * 1000
-                            summary_parts = []
-                            for lid, count in sorted(_light_frame_count.items()):
-                                light_name = lights_v1.get(lid)
-                                if light_name:
-                                    light_name = light_name.name
-                                else:
-                                    # try v2 lights
-                                    for v2entry in lights_v2:
-                                        if v2entry["light"].id_v1 == lid:
-                                            light_name = v2entry["light"].name
-                                            break
-                                    else:
-                                        light_name = lid
-                                summary_parts.append(f"{light_name}:{count}/s")
-                            if summary_parts:
-                                logging.debug("Entertainment FPS: %.1f  interval: %.1fms  transitions: %s",
-                                             fps, avg_interval_ms, "  ".join(summary_parts))
-                            else:
-                                logging.debug("Entertainment FPS: %.1f  interval: %.1fms", fps, avg_interval_ms)
-                            _light_frame_count.clear()
-                            prev_frame_time = new_frame_time
-                            fps_frame_count = 0
-                        elif prev_frame_time == 0:
-                            prev_frame_time = new_frame_time
-                            fps_frame_count = 0
+                    fps_frame_count += 1
+                    if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
+                        fps = fps_frame_count / (new_frame_time - prev_frame_time)
+                        logging.info("Entertainment FPS: %.1f", fps)
+                        prev_frame_time = new_frame_time
+                        fps_frame_count = 0
+                    elif prev_frame_time == 0:
+                        prev_frame_time = new_frame_time
+                        fps_frame_count = 0
                 else:
                     logging.info("HueStream was missing in the frame, client disconnected")
                     break
@@ -571,7 +550,7 @@ class HueConnection(object):
         r = requests.put(url, json={"stream":{"active":True}})
         logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
         try:
-            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls1_2', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
+            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256:@SECLEVEL=0', '-dtls1_2', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
             self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=PIPE)
             # Drain stderr in a daemon thread to prevent pipe buffer from filling
             # and deadlocking the openssl process (stderr pipe is OS-buffered and
