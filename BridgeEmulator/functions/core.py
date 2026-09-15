@@ -1,5 +1,41 @@
 from datetime import datetime, timezone
 
+
+def bridgeIdentity(config=None):
+    if config and config.get("bridge_profile") == "pro":
+        return {
+            "profile": "pro",
+            "modelid": "BSB003",
+            "archetype": "bridge_v3",
+            "product_name": "Hue Bridge",
+            "swversion": "2071442000",
+            "apiversion": "1.78.0",
+            "software_version": "1.78.2071442000"
+        }
+
+    return {
+        "profile": "classic",
+        "modelid": "BSB002",
+        "archetype": "bridge_v2",
+        "product_name": "Philips hue",
+        "swversion": None,
+        "apiversion": None,
+        "software_version": None
+    }
+
+
+def bridgeReportedSwversion(config):
+    """Return the externally reported firmware for the active profile."""
+    identity = bridgeIdentity(config)
+    return identity["swversion"] or config["swversion"]
+
+
+def bridgeReportedApiversion(config):
+    """Return the externally reported API version for the active profile."""
+    identity = bridgeIdentity(config)
+    return identity["apiversion"] or config["apiversion"]
+
+
 def nextFreeId(bridgeConfig, element):
     i = 1
     while (str(i)) in bridgeConfig[element]:
@@ -7,7 +43,8 @@ def nextFreeId(bridgeConfig, element):
     return str(i)
 
 
-def staticConfig():
+def staticConfig(config=None):
+    identity = bridgeIdentity(config)
     return {
         "backup": {
             "errorcode": 0,
@@ -23,7 +60,7 @@ def staticConfig():
             "time": "disconnected"
         },
         "linkbutton": False,
-        "modelid": "BSB002",
+        "modelid": identity["modelid"],
         "portalconnection": "disconnected",
         "portalservices": False,
         "analyticsconsent": False,
