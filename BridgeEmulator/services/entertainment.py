@@ -71,6 +71,57 @@ def entertainmentService(group, user):
     logging.debug("Key: " + user.client_key)
     bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
     bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
+
+    # Bind UDP 2100 immediately. The TV sends DTLS ClientHello right after
+    # stream active=True; any delay here drops the handshake (2.0.44 waited
+    # ~580ms for light setup / ss / openssl version before listen).
+    import subprocess as _sp
+    try:
+        _sp.run(["pkill", "-f", "openssl.*s_server.*2100"], capture_output=True, timeout=2)
+    except Exception:
+        pass
+
+    # Match 2.0.31 as closely as OpenSSL 3 allows: DTLS 1.2, IPv4, no -quiet
+    # so handshake errors reach the log. Broad PSK list — TVs may not offer GCM-only.
+    opensslCmd = [
+        _OPENSSL_BIN, "s_server",
+        "-4", "-dtls1_2", "-listen",
+        "-cipher", "PSK-AES128-GCM-SHA256:PSK-AES128-CCM8:PSK-AES128-CCM:@SECLEVEL=0",
+        "-psk", user.client_key, "-psk_identity", user.username,
+        "-nocert", "-accept", "2100",
+    ]
+    _logged_cmd = []
+    _hide = False
+    for _a in opensslCmd:
+        if _hide:
+            _logged_cmd.append("<redacted>")
+            _hide = False
+            continue
+        if _a == "-psk":
+            _logged_cmd.append(_a)
+            _hide = True
+            continue
+        _logged_cmd.append(_a)
+    logging.info("entertainment: starting %s", " ".join(_logged_cmd))
+    p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    logging.info("entertainment: openssl s_server pid=%s", p.pid)
+    _dtls_wait_started = time.time()
+    bridgeConfig["groups"][group.id_v1].stream["_proc"] = p
+    def _log_stderr(proc, name):
+        try:
+            for line in proc.stderr:
+                if line:
+                    logging.info("openssl s_server [%s] stderr: %s", name, line.decode("utf-8", errors="replace").strip())
+        except Exception:
+            pass
+    import threading as _thr
+    _thr.Thread(target=_log_stderr, args=[p, group.name], daemon=True).start()
+    try:
+        _ov = _sp.run([_OPENSSL_BIN, "version"], capture_output=True, text=True, timeout=5)
+        logging.info("entertainment: %s", (_ov.stdout or _ov.stderr or "").strip())
+    except Exception as e:
+        logging.warning("entertainment: openssl version failed: %s", e)
+
     lights_v2 = []
     lights_v1 = {}
     hueGroup  = -1
@@ -98,58 +149,6 @@ def entertainmentService(group, user):
         lights_v2.append({"light": lightObj, "lightNr": v2LightNr[lightObj.id_v1]})
     logging.debug(lights_v1)
     logging.debug(lights_v2)
-    # Kill any stale openssl s_server left on port 2100 from a previous cycle
-    import subprocess as _sp
-    try:
-        result = _sp.run(['lsof', '-ti', ':2100'], capture_output=True, text=True, timeout=5)
-        for _pid in result.stdout.strip().split('\n'):
-            if not _pid:
-                continue
-            # Only kill s_server, not s_client or user apps
-            ps_result = _sp.run(['ps', '-p', _pid, '-o', 'args='], capture_output=True, text=True)
-            if 's_server' in ps_result.stdout:
-                logging.warning("Killing stale openssl s_server on port 2100 (pid %s)", _pid)
-                os.kill(int(_pid), 9)
-    except Exception:
-        pass
-
-    opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls1_2', '-cipher', 'PSK-AES128-GCM-SHA256:@SECLEVEL=0', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '0.0.0.0:2100', '-quiet']
-    _logged_cmd = []
-    _hide = False
-    for _a in opensslCmd:
-        if _hide:
-            _logged_cmd.append("<redacted>")
-            _hide = False
-            continue
-        if _a == "-psk":
-            _logged_cmd.append(_a)
-            _hide = True
-            continue
-        _logged_cmd.append(_a)
-    try:
-        _ov = _sp.run([_OPENSSL_BIN, "version"], capture_output=True, text=True, timeout=5)
-        logging.info("entertainment: %s", (_ov.stdout or _ov.stderr or "").strip())
-    except Exception as e:
-        logging.warning("entertainment: openssl version failed: %s", e)
-    logging.info("entertainment: starting %s", " ".join(_logged_cmd))
-    p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    logging.info("entertainment: openssl s_server pid=%s", p.pid)
-    try:
-        _ss = _sp.run(["ss", "-ulpn"], capture_output=True, text=True, timeout=5)
-        _listeners = [ln.strip() for ln in (_ss.stdout or "").splitlines() if ":2100" in ln]
-        logging.info("entertainment: UDP :2100 listeners: %s", _listeners or "none (ss missing or not bound yet)")
-    except Exception as e:
-        logging.info("entertainment: could not list UDP :2100 (%s)", e)
-    bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
-    def _log_stderr(proc, name):
-        try:
-            for line in proc.stderr:
-                if line:
-                    logging.info("openssl s_server [%s] stderr: %s", name, line.decode('utf-8', errors='replace').strip())
-        except Exception:
-            pass
-    import threading as _thr
-    _thr.Thread(target=_log_stderr, args=[p, group.name], daemon=True).start()
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
@@ -167,7 +166,6 @@ def entertainmentService(group, user):
     _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking (debug only)
     _light_frame_count = {}       # per-light frame update count for FPS interval (debug only)
     _hue_send_count = 0           # sampled counter for hue bridge relay log (debug only)
-    _dtls_wait_started = time.time()
     _first_byte_logged = False
     _first_frame_logged = False
     _decrypted_bytes = 0
