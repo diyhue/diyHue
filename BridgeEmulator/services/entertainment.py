@@ -3,7 +3,7 @@ import logging as _logging
 import logManager
 import configManager
 import requests
-import socket, json, uuid
+import socket, json, uuid, select
 import os
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
@@ -114,14 +114,38 @@ def entertainmentService(group, user):
         pass
 
     opensslCmd = [_OPENSSL_BIN, 's_server', '-dtls1_2', '-cipher', 'PSK-AES128-GCM-SHA256:@SECLEVEL=0', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '0.0.0.0:2100', '-quiet']
+    _logged_cmd = []
+    _hide = False
+    for _a in opensslCmd:
+        if _hide:
+            _logged_cmd.append("<redacted>")
+            _hide = False
+            continue
+        if _a == "-psk":
+            _logged_cmd.append(_a)
+            _hide = True
+            continue
+        _logged_cmd.append(_a)
+    try:
+        _ov = _sp.run([_OPENSSL_BIN, "version"], capture_output=True, text=True, timeout=5)
+        logging.info("entertainment: %s", (_ov.stdout or _ov.stderr or "").strip())
+    except Exception as e:
+        logging.warning("entertainment: openssl version failed: %s", e)
+    logging.info("entertainment: starting %s", " ".join(_logged_cmd))
     p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    logging.info("entertainment: openssl s_server pid=%s", p.pid)
+    try:
+        _ss = _sp.run(["ss", "-ulpn"], capture_output=True, text=True, timeout=5)
+        _listeners = [ln.strip() for ln in (_ss.stdout or "").splitlines() if ":2100" in ln]
+        logging.info("entertainment: UDP :2100 listeners: %s", _listeners or "none (ss missing or not bound yet)")
+    except Exception as e:
+        logging.info("entertainment: could not list UDP :2100 (%s)", e)
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p  # store for stop handler
-    # Log any s_server stderr output (startup errors, handshake failures)
     def _log_stderr(proc, name):
         try:
             for line in proc.stderr:
                 if line:
-                    logging.error("openssl s_server [%s] stderr: %s", name, line.decode('utf-8', errors='replace').strip())
+                    logging.info("openssl s_server [%s] stderr: %s", name, line.decode('utf-8', errors='replace').strip())
         except Exception:
             pass
     import threading as _thr
@@ -143,16 +167,37 @@ def entertainmentService(group, user):
     _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking (debug only)
     _light_frame_count = {}       # per-light frame update count for FPS interval (debug only)
     _hue_send_count = 0           # sampled counter for hue bridge relay log (debug only)
+    _dtls_wait_started = time.time()
+    _first_byte_logged = False
+    _first_frame_logged = False
+    _decrypted_bytes = 0
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
+                if p.poll() is not None:
+                    logging.error("entertainment: openssl s_server exited before HueStream rc=%s after %.1fs",
+                                  p.returncode, time.time() - _dtls_wait_started)
+                    break
+                _ready, _, _ = select.select([p.stdout], [], [], 1.0)
+                if not _ready:
+                    logging.info("entertainment: waiting for first decrypted DTLS byte (%.0fs, openssl pid=%s alive, no HueStream yet)",
+                                 time.time() - _dtls_wait_started, p.pid)
+                    continue
                 readByte = p.stdout.read(1)
                 if not readByte:                           # EOF — DTLS process died
+                    logging.info("entertainment: openssl stdout EOF before HueStream after %.1fs",
+                                 time.time() - _dtls_wait_started)
                     break
+                _decrypted_bytes += 1
+                if not _first_byte_logged:
+                    logging.info("entertainment: first decrypted byte after %.3fs: 0x%02x",
+                                 time.time() - _dtls_wait_started, readByte[0])
+                    _first_byte_logged = True
                 headerBuf += readByte
                 if len(headerBuf) > 64:                   # keep only the trailing window, prevent unbounded growth
                     headerBuf = headerBuf[-64:]
                 if headerBuf.endswith(HUE_STREAM_MAGIC):
+                    logging.info("entertainment: HueStream magic found after %d decrypted byte(s)", _decrypted_bytes)
                     # Read the rest of the header to determine frame size.
                     # After the 9-byte magic, byte 9 carries the API version.
                     rest_header = p.stdout.read(7)        # bytes 9–15 (API v1 header ends at 15)
@@ -172,7 +217,7 @@ def entertainmentService(group, user):
                         logging.error("entertainment: unknown API version " + str(api_ver))
                         headerBuf = b''
                         continue
-                    logging.info("entertainment: init complete, frameBites=%d, api_version=%d", frameBites, api_ver)
+                    logging.info("entertainment: init complete, frameBites=%d, api_version=%d — entering frame loop", frameBites, api_ver)
                     # Sync to the next frame boundary: we've consumed 16 header
                     # bytes (9 magic + 7 rest). Read the remaining bytes of
                     # this frame (rest of header + payload) so the parse loop
@@ -197,6 +242,10 @@ def entertainmentService(group, user):
                 wledLights = {}
                 non_UDP_lights = []
                 if data[:9].decode('utf-8') == "HueStream":
+                    if not _first_frame_logged:
+                        logging.info("entertainment: first HueStream frame in processing loop, len=%d api=%s",
+                                     len(data), data[9] if len(data) > 9 else "?")
+                        _first_frame_logged = True
                     i = 0
                     apiVersion = 0
                     counter = 0
