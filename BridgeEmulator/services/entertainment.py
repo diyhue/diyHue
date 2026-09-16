@@ -6,6 +6,7 @@ import requests
 import socket, json, uuid, select
 import os
 from subprocess import Popen, PIPE
+import subprocess as _sp
 from functions.colors import convert_rgb_xy, convert_xy
 import paho.mqtt.publish as publish
 import time
@@ -73,9 +74,7 @@ def entertainmentService(group, user):
     bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
 
     # Bind UDP 2100 immediately. The TV sends DTLS ClientHello right after
-    # stream active=True; any delay here drops the handshake (2.0.44 waited
-    # ~580ms for light setup / ss / openssl version before listen).
-    import subprocess as _sp
+    # stream active=True; delaying listen drops the handshake.
     try:
         _sp.run(["pkill", "-f", "openssl.*s_server.*2100"], capture_output=True, timeout=2)
     except Exception:
@@ -110,17 +109,18 @@ def entertainmentService(group, user):
     def _log_stderr(proc, name):
         try:
             for line in proc.stderr:
-                if line:
-                    logging.info("openssl s_server [%s] stderr: %s", name, line.decode("utf-8", errors="replace").strip())
+                if not line:
+                    continue
+                msg = line.decode("utf-8", errors="replace").strip()
+                low = msg.lower()
+                if any(k in low for k in ("error", "fail", "alert", "no shared", "psk identity")):
+                    logging.info("openssl s_server [%s] stderr: %s", name, msg)
+                else:
+                    logging.debug("openssl s_server [%s] stderr: %s", name, msg)
         except Exception:
             pass
     import threading as _thr
     _thr.Thread(target=_log_stderr, args=[p, group.name], daemon=True).start()
-    try:
-        _ov = _sp.run([_OPENSSL_BIN, "version"], capture_output=True, text=True, timeout=5)
-        logging.info("entertainment: %s", (_ov.stdout or _ov.stderr or "").strip())
-    except Exception as e:
-        logging.warning("entertainment: openssl version failed: %s", e)
 
     lights_v2 = []
     lights_v1 = {}
@@ -178,7 +178,7 @@ def entertainmentService(group, user):
                     break
                 _ready, _, _ = select.select([p.stdout], [], [], 1.0)
                 if not _ready:
-                    logging.info("entertainment: waiting for first decrypted DTLS byte (%.0fs, openssl pid=%s alive, no HueStream yet)",
+                    logging.debug("entertainment: waiting for first decrypted DTLS byte (%.0fs, openssl pid=%s alive, no HueStream yet)",
                                  time.time() - _dtls_wait_started, p.pid)
                     continue
                 readByte = p.stdout.read(1)
@@ -188,14 +188,14 @@ def entertainmentService(group, user):
                     break
                 _decrypted_bytes += 1
                 if not _first_byte_logged:
-                    logging.info("entertainment: first decrypted byte after %.3fs: 0x%02x",
+                    logging.debug("entertainment: first decrypted byte after %.3fs: 0x%02x",
                                  time.time() - _dtls_wait_started, readByte[0])
                     _first_byte_logged = True
                 headerBuf += readByte
                 if len(headerBuf) > 64:                   # keep only the trailing window, prevent unbounded growth
                     headerBuf = headerBuf[-64:]
                 if headerBuf.endswith(HUE_STREAM_MAGIC):
-                    logging.info("entertainment: HueStream magic found after %d decrypted byte(s)", _decrypted_bytes)
+                    logging.debug("entertainment: HueStream magic found after %d decrypted byte(s)", _decrypted_bytes)
                     # Read the rest of the header to determine frame size.
                     # After the 9-byte magic, byte 9 carries the API version.
                     rest_header = p.stdout.read(7)        # bytes 9–15 (API v1 header ends at 15)
@@ -241,7 +241,7 @@ def entertainmentService(group, user):
                 non_UDP_lights = []
                 if data[:9].decode('utf-8') == "HueStream":
                     if not _first_frame_logged:
-                        logging.info("entertainment: first HueStream frame in processing loop, len=%d api=%s",
+                        logging.debug("entertainment: first HueStream frame in processing loop, len=%d api=%s",
                                      len(data), data[9] if len(data) > 9 else "?")
                         _first_frame_logged = True
                     i = 0
