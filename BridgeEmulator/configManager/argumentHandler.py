@@ -19,7 +19,7 @@ def get_environment_variable(var, boolean=False):
 def generate_certificate(mac, path):
     logging.info("Generating certificate")
     serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
-    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial, path])
+    call(["/usr/bin/env", "bash", "/opt/hue-emulator/genCert.sh", serial, path])
     logging.info("Certificate created")
 
 
