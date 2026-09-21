@@ -15,6 +15,7 @@ from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from functions.core import bridgeDiscoverySettings
+from functions.linkButton import installLinkButtonSignal
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -117,6 +118,8 @@ if __name__ == '__main__':
         HOST_HTTPS_PORT,
         not DISABLE_HTTPS,
     )
+    if bridgeConfig["config"].get("bridge_profile") == "pro":
+        installLinkButtonSignal(bridgeConfig["config"], logging)
     updateManager.startupCheck()
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()

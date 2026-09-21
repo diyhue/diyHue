@@ -18,6 +18,7 @@ from functions.core import (
     staticConfig,
     nextFreeId,
 )
+from functions.linkButton import linkButtonIsOpen
 from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
@@ -111,10 +112,8 @@ class NewUser(Resource):
 
     def post(self):
         postDict = request.get_json(force=True)
-        logging.info(postDict)
         if "devicetype" in postDict:
-            last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
-            if last_button_press + 30 >= datetime.now().timestamp(): # 30 sec offset
+            if linkButtonIsOpen(bridgeConfig["config"]):
                 username = str(uuid.uuid1()).replace('-', '')
                 if postDict["devicetype"].startswith("Hue Essentials"):
                     username = "hueess" + username[-26:]
@@ -122,19 +121,13 @@ class NewUser(Resource):
                 client_key = None
                 if "generateclientkey" in postDict and postDict["generateclientkey"]:
                     client_key = str(uuid.uuid4()).replace('-', '').upper()
-                    # client_key = "321c0c2ebfa7361e55491095b2f5f9db"
 
                     response[0]["success"]["clientkey"] = client_key
                 bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, postDict["devicetype"], client_key)
-                logging.debug(response)
                 configManager.bridgeConfig.save_config()
                 return response
             else:
                 logging.error("link button not pressed")
-                logging.error("last_button_press " + str(last_button_press))
-                logging.error("current_time      " + str(datetime.now().timestamp()))
-                if last_button_press != datetime.now().timestamp():
-                    logging.error("last_button_press is not current_time, please check timezone setting")
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
             logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
