@@ -122,6 +122,33 @@ class BridgeProfileTests(unittest.TestCase):
         updated = configInit.write_args(args, config)
         self.assertEqual(updated["config"]["bridge_profile"], "pro")
 
+    def test_classic_to_pro_selection_preserves_registered_api_users(self):
+        """A profile change must not replace the V1/V2 application-key store."""
+        users = {"existing-application-key": object()}
+        config = {
+            "config": {"bridge_profile": "classic", "swversion": "1975104000"},
+            "apiUsers": users,
+        }
+        self.assertEqual(bridgeIdentity(config["config"])["modelid"], "BSB002")
+
+        updated = configInit.write_args(
+            {
+                "HOST_IP": "192.0.2.10",
+                "FULLMAC": "02:00:00:00:00:10",
+                "MAC": "020000000010",
+                "BRIDGE_PROFILE": "pro",
+            },
+            config,
+        )
+
+        self.assertIs(updated["apiUsers"], users)
+        self.assertIn("existing-application-key", updated["apiUsers"])
+        self.assertEqual(bridgeIdentity(updated["config"])["modelid"], "BSB003")
+        self.assertEqual(
+            bridgeV2ProductData(updated["config"])["product_archetype"],
+            "bridge_v3",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,7 @@ Bridge Pro behaviour is selected only with `BRIDGE_PROFILE=pro` or
 | Surface | Status |
 | --- | --- |
 | Classic identity and discovery | Regression-tested; default unchanged |
+| Classic V1 registration followed by persisted Pro profile | Isolated API-tested; the same application key authenticated to V2 after restart |
 | Opt-in Pro identity, HTTPS mDNS policy and V2 product data | Regression-tested |
 | Motion-area resource graph, persistence and V2 mutations | Synthetic integration-tested |
 | SSE multi-client ordering, resume and restart cursor recovery | Synthetic integration-tested |
@@ -38,6 +39,25 @@ generated `state/` directory is ignored by Git.  Stop it with:
 ```sh
 docker compose -f examples/docker-compose/motionaware-beta/docker-compose.yml down
 ```
+
+## Classic-first API transition
+
+The profile setting and the V1/V2 application-user store are separate fields
+in the same persisted bridge state.  An isolated lifecycle test verified this
+sequence with a disposable volume:
+
+1. Start with the Classic profile and verify V1 reports `BSB002`.
+2. Open the normal 30-second link-button window and create a V1 application
+   user.
+3. Stop only that disposable container, retain only its disposable state, and
+   restart it with the explicit Pro profile.
+4. Verify V1 reports `BSB003`; authenticate the *same* application key to
+   `/auth/v1` and `/clip/v2/resource`; verify the Pro bridge device reports
+   `bridge_v3` and the MotionAware collections respond.
+
+This proves diyHue's local API persistence path, not a Philips Hue-app
+onboarding result.  In particular, it does not establish app discovery,
+TLS trust, client cache behaviour, or MotionAware UI visibility.
 
 ## Migration and rollback
 
