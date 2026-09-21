@@ -66,6 +66,17 @@ class PlacementTests(unittest.TestCase):
         arguments = types.ModuleType("configManager.argumentHandler")
         arguments.parse_arguments = lambda: {"CONFIG_PATH": self.temp.name, "HOST_IP": "127.0.0.1"}
         arguments.generate_certificate = Mock(side_effect=AssertionError("No certificates needed"))
+        motion_aware = types.ModuleType("functions.motionAware")
+        motion_aware.createMotionAwareArea = Mock()
+        motion_aware.deleteMotionAwareArea = Mock()
+        motion_aware.isMotionAwareCandidateDevice = Mock(return_value=False)
+        motion_aware.updateMotionAwareResource = Mock()
+        motion_aware.v2MotionAreaCandidateService = Mock()
+        motion_aware.v2MotionAwareResources = Mock(return_value={
+            "motion_area_configuration": [],
+            "convenience_area_motion": [],
+            "security_area_motion": [],
+        })
         modules = {
             "HueObjects": hue,
             "configManager": manager,
@@ -73,7 +84,12 @@ class PlacementTests(unittest.TestCase):
             "logManager": types.SimpleNamespace(logger=types.SimpleNamespace(get_logger=lambda _: Mock())),
             "sensors.sensor_types": types.SimpleNamespace(SUB_SENSOR_TYPES={}),
             "services.entertainment": types.SimpleNamespace(entertainmentService=Mock()),
-            "functions.core": types.SimpleNamespace(nextFreeId=Mock()),
+            "functions.core": types.SimpleNamespace(
+                nextFreeId=Mock(),
+                bridgeIdentity=lambda _config: {"profile": "classic"},
+                bridgeV2ProductData=Mock(),
+            ),
+            "functions.motionAware": motion_aware,
             "functions.scripts": types.SimpleNamespace(behaviorScripts={}),
             "lights.discover": types.SimpleNamespace(scanForLights=Mock()),
             "functions.daylightSensor": types.SimpleNamespace(daylightSensor=Mock()),

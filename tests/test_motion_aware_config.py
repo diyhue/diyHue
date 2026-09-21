@@ -104,10 +104,11 @@ class MotionAwareConfigTests(unittest.TestCase):
         )
         self.assertEqual(source, before)
 
-    def test_health_accepts_only_hue_enum(self):
+    def test_health_accepts_the_documented_hue_enums(self):
         self.assertEqual(read_health({"health": "healthy"}), "healthy")
         self.assertEqual(read_health({"health": "unhealthy"}), "unhealthy")
-        self.assertEqual(read_health({"health": "degraded"}), "healthy")
+        self.assertEqual(read_health({"health": "degraded"}), "degraded")
+        self.assertEqual(read_health({"health": "not_running"}), "not_running")
         self.assertEqual(read_health({"health": None}), "healthy")
 
     def test_participant_validation_rejects_duplicates_and_malformed(self):
