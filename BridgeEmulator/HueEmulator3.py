@@ -14,6 +14,7 @@ from flaskUI.espDevices import Switch
 from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
+from functions.core import bridgeDiscoverySettings
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -110,6 +111,12 @@ if __name__ == '__main__':
     HOST_HTTPS_PORT = configManager.runtimeConfig.arg["HTTPS_PORT"]
     CONFIG_PATH = configManager.runtimeConfig.arg["CONFIG_PATH"]
     DISABLE_HTTPS = configManager.runtimeConfig.arg["noServeHttps"]
+    discoverySettings = bridgeDiscoverySettings(
+        bridgeConfig["config"],
+        HOST_HTTP_PORT,
+        HOST_HTTPS_PORT,
+        not DISABLE_HTTPS,
+    )
     updateManager.startupCheck()
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
@@ -124,9 +131,21 @@ if __name__ == '__main__':
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
-    Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
+    if discoverySettings["advertise_ssdp"]:
+        Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+        Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    if discoverySettings["mdns_enabled"]:
+        Thread(
+            target=mdns.mdnsListener,
+            args=[
+                HOST_IP,
+                discoverySettings["mdns_port"],
+                discoverySettings["modelid"],
+                bridgeConfig["config"]["bridgeid"],
+            ],
+        ).start()
+    else:
+        logging.error("Bridge Pro profile requires HTTPS; mDNS advertisement disabled")
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
     if not DISABLE_HTTPS:

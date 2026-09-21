@@ -1,6 +1,7 @@
 import requests
 import configManager
 import logManager
+from functions.core import shouldCheckPhilipsFirmware
 import json
 from datetime import datetime, timezone
 import subprocess
@@ -9,6 +10,10 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
 def versionCheck():
+    if not shouldCheckPhilipsFirmware(bridgeConfig["config"]):
+        logging.info("Skipping classic Philips firmware check for Bridge Pro profile")
+        return
+
     swversion = bridgeConfig["config"]["swversion"]
     url = "https://firmware.meethue.com/v1/checkupdate/?deviceTypeId=BSB002&version=" + swversion
     try:
