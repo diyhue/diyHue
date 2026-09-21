@@ -47,6 +47,8 @@ in the same persisted bridge state.  An isolated lifecycle test verified this
 sequence with a disposable volume:
 
 1. Start with the Classic profile and verify V1 reports `BSB002`.
+   The same isolated test observed the Classic `_hue._tcp.local.` mDNS
+   service with `modelid=BSB002` on port 80.
 2. Open the normal 30-second link-button window and create a V1 application
    user.
 3. Stop only that disposable container, retain only its disposable state, and
