@@ -1,0 +1,23 @@
+name: diyhue-motionaware-beta
+
+services:
+  bridge:
+    build:
+      context: ../../..
+      dockerfile: .build/Dockerfile
+    image: diyhue/core:motionaware-beta
+    environment:
+      # TEST-NET values make this compose file safe for API-only validation.
+      # They are intentionally not suitable for Hue-app discovery or pairing.
+      BRIDGE_PROFILE: pro
+      IP: 192.0.2.10
+      MAC: 02:00:00:00:00:03
+      DEBUG: "false"
+    volumes:
+      - ./state:/opt/hue-emulator/config
+    networks:
+      - isolated
+
+networks:
+  isolated:
+    internal: true

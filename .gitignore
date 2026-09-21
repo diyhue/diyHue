@@ -1,4 +1,5 @@
 .DS_Store
+diyhue.log
 __pycache__
 BridgeEmulator/web-ui/public/config.js
 BridgeEmulator/web-ui/public/config.js
@@ -18,3 +19,4 @@ Sensors/*
 # Ignore userdata
 BridgeEmulator/export/
 BridgeEmulator/cert.pem
+examples/docker-compose/motionaware-beta/state/
