@@ -99,6 +99,7 @@ def load_module(config, events):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module._test_save_spy = config_manager.bridgeConfig
+        module._scheduleMotionAwareCalibration = lambda _area_id: None
         return module
     finally:
         for key, value in old_modules.items():
@@ -173,6 +174,62 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             resources["convenience_area_motion"][0]["owner"]["rid"], area_id
         )
         self.assertTrue(all(event["data"][0]["type"] for event in events))
+
+    def test_create_schedules_post_create_hue_replay(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+        scheduled = []
+        module._scheduleMotionAwareCalibration = scheduled.append
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+
+        self.assertEqual(scheduled, [created["id"]])
+
+    def test_post_create_hue_replay_emits_complete_resources(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        events.clear()
+        module.sleep = lambda _seconds: None
+
+        module._finishMotionAwareCalibration(area_id)
+
+        self.assertEqual(len(events), 6)
+        self.assertEqual(
+            [event["type"] for event in events],
+            ["add", "add", "add", "update", "update", "update"],
+        )
+
+        for event in events:
+            self.assertEqual(len(event["data"]), 1)
+            resource = event["data"][0]
+            self.assertIn("id", resource)
+            self.assertIn("type", resource)
+
+        area_updates = [
+            event["data"][0]
+            for event in events
+            if event["data"][0]["type"] == "motion_area_configuration"
+        ]
+
+        self.assertEqual(len(area_updates), 2)
+
+        for area in area_updates:
+            self.assertEqual(area["id"], area_id)
+            self.assertEqual(area["health"], "healthy")
+            self.assertIn("group", area)
+            self.assertIn("participants", area)
+            self.assertIn("services", area)
+
 
     def test_false_and_zero_survive_update_and_resource_render(self):
         config, room, devices = self.make_graph()

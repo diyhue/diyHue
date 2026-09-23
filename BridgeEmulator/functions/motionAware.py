@@ -3,7 +3,8 @@ import configManager
 import logManager
 
 from datetime import datetime, timezone
-from threading import RLock
+from threading import RLock, Thread
+from time import sleep
 from HueObjects import StreamEvent
 from functions.core import bridgeIdentity
 from motionAwareConfig import (
@@ -699,7 +700,65 @@ def createMotionAwareArea(data):
 
     _streamMotionAwareResources("add", event_data)
 
+    _scheduleMotionAwareCalibration(area_id)
+
     return created
+
+
+
+def _motionAwareAreaEventData(area_id):
+    """Return the complete MotionAware resource graph owned by one area."""
+    current = findMotionAwareResource(MOTION_AREA_CONFIGURATION, area_id)
+    if current is None:
+        return []
+
+    resources = v2MotionAwareResources()
+    event_data = [current]
+
+    for resource_type in MOTION_SERVICE_TYPES:
+        event_data.extend(
+            item
+            for item in resources[resource_type]
+            if item["owner"]["rid"] == area_id
+        )
+
+    return event_data
+
+
+def _finishMotionAwareCalibration(area_id):
+    """Replay complete resources after the Hue client's create reducer is ready.
+
+    The stock Hue client can finish its POST before its MotionAware event
+    reducer is installed.  Replaying the complete resource graph after that
+    boundary prevents a successful area creation from appearing to fail.
+    """
+    sleep(1.5)
+
+    if not motionAwareStoredArea(area_id):
+        return
+
+    event_data = _motionAwareAreaEventData(area_id)
+    if not event_data:
+        return
+
+    # Repeat creation once after the POST/reducer boundary.
+    _streamMotionAwareResources("add", event_data)
+
+    # Follow with complete update resources.  Hue's typed reducer expects
+    # owner/services/participants as well as health rather than a partial
+    # {id,type,health} patch.
+    event_data = _motionAwareAreaEventData(area_id)
+    if event_data:
+        _streamMotionAwareResources("update", event_data)
+
+
+def _scheduleMotionAwareCalibration(area_id):
+    """Schedule the post-create Hue-client compatibility replay."""
+    Thread(
+        target=_finishMotionAwareCalibration,
+        args=(area_id,),
+        daemon=True,
+    ).start()
 
 
 def deleteMotionAwareArea(area_id):
