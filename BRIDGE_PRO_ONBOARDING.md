@@ -8,7 +8,8 @@ bridge identity and API users are then restarted with `BRIDGE_PROFILE=pro`,
 and the existing application credential continues to authenticate the BSB003
 bridge.
 
-Fresh/direct onboarding of a never-before-paired BSB003 bridge is still
+Fresh **local protocol onboarding** of a never-before-paired BSB003 bridge is
+also validated. Fresh onboarding through the stock Hue app itself remains
 experimental and is not claimed here.
 
 ## Validated transition
@@ -39,6 +40,31 @@ This opens the normal local `/api` registration window for 30 seconds. It is
 not an HTTP endpoint and does not disable link-button checks. A successful
 application registration is persisted normally; the button press itself is
 not persisted.
+
+## Fresh BSB003 protocol validation
+
+A separate isolated test also validated onboarding from completely empty
+Bridge Pro state without relying on a previous Classic registration.
+
+The bridge started directly as BSB003 with an empty configuration volume.
+
+The normal local pairing lifecycle succeeded:
+
+1. BSB003 identity was active before registration.
+2. The local link-button window was opened through the normal virtual-button
+   mechanism.
+3. `POST /api/` created a new application username and DTLS client key.
+4. The application username authenticated successfully on `/auth/v1`.
+5. The same username authenticated `GET /clip/v2/resource/bridge`.
+6. The DTLS `clientkey` was rejected as a V2 application key.
+7. After a real container restart the newly created API user was restored from
+   persisted configuration.
+8. `/auth/v1` and `/clip/v2/resource/bridge` continued to return HTTP 200.
+
+This demonstrates that diyHue's local BSB003 registration, persistence and V2
+authentication path works from fresh state. It does not by itself demonstrate
+that the stock Hue app will complete its fresh Bridge Pro ownership/onboarding
+flow.
 
 ## Stock Hue app validation
 

@@ -294,5 +294,136 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
         self.assertEqual(wrong_credential.status_code, 403)
 
 
+    def test_fresh_pro_registration_survives_restart(self):
+        """A fresh BSB003 profile can register and retain a V2 application key."""
+        self.config["bridge_profile"] = "pro"
+
+        self.assertEqual(
+            bridgeIdentity(self.config)["modelid"],
+            "BSB003",
+        )
+
+        self.assertEqual(
+            bridgeDiscoverySettings(
+                self.config,
+                http_port=80,
+                https_port=443,
+                https_enabled=True,
+            ),
+            {
+                "advertise_ssdp": False,
+                "mdns_enabled": True,
+                "mdns_port": 443,
+                "modelid": "BSB003",
+            },
+        )
+
+        self.assertEqual(
+            len(self.yaml_config["apiUsers"]),
+            0,
+        )
+
+        pressLinkButton(self.config)
+
+        registration = self.client.post(
+            "/api/",
+            json={
+                "devicetype": "fresh-pro-onboarding",
+                "generateclientkey": True,
+            },
+        )
+
+        self.assertEqual(registration.status_code, 200)
+
+        credentials = registration.json[0]["success"]
+        application_key = credentials["username"]
+        client_key = credentials["clientkey"]
+
+        self.assertTrue(application_key)
+        self.assertTrue(client_key)
+        self.assertNotEqual(application_key, client_key)
+
+        registered_user = self.yaml_config["apiUsers"][
+            application_key
+        ]
+
+        persisted_whitelist = {
+            username: user.save()
+            for username, user in self.yaml_config["apiUsers"].items()
+        }
+
+        self.assertEqual(
+            len(persisted_whitelist),
+            1,
+        )
+
+        persisted_user = persisted_whitelist[
+            application_key
+        ]
+
+        self.assertEqual(
+            persisted_user["name"],
+            "fresh-pro-onboarding",
+        )
+
+        self.assertEqual(
+            persisted_user["client_key"],
+            client_key,
+        )
+
+        api_user_class = type(registered_user)
+
+        self.yaml_config["apiUsers"] = {
+            username: api_user_class(
+                username,
+                data["name"],
+                data["client_key"],
+                data["create_date"],
+                data["last_use_date"],
+            )
+            for username, data in persisted_whitelist.items()
+        }
+
+        restarted_user = self.yaml_config["apiUsers"][
+            application_key
+        ]
+
+        self.assertIsNot(
+            restarted_user,
+            registered_user,
+        )
+
+        self.assertEqual(
+            restarted_user.username,
+            application_key,
+        )
+
+        auth = self.client.get(
+            "/auth/v1",
+            headers={
+                "hue-application-key": application_key,
+            },
+        )
+
+        self.assertEqual(auth.status_code, 200)
+
+        self.assertEqual(
+            auth.headers.get("hue-application-id"),
+            application_key,
+        )
+
+        wrong_credential = self.client.get(
+            "/auth/v1",
+            headers={
+                "hue-application-key": client_key,
+            },
+        )
+
+        self.assertEqual(
+            wrong_credential.status_code,
+            403,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
