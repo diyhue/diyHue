@@ -13,7 +13,10 @@ from flask_restful import Api
 ROOT = Path(__file__).resolve().parents[1] / "BridgeEmulator"
 sys.path.insert(0, str(ROOT))
 
-from functions.core import bridgeIdentity
+from functions.core import (
+    bridgeDiscoverySettings,
+    bridgeIdentity,
+)
 from functions.linkButton import pressLinkButton
 
 
@@ -240,6 +243,23 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
         self.assertEqual(
             bridgeIdentity(self.config)["modelid"],
             "BSB003",
+        )
+
+        # The credential-preserving transition also moves discovery from
+        # Classic HTTP to Bridge Pro HTTPS.
+        self.assertEqual(
+            bridgeDiscoverySettings(
+                self.config,
+                http_port=80,
+                https_port=443,
+                https_enabled=True,
+            ),
+            {
+                "advertise_ssdp": False,
+                "mdns_enabled": True,
+                "mdns_port": 443,
+                "modelid": "BSB003",
+            },
         )
 
         # Profile selection must preserve the API user restored after restart.
