@@ -48,7 +48,14 @@ class BehaviorInstance():
         if self.name != None:
             result["metadata"]["name"] = self.name
 
-        for resource in self.configuration["where"]:
+        # MotionAware behavior configurations nest `where` under the
+        # `motion` block (the stock Hue app format).  Older diyHue data may
+        # still use a top-level `where`, so support both layouts.
+        where = self.configuration.get("where", [])
+        if not where and isinstance(self.configuration.get("motion"), dict):
+            where = self.configuration["motion"].get("where", [])
+
+        for resource in where:
             result["dependees"].append({"level": "critical",
                                         "target": {
                                             "rid": resource[list(resource.keys())[0]]["rid"],

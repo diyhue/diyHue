@@ -42,6 +42,12 @@ class LinkButtonTests(unittest.TestCase):
         self.config["linkbutton"]["lastlinkbuttonpushed"] = "invalid"
         self.assertFalse(linkButtonIsOpen(self.config, self.now))
 
+    def test_future_persisted_timestamp_is_closed(self):
+        self.config["linkbutton"]["lastlinkbuttonpushed"] = (
+            self.now + timedelta(seconds=1)
+        ).timestamp()
+        self.assertFalse(linkButtonIsOpen(self.config, self.now))
+
     def test_signal_handler_opens_window_without_exposing_an_api_route(self):
         logger = Mock()
         with patch("functions.linkButton.signal.signal") as register:

@@ -11,6 +11,18 @@ from services.entertainment import entertainmentService
 from threading import Thread
 from time import sleep
 from functions.core import bridgeIdentity, bridgeV2ProductData, nextFreeId
+from functions.motionAware import (
+    createMotionAwareArea,
+    deleteMotionAwareArea,
+    isMotionAwareCandidateDevice,
+    updateMotionAwareResource,
+    v2MotionAreaCandidateService,
+    v2MotionAwareResources,
+)
+from motionAwareConfig import (
+    MOTION_AREA_CONFIGURATION,
+    SERVED_MOTION_RESOURCE_TYPES,
+)
 from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
 from lights.discover import scanForLights
@@ -19,6 +31,74 @@ from functions.daylightSensor import daylightSensor
 logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
+
+PRO_MOTION_RESOURCE_TYPES = SERVED_MOTION_RESOURCE_TYPES
+
+# Resource types reported by the `clip` capability resource on a
+# live BSB003 Hue Bridge Pro.
+#
+# `motion_area_candidate` is deliberately absent: Bridge Pro uses it
+# only as a ResourceIdentifier rtype on compatible device services and
+# MotionAware participants; it is not a served resource collection.
+PRO_CAPABILITY_RESOURCES = [
+    "motion_area_configuration",
+    "convenience_area_motion",
+    "security_area_motion",
+    "entertainment_configuration",
+    "bridge",
+    "button",
+    "device",
+    "device_power",
+    "device_software_update",
+    "entertainment",
+    "light",
+    "light_level",
+    "zigbee_connectivity",
+    "zgp_connectivity",
+    "motion",
+    "camera_motion",
+    "relative_rotary",
+    "temperature",
+    "zigbee_device_discovery",
+    "contact",
+    "tamper",
+    "speaker",
+    "bell_button",
+    "switch_input_configuration",
+    "bridge_home",
+    "grouped_light",
+    "grouped_light_level",
+    "grouped_motion",
+    "room",
+    "service_group",
+    "zone",
+    "scene",
+    "matter",
+    "matter_fabric",
+    "behavior_script",
+    "behavior_instance",
+    "geofence_client",
+    "geolocation",
+    "smart_scene",
+    "clip",
+]
+
+# Bridge Pro resource types that diyHue does not implement yet. They are
+# valid served collections in Pro mode, but remain empty until their
+# corresponding emulation is implemented.
+PRO_EMPTY_RESOURCE_TYPES = (
+    "device_software_update",
+    "zgp_connectivity",
+    "camera_motion",
+    "speaker",
+    "bell_button",
+    "switch_input_configuration",
+    "grouped_light_level",
+    "grouped_motion",
+    "service_group",
+    "matter",
+    "matter_fabric",
+)
 
 v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device_power": {},
@@ -171,20 +251,88 @@ def geoLocation():
     }
 
 
+
+
+def v2Device(device):
+    """Return a V2 device with Bridge Pro-only services when applicable."""
+    result = device.getDevice()
+
+    if isMotionAwareCandidateDevice(device):
+        candidate = v2MotionAreaCandidateService(device)
+
+        if candidate not in result["services"]:
+            result["services"].append(candidate)
+
+    return result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def v2Clip():
+    config = bridgeConfig["config"]
+
+    if bridgeIdentity(config)["profile"] != "pro":
+        return None
+
+    return {
+        "id": str(uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            config["bridgeid"] + "clip"
+        )),
+        "resources": PRO_CAPABILITY_RESOURCES.copy(),
+        "type": "clip"
+    }
+
+
 def v2BridgeDevice():
     config = bridgeConfig["config"]
-    bridge_id = config["bridgeid"]
     identity = bridgeIdentity(config)
+    bridge_id = config["bridgeid"]
     result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
     result["metadata"] = {"archetype": identity["archetype"], "name": config["name"]}
     result["identify"] = {}
     result["product_data"] = bridgeV2ProductData(config)
+    if identity["profile"] == "pro":
+        service_specs = [
+            ("bridge", "bridge"),
+            ("entertainment", "entertainment"),
+            (
+                "zigbee_device_discovery",
+                "zigbee_device_discovery"
+            )
+        ]
+    else:
+        service_specs = [
+            ("bridge", "bridge"),
+            ("zigbee_connectivity", "zigbee_connectivity"),
+            (
+                "zigbee_device_discovery",
+                "zigbee_device_discovery"
+            ),
+            ("entertainment", "entertainment"),
+        ]
     result["services"] = [
-        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')), "rtype": "bridge"},
-        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_connectivity')), "rtype": "zigbee_connectivity"},
-        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'zigbee_device_discovery')), "rtype": "zigbee_device_discovery"},
-        {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'entertainment')), "rtype": "entertainment"}
+        {
+            "rid": str(uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                bridge_id + suffix
+            )),
+            "rtype": resource_type
+        }
+        for suffix, resource_type in service_specs
     ]
     return result
 
@@ -223,10 +371,19 @@ class ClipV2(Resource):
         # device
         data.append(v2BridgeDevice())
         for key, device in bridgeConfig["device"].items():
-            data.append(device.getDevice())
+            data.append(v2Device(device))
         # bridge
         data.append(v2Bridge())
         data.append(v2DiyHueBridge())
+
+        clip = v2Clip()
+        if clip is not None:
+            data.append(clip)
+
+        motion_aware = v2MotionAwareResources()
+        for resource_type in PRO_MOTION_RESOURCE_TYPES:
+            data.extend(motion_aware[resource_type])
+
         # zigbee
         data.append(v2BridgeZigBee())
         for key, device in bridgeConfig["device"].items():
@@ -347,7 +504,7 @@ class ClipV2Resource(Resource):
                     response["data"].append(group.getV2Api())
         elif resource == "device":
             for key, device in bridgeConfig["device"].items():
-                response["data"].append(device.getDevice())
+                response["data"].append(v2Device(device))
             response["data"].append(v2BridgeDevice())  # the bridge
         elif resource == "zigbee_device_discovery":
             response["data"].append(v2BridgeZigBeeDiscovery())
@@ -361,6 +518,26 @@ class ClipV2Resource(Resource):
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
+        elif (
+            resource == "clip"
+            and bridgeIdentity(bridgeConfig["config"])["profile"] == "pro"
+        ):
+            response["data"].append(v2Clip())
+        elif (
+            resource in PRO_MOTION_RESOURCE_TYPES
+            and bridgeIdentity(bridgeConfig["config"])["profile"] == "pro"
+        ):
+            response["data"].extend(
+                v2MotionAwareResources()[resource]
+            )
+        elif (
+            resource in PRO_EMPTY_RESOURCE_TYPES
+            and bridgeIdentity(bridgeConfig["config"])["profile"] == "pro"
+        ):
+            # Valid Bridge Pro collections whose emulation is not yet
+            # implemented. An empty collection is preferable to
+            # advertising a capability and then returning Not Found.
+            pass
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
@@ -425,7 +602,30 @@ class ClipV2Resource(Resource):
         postDict = request.get_json(force=True)
         logging.info(postDict)
         newObject = None
-        if resource == "scene":
+        if resource == MOTION_AREA_CONFIGURATION:
+            try:
+                created = createMotionAwareArea(postDict)
+            except ValueError as error:
+                return {
+                    "data": [],
+                    "errors": [{"description": str(error)}]
+                }, 400
+
+            if created is None:
+                return {
+                    "data": [],
+                    "errors": [{"description": "MotionAware is unavailable"}]
+                }, 404
+
+            return {
+                "data": [{
+                    **created,
+                    "rid": created["id"],
+                    "rtype": resource
+                }],
+                "errors": []
+            }, 201
+        elif resource == "scene":
             new_object_id = nextFreeId(bridgeConfig, "scenes")
             objCreation = {
                 "id_v1": new_object_id,
@@ -634,6 +834,25 @@ class ClipV2ResourceId(Resource):
         if "user" not in authorisation:
             return "", 403
         
+        # Bridge Pro capability resources are not stored in the
+        # regular V1-backed object collections.
+        if bridgeIdentity(bridgeConfig["config"])["profile"] == "pro":
+            if resource == "clip":
+                clip = v2Clip()
+                if resourceid == clip["id"]:
+                    return {"errors": [], "data": [clip]}
+                return {"errors": [], "data": []}
+
+            if resource in PRO_MOTION_RESOURCE_TYPES:
+                for item in v2MotionAwareResources()[resource]:
+                    if item["id"] == resourceid:
+                        return {"errors": [], "data": [item]}
+
+                return {"errors": [], "data": []}
+
+            if resource in PRO_EMPTY_RESOURCE_TYPES:
+                return {"errors": [], "data": []}
+
         # Special handling for bridge device (not stored in bridgeConfig["device"])
         if resource == "device":
             bridge_device_id = str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device'))
@@ -651,7 +870,7 @@ class ClipV2ResourceId(Resource):
         elif resource == "grouped_light":
             return {"errors": [], "data": [object.getV2GroupedLight()]}
         elif resource == "device":
-            return {"errors": [], "data": [object.getDevice()]}
+            return {"errors": [], "data": [v2Device(object)]}
         elif resource == "zigbee_connectivity":
             return {"errors": [], "data": [object.getZigBee()]}
         elif resource == "zigbee_device_discovery":
@@ -686,6 +905,42 @@ class ClipV2ResourceId(Resource):
             return "", 403
         putDict = request.get_json(force=True)
         logging.info(putDict)
+
+        if (
+            resource in PRO_MOTION_RESOURCE_TYPES
+            and bridgeIdentity(bridgeConfig["config"])["profile"] == "pro"
+        ):
+            try:
+                updated = updateMotionAwareResource(
+                    resource,
+                    resourceid,
+                    putDict
+                )
+            except ValueError as err:
+                return {
+                    "errors": [{
+                        "description": str(err)
+                    }]
+                }, 400
+
+            if updated is None:
+                return {
+                    "errors": [{
+                        "description": (
+                            "MotionAware resource not found: "
+                            + resourceid
+                        )
+                    }]
+                }, 404
+
+            return {
+                "data": [{
+                    "rid": resourceid,
+                    "rtype": resource
+                }],
+                "errors": []
+            }
+
         object = getObject(resource, resourceid)
         if resource == "light":
             object.setV2State(putDict)
@@ -915,6 +1170,16 @@ class ClipV2ResourceId(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
+
+        if resource == MOTION_AREA_CONFIGURATION:
+            if not deleteMotionAwareArea(resourceid):
+                return {
+                    "data": [],
+                    "errors": [{"description": "MotionAware resource not found"}]
+                }, 404
+
+            return {"data": [{"rid": resourceid, "rtype": resource}], "errors": []}
+
         object = getObject(resource, resourceid)
         
         if resource == "device":
