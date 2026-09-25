@@ -13,6 +13,8 @@ from functions.core import (  # noqa: E402
     bridgeReportedApiversion,
     bridgeReportedSwversion,
     bridgeV2ProductData,
+    hueMdnsHostname,
+    hueMdnsServiceName,
     shouldCheckPhilipsFirmware,
     shouldServeLegacyDescription,
     staticConfig,
@@ -68,6 +70,11 @@ class BridgeProfileTests(unittest.TestCase):
         self.assertFalse(
             bridgeDiscoverySettings({"bridge_profile": "pro"}, 80, 443, https_enabled=False)["mdns_enabled"]
         )
+
+    def test_mdns_name_uses_the_hue_bridge_id_suffix(self):
+        bridge_id = "001788FFFE123456"
+        self.assertEqual(hueMdnsServiceName(bridge_id), "Philips Hue - 123456")
+        self.assertEqual(hueMdnsHostname(bridge_id), "philips-hue-123456.local.")
 
     def test_v2_product_data_and_firmware_policy_follow_profile(self):
         classic = {"swversion": "1972076030"}

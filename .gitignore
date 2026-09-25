@@ -18,3 +18,4 @@ Sensors/*
 # Ignore userdata
 BridgeEmulator/export/
 BridgeEmulator/cert.pem
+diyhue.log

@@ -73,7 +73,11 @@ class PlacementTests(unittest.TestCase):
             "logManager": types.SimpleNamespace(logger=types.SimpleNamespace(get_logger=lambda _: Mock())),
             "sensors.sensor_types": types.SimpleNamespace(SUB_SENSOR_TYPES={}),
             "services.entertainment": types.SimpleNamespace(entertainmentService=Mock()),
-            "functions.core": types.SimpleNamespace(nextFreeId=Mock()),
+            "functions.core": types.SimpleNamespace(
+                bridgeIdentity=lambda _config: {},
+                bridgeV2ProductData=lambda _config: {},
+                nextFreeId=Mock(),
+            ),
             "functions.scripts": types.SimpleNamespace(behaviorScripts={}),
             "lights.discover": types.SimpleNamespace(scanForLights=Mock()),
             "functions.daylightSensor": types.SimpleNamespace(daylightSensor=Mock()),

@@ -56,6 +56,22 @@ def bridgeDiscoverySettings(config, http_port, https_port, https_enabled):
     }
 
 
+def hueMdnsServiceName(bridge_id):
+    """Return the Hue-style mDNS service instance name for a bridge id.
+
+    Hue bridges advertise the final six characters of their bridge id in the
+    ``_hue._tcp`` instance name.  The instance name is display data, not an
+    authentication claim, but matching the established format keeps generic
+    mDNS browsers and clients from having to special-case diyHue.
+    """
+    return "Philips Hue - " + str(bridge_id)[-6:].upper()
+
+
+def hueMdnsHostname(bridge_id):
+    """Return a valid, collision-resistant mDNS host name for a bridge."""
+    return "philips-hue-" + str(bridge_id)[-6:].lower() + ".local."
+
+
 def bridgeV2ProductData(config):
     """Build the profile-owned portion of the V2 bridge device resource."""
     identity = bridgeIdentity(config)
