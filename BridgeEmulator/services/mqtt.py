@@ -332,6 +332,12 @@ def on_message(client, userdata, msg):
                                 logging.info("MQTT: add new contact sensor " + key["model_id"])
                                 addHueSecureContactSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "friendly_name": key["friendly_name"]})                      
                             elif key["model_id"] in standardSensors:
+                                if key["model_id"] not in sensorTypes:
+                                    logging.warning(
+                                        "MQTT: sensor definition missing for %s; skipping device",
+                                        key["model_id"],
+                                    )
+                                    continue
                                 for sensor_type in sensorTypes[key["model_id"]].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
                                     #sensor_type = sensorTypes[key["model_id"]][sensor]
