@@ -105,6 +105,11 @@ def entertainmentService(group, user):
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
                 readByte = p.stdout.read(1)
+                if not readByte:
+                    logging.info(
+                        "Entertainment DTLS client disconnected before HueStream initialization"
+                    )
+                    break
                 logging.debug(readByte)
                 if readByte in b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d':
                     initMatchBytes += 1
@@ -119,12 +124,17 @@ def entertainmentService(group, user):
 
             else:
                 data = p.stdout.read(frameBites)
+                if not data:
+                    logging.info(
+                        "Entertainment DTLS client disconnected"
+                    )
+                    break
                 #logging.debug(",".join('{:02x}'.format(x) for x in data))
                 nativeLights = {}
                 esphomeLights = {}
                 mqttLights = []
                 wledLights = {}
-                if data[:9].decode('utf-8') == "HueStream":
+                if data[:9] == b"HueStream":
                     i = 0
                     apiVersion = 0
                     counter = 0
@@ -288,12 +298,10 @@ def entertainmentService(group, user):
                         prev_frameID = frameID
                         logging.info("Entertainment FPS: " + str(fps))
                 else:
-                    logging.info("HueStream was missing in the frame")
-                    p.kill()
-                    try:
-                        h.disconnect()
-                    except UnboundLocalError:
-                        pass
+                    logging.warning(
+                        "HueStream was missing in the frame; stopping entertainment session"
+                    )
+                    break
     except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
         logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
 
