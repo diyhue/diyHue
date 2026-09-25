@@ -26,6 +26,19 @@ def EventStreamSequence():
     with _eventstream_lock:
         return _eventstream_seq
 
+
+def EventStreamBounds():
+    """Return the inclusive sequence bounds of the retained event history.
+
+    The sequence is intentionally process-local.  A reconnecting client can
+    therefore present a cursor from before a bridge restart; consumers must
+    clamp it rather than waiting forever for the new sequence to overtake the
+    old one.
+    """
+    with _eventstream_lock:
+        oldest = eventstream[0][0] if eventstream else _eventstream_seq + 1
+        return oldest, _eventstream_seq
+
 def EventStreamSnapshot(after_seq):
     with _eventstream_lock:
         return [

@@ -96,6 +96,18 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         werkzeug_security.check_password_hash = Mock()
         werkzeug_security.generate_password_hash = Mock()
 
+        motion_aware = types.ModuleType("functions.motionAware")
+        motion_aware.createMotionAwareArea = Mock()
+        motion_aware.deleteMotionAwareArea = Mock()
+        motion_aware.isMotionAwareCandidateDevice = Mock(return_value=False)
+        motion_aware.updateMotionAwareResource = Mock()
+        motion_aware.v2MotionAreaCandidateService = Mock()
+        motion_aware.v2MotionAwareResources = Mock(return_value={
+            "motion_area_configuration": [],
+            "convenience_area_motion": [],
+            "security_area_motion": [],
+        })
+
         modules = {
             "HueObjects": hue_objects,
             "configManager": manager,
@@ -112,6 +124,7 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
             "functions.scripts": types.SimpleNamespace(behaviorScripts={}),
             "lights": lights,
             "lights.discover": types.SimpleNamespace(scanForLights=Mock()),
+            "functions.motionAware": motion_aware,
             "lights.light_types": types.SimpleNamespace(lightTypes={}),
             "requests": requests,
             "services": services,
@@ -165,6 +178,37 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.requests_get.assert_called_once_with(
             "https://firmware.meethue.com/v1/checkupdate/?deviceTypeId=BSB002&version=1972076030"
         )
+
+    def test_identify_prefers_native_blink_without_persisting_configuration(self):
+        class Light:
+            protocol = "mqtt"
+            id_v1 = "synthetic-light"
+
+            def __init__(self):
+                self.protocol_cfg = {
+                    "z2m_capabilities": {"effect_list": ["blink"]}
+                }
+                self.config = {"sentinel": "unchanged"}
+                self.commands = []
+
+            def setV1State(self, command):
+                self.commands.append(command)
+
+        light = Light()
+        self.v2._identifyLight(types.SimpleNamespace(firstElement=lambda: light))
+        self.assertEqual(light.commands, [{"effect": "blink"}])
+        self.assertEqual(light.config, {"sentinel": "unchanged"})
+
+    def test_identify_uses_alert_fallback_when_blink_is_not_advertised(self):
+        light = types.SimpleNamespace(
+            protocol="mqtt",
+            id_v1="synthetic-light",
+            protocol_cfg={"z2m_capabilities": {"effect_list": []}},
+            commands=[],
+        )
+        light.setV1State = light.commands.append
+        self.v2._identifyLight(light)
+        self.assertEqual(light.commands, [{"alert": "select"}])
 
 
 if __name__ == "__main__":
