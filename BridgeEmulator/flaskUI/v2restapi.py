@@ -144,7 +144,8 @@ def v2Bridge():
 def v2BridgeHome():
     result = {}
     result["children"] = []
-    result["children"].append({"rid": v2Bridge()["id"], "rtype": "device"}) # the bridge
+    bridge = v2Bridge()
+    result["children"].append({"rid": bridge["owner"]["rid"], "rtype": "device"}) # the bridge device
     
     result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL,
                                   bridgeConfig["groups"]["0"].id_v2 + 'bridge_home'))
