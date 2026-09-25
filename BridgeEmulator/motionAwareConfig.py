@@ -29,7 +29,18 @@ DEFAULT_SERVICE_ENABLED = True
 DEFAULT_SENSITIVITY = 2
 MAX_SENSITIVITY = 4
 DEFAULT_HEALTH = "healthy"
-VALID_HEALTH = ("healthy", "unhealthy")
+# Values observed on Hue Bridge Pro and accepted by the public V2 client
+# model.  ``unhealthy`` occurs on individual participants, while the area
+# itself can also report a calibration/runtime state.
+VALID_HEALTH = (
+    "healthy",
+    "unhealthy",
+    "degraded",
+    "recovering",
+    "unrecoverable",
+    "not_running",
+    "unknown",
+)
 VALID_GROUP_TYPES = ("bridge_home", "room", "zone")
 
 
