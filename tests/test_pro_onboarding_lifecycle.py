@@ -147,6 +147,10 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
             self.v2restapi.AuthV1,
             "/auth/v1",
         )
+        api.add_resource(
+            self.v2restapi.ClipV2Resource,
+            "/clip/v2/resource/<string:resource>",
+        )
 
         self.client = self.app.test_client()
         self.bridge_config = bridge_config
@@ -411,6 +415,30 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
             auth.headers.get("hue-application-id"),
             application_key,
         )
+
+        self.config["bridgeid"] = "001788FFFE000001"
+
+        clip = self.client.get(
+            "/clip/v2/resource/clip",
+            headers={
+                "hue-application-key": application_key,
+            },
+        )
+
+        self.assertEqual(clip.status_code, 200)
+        self.assertEqual(clip.json["errors"], [])
+        self.assertEqual(len(clip.json["data"]), 1)
+        self.assertEqual(clip.json["data"][0]["type"], "clip")
+
+        for resource in (
+            "motion_area_configuration",
+            "convenience_area_motion",
+            "security_area_motion",
+        ):
+            self.assertIn(
+                resource,
+                clip.json["data"][0]["resources"],
+            )
 
         wrong_credential = self.client.get(
             "/auth/v1",
