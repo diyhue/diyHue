@@ -7,7 +7,10 @@ import socket, json, uuid, select
 import os
 from subprocess import Popen, PIPE
 import subprocess as _sp
+from datetime import datetime, timezone
 from functions.colors import convert_rgb_xy, convert_xy
+from functions.entertainment import apply_stop_preference, snapshot_lights
+from HueObjects import StreamEvent
 import paho.mqtt.publish as publish
 import time
 logging = logManager.logger.get_logger(__name__)
@@ -67,7 +70,73 @@ def get_hue_entertainment_group(light, groupname):
 
 YeelightConnections = {}
 
+def finish_entertainment(group, proc, hue_connection, snapshots):
+    """Release this worker's stream, then apply the area's saved preference."""
+    if proc is not None:
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+    # An old worker must not restore over a replacement stream.
+    # Snapshots stay in the worker; they are not stored on group.stream.
+    if (bridgeConfig["groups"].get(group.id_v1) is not group
+            or group.stream.get("_proc") is not proc):
+        return
+    if hue_connection is not None:
+        try:
+            hue_connection.disconnect()
+        except Exception:
+            logging.exception("Could not disconnect the Hue entertainment relay")
+    lights = []
+    for light_ref in list(group.lights):
+        light = light_ref()
+        if light is not None:
+            lights.append(light)
+    # getV2Api assumes that the first light reference is still alive.
+    group.lights = [ref for ref in group.lights if ref() is not None]
+    for ip in {light.protocol_cfg["ip"] for light in lights
+               if light.protocol == "yeelight"}:
+        try:
+            disableMusic(ip)
+        except Exception:
+            logging.exception("Could not release Yeelight music mode for %s", ip)
+    for light in lights:
+        light.state["mode"] = "homeautomation"
+        lastAppliedFrame.pop(light.id_v1, None)
+    try:
+        apply_stop_preference(group, bridgeConfig, snapshots)
+    except Exception:
+        logging.exception("Could not apply after-streaming preference for %s", group.name)
+    finally:
+        group.stream.pop("_hue", None)
+        group.stream.pop("_proc", None)
+        group.state = group.update_state()
+        group.action["on"] = group.state["any_on"]
+        group.update_attr({"stream": {"active": False, "owner": None}})
+        for light in lights:
+            try:
+                light.genStreamEvent(light.getV2Api())
+            except Exception:
+                logging.exception("Could not advertise restored light %s", light.id_v1)
+        StreamEvent({
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [group.getV2GroupedLight()],
+            "id": str(uuid.uuid4()),
+            "type": "update",
+        })
+
 def entertainmentService(group, user):
+    snapshots = snapshot_lights(group)
+    session = {"proc": None, "hue": None}
+    try:
+        _entertainmentService(group, user, session)
+    except Exception as e:
+        logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
+    finally:
+        finish_entertainment(group, session["proc"], session["hue"], snapshots)
+    logging.info("Entertainment service stopped")
+
+def _entertainmentService(group, user, session):
     logging.debug("User: " + user.username)
     logging.debug("Key: " + user.client_key)
     bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
@@ -106,6 +175,7 @@ def entertainmentService(group, user):
     logging.info("entertainment: openssl s_server pid=%s", p.pid)
     _dtls_wait_started = time.time()
     bridgeConfig["groups"][group.id_v1].stream["_proc"] = p
+    session["proc"] = p
     def _log_stderr(proc, name):
         try:
             for line in proc.stderr:
@@ -153,6 +223,7 @@ def entertainmentService(group, user):
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
         bridgeConfig["groups"][group.id_v1].stream["_hue"] = h  # store for shutdown cleanup
+        session["hue"] = h
         if h._connected == False:
             hueGroupLights = {} # on a failed connection, empty the list
 
@@ -445,22 +516,6 @@ def entertainmentService(group, user):
     except Exception as e:
         logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
 
-    p.kill()
-    # Only clean up if we own the stored references (prevent stale thread
-    # from corrupting a new session that started after us)
-    if bridgeConfig["groups"][group.id_v1].stream.get("_proc") is p:
-        bridgeConfig["groups"][group.id_v1].stream["owner"] = None
-        try:
-            h.disconnect()
-        except UnboundLocalError:
-            pass
-        bridgeConfig["groups"][group.id_v1].stream.pop("_hue", None)
-        bridgeConfig["groups"][group.id_v1].stream.pop("_proc", None)
-        bridgeConfig["groups"][group.id_v1].stream["active"] = False
-        for light in group.lights:
-             bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
-    logging.info("Entertainment service stopped")
-
 def enableMusic(ip, host_ip):
     if ip in YeelightConnections:
         c = YeelightConnections[ip]
@@ -626,7 +681,7 @@ class HueConnection(object):
             url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
             if self._connected:
                 self._connection.kill()
-            requests.put(url, data={"stream":{"active":False}})
+            requests.put(url, json={"stream": {"active": False}}, timeout=3)
             self._connected = False
         except:
             pass

@@ -368,10 +368,11 @@ class Element(Resource):
             if "stream" in putDict:
                 if "active" in putDict["stream"]:
                     if putDict["stream"]["active"]:
-                        logging.info("start hue entertainment")
-                        bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": True}})
-                        Thread(target=entertainmentService, args=[
-                               bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
+                        if not bridgeConfig["groups"][resourceid].stream["active"]:
+                            logging.info("start hue entertainment")
+                            bridgeConfig["groups"][resourceid].update_attr({"stream": {"active": True}})
+                            Thread(target=entertainmentService, args=[
+                                   bridgeConfig["groups"][resourceid], bridgeConfig["apiUsers"][username]]).start()
                     else:
                         logging.info("stop hue entertainent")
                         proc = bridgeConfig["groups"][resourceid].stream.get("_proc")
