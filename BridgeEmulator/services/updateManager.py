@@ -9,11 +9,48 @@ import logManager
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
+def normalize_apiversion(apiversion: str) -> str:
+    """Return major.minor.0 from an API version string.
+
+    Philips used names like 1.72. Empty slices from a double dot ("6.1..0") are ignored.
+    """
+    parts = [part for part in str(apiversion).split(".") if part.isdigit()]
+    if len(parts) >= 2:
+        return f"{parts[0]}.{parts[1]}.0"
+    return str(apiversion)
+
+def apiversion_from_version_name(version_name: str, swversion: str) -> str:
+    """Build apiversion from a Philips versionName.
+
+    versionName is either a short name ("1.72") or the full bridge version
+    ("1.72.1967054020", and since September 2026 "6.1.1978418030").
+    The first four characters are not a stable major.minor: "6.1.1978418030"[:4] is "6.1.".
+    """
+    name = str(version_name)
+    build = str(swversion)
+    if build and name.endswith(build):
+        name = name[:-len(build)]
+    return normalize_apiversion(name)
+
+def bridge_software_version(apiversion: str, swversion: str) -> str:
+    """CLIP v2 product_data.software_version, e.g. 1.72.1967054020 or 6.1.1978418030."""
+    build = str(swversion)
+    parts = [part for part in str(apiversion).split(".") if part.isdigit()]
+    if len(parts) >= 2:
+        return f"{parts[0]}.{parts[1]}.{build}"
+    return f"{apiversion}.{build}"
+
 def versionCheck() -> None:
     """
     Check for firmware updates from Philips and update the bridge configuration if a new version is available.
     """
-    swversion = bridgeConfig["config"]["swversion"]
+    swversion = str(bridgeConfig["config"]["swversion"])
+    current_api = str(bridgeConfig["config"].get("apiversion", ""))
+    normalized_api = normalize_apiversion(current_api)
+    if normalized_api != current_api:
+        logging.info(f"apiversion corrected, old: {current_api} new: {normalized_api}")
+        bridgeConfig["config"]["apiversion"] = normalized_api
+        configManager.bridgeConfig.mark_dirty("config")
     url = f"https://firmware.meethue.com/v1/checkupdate/?deviceTypeId=BSB002&version={swversion}"
     try:
         response = requests.get(url)
@@ -21,11 +58,12 @@ def versionCheck() -> None:
         device_data = response.json()
         if device_data["updates"]:
             new_version = str(device_data["updates"][-1]["version"])
-            new_versionName = str(device_data["updates"][-1]["versionName"][:4] + ".0")
+            new_apiversion = apiversion_from_version_name(device_data["updates"][-1]["versionName"], new_version)
             if new_version > swversion:
                 logging.info(f"swversion number update from Philips, old: {swversion} new: {new_version}")
                 bridgeConfig["config"]["swversion"] = new_version
-                bridgeConfig["config"]["apiversion"] = new_versionName
+                bridgeConfig["config"]["apiversion"] = new_apiversion
+                configManager.bridgeConfig.mark_dirty("config")
                 update_swupdate2_timestamps()
             else:
                 logging.info("swversion higher than Philips")

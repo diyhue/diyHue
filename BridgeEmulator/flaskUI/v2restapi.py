@@ -7,6 +7,7 @@ import weakref
 from flask_restful import Resource
 from flask import request
 from services.entertainment import entertainmentService
+from services.updateManager import bridge_software_version
 from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
@@ -198,7 +199,7 @@ def v2BridgeDevice():
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
         "product_name": "Philips hue",
-        "software_version": config["apiversion"][:5] + config["swversion"]
+        "software_version": bridge_software_version(config["apiversion"], config["swversion"])
     }
     result["services"] = [
         {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')), "rtype": "bridge"},
