@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo -e "\033[32m Updating repository.\033[0m"
 opkg update

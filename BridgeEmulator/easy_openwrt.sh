@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo -e "\033[31m Installing diyHue Beta (flask)\033[0m"
 echo -e "\033[32m Deleting folders.\033[0m"
 rm -Rf /opt/hue-emulator
