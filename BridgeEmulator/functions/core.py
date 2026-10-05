@@ -563,7 +563,6 @@ def capabilities():
             "Europe/Istanbul",
             "Europe/Jersey",
             "Europe/Kaliningrad",
-            "Europe/Kyiv",
             "Europe/Kirov",
             "Europe/Kyiv",
             "Europe/Lisbon",
