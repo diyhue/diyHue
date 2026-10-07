@@ -456,6 +456,92 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         self.assertTrue(reenabled["enabled"])
         self.assertFalse(reenabled["motion"]["motion"])
 
+    def test_area_enable_change_resynchronizes_owned_motion_services(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        self.assertTrue(
+            module.setMotionAwareRuntimeMotion(area_id, True)
+        )
+
+        events.clear()
+
+        disabled = module.updateMotionAwareResource(
+            "motion_area_configuration",
+            area_id,
+            {"enabled": False},
+        )
+
+        self.assertFalse(disabled["enabled"])
+        self.assertEqual(disabled["health"], "not_running")
+
+        disabled_updates = [
+            event["data"][0]
+            for event in events
+            if event["type"] == "update"
+        ]
+
+        self.assertEqual(
+            {
+                item["type"]
+                for item in disabled_updates
+            },
+            {
+                "motion_area_configuration",
+                "convenience_area_motion",
+                "security_area_motion",
+            },
+        )
+
+        for item in disabled_updates:
+            if item["type"] in (
+                "convenience_area_motion",
+                "security_area_motion",
+            ):
+                self.assertFalse(item["motion"]["motion"])
+
+        events.clear()
+
+        reenabled = module.updateMotionAwareResource(
+            "motion_area_configuration",
+            area_id,
+            {"enabled": True},
+        )
+
+        self.assertTrue(reenabled["enabled"])
+        self.assertEqual(reenabled["health"], "healthy")
+
+        enabled_updates = [
+            event["data"][0]
+            for event in events
+            if event["type"] == "update"
+        ]
+
+        self.assertEqual(
+            {
+                item["type"]
+                for item in enabled_updates
+            },
+            {
+                "motion_area_configuration",
+                "convenience_area_motion",
+                "security_area_motion",
+            },
+        )
+
+        for item in enabled_updates:
+            if item["type"] in (
+                "convenience_area_motion",
+                "security_area_motion",
+            ):
+                self.assertFalse(item["motion"]["motion"])
+
     def test_quiet_changed_is_stable_and_runtime_only(self):
         config, room, devices = self.make_graph()
         events = []

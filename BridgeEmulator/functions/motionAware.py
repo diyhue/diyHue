@@ -995,16 +995,31 @@ def updateMotionAwareResource(resource_type, resource_id, data):
         resource_id
     )
 
-    # Hue's typed MotionAware reducer consumes complete resources. Partial
-    # patches can discard owner/services/participants in the cached model.
-    event_data = updated
+    # Enabling/disabling the whole MotionAware area changes the effective
+    # runtime state of its generated motion services as well. Resend the
+    # complete owned graph so a Hue client cannot retain stale cached motion
+    # across a disabled -> enabled lifecycle.
+    if (
+        resource_type == MOTION_AREA_CONFIGURATION
+        and "enabled" in changes
+    ):
+        event_data = _motionAwareAreaEventData(area_id)
 
-    StreamEvent({
-        "creationtime": _utcTimestamp(),
-        "data": [event_data],
-        "id": str(uuid.uuid4()),
-        "type": "update"
-    })
+        if event_data:
+            _streamMotionAwareResources(
+                "update",
+                event_data,
+            )
+    else:
+        # Hue's typed MotionAware reducer consumes complete resources.
+        # Partial patches can discard owner/services/participants in the
+        # cached model.
+        StreamEvent({
+            "creationtime": _utcTimestamp(),
+            "data": [updated],
+            "id": str(uuid.uuid4()),
+            "type": "update"
+        })
 
     return updated
 
