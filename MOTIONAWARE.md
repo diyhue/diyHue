@@ -22,3 +22,26 @@ Zigbee2MQTT `linkquality` is a routing/link metric and is explicitly not
 treated as MotionAware telemetry.
 
 Classic (`BSB002`) remains unchanged and does not expose MotionAware.
+
+## Explicit development candidates
+
+Until a protocol/provider implements validated MotionAware telemetry,
+individual light devices can be exposed explicitly as MotionAware candidates
+for development and Hue-client compatibility testing:
+
+```yaml
+motion_aware:
+  candidate_devices:
+    - "<v2-device-id>"
+```
+
+The ID is the V2 `device.id`, not the legacy light ID.
+
+This allowlist only exposes the reference-only `motion_area_candidate`
+service. It does not synthesize RF motion, does not interpret Zigbee2MQTT
+`linkquality`, and does not make an unsupported device physically
+MotionAware-capable.
+
+A real provider may instead set `motion_aware_candidate = true` in its device
+protocol configuration and publish validated transitions through
+`setMotionAwareRuntimeMotion(...)`.
