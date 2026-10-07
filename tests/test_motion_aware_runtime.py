@@ -325,6 +325,13 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             [],
         )
 
+        self.assertTrue(
+            module.setMotionAwareRuntimeMotion(area_id, True)
+        )
+        self.assertTrue(
+            module.motionAwareRuntimeState(area_id)["motion"]
+        )
+
         updated = module.updateMotionAwareResource(
             "motion_area_configuration",
             area_id,
@@ -336,6 +343,25 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             module._test_cancelled_behavior_areas,
             [area_id],
         )
+        self.assertIsNone(
+            module.motionAwareRuntimeState(area_id)
+        )
+
+        module.updateMotionAwareResource(
+            "motion_area_configuration",
+            area_id,
+            {"enabled": True},
+        )
+
+        _area_id, convenience_id, _security_id = (
+            module.v2MotionAreaServiceIds(area_id)
+        )
+        motion = module.findMotionAwareResource(
+            "convenience_area_motion",
+            convenience_id,
+        )["motion"]
+
+        self.assertFalse(motion["motion"])
 
     def test_quiet_changed_is_stable_and_runtime_only(self):
         config, room, devices = self.make_graph()

@@ -938,6 +938,10 @@ def updateMotionAwareResource(resource_type, resource_id, data):
         and changes.get("enabled") is False
     ):
         _cancelMotionAwareBehaviorActions(area_id)
+        # Runtime motion is transient observation state. Keeping it while
+        # the whole area is disabled can resurrect stale motion when the
+        # area is enabled again.
+        clearMotionAwareRuntime(area_id)
 
     areas = _storedAreasForWrite()
     area = areas.setdefault(
