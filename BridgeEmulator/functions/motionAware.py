@@ -1049,6 +1049,13 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
         _quiet_changed.pop(area_id, None)
 
     updates = streamMotionAwareTransitions(before)
+
+    active_service_ids = {
+        resource["id"]
+        for resource in updates
+        if resource.get("type") in MOTION_SERVICE_TYPES
+    }
+
     # MotionArea behaviors are keyed by the area configuration resource, so
     # dispatch them once per real transition after the V2 event is generated.
     if (
@@ -1058,7 +1065,11 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
     ):
         try:
             from functions.behavior_instance import checkMotionAwareBehaviorInstances
-            checkMotionAwareBehaviorInstances(area_id, value)
+            checkMotionAwareBehaviorInstances(
+                area_id,
+                value,
+                active_service_ids=active_service_ids,
+            )
         except Exception as err:
             # A malformed/legacy behavior must not break MotionAware state or SSE.
             logging.warning("MotionAware behavior dispatch failed: %s", err)

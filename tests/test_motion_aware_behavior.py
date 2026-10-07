@@ -77,7 +77,15 @@ class FakeInstance:
 def load_module(group, instance, scene):
     old = {key: sys.modules.get(key) for key in ("configManager", "logManager")}
     config_manager = types.ModuleType("configManager")
+    area_id = instance.configuration["source"]["rid"]
     config_manager.bridgeConfig = types.SimpleNamespace(yaml_config={
+        "config": {
+            "motion_aware": {
+                "areas": {
+                    area_id: {}
+                }
+            }
+        },
         "groups": {"1": group},
         "scenes": {"1": scene},
         "behavior_instance": {instance.id_v2: instance},
@@ -123,6 +131,73 @@ class MotionAwareBehaviorTests(unittest.TestCase):
         self.assertEqual(module.checkMotionAwareBehaviorInstances(area_id, False), 1)
         # No delay is configured, so the daemon action is observable immediately.
         self.assertEqual(group.actions, [{"on": False}])
+
+    def test_motion_area_uses_only_the_service_that_transitioned(self):
+        group = FakeGroup()
+        scene = FakeScene()
+        area_id = "area-v2"
+        instance = FakeInstance(area_id, group.id_v2)
+        module = load_module(group, instance, scene)
+
+        self.assertEqual(
+            module.checkMotionAwareBehaviorInstances(
+                area_id,
+                True,
+                active_service_ids={"other-service"},
+            ),
+            0,
+        )
+        self.assertEqual(scene.calls, 0)
+
+        self.assertEqual(
+            module.checkMotionAwareBehaviorInstances(
+                area_id,
+                True,
+                active_service_ids={"service-v2"},
+            ),
+            1,
+        )
+        self.assertEqual(scene.calls, 1)
+
+    def test_disabled_service_cancels_sleeping_no_motion_action(self):
+        group = FakeGroup()
+        scene = FakeScene()
+        area_id = "area-v2"
+        instance = FakeInstance(area_id, group.id_v2)
+
+        instance.configuration["motion"]["when"]["timeslots"][0]["on_no_motion"] = {
+            "after": {"seconds": 30},
+            "recall_single": [{"action": "all_off"}],
+        }
+
+        module = load_module(group, instance, scene)
+        sleeping = threading.Event()
+        release = threading.Event()
+
+        def pause(_seconds):
+            sleeping.set()
+            release.wait(timeout=1)
+
+        module.sleep = pause
+
+        self.assertEqual(
+            module.checkMotionAwareBehaviorInstances(
+                area_id,
+                False,
+                active_service_ids={"service-v2"},
+            ),
+            1,
+        )
+        self.assertTrue(sleeping.wait(timeout=1))
+
+        module.bridgeConfig["config"]["motion_aware"]["areas"][area_id][
+            "convenience_area_motion"
+        ] = {"enabled": False}
+
+        release.set()
+        time.sleep(0.05)
+
+        self.assertEqual(group.actions, [])
 
     def test_area_delete_cancels_a_delayed_no_motion_action(self):
         group = FakeGroup()

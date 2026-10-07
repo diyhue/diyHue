@@ -176,13 +176,89 @@ def _motionAreaDelaySeconds(actions):
     return 0
 
 
-def _motionAreaDelayedNoMotion(area_id, actions, targets, generation):
+def _motionAreaServiceReference(configuration):
+    """Return the explicit MotionAware service used by a Hue behavior."""
+    if not isinstance(configuration, dict):
+        return None
+
+    motion = configuration.get("motion", {})
+    if not isinstance(motion, dict):
+        return None
+
+    service = motion.get("motion_service")
+    if not isinstance(service, dict):
+        return None
+
+    rid = service.get("rid")
+    rtype = service.get("rtype")
+
+    if (
+        not isinstance(rid, str)
+        or not rid
+        or rtype not in (
+            "convenience_area_motion",
+            "security_area_motion",
+        )
+    ):
+        return None
+
+    return {
+        "rid": rid,
+        "rtype": rtype,
+    }
+
+
+def _motionAreaServiceIsEnabled(area_id, configuration):
+    """Check the current persisted enable state of a behavior's service."""
+    service = _motionAreaServiceReference(configuration)
+    if service is None:
+        return True
+
+    config = bridgeConfig.get("config", {})
+    if not isinstance(config, dict):
+        return True
+
+    motion_aware = config.get("motion_aware", {})
+    if not isinstance(motion_aware, dict):
+        return True
+
+    areas = motion_aware.get("areas", {})
+    if not isinstance(areas, dict):
+        return True
+
+    area = areas.get(area_id)
+    if not isinstance(area, dict):
+        return True
+
+    if area.get("enabled") is False:
+        return False
+
+    service_state = area.get(service["rtype"], {})
+    if not isinstance(service_state, dict):
+        return True
+
+    return service_state.get("enabled") is not False
+
+
+def _motionAreaDelayedNoMotion(
+    area_id,
+    configuration,
+    actions,
+    targets,
+    generation,
+):
     delay = _motionAreaDelaySeconds(actions)
     if delay:
         sleep(delay)
     with _motion_area_lock:
         if _motion_area_generation.get(area_id) != generation:
             return
+
+    # The service may have been disabled while the no-motion timer slept.
+    # Do not execute an action belonging to a service that no longer reports.
+    if not _motionAreaServiceIsEnabled(area_id, configuration):
+        return
+
     # ``after``/``timer`` describes scheduling, not an action list.  Passing
     # it to the legacy action executor makes it iterate a duration dictionary
     # and prevents the actual no-motion action from running.
@@ -207,7 +283,11 @@ def cancelMotionAwareBehaviorInstances(area_id):
     return True
 
 
-def checkMotionAwareBehaviorInstances(area_id, motion):
+def checkMotionAwareBehaviorInstances(
+    area_id,
+    motion,
+    active_service_ids=None,
+):
     """Execute Hue-created local behaviors for a MotionAware transition.
 
     MotionAware is a service source, not a physical sensor device, so the
@@ -241,6 +321,21 @@ def checkMotionAwareBehaviorInstances(area_id, motion):
         ):
             continue
 
+        service = _motionAreaServiceReference(configuration)
+
+        # Runtime dispatch provides the exact service IDs whose V2 state
+        # actually transitioned. A behavior explicitly bound to another
+        # MotionAware service must not execute.
+        if (
+            active_service_ids is not None
+            and service is not None
+            and service["rid"] not in active_service_ids
+        ):
+            continue
+
+        if not _motionAreaServiceIsEnabled(area_id, configuration):
+            continue
+
         matching.append(instance)
 
     if not matching:
@@ -267,7 +362,13 @@ def checkMotionAwareBehaviorInstances(area_id, motion):
         else:
             Thread(
                 target=_motionAreaDelayedNoMotion,
-                args=(area_id, actions, targets, generation),
+                args=(
+                    area_id,
+                    configuration,
+                    actions,
+                    targets,
+                    generation,
+                ),
                 daemon=True,
             ).start()
         executed += 1
