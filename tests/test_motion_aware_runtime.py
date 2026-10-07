@@ -367,6 +367,33 @@ class MotionAwareRuntimeTests(unittest.TestCase):
 
         self.assertFalse(motion["motion"])
 
+    def test_runtime_transition_rechecks_area_after_snapshot(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        original_snapshot = module.motionAwareSnapshot
+
+        def snapshot_then_disable():
+            before = original_snapshot()
+            config["config"]["motion_aware"]["areas"][area_id]["enabled"] = False
+            return before
+
+        module.motionAwareSnapshot = snapshot_then_disable
+
+        self.assertEqual(
+            module.setMotionAwareRuntimeMotion(area_id, True),
+            [],
+        )
+        self.assertIsNone(
+            module.motionAwareRuntimeState(area_id)
+        )
+
     def test_quiet_changed_is_stable_and_runtime_only(self):
         config, room, devices = self.make_graph()
         events = []

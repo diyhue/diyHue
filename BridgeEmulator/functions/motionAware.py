@@ -942,19 +942,6 @@ def updateMotionAwareResource(resource_type, resource_id, data):
     if not changes:
         return current
 
-    # Disabling a MotionAware area must invalidate delayed no-motion
-    # behavior work immediately. Otherwise an already sleeping timer can
-    # still switch lights off after the area has been disabled.
-    if (
-        resource_type == MOTION_AREA_CONFIGURATION
-        and changes.get("enabled") is False
-    ):
-        _cancelMotionAwareBehaviorActions(area_id)
-        # Runtime motion is transient observation state. Keeping it while
-        # the whole area is disabled can resurrect stale motion when the
-        # area is enabled again.
-        clearMotionAwareRuntime(area_id)
-
     areas = _storedAreasForWrite()
     area = areas.setdefault(
         area_id,
@@ -966,6 +953,13 @@ def updateMotionAwareResource(resource_type, resource_id, data):
 
     if resource_type == "motion_area_configuration":
         area.update(changes)
+
+        # Flip the persisted in-memory state first, then invalidate delayed
+        # work and transient motion. A concurrent telemetry callback will
+        # therefore observe enabled=False instead of resurrecting motion.
+        if changes.get("enabled") is False:
+            _cancelMotionAwareBehaviorActions(area_id)
+            clearMotionAwareRuntime(area_id)
     else:
         service = area.setdefault(
             resource_type,
@@ -1022,7 +1016,31 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
             return []
 
     before = motionAwareSnapshot()
+
     with _runtime_lock:
+        # The area or its services may have been disabled while the snapshot
+        # was being built. Revalidate under the runtime lock before writing
+        # transient state.
+        area = motionAwareStoredArea(area_id)
+
+        if area.get("enabled") is False:
+            return []
+
+        enabled_services = [
+            area.get(resource_type, {}).get("enabled", True)
+            if isinstance(area.get(resource_type, {}), dict)
+            else True
+            for resource_type in MOTION_SERVICE_TYPES
+        ]
+
+        if not any(enabled_services):
+            return []
+
+        current = _runtime_motion.get(area_id)
+
+        if current is not None and current["motion"] == value:
+            return []
+
         _runtime_motion[area_id] = {
             "motion": value,
             "changed": _utcTimestamp(),
@@ -1033,7 +1051,11 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
     updates = streamMotionAwareTransitions(before)
     # MotionArea behaviors are keyed by the area configuration resource, so
     # dispatch them once per real transition after the V2 event is generated.
-    if bridgeConfig.get("behavior_instance"):
+    if (
+        updates
+        and motionAwareStoredArea(area_id).get("enabled") is not False
+        and bridgeConfig.get("behavior_instance")
+    ):
         try:
             from functions.behavior_instance import checkMotionAwareBehaviorInstances
             checkMotionAwareBehaviorInstances(area_id, value)
