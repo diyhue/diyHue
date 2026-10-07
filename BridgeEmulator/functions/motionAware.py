@@ -21,6 +21,7 @@ from motionAwareConfig import (
     SERVED_MOTION_RESOURCE_TYPES,
     VALID_GROUP_TYPES,
     get_motion_aware_areas,
+    get_motion_aware_candidate_devices,
     get_stored_area,
     read_bool,
     read_int,
@@ -141,12 +142,24 @@ def isMotionAwareCandidateDevice(device):
     ``motionAwareCandidates``.
     """
     protocol_config = getattr(device, "protocol_cfg", {})
+    device_id = getattr(device, "id_v2", None)
+
+    provider_candidate = (
+        isinstance(protocol_config, dict)
+        and protocol_config.get("motion_aware_candidate") is True
+    )
+    explicit_candidate = (
+        isinstance(device_id, str)
+        and device_id in get_motion_aware_candidate_devices(
+            bridgeConfig.get("config", {})
+        )
+    )
+
     return (
         isMotionAwareAvailable()
         and getattr(device, "group_v1", None) == "lights"
         and hasattr(device, "getDevice")
-        and isinstance(protocol_config, dict)
-        and protocol_config.get("motion_aware_candidate") is True
+        and (provider_candidate or explicit_candidate)
     )
 
 

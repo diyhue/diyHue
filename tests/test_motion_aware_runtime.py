@@ -153,6 +153,33 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         self.assertEqual(module.v2MotionAwareRooms(), [])
         self.assertEqual(module.v2MotionAwareResources()["motion_area_configuration"], [])
 
+    def test_explicit_candidate_allowlist_enables_only_selected_device(self):
+        config, _room, devices = self.make_graph()
+        events = []
+
+        for device in devices:
+            device.protocol_cfg.pop("motion_aware_candidate", None)
+
+        config["config"]["motion_aware"]["candidate_devices"] = [
+            devices[1].id_v2
+        ]
+
+        module = load_module(config, events)
+
+        self.assertFalse(module.isMotionAwareCandidateDevice(devices[0]))
+        self.assertTrue(module.isMotionAwareCandidateDevice(devices[1]))
+
+        candidates = module.motionAwareCandidates()
+
+        self.assertNotIn(
+            module.v2MotionAreaCandidateService(devices[0])["rid"],
+            candidates,
+        )
+        self.assertIn(
+            module.v2MotionAreaCandidateService(devices[1])["rid"],
+            candidates,
+        )
+
     def test_plain_zigbee_light_is_not_a_motionaware_candidate(self):
         config, _room, devices = self.make_graph()
         events = []
