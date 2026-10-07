@@ -930,6 +930,15 @@ def updateMotionAwareResource(resource_type, resource_id, data):
     if not changes:
         return current
 
+    # Disabling a MotionAware area must invalidate delayed no-motion
+    # behavior work immediately. Otherwise an already sleeping timer can
+    # still switch lights off after the area has been disabled.
+    if (
+        resource_type == MOTION_AREA_CONFIGURATION
+        and changes.get("enabled") is False
+    ):
+        _cancelMotionAwareBehaviorActions(area_id)
+
     areas = _storedAreasForWrite()
     area = areas.setdefault(
         area_id,

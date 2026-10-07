@@ -310,6 +310,33 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         self.assertEqual(module.setMotionAwareRuntimeMotion(area_id, True), [])
         self.assertEqual(len(events), before)
 
+    def test_disabling_area_cancels_pending_behavior_actions(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        self.assertEqual(
+            module._test_cancelled_behavior_areas,
+            [],
+        )
+
+        updated = module.updateMotionAwareResource(
+            "motion_area_configuration",
+            area_id,
+            {"enabled": False},
+        )
+
+        self.assertFalse(updated["enabled"])
+        self.assertEqual(
+            module._test_cancelled_behavior_areas,
+            [area_id],
+        )
+
     def test_quiet_changed_is_stable_and_runtime_only(self):
         config, room, devices = self.make_graph()
         events = []
