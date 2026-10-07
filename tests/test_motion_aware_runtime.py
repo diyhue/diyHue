@@ -394,6 +394,68 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             module.motionAwareRuntimeState(area_id)
         )
 
+    def test_service_disable_invalidates_actions_and_clears_stale_runtime(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        _area_id, convenience_id, security_id = (
+            module.v2MotionAreaServiceIds(area_id)
+        )
+
+        self.assertTrue(
+            module.setMotionAwareRuntimeMotion(area_id, True)
+        )
+        self.assertTrue(
+            module.motionAwareRuntimeState(area_id)["motion"]
+        )
+
+        convenience = module.updateMotionAwareResource(
+            "convenience_area_motion",
+            convenience_id,
+            {"enabled": False},
+        )
+
+        self.assertFalse(convenience["enabled"])
+        self.assertEqual(
+            module._test_cancelled_behavior_areas,
+            [area_id],
+        )
+
+        # Security motion is still enabled, so the shared live state remains.
+        self.assertTrue(
+            module.motionAwareRuntimeState(area_id)["motion"]
+        )
+
+        security = module.updateMotionAwareResource(
+            "security_area_motion",
+            security_id,
+            {"enabled": False},
+        )
+
+        self.assertFalse(security["enabled"])
+        self.assertEqual(
+            module._test_cancelled_behavior_areas,
+            [area_id, area_id],
+        )
+        self.assertIsNone(
+            module.motionAwareRuntimeState(area_id)
+        )
+
+        reenabled = module.updateMotionAwareResource(
+            "convenience_area_motion",
+            convenience_id,
+            {"enabled": True},
+        )
+
+        self.assertTrue(reenabled["enabled"])
+        self.assertFalse(reenabled["motion"]["motion"])
+
     def test_quiet_changed_is_stable_and_runtime_only(self):
         config, room, devices = self.make_graph()
         events = []

@@ -967,6 +967,24 @@ def updateMotionAwareResource(resource_type, resource_id, data):
         )
         service.update(changes)
 
+        if changes.get("enabled") is False:
+            # A sleeping no-motion action must not survive a service-disable /
+            # re-enable cycle.
+            _cancelMotionAwareBehaviorActions(area_id)
+
+            enabled_services = [
+                area.get(service_type, {}).get("enabled", True)
+                if isinstance(area.get(service_type, {}), dict)
+                else True
+                for service_type in MOTION_SERVICE_TYPES
+            ]
+
+            # Runtime motion is shared by the area's two generated services.
+            # Preserve it while either service remains active, but drop it
+            # when the whole MotionAware sensor surface is disabled.
+            if not any(enabled_services):
+                clearMotionAwareRuntime(area_id)
+
     configManager.bridgeConfig.save_config(
         backup=False,
         resource="config"
