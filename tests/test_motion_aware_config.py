@@ -9,6 +9,7 @@ sys.path.insert(0, str(BRIDGE_EMULATOR))
 
 from motionAwareConfig import (  # noqa: E402
     get_motion_aware_areas,
+    get_motion_aware_candidate_devices,
     normalize_motion_aware_config,
     read_bool,
     read_int,
@@ -58,6 +59,35 @@ class MotionAwareConfigTests(unittest.TestCase):
             {"areas": {"old": {}, "new": {"enabled": False}}},
         )
 
+    def test_candidate_device_allowlist_is_explicit_and_non_mutating(self):
+        config = {
+            "motion_aware": {
+                "areas": {},
+                "candidate_devices": [
+                    "device-a",
+                    " device-b ",
+                    "device-a",
+                    "",
+                    None,
+                    7,
+                ],
+            }
+        }
+        before = copy.deepcopy(config)
+
+        self.assertEqual(
+            get_motion_aware_candidate_devices(config),
+            {"device-a", "device-b"},
+        )
+        self.assertEqual(config, before)
+        self.assertEqual(
+            get_motion_aware_candidate_devices(
+                {"motion_aware": {"candidate_devices": "device-a"}}
+            ),
+            set(),
+        )
+        self.assertEqual(get_motion_aware_candidate_devices({}), set())
+
     def test_boolean_reader_preserves_false_and_rejects_ints(self):
         self.assertFalse(read_bool({"enabled": False}, "enabled", True))
         self.assertTrue(read_bool({}, "enabled", True))
@@ -104,10 +134,11 @@ class MotionAwareConfigTests(unittest.TestCase):
         )
         self.assertEqual(source, before)
 
-    def test_health_accepts_only_hue_enum(self):
+    def test_health_accepts_the_documented_hue_enums(self):
         self.assertEqual(read_health({"health": "healthy"}), "healthy")
         self.assertEqual(read_health({"health": "unhealthy"}), "unhealthy")
-        self.assertEqual(read_health({"health": "degraded"}), "healthy")
+        self.assertEqual(read_health({"health": "degraded"}), "degraded")
+        self.assertEqual(read_health({"health": "not_running"}), "not_running")
         self.assertEqual(read_health({"health": None}), "healthy")
 
     def test_participant_validation_rejects_duplicates_and_malformed(self):

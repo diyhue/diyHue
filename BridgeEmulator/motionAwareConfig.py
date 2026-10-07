@@ -9,6 +9,7 @@ to use while config.yaml is being loaded and migrated.
 MOTION_AWARE_KEY = "motion_aware"
 LEGACY_MOTION_AWARE_KEYS = ("motionAware", "motionaware")
 AREAS_KEY = "areas"
+CANDIDATE_DEVICES_KEY = "candidate_devices"
 
 MOTION_AREA_CONFIGURATION = "motion_area_configuration"
 CONVENIENCE_AREA_MOTION = "convenience_area_motion"
@@ -29,7 +30,18 @@ DEFAULT_SERVICE_ENABLED = True
 DEFAULT_SENSITIVITY = 2
 MAX_SENSITIVITY = 4
 DEFAULT_HEALTH = "healthy"
-VALID_HEALTH = ("healthy", "unhealthy")
+# Values observed on Hue Bridge Pro and accepted by the public V2 client
+# model.  ``unhealthy`` occurs on individual participants, while the area
+# itself can also report a calibration/runtime state.
+VALID_HEALTH = (
+    "healthy",
+    "unhealthy",
+    "degraded",
+    "recovering",
+    "unrecoverable",
+    "not_running",
+    "unknown",
+)
 VALID_GROUP_TYPES = ("bridge_home", "room", "zone")
 
 
@@ -83,6 +95,26 @@ def normalize_motion_aware_config(config):
         issues.append("motion_aware.areas must be an object; reset to empty")
 
     return changed, issues
+
+
+def get_motion_aware_candidate_devices(config):
+    """Return explicitly opted-in MotionAware development device IDs."""
+    if not isinstance(config, dict):
+        return set()
+
+    motion_aware = config.get(MOTION_AWARE_KEY)
+    if not isinstance(motion_aware, dict):
+        return set()
+
+    values = motion_aware.get(CANDIDATE_DEVICES_KEY)
+    if not isinstance(values, list):
+        return set()
+
+    return {
+        value.strip()
+        for value in values
+        if isinstance(value, str) and value.strip()
+    }
 
 
 def get_motion_aware_areas(config, create=False):

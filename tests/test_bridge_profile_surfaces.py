@@ -96,6 +96,18 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         werkzeug_security.check_password_hash = Mock()
         werkzeug_security.generate_password_hash = Mock()
 
+        motion_aware = types.ModuleType("functions.motionAware")
+        motion_aware.createMotionAwareArea = Mock()
+        motion_aware.deleteMotionAwareArea = Mock()
+        motion_aware.isMotionAwareCandidateDevice = Mock(return_value=False)
+        motion_aware.updateMotionAwareResource = Mock()
+        motion_aware.v2MotionAreaCandidateService = Mock()
+        motion_aware.v2MotionAwareResources = Mock(return_value={
+            "motion_area_configuration": [],
+            "convenience_area_motion": [],
+            "security_area_motion": [],
+        })
+
         modules = {
             "HueObjects": hue_objects,
             "configManager": manager,
@@ -112,6 +124,7 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
             "functions.scripts": types.SimpleNamespace(behaviorScripts={}),
             "lights": lights,
             "lights.discover": types.SimpleNamespace(scanForLights=Mock()),
+            "functions.motionAware": motion_aware,
             "lights.light_types": types.SimpleNamespace(lightTypes={}),
             "requests": requests,
             "services": services,
@@ -143,6 +156,22 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.assertEqual(device["product_data"]["product_name"], "Philips hue")
         self.assertEqual(device["product_data"]["software_version"], "1.97.2076030")
 
+    def test_bridge_owned_zigbee_connectivity_is_classic_only(self):
+        # Physical BSB003 resource graphs do not contain a
+        # zigbee_connectivity resource owned by the bridge device.
+        self.assertIsNone(self.v2.v2BridgeZigBee())
+
+        self.config["bridge_profile"] = "classic"
+
+        zigbee = self.v2.v2BridgeZigBee()
+
+        self.assertIsNotNone(zigbee)
+        self.assertEqual(zigbee["type"], "zigbee_connectivity")
+        self.assertEqual(
+            zigbee["owner"]["rid"],
+            self.v2.v2BridgeDevice()["id"],
+        )
+
     def test_description_is_classic_only(self):
         self.assertEqual(self.views.description_xml(), ("", 404))
 
@@ -165,6 +194,20 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.requests_get.assert_called_once_with(
             "https://firmware.meethue.com/v1/checkupdate/?deviceTypeId=BSB002&version=1972076030"
         )
+
+
+    def test_motionaware_clip_is_pro_only(self):
+        clip = self.v2.v2Clip()
+        self.assertEqual(clip["type"], "clip")
+        for resource in (
+            "motion_area_configuration",
+            "convenience_area_motion",
+            "security_area_motion",
+        ):
+            self.assertIn(resource, clip["resources"])
+
+        self.config["bridge_profile"] = "classic"
+        self.assertIsNone(self.v2.v2Clip())
 
 
 if __name__ == "__main__":
