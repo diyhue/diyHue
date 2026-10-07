@@ -339,6 +339,7 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         )
 
         self.assertFalse(updated["enabled"])
+        self.assertEqual(updated["health"], "not_running")
         self.assertEqual(
             module._test_cancelled_behavior_areas,
             [area_id],
@@ -347,11 +348,14 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             module.motionAwareRuntimeState(area_id)
         )
 
-        module.updateMotionAwareResource(
+        reenabled = module.updateMotionAwareResource(
             "motion_area_configuration",
             area_id,
             {"enabled": True},
         )
+
+        self.assertTrue(reenabled["enabled"])
+        self.assertEqual(reenabled["health"], "healthy")
 
         _area_id, convenience_id, _security_id = (
             module.v2MotionAreaServiceIds(area_id)

@@ -351,6 +351,11 @@ def v2MotionAreaConfiguration(group, devices, area_id):
     group_reference = read_resource_reference(
         stored.get("group"), VALID_GROUP_TYPES
     ) or default_group
+    enabled = read_bool(
+        stored,
+        "enabled",
+        DEFAULT_AREA_ENABLED,
+    )
     return {
         "id": area_id,
         "name": read_nonempty_string(
@@ -384,8 +389,15 @@ def v2MotionAreaConfiguration(group, devices, area_id):
                 "rtype": SECURITY_AREA_MOTION
             }
         ],
-        "health": read_health(stored),
-        "enabled": read_bool(stored, "enabled", DEFAULT_AREA_ENABLED),
+        # A disabled physical MotionAware area is not running. Keep the
+        # persisted health state for enabled/calibrating areas, but never
+        # advertise a disabled area as healthy.
+        "health": (
+            read_health(stored)
+            if enabled
+            else "not_running"
+        ),
+        "enabled": enabled,
         "type": MOTION_AREA_CONFIGURATION
     }
 
