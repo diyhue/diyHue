@@ -63,7 +63,13 @@ def load_module(config, events):
     """Load motionAware.py with an isolated, in-memory diyHue graph."""
     old_modules = {
         key: sys.modules.get(key)
-        for key in ("configManager", "logManager", "HueObjects", "functions", "functions.core")
+        for key in (
+            "configManager",
+            "logManager",
+            "HueObjects",
+            "functions",
+            "functions.core",
+        )
     }
 
     config_manager = types.ModuleType("configManager")
@@ -84,6 +90,8 @@ def load_module(config, events):
         "profile": "pro" if value.get("bridge_profile") == "pro" else "classic"
     }
 
+    cancelled_behavior_areas = []
+
     sys.modules.update({
         "configManager": config_manager,
         "logManager": log_manager,
@@ -99,6 +107,8 @@ def load_module(config, events):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module._test_save_spy = config_manager.bridgeConfig
+        module._test_cancelled_behavior_areas = cancelled_behavior_areas
+        module._cancelMotionAwareBehaviorActions = cancelled_behavior_areas.append
         module._scheduleMotionAwareCalibration = lambda _area_id: None
         return module
     finally:
@@ -335,6 +345,10 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         area_id = created["id"]
         module.setMotionAwareRuntimeMotion(area_id, True)
         self.assertTrue(module.deleteMotionAwareArea(area_id))
+        self.assertEqual(
+            module._test_cancelled_behavior_areas,
+            [area_id],
+        )
         self.assertNotIn(area_id, config["config"]["motion_aware"]["areas"])
         self.assertIsNone(module.motionAwareRuntimeState(area_id))
         self.assertEqual(module.v2MotionAwareResources()["motion_area_configuration"], [])

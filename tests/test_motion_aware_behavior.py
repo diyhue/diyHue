@@ -124,6 +124,41 @@ class MotionAwareBehaviorTests(unittest.TestCase):
         # No delay is configured, so the daemon action is observable immediately.
         self.assertEqual(group.actions, [{"on": False}])
 
+    def test_area_delete_cancels_a_delayed_no_motion_action(self):
+        group = FakeGroup()
+        scene = FakeScene()
+        area_id = "area-v2"
+        instance = FakeInstance(area_id, group.id_v2)
+        instance.configuration["motion"]["when"]["timeslots"][0]["on_no_motion"] = {
+            "after": {"seconds": 30},
+            "recall_single": [{"action": "all_off"}],
+        }
+
+        module = load_module(group, instance, scene)
+        sleeping = threading.Event()
+        release = threading.Event()
+
+        def pause(_seconds):
+            sleeping.set()
+            release.wait(timeout=1)
+
+        module.sleep = pause
+
+        self.assertEqual(
+            module.checkMotionAwareBehaviorInstances(area_id, False),
+            1,
+        )
+        self.assertTrue(sleeping.wait(timeout=1))
+
+        self.assertTrue(
+            module.cancelMotionAwareBehaviorInstances(area_id)
+        )
+
+        release.set()
+        time.sleep(0.05)
+
+        self.assertEqual(group.actions, [])
+
     def test_new_motion_cancels_a_delayed_no_motion_action(self):
         group = FakeGroup()
         scene = FakeScene()

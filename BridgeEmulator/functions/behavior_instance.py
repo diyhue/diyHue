@@ -194,6 +194,19 @@ def _motionAreaDelayedNoMotion(area_id, actions, targets, generation):
     executeActions(executable, targets)
 
 
+def cancelMotionAwareBehaviorInstances(area_id):
+    """Invalidate pending delayed actions for a MotionAware area."""
+    if not isinstance(area_id, str) or not area_id:
+        return False
+
+    with _motion_area_lock:
+        _motion_area_generation[area_id] = (
+            _motion_area_generation.get(area_id, 0) + 1
+        )
+
+    return True
+
+
 def checkMotionAwareBehaviorInstances(area_id, motion):
     """Execute Hue-created local behaviors for a MotionAware transition.
 

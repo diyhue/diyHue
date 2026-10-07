@@ -761,6 +761,12 @@ def _scheduleMotionAwareCalibration(area_id):
     ).start()
 
 
+def _cancelMotionAwareBehaviorActions(area_id):
+    """Cancel delayed behavior work associated with a MotionAware area."""
+    from functions.behavior_instance import cancelMotionAwareBehaviorInstances
+    return cancelMotionAwareBehaviorInstances(area_id)
+
+
 def deleteMotionAwareArea(area_id):
     """Delete a persisted MotionAware area and all generated services."""
     if not isMotionAwareAvailable():
@@ -770,6 +776,11 @@ def deleteMotionAwareArea(area_id):
 
     if area_id not in areas:
         return False
+
+    # A no-motion behavior may be sleeping in a daemon thread. Invalidate
+    # its generation before deleting the area so a stale delayed action
+    # cannot execute after the MotionAware configuration is gone.
+    _cancelMotionAwareBehaviorActions(area_id)
 
     _area_id, convenience_id, security_id = v2MotionAreaServiceIds(area_id)
     service_ids = [convenience_id, security_id]
