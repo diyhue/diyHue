@@ -813,9 +813,6 @@ def updateMotionAwareResource(resource_type, resource_id, data):
     if not isinstance(data, dict):
         raise ValueError("PUT body must be an object")
 
-    if "id" in data and data["id"] != resource_id:
-        raise ValueError("id does not match the addressed resource")
-
     area_id = (
         resource_id
         if resource_type == "motion_area_configuration"
@@ -825,7 +822,10 @@ def updateMotionAwareResource(resource_type, resource_id, data):
     changes = {}
 
     if resource_type == "motion_area_configuration":
-        unsupported = set(data) - {"id", "name", "group", "participants", "enabled"}
+        # Match the Hue V2 writable schema exactly. Group membership and
+        # participants describe the created area's topology and are not
+        # mutable through MotionAreaConfiguration PUT.
+        unsupported = set(data) - {"name", "enabled"}
         if unsupported:
             raise ValueError("unsupported MotionAware configuration fields")
 
@@ -844,28 +844,9 @@ def updateMotionAwareResource(resource_type, resource_id, data):
 
             changes["enabled"] = data["enabled"]
 
-        if "group" in data:
-            group = read_resource_reference(data["group"], VALID_GROUP_TYPES)
-            if group is None or groupForMotionAwareReference(group) is None:
-                raise ValueError("group must reference an existing bridge_home, room, or zone")
-            changes["group"] = group
-
-        if "participants" in data:
-            participants = read_participants(data["participants"])
-            if participants is None or not 3 <= len(participants) <= 4:
-                raise ValueError(
-                    "participants must contain three or four unique candidates"
-                )
-
-            candidate_ids = [
-                participant["resource"]["rid"]
-                for participant in participants
-            ]
-            _validateCandidateSelection(candidate_ids, exclude_area_id=area_id)
-            changes["participants"] = participants
-
     else:
-        unsupported = set(data) - {"id", "enabled", "sensitivity"}
+        # Convenience/security area-motion PUT exposes only these fields.
+        unsupported = set(data) - {"enabled", "sensitivity"}
         if unsupported:
             raise ValueError("unsupported MotionAware service fields")
 

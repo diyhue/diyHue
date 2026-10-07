@@ -379,26 +379,81 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.createMotionAwareArea(payload)
 
-    def test_configuration_update_validates_group_and_unknown_fields(self):
+    def test_configuration_update_allows_only_writable_hue_fields(self):
         config, room, devices = self.make_graph()
         events = []
         module = load_module(config, events)
-        created = module.createMotionAwareArea(self.payload(module, room, devices))
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
         area_id = created["id"]
+
         updated = module.updateMotionAwareResource(
             "motion_area_configuration",
             area_id,
-            {"id": area_id, "group": created["group"]},
+            {
+                "name": "Updated area",
+                "enabled": False,
+            },
         )
-        self.assertEqual(updated["group"], created["group"])
-        with self.assertRaises(ValueError):
-            module.updateMotionAwareResource(
-                "motion_area_configuration", area_id, {"future": True}
-            )
-        with self.assertRaises(ValueError):
-            module.updateMotionAwareResource(
-                "motion_area_configuration", area_id, {"id": "other"}
-            )
+
+        self.assertEqual(updated["name"], "Updated area")
+        self.assertFalse(updated["enabled"])
+
+        for payload in (
+            {"id": area_id},
+            {"group": created["group"]},
+            {"participants": created["participants"]},
+            {"future": True},
+        ):
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError):
+                    module.updateMotionAwareResource(
+                        "motion_area_configuration",
+                        area_id,
+                        payload,
+                    )
+
+    def test_area_motion_update_allows_only_writable_hue_fields(self):
+        config, room, devices = self.make_graph()
+        events = []
+        module = load_module(config, events)
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+
+        _area_id, convenience_id, _security_id = (
+            module.v2MotionAreaServiceIds(created["id"])
+        )
+
+        updated = module.updateMotionAwareResource(
+            "convenience_area_motion",
+            convenience_id,
+            {
+                "enabled": False,
+                "sensitivity": {"sensitivity": 1},
+            },
+        )
+
+        self.assertFalse(updated["enabled"])
+        self.assertEqual(
+            updated["sensitivity"]["sensitivity"],
+            1,
+        )
+
+        for payload in (
+            {"id": convenience_id},
+            {"owner": updated["owner"]},
+            {"motion": updated["motion"]},
+            {"future": True},
+        ):
+            with self.subTest(payload=payload):
+                with self.assertRaises(ValueError):
+                    module.updateMotionAwareResource(
+                        "convenience_area_motion",
+                        convenience_id,
+                        payload,
+                    )
 
 
 if __name__ == "__main__":
