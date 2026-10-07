@@ -169,6 +169,11 @@ def v2HomeKit():
 
 
 def v2BridgeZigBee():
+    # BSB003 does not expose a bridge-owned zigbee_connectivity resource.
+    # Individual Zigbee devices still expose their own connectivity resources.
+    if bridgeIdentity(bridgeConfig["config"])["profile"] == "pro":
+        return None
+
     return {"id": str(uuid.uuid5(
         uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_connectivity')),
             "owner": {
@@ -385,7 +390,10 @@ class ClipV2(Resource):
             data.extend(motion_aware[resource_type])
 
         # zigbee
-        data.append(v2BridgeZigBee())
+        bridge_zigbee = v2BridgeZigBee()
+        if bridge_zigbee is not None:
+            data.append(bridge_zigbee)
+
         for key, device in bridgeConfig["device"].items():
             data.append(device.getZigBee())
         data.append(v2BridgeZigBeeDiscovery())
@@ -493,7 +501,9 @@ class ClipV2Resource(Resource):
                 zigbee = sensor.getZigBee()
                 if zigbee != None:
                     response["data"].append(zigbee)
-            response["data"].append(v2BridgeZigBee())  # the bridge
+            bridge_zigbee = v2BridgeZigBee()
+            if bridge_zigbee is not None:
+                response["data"].append(bridge_zigbee)
         elif resource == "entertainment":
             for key, light in bridgeConfig["lights"].items():
                 response["data"].append(light.getV2Entertainment())
