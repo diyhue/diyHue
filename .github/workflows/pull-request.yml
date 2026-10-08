@@ -32,3 +32,15 @@ jobs:
         run: |
           docker kill diyHue
           docker rm diyHue
+
+  motionaware-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run MotionAware regression tests
+        run: python -m unittest discover -s tests -p "test_motion_aware_*.py" -v
