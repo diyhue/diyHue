@@ -5,6 +5,7 @@ import sys
 import types
 import unittest
 import uuid
+import weakref
 
 
 ROOT = pathlib.Path(__file__).parents[1]
@@ -57,6 +58,18 @@ class FakeRoom:
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + "room")),
             "type": "room",
         }
+
+
+class FakeOccupancyDevice:
+    """Represent a real room member carrying a ZLLPresence sensor weakref."""
+    group_v1 = "sensors"
+
+    def __init__(self, sensor):
+        self.id_v2 = "occupancy-device"
+        self.elements = {"ZLLPresence": weakref.ref(sensor)}
+
+    def getMotion(self):
+        return None
 
 
 def load_module(config, events):
@@ -739,7 +752,9 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             config={"on": True},
             state={"presence": False, "lastupdated": "none"},
         )
-        room.sensors = [sensor]
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
         events = []
         module = load_module(config, events)
         created = module.createMotionAwareArea(
@@ -752,6 +767,8 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         fake_behavior.checkMotionAwareBehaviorInstances = (
             lambda *args, **kwargs: calls.append((args, kwargs))
         )
+
+        self.assertEqual(module.v2MotionAwareSources(room), [sensor])
 
         events.clear()
         with patch.dict(sys.modules, {
@@ -795,7 +812,9 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             config={"on": True},
             state={"presence": False, "lastupdated": "none"},
         )
-        room.sensors = [sensor]
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
         events = []
         module = load_module(config, events)
         created = module.createMotionAwareArea(
@@ -845,7 +864,9 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             config={"on": True},
             state={"presence": False, "lastupdated": "none"},
         )
-        room.sensors = [sensor]
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
         events = []
         module = load_module(config, events)
         self.assertEqual(

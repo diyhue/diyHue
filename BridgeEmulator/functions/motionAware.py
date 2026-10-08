@@ -403,33 +403,60 @@ def v2MotionAreaConfiguration(group, devices, area_id):
 
 
 def v2MotionAwareSources(group):
-    """Return regular diyHue motion sources assigned to a room."""
+    """Resolve room motion sources from both legacy and V2 membership.
+
+    diyHue stores room members in group.lights, including sensor Device
+    weakrefs. group.sensors is retained for older/experimental layouts.
+    """
     result = []
+    seen = set()
+    references = (
+        list(getattr(group, "sensors", []) or [])
+        + list(getattr(group, "lights", []) or [])
+    )
 
-    for member_ref in getattr(group, "sensors", []):
-        member = member_ref() if callable(member_ref) else member_ref
-
+    for reference in references:
+        member = reference() if callable(reference) else reference
         if member is None:
             continue
 
+        source = None
         if hasattr(member, "getMotion"):
-            motion = member.getMotion()
-
+            try:
+                motion = member.getMotion()
+            except (AttributeError, KeyError, TypeError):
+                motion = None
             if motion is not None:
-                result.append(member)
-                continue
+                source = member
 
-        if getattr(member, "type", None) == "ZLLPresence":
-            result.append(member)
+        if source is None and getattr(member, "type", None) == "ZLLPresence":
+            source = member
+
+        # Generic Zigbee2MQTT motion devices lack Device.getMotion(),
+        # but expose their ZLLPresence sensor as a weakref in elements.
+        if source is None and getattr(member, "group_v1", None) == "sensors":
+            elements = getattr(member, "elements", {})
+            if isinstance(elements, dict):
+                sensor_ref = elements.get("ZLLPresence")
+                sensor = sensor_ref() if callable(sensor_ref) else sensor_ref
+                if getattr(sensor, "type", None) == "ZLLPresence":
+                    source = sensor
+
+        if source is None:
+            continue
+        source_id = getattr(source, "id_v2", None) or id(source)
+        if source_id in seen:
+            continue
+        seen.add(source_id)
+        result.append(source)
 
     result.sort(
-        key=lambda item: getattr(
+        key=lambda item: str(getattr(
             item,
             "id_v2",
-            getattr(item, "id_v1", "")
-        )
+            getattr(item, "id_v1", ""),
+        ))
     )
-
     return result
 
 
