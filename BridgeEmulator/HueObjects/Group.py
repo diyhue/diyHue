@@ -33,30 +33,83 @@ class Group():
                              }
             StreamEvent(streamMessage)
 
-    def groupZeroStream(self, groups, lights):
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                            "data": [{"children": [], "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'bridge_home')),  "id_v1":"/groups/0", "type": "bridge_home"}],
-                            "id": str(uuid.uuid4()),
-                            "type": "update"
-                            }
+    def groupZeroStream(self, groups, devices, bridge_device_id):
+        """Publish a serializable bridge_home child graph.
+
+        Bridge Home contains the bridge device, regular devices and rooms.
+        Keep event-stream updates aligned with the resource returned by the
+        CLIP v2 API so clients cannot replace a correct snapshot with an
+        incompatible child graph.
+        """
+        children = []
+        seen = set()
+
+        def add_child(rid, rtype):
+            if not isinstance(rid, str) or not rid:
+                return
+
+            key = (rid, rtype)
+            if key in seen:
+                return
+
+            seen.add(key)
+            children.append({
+                "rid": rid,
+                "rtype": rtype,
+            })
+
+        # A physical BSB003 exposes the bridge itself as a device child.
+        add_child(bridge_device_id, "device")
+
+        for device in devices:
+            add_child(
+                getattr(device, "id_v2", None),
+                "device",
+            )
+
         room_count = 0
-        zone_count = 0
+
         for group in groups:
-            # Skip groups without type or with invalid type
-            if not hasattr(group, 'type') or group.type is None:
-                logging.debug(f"Skipping group {group.id_v1} - no type attribute")
+            if getattr(group, "type", None) != "Room":
                 continue
-            if group.type == "Room":
-                streamMessage["data"][0]["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
+
+            room = group.getV2Room()
+            room_id = room.get("id") if isinstance(room, dict) else None
+
+            before = len(children)
+            add_child(room_id, "room")
+
+            if len(children) != before:
                 room_count += 1
-            elif group.type == "Zone":
-                streamMessage["data"][0]["children"].append({"rid": group.getV2Zone()["id"], "rtype": "zone"})
-                zone_count += 1
-        for light in lights:
-            streamMessage["data"][0]["children"].append(
-                {"rid": light, "rtype": "light"})
-        
-        logging.debug(f"Bridge_home update: {room_count} rooms, {zone_count} zones, {len(lights)} lights")
+
+        streamMessage = {
+            "creationtime": datetime.now(timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
+            "data": [{
+                "children": children,
+                "id": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL,
+                    self.id_v2 + "bridge_home",
+                )),
+                "id_v1": "/groups/0",
+                "type": "bridge_home",
+            }],
+            "id": str(uuid.uuid4()),
+            "type": "update",
+        }
+
+        device_count = sum(
+            child["rtype"] == "device"
+            for child in children
+        )
+
+        logging.debug(
+            "Bridge_home update: %s devices, %s rooms",
+            device_count,
+            room_count,
+        )
+
         StreamEvent(streamMessage)
 
     def __del__(self):

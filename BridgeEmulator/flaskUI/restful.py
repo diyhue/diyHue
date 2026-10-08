@@ -36,13 +36,19 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 def GroupZeroMessage():
-    groups = []
-    lights = []
-    for group, obj in bridgeConfig["groups"].items():
-        groups.append(obj)
-    for light, obj in bridgeConfig["lights"].items():
-        lights.append(obj)
-    bridgeConfig["groups"]["0"].groupZeroStream(groups, lights)
+    groups = list(bridgeConfig["groups"].values())
+    devices = list(bridgeConfig["device"].values())
+
+    bridge_device_id = str(uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        bridgeConfig["config"]["bridgeid"] + "device",
+    ))
+
+    bridgeConfig["groups"]["0"].groupZeroStream(
+        groups,
+        devices,
+        bridge_device_id,
+    )
 
 def authorize(username, resource='', resourceId='', resourceParam=''):
     if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":

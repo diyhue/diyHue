@@ -210,5 +210,24 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.assertIsNone(self.v2.v2Clip())
 
 
+    def test_bridge_home_child_references_bridge_device(self):
+        self.config["timezone"] = "Europe/Amsterdam"
+        self.v2.bridgeConfig["groups"] = {
+            "0": types.SimpleNamespace(id_v2="group-zero", type="LightGroup")
+        }
+        self.v2.bridgeConfig["device"] = {}
+
+        bridge = self.v2.v2Bridge()
+        home = self.v2.v2BridgeHome()
+
+        self.assertIn(
+            {"rid": bridge["owner"]["rid"], "rtype": "device"},
+            home["children"],
+        )
+        self.assertNotIn(
+            {"rid": bridge["id"], "rtype": "device"},
+            home["children"],
+        )
+
 if __name__ == "__main__":
     unittest.main()
