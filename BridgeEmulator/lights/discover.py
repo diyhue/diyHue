@@ -76,13 +76,19 @@ def addNewLight(modelid, name, protocol, protocol_cfg):
         bridgeConfig["groups"]["0"].add_light(newDevice)
         bridgeConfig["device"][newDevice.id_v2] = newDevice
         # trigger stream messages
-        groups = []
-        lights = []
-        for group, obj in bridgeConfig["groups"].items():
-            groups.append(obj)
-        for light, obj in bridgeConfig["lights"].items():
-            lights.append(obj)
-        bridgeConfig["groups"]["0"].groupZeroStream(groups, lights)
+        groups = list(bridgeConfig["groups"].values())
+        devices = list(bridgeConfig["device"].values())
+
+        bridge_device_id = str(uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            bridgeConfig["config"]["bridgeid"] + "device",
+        ))
+
+        bridgeConfig["groups"]["0"].groupZeroStream(
+            groups,
+            devices,
+            bridge_device_id,
+        )
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
 
         return newLightID
