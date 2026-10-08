@@ -403,33 +403,60 @@ def v2MotionAreaConfiguration(group, devices, area_id):
 
 
 def v2MotionAwareSources(group):
-    """Return regular diyHue motion sources assigned to a room."""
+    """Resolve room motion sources from both legacy and V2 membership.
+
+    diyHue stores room members in group.lights, including sensor Device
+    weakrefs. group.sensors is retained for older/experimental layouts.
+    """
     result = []
+    seen = set()
+    references = (
+        list(getattr(group, "sensors", []) or [])
+        + list(getattr(group, "lights", []) or [])
+    )
 
-    for member_ref in getattr(group, "sensors", []):
-        member = member_ref() if callable(member_ref) else member_ref
-
+    for reference in references:
+        member = reference() if callable(reference) else reference
         if member is None:
             continue
 
+        source = None
         if hasattr(member, "getMotion"):
-            motion = member.getMotion()
-
+            try:
+                motion = member.getMotion()
+            except (AttributeError, KeyError, TypeError):
+                motion = None
             if motion is not None:
-                result.append(member)
-                continue
+                source = member
 
-        if getattr(member, "type", None) == "ZLLPresence":
-            result.append(member)
+        if source is None and getattr(member, "type", None) == "ZLLPresence":
+            source = member
+
+        # Generic Zigbee2MQTT motion devices lack Device.getMotion(),
+        # but expose their ZLLPresence sensor as a weakref in elements.
+        if source is None and getattr(member, "group_v1", None) == "sensors":
+            elements = getattr(member, "elements", {})
+            if isinstance(elements, dict):
+                sensor_ref = elements.get("ZLLPresence")
+                sensor = sensor_ref() if callable(sensor_ref) else sensor_ref
+                if getattr(sensor, "type", None) == "ZLLPresence":
+                    source = sensor
+
+        if source is None:
+            continue
+        source_id = getattr(source, "id_v2", None) or id(source)
+        if source_id in seen:
+            continue
+        seen.add(source_id)
+        result.append(source)
 
     result.sort(
-        key=lambda item: getattr(
+        key=lambda item: str(getattr(
             item,
             "id_v2",
-            getattr(item, "id_v1", "")
-        )
+            getattr(item, "id_v1", ""),
+        ))
     )
-
     return result
 
 
@@ -466,11 +493,14 @@ def v2MotionAwareState(group, area_id):
             if not source.config.get("on", True):
                 continue
 
-            if "presence" not in source.state:
+            # Only actual boolean occupancy values are motion telemetry.
+            # Strings such as "false" must not become truthy MotionAware.
+            presence = source.state.get("presence")
+            if not isinstance(presence, bool):
                 continue
 
             reports.append({
-                "motion": bool(source.state["presence"]),
+                "motion": presence,
                 "changed": source.state.get("lastupdated")
             })
 
@@ -1116,6 +1146,70 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
     return updates
 
 
+
+def updateMotionAwareOccupancySensor(sensor, occupancy, lastupdated):
+    """Relay an existing MQTT occupancy sensor through the MotionAware graph.
+
+    This is ordinary sensor telemetry, not Bridge Pro RF sensing.  Only
+    unambiguous JSON booleans produce transitions; keep other legacy sensor
+    payloads unchanged without treating them as motion evidence.
+    """
+    before = motionAwareSnapshot() if isinstance(occupancy, bool) else {}
+    sensor.state = {
+        "presence": occupancy,
+        "lastupdated": lastupdated,
+    }
+
+    if not isinstance(occupancy, bool):
+        logging.warning(
+            "Ignoring non-boolean MQTT occupancy for MotionAware: %s",
+            type(occupancy).__name__,
+        )
+        return []
+
+    updates = streamMotionAwareTransitions(before)
+    if not updates or not bridgeConfig.get("behavior_instance"):
+        return updates
+
+    affected = {}
+    for resource in updates:
+        if resource.get("type") not in MOTION_SERVICE_TYPES:
+            continue
+        area_id = resource.get("owner", {}).get("rid")
+        if (
+            not area_id
+            or motionAwareStoredArea(area_id).get("enabled") is False
+        ):
+            continue
+        details = affected.setdefault(
+            area_id,
+            {"motion": bool(resource["motion"]["motion"]), "service_ids": set()},
+        )
+        details["service_ids"].add(resource["id"])
+
+    if affected:
+        try:
+            from functions.behavior_instance import checkMotionAwareBehaviorInstances
+        except Exception as err:
+            logging.warning("MotionAware behavior import failed: %s", err)
+            return updates
+
+        for area_id, details in affected.items():
+            try:
+                checkMotionAwareBehaviorInstances(
+                    area_id,
+                    details["motion"],
+                    active_service_ids=details["service_ids"],
+                )
+            except Exception as err:
+                logging.warning(
+                    "MotionAware sensor behavior failed for %s: %s",
+                    area_id,
+                    err,
+                )
+    return updates
+
+
 def motionAwareSnapshot():
     """Capture transition-relevant MotionAware state."""
     if not isMotionAwareAvailable():
@@ -1166,6 +1260,9 @@ def streamMotionAwareTransitions(before):
     for resource_type in MOTION_SERVICE_TYPES:
         for resource in resources[resource_type]:
             if not resource.get("enabled", True):
+                continue
+            area_id = resource.get("owner", {}).get("rid")
+            if motionAwareStoredArea(area_id).get("enabled") is False:
                 continue
             key = (resource_type, resource["id"])
 

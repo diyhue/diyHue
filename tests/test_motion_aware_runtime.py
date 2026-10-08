@@ -5,6 +5,7 @@ import sys
 import types
 import unittest
 import uuid
+import weakref
 
 
 ROOT = pathlib.Path(__file__).parents[1]
@@ -57,6 +58,27 @@ class FakeRoom:
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + "room")),
             "type": "room",
         }
+
+
+class FakePresenceSensor:
+    type = "ZLLPresence"
+
+    def __init__(self):
+        self.id_v2 = "sensor-1"
+        self.config = {"on": True}
+        self.state = {"presence": False, "lastupdated": "none"}
+
+
+class FakeOccupancyDevice:
+    """Represent a real room member carrying a ZLLPresence sensor weakref."""
+    group_v1 = "sensors"
+
+    def __init__(self, sensor):
+        self.id_v2 = "occupancy-device"
+        self.elements = {"ZLLPresence": weakref.ref(sensor)}
+
+    def getMotion(self):
+        return None
 
 
 def load_module(config, events):
@@ -727,6 +749,129 @@ class MotionAwareRuntimeTests(unittest.TestCase):
                         convenience_id,
                         payload,
                     )
+
+
+    def test_mqtt_occupancy_publishes_motionaware_events_and_behavior(self):
+        from unittest.mock import patch
+
+        config, room, devices = self.make_graph()
+        sensor = FakePresenceSensor()
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
+        events = []
+        module = load_module(config, events)
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+        config["behavior_instance"] = {"behavior-1": object()}
+        calls = []
+        fake_behavior = types.ModuleType("functions.behavior_instance")
+        fake_behavior.checkMotionAwareBehaviorInstances = (
+            lambda *args, **kwargs: calls.append((args, kwargs))
+        )
+
+        self.assertEqual(module.v2MotionAwareSources(room), [sensor])
+
+        events.clear()
+        with patch.dict(sys.modules, {
+            "functions.behavior_instance": fake_behavior
+        }):
+            updates = module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:00:00Z"
+            )
+            self.assertEqual(len(updates), 2)
+            self.assertEqual(len(events), 2)
+            self.assertEqual(
+                {item["type"] for item in updates},
+                {"convenience_area_motion", "security_area_motion"},
+            )
+            self.assertTrue(all(item["motion"]["motion"] for item in updates))
+            self.assertEqual(calls[0][0], (area_id, True))
+            self.assertEqual(
+                calls[0][1]["active_service_ids"],
+                {item["id"] for item in updates},
+            )
+
+            self.assertEqual(module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:00:01Z"
+            ), [])
+            self.assertEqual(len(events), 2)
+            self.assertEqual(len(calls), 1)
+
+            updates = module.updateMotionAwareOccupancySensor(
+                sensor, False, "2026-10-08T09:00:02Z"
+            )
+            self.assertEqual(len(updates), 2)
+            self.assertFalse(updates[0]["motion"]["motion"])
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(calls[-1][0], (area_id, False))
+
+    def test_mqtt_occupancy_respects_disabled_area_and_non_boolean_data(self):
+        config, room, devices = self.make_graph()
+        sensor = FakePresenceSensor()
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
+        events = []
+        module = load_module(config, events)
+        created = module.createMotionAwareArea(
+            self.payload(module, room, devices)
+        )
+        area_id = created["id"]
+
+        events.clear()
+        self.assertEqual(
+            module.updateMotionAwareOccupancySensor(
+                sensor, "true", "2026-10-08T09:01:00Z"
+            ),
+            [],
+        )
+        self.assertEqual(events, [])
+        # Invalid strings are also excluded from CLIP v2 snapshots.
+        self.assertFalse(
+            module.v2MotionAwareResources()["convenience_area_motion"][0]
+            ["motion"]["motion"]
+        )
+
+        # The first subsequent valid boolean must still trigger a transition.
+        self.assertEqual(
+            len(module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:01:00Z"
+            )),
+            2,
+        )
+
+        module.updateMotionAwareResource(
+            "motion_area_configuration", area_id, {"enabled": False}
+        )
+        events.clear()
+        self.assertEqual(
+            module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:01:01Z"
+            ),
+            [],
+        )
+        self.assertEqual(events, [])
+        self.assertIsNone(module.motionAwareRuntimeState(area_id))
+
+    def test_mqtt_occupancy_does_not_change_classic_bridge(self):
+        config, room, _devices = self.make_graph(profile="classic")
+        sensor = FakePresenceSensor()
+        # Room membership uses Device weakrefs in group.lights.
+        sensor_device = FakeOccupancyDevice(sensor)
+        room.lights.append(weakref.ref(sensor_device))
+        events = []
+        module = load_module(config, events)
+        self.assertEqual(
+            module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:02:00Z"
+            ),
+            [],
+        )
+        self.assertEqual(events, [])
+        self.assertTrue(sensor.state["presence"])
 
 
 if __name__ == "__main__":

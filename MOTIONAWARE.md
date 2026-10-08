@@ -45,3 +45,16 @@ MotionAware-capable.
 A real provider may instead set `motion_aware_candidate = true` in its device
 protocol configuration and publish validated transitions through
 `setMotionAwareRuntimeMotion(...)`.
+
+## Existing Zigbee2MQTT occupancy sensors (not RF MotionAware)
+
+An existing Zigbee2MQTT occupancy sensor assigned to a diyHue room can now
+update that room's configured Bridge Pro MotionAware areas through CLIP v2
+SSE and existing MotionArea behavior dispatch. Transitions are published only
+when the aggregated room motion state actually changes. Disabled areas or
+services never dispatch those transitions. Non-boolean occupancy payloads
+remain in the legacy sensor state but are not treated as valid transitions.
+
+This allows physical occupancy sensors to drive area behavior. It does **not**
+implement native Bridge Pro radio-based sensing between compatible lights.
+A validated RF provider is still required for that functionality.
