@@ -466,11 +466,14 @@ def v2MotionAwareState(group, area_id):
             if not source.config.get("on", True):
                 continue
 
-            if "presence" not in source.state:
+            # Only actual boolean occupancy values are motion telemetry.
+            # Strings such as "false" must not become truthy MotionAware.
+            presence = source.state.get("presence")
+            if not isinstance(presence, bool):
                 continue
 
             reports.append({
-                "motion": bool(source.state["presence"]),
+                "motion": presence,
                 "changed": source.state.get("lastupdated")
             })
 

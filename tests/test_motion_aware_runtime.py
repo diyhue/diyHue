@@ -811,6 +811,19 @@ class MotionAwareRuntimeTests(unittest.TestCase):
             [],
         )
         self.assertEqual(events, [])
+        # Invalid strings are also excluded from CLIP v2 snapshots.
+        self.assertFalse(
+            module.v2MotionAwareResources()["convenience_area_motion"][0]
+            ["motion"]["motion"]
+        )
+
+        # The first subsequent valid boolean must still trigger a transition.
+        self.assertEqual(
+            len(module.updateMotionAwareOccupancySensor(
+                sensor, True, "2026-10-08T09:01:00Z"
+            )),
+            2,
+        )
 
         module.updateMotionAwareResource(
             "motion_area_configuration", area_id, {"enabled": False}
