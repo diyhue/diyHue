@@ -60,6 +60,15 @@ class FakeRoom:
         }
 
 
+class FakePresenceSensor:
+    type = "ZLLPresence"
+
+    def __init__(self):
+        self.id_v2 = "sensor-1"
+        self.config = {"on": True}
+        self.state = {"presence": False, "lastupdated": "none"}
+
+
 class FakeOccupancyDevice:
     """Represent a real room member carrying a ZLLPresence sensor weakref."""
     group_v1 = "sensors"
@@ -746,12 +755,7 @@ class MotionAwareRuntimeTests(unittest.TestCase):
         from unittest.mock import patch
 
         config, room, devices = self.make_graph()
-        sensor = types.SimpleNamespace(
-            type="ZLLPresence",
-            id_v2="sensor-1",
-            config={"on": True},
-            state={"presence": False, "lastupdated": "none"},
-        )
+        sensor = FakePresenceSensor()
         # Room membership uses Device weakrefs in group.lights.
         sensor_device = FakeOccupancyDevice(sensor)
         room.lights.append(weakref.ref(sensor_device))
@@ -806,12 +810,7 @@ class MotionAwareRuntimeTests(unittest.TestCase):
 
     def test_mqtt_occupancy_respects_disabled_area_and_non_boolean_data(self):
         config, room, devices = self.make_graph()
-        sensor = types.SimpleNamespace(
-            type="ZLLPresence",
-            id_v2="sensor-1",
-            config={"on": True},
-            state={"presence": False, "lastupdated": "none"},
-        )
+        sensor = FakePresenceSensor()
         # Room membership uses Device weakrefs in group.lights.
         sensor_device = FakeOccupancyDevice(sensor)
         room.lights.append(weakref.ref(sensor_device))
@@ -859,11 +858,7 @@ class MotionAwareRuntimeTests(unittest.TestCase):
 
     def test_mqtt_occupancy_does_not_change_classic_bridge(self):
         config, room, _devices = self.make_graph(profile="classic")
-        sensor = types.SimpleNamespace(
-            type="ZLLPresence",
-            config={"on": True},
-            state={"presence": False, "lastupdated": "none"},
-        )
+        sensor = FakePresenceSensor()
         # Room membership uses Device weakrefs in group.lights.
         sensor_device = FakeOccupancyDevice(sensor)
         room.lights.append(weakref.ref(sensor_device))
