@@ -16,6 +16,7 @@ from sensors.sensor_types import sensorTypes
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 from functions.behavior_instance import checkBehaviorInstances
+from functions.motionAware import updateMotionAwareOccupancySensor
 import requests
 
 logging = logManager.logger.get_logger(__name__)
@@ -378,7 +379,9 @@ def on_message(client, userdata, msg):
                         ### If is a motion sensor update the light level and temperature
                         if "occupancy" in data:
                             motionSensor =  device.elements["ZLLPresence"]()
-                            motionSensor.state = {"presence": data["occupancy"], "lastupdated": lastupdated}
+                            updateMotionAwareOccupancySensor(
+                                motionSensor, data["occupancy"], lastupdated,
+                            )
                             # send email if alarm is enabled:
                             notifyEmail(motionSensor.name)
                         if "illuminance" in data:

@@ -1116,6 +1116,70 @@ def setMotionAwareRuntimeMotion(area_id, value, source="runtime"):
     return updates
 
 
+
+def updateMotionAwareOccupancySensor(sensor, occupancy, lastupdated):
+    """Relay an existing MQTT occupancy sensor through the MotionAware graph.
+
+    This is ordinary sensor telemetry, not Bridge Pro RF sensing.  Only
+    unambiguous JSON booleans produce transitions; keep other legacy sensor
+    payloads unchanged without treating them as motion evidence.
+    """
+    before = motionAwareSnapshot() if isinstance(occupancy, bool) else {}
+    sensor.state = {
+        "presence": occupancy,
+        "lastupdated": lastupdated,
+    }
+
+    if not isinstance(occupancy, bool):
+        logging.warning(
+            "Ignoring non-boolean MQTT occupancy for MotionAware: %s",
+            type(occupancy).__name__,
+        )
+        return []
+
+    updates = streamMotionAwareTransitions(before)
+    if not updates or not bridgeConfig.get("behavior_instance"):
+        return updates
+
+    affected = {}
+    for resource in updates:
+        if resource.get("type") not in MOTION_SERVICE_TYPES:
+            continue
+        area_id = resource.get("owner", {}).get("rid")
+        if (
+            not area_id
+            or motionAwareStoredArea(area_id).get("enabled") is False
+        ):
+            continue
+        details = affected.setdefault(
+            area_id,
+            {"motion": bool(resource["motion"]["motion"]), "service_ids": set()},
+        )
+        details["service_ids"].add(resource["id"])
+
+    if affected:
+        try:
+            from functions.behavior_instance import checkMotionAwareBehaviorInstances
+        except Exception as err:
+            logging.warning("MotionAware behavior import failed: %s", err)
+            return updates
+
+        for area_id, details in affected.items():
+            try:
+                checkMotionAwareBehaviorInstances(
+                    area_id,
+                    details["motion"],
+                    active_service_ids=details["service_ids"],
+                )
+            except Exception as err:
+                logging.warning(
+                    "MotionAware sensor behavior failed for %s: %s",
+                    area_id,
+                    err,
+                )
+    return updates
+
+
 def motionAwareSnapshot():
     """Capture transition-relevant MotionAware state."""
     if not isMotionAwareAvailable():
@@ -1166,6 +1230,9 @@ def streamMotionAwareTransitions(before):
     for resource_type in MOTION_SERVICE_TYPES:
         for resource in resources[resource_type]:
             if not resource.get("enabled", True):
+                continue
+            area_id = resource.get("owner", {}).get("rid")
+            if motionAwareStoredArea(area_id).get("enabled") is False:
                 continue
             key = (resource_type, resource["id"])
 
