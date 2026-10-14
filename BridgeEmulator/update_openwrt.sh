@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo -e "\033[32m Disable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service disable
