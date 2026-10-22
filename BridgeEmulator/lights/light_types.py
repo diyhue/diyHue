@@ -58,7 +58,7 @@ lightTypes["LTW001"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": 
 ## Hue Iris
 lightTypes["LLC010"] = {"v1_static": {"type": "Color Gamut light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.104.2"}}
 lightTypes["LLC010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
-lightTypes["LLC010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.215,0.711],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 600,"mindimlevel": 5000},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LLC010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.215,0.711],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 600,"mindimlevel": 5000},"streaming": {"renderer": True,"proxy": True}}
 lightTypes["LLC010"]["config"] = {"archetype": "hueiris","function": "functional","direction": "omnidirectional", "startup":{"mode":"safety","configured":True}}
 lightTypes["LLC010"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "hueiris", "product_name": "Dimmable light", "software_version": "1.76.6"}
 lightTypes["LLC010"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none", "hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0, "xy": [0.408,0.517]}
