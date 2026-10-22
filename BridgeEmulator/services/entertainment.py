@@ -5,6 +5,8 @@ import configManager
 import requests
 import socket, json, uuid, select
 import os
+import base64
+import binascii
 from subprocess import Popen, PIPE
 import subprocess as _sp
 from datetime import datetime, timezone
@@ -27,6 +29,23 @@ cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
 YeelightConnections = {}
+
+def _psk_value(key):
+    """Return the PSK in the hex form that OpenSSL expects.
+
+    OpenSSL only accepts a PSK as hex digits. A client key is usually already
+    hex, but a key that arrived base64url encoded (the HDMI Sync Box sends
+    one) has to be decoded first.
+    """
+    if not key:
+        return ""
+    if all(c in "0123456789abcdefABCDEF" for c in key) and len(key) % 2 == 0:
+        return key
+    try:
+        decoded = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4))
+        return binascii.hexlify(decoded).decode()
+    except Exception:
+        return binascii.hexlify(key.encode()).decode()
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -138,7 +157,7 @@ def entertainmentService(group, user):
 
 def _entertainmentService(group, user, session):
     logging.debug("User: " + user.username)
-    logging.debug("Key: " + user.client_key)
+    logging.debug("Key: " + str(user.client_key))
     bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
     bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
 
@@ -151,11 +170,15 @@ def _entertainmentService(group, user, session):
 
     # Match 2.0.31 as closely as OpenSSL 3 allows: DTLS 1.2, IPv4, no -quiet
     # so handshake errors reach the log. Broad PSK list — TVs may not offer GCM-only.
+    # A user without a client key cannot serve as DTLS identity. Fall back to
+    # the username so the entertainment server still starts instead of
+    # crashing on a None key.
+    psk = _psk_value(user.client_key or user.username)
     opensslCmd = [
         _OPENSSL_BIN, "s_server",
         "-4", "-dtls1_2", "-listen",
         "-cipher", "PSK-AES128-GCM-SHA256:PSK-AES128-CCM8:PSK-AES128-CCM:@SECLEVEL=0",
-        "-psk", user.client_key, "-psk_identity", user.username,
+        "-psk", psk, "-psk_identity", user.username,
         "-nocert", "-accept", "2100",
     ]
     _logged_cmd = []

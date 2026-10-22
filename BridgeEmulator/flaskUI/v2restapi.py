@@ -59,10 +59,19 @@ def getObject(element, v2uuid):
 
 
 def authorizeV2(headers):
-    if "hue-application-key" in headers and headers["hue-application-key"] in bridgeConfig["apiUsers"]:
-        bridgeConfig["apiUsers"][headers["hue-application-key"]
-                                 ].last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-        return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
+    if "hue-application-key" in headers:
+        key = headers["hue-application-key"]
+        user = bridgeConfig["apiUsers"].get(key)
+        if user is None:
+            # Devices that pair through the v2 flow (for example the HDMI Sync
+            # Box) send the client key instead of the API username.
+            for candidate in bridgeConfig["apiUsers"].values():
+                if candidate.matches_key(key):
+                    user = candidate
+                    break
+        if user is not None:
+            user.last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+            return {"user": user, "key": key}
     return []
 
 def v2BridgeEntertainment():
@@ -128,7 +137,7 @@ def v2BridgeZigBeeDiscovery():
 def v2GeofenceClient():
     user = authorizeV2(request.headers)
     result = {
-      "id": str(uuid.uuid5(uuid.NAMESPACE_URL, request.headers["hue-application-key"])),
+      "id": str(uuid.uuid5(uuid.NAMESPACE_URL, user["key"])),
       "name": user["user"].name,
       "type": "geofence_client"
     }
@@ -226,7 +235,7 @@ class AuthV1(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" in authorisation:
             logging.debug("Auth 200")
-            return {}, 200, {'hue-application-id': request.headers["hue-application-key"]}
+            return {}, 200, {'hue-application-id': authorisation["key"]}
 
         else:
             logging.info("Auth 403")
@@ -435,6 +444,7 @@ class ClipV2Resource(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
+        apiUser = authorisation["user"]
         postDict = request.get_json(force=True)
         logging.info(postDict)
         newObject = None
@@ -444,7 +454,7 @@ class ClipV2Resource(Resource):
                 "id_v1": new_object_id,
                 "name": postDict["metadata"]["name"],
                 "image": postDict["metadata"]["image"]["rid"] if "image" in postDict["metadata"] else None,
-                "owner": bridgeConfig["apiUsers"][request.headers["hue-application-key"]],
+                "owner": apiUser,
             }
             if "group" in postDict:
                 objCreation["group"] = weakref.ref(
@@ -536,7 +546,7 @@ class ClipV2Resource(Resource):
             objCreation = {
                 "id_v1": new_object_id,
                 "name": postDict["metadata"]["name"],
-                "owner": bridgeConfig["apiUsers"][request.headers["hue-application-key"]],
+                "owner": apiUser,
             }
             objCreation["type"] = "Room" if resource == "room" else "Zone"
             if "archetype" in postDict["metadata"]:
