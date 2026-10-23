@@ -8,6 +8,7 @@ logging = logManager.logger.get_logger(__name__)
 
 
 discovery_timeout_seconds = 60
+auth_timeout_seconds = 10
 discovery_result = threading.Event()
 next_connection_error_log = 0
 logging_backoff = 2  # 2 Second back off
@@ -47,12 +48,19 @@ class HomeAssistantClient(WebSocketClient):
     message_id = 1
     id_to_type = {}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Home Assistant rejects anything but the auth message until it has
+        # answered auth_ok, so commands have to wait for this.
+        self.authenticated = threading.Event()
+
     def opened(self):
         logging.info("Home Assistant WebSocket Connection Opened")
 
     def closed(self, code, reason=None):
         logging.info(
             "Home Assistant WebSocket Connection Closed. Code: {} Reason {}".format(code, reason))
+        self.authenticated.clear()
         for home_assistant_state in latest_states.values():
             if 'state' in home_assistant_state:
                 home_assistant_state['state'] = 'unavailable'
@@ -90,6 +98,7 @@ class HomeAssistantClient(WebSocketClient):
 
     def do_auth_complete(self):
         logging.info("Home Assistant Web Socket Authorisation complete")
+        self.authenticated.set()
         self.get_all_lights()
         self.subscribe_for_updates()
 
@@ -244,6 +253,14 @@ def connect_if_required():
     return homeassistant_ws_client
 
 
+def connect_and_authenticate():
+    """Return a connected client once Home Assistant has accepted its token, or None."""
+    client = connect_if_required()
+    if client is None or not client.authenticated.wait(timeout=auth_timeout_seconds):
+        return None
+    return client
+
+
 def create_websocket_client():
     global homeassistant_ws_client
     global next_connection_error_log
@@ -331,8 +348,11 @@ def _create_ws_client(bridgeConfig):
 
 def discover(detectedLights):
     logging.info("HomeAssistant WebSocket discovery called")
-    connect_if_required()
-    connect_if_required().get_all_lights()
+    client = connect_and_authenticate()
+    if client is None:
+        logging.warning("HomeAssistant WebSocket discovery skipped, not connected or not authorised")
+        return
+    client.get_all_lights()
     logging.info("HomeAssistant WebSocket discovery waiting for devices")
     completed = (event_session.reducer.ready if event_session is not None else
                  discovery_result.wait(timeout=discovery_timeout_seconds))
