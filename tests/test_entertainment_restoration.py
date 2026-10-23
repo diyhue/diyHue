@@ -378,5 +378,51 @@ class RestorationTests(unittest.TestCase):
         self.assertEqual(put.call_args.kwargs["timeout"], 3)
 
 
+
+class FakeNonUdpLight:
+    def __init__(self, id_v1):
+        self.id_v1 = id_v1
+        self.state = {"on": True, "bri": 200, "xy": [0.3, 0.3]}
+        self.setV1State = Mock()
+
+
+class NonUdpLightTests(unittest.TestCase):
+    def setUp(self):
+        entertainment.lastAppliedFrame.clear()
+        self.addCleanup(entertainment.lastAppliedFrame.clear)
+
+    def test_black_frame_turns_the_light_off_once(self):
+        light = FakeNonUdpLight("1")
+        entertainment.updateNonUdpLight(light)  # a colored frame first
+        light.setV1State.reset_mock()
+
+        light.state["on"] = False  # what a black frame does
+        entertainment.updateNonUdpLight(light)
+        entertainment.updateNonUdpLight(light)
+
+        light.setV1State.assert_called_once_with({"on": False, "transitiontime": 3})
+
+    def test_color_after_black_turns_the_light_back_on(self):
+        light = FakeNonUdpLight("2")
+        light.state["on"] = False
+        entertainment.updateNonUdpLight(light)
+        light.setV1State.reset_mock()
+
+        light.state.update({"on": True, "bri": 120, "xy": [0.6, 0.3]})
+        entertainment.updateNonUdpLight(light)
+
+        light.setV1State.assert_called_once_with(
+            {"on": True, "bri": 120, "xy": [0.6, 0.3], "transitiontime": 3})
+
+    def test_color_changes_are_still_sent(self):
+        light = FakeNonUdpLight("3")
+        entertainment.updateNonUdpLight(light)
+        light.setV1State.reset_mock()
+
+        light.state["xy"] = [0.6, 0.3]
+        entertainment.updateNonUdpLight(light)
+
+        light.setV1State.assert_called_once_with({"xy": [0.6, 0.3], "transitiontime": 3})
+
 if __name__ == "__main__":
     unittest.main()

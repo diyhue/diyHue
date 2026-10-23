@@ -62,6 +62,29 @@ def skipSimilarFrames(light, color, brightness):
         return 1
     return 0
 
+def updateNonUdpLight(light):
+    """Send the latest entertainment frame to a light that has no streaming protocol.
+
+    A black frame only sets light.state["on"] to False and leaves xy/bri as they
+    were, so comparing xy/bri alone never sent anything and the light stayed on.
+    Track the on state that was last sent as well.
+    """
+    last = lastAppliedFrame.setdefault(light.id_v1, {"xy": [0, 0], "bri": 0})
+    if not light.state["on"]:
+        if last.get("on", True):
+            light.setV1State({"on": False, "transitiontime": 3})
+            last["on"] = False
+        return
+    if last.get("on") is False:
+        light.setV1State({"on": True, "bri": light.state["bri"], "xy": light.state["xy"], "transitiontime": 3})
+        last.update({"on": True, "bri": light.state["bri"], "xy": light.state["xy"]})
+        return
+    operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
+    if operation == 1:
+        light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
+    elif operation == 2:
+        light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+
 def getObject(v2uuid):
     for key, obj in bridgeConfig["lights"].items():
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
@@ -517,11 +540,7 @@ def _entertainmentService(group, user, session):
                         h.send(hueGroupLights, hueGroup)
                     if len(non_UDP_lights) != 0:
                         light = non_UDP_lights[non_UDP_update_counter]
-                        operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
-                        if operation == 1:
-                            light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
-                        elif operation == 2:
-                            light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+                        updateNonUdpLight(light)
                         non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
                     fps_frame_count += 1
