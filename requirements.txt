@@ -1,5 +1,5 @@
 astral
-ws4py
+ws4py>=0.6.0
 requests
 paho-mqtt
 email-validator

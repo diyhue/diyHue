@@ -1,6 +1,7 @@
 import logManager
 import configManager
 from lights.protocols import protocols
+from contextlib import nullcontext
 from time import sleep
 from datetime import datetime, timedelta, timezone
 
@@ -12,18 +13,32 @@ def syncWithLights(off_if_unreachable): #update Hue Bridge lights states
         logging.info("start lights sync")
         for key, light in bridgeConfig["lights"].items():
             protocol_name = light.protocol
+            if protocol_name == "homeassistant_ws":
+                from services.homeAssistantWS import reflection_enabled
+                if reflection_enabled():
+                    continue
             for protocol in protocols:
                 if "lights.protocols." + protocol_name == protocol.__name__ and protocol_name not in ["mqtt", "flex", "mi_box", "dummy"]:
                     try:
                         logging.debug("fetch " + light.name)
                         newState = protocol.get_light_state(light)
                         logging.debug(newState)
-                        light.state.update(newState)
-                        light.state["reachable"] = True
+                        from services import homeAssistantWS
+                        lock = homeAssistantWS.reconfiguration_lock if protocol_name == 'homeassistant_ws' else nullcontext()
+                        with lock:
+                            if protocol_name == 'homeassistant_ws' and homeAssistantWS.reflection_enabled():
+                                continue
+                            light.state.update(newState)
+                            light.state["reachable"] = True
                     except Exception as e:
-                        light.state["reachable"] = False
-                        if off_if_unreachable:
-                            light.state["on"] = False
+                        from services import homeAssistantWS
+                        lock = homeAssistantWS.reconfiguration_lock if protocol_name == 'homeassistant_ws' else nullcontext()
+                        with lock:
+                            if protocol_name == 'homeassistant_ws' and homeAssistantWS.reflection_enabled():
+                                continue
+                            light.state["reachable"] = False
+                            if off_if_unreachable:
+                                light.state["on"] = False
                         logging.warning(light.name + " is unreachable: %s", e)
 
         sleep(10) #wait at last 10 seconds before next sync

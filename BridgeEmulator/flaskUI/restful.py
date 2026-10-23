@@ -445,19 +445,24 @@ class ElementParam(Resource):
         putDict = request.get_json(force=True)
         currentTime = datetime.now()
         logging.info(putDict)
-        if resource == "lights" and param == "state":  # state is applied to a light
-            bridgeConfig[resource][resourceid].setV1State(putDict)
-        elif param == "action":  # state is applied to a light
-            if "scene" in putDict:
-                bridgeConfig[resource][resourceid].setV1Action(
-                    state={}, scene=bridgeConfig["scenes"][putDict["scene"]])
-            else:
-                bridgeConfig[resource][resourceid].setV1Action(
-                    state=putDict, scene=None)
-            if "on" in putDict:
-                bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
-                bridgeConfig["groups"][resourceid].dxState["all_on"] = currentTime
-                rulesProcessor(bridgeConfig[resource][resourceid], currentTime)
+        from services.homeAssistantWS import MappingUnavailable
+        try:
+            if resource == "lights" and param == "state":  # state is applied to a light
+                bridgeConfig[resource][resourceid].setV1State(putDict)
+            elif param == "action":  # state is applied to a light
+                if "scene" in putDict:
+                    bridgeConfig[resource][resourceid].setV1Action(
+                        state={}, scene=bridgeConfig["scenes"][putDict["scene"]])
+                else:
+                    bridgeConfig[resource][resourceid].setV1Action(
+                        state=putDict, scene=None)
+                if "on" in putDict:
+                    bridgeConfig["groups"][resourceid].dxState["any_on"] = currentTime
+                    bridgeConfig["groups"][resourceid].dxState["all_on"] = currentTime
+                    rulesProcessor(bridgeConfig[resource][resourceid], currentTime)
+        except MappingUnavailable:
+            return [{"error": {"type": 901, "address": "/" + resource + "/" + resourceid + "/" + param,
+                               "description": "Home Assistant mapping unavailable"}}]
         if resource == "sensors" and param == "state":
             bridgeConfig[resource][resourceid].state.update(putDict)
             for state in putDict.keys():

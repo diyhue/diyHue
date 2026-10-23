@@ -74,6 +74,8 @@ def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, ha_sta
     return diyhue_state
 
 def set_light(light, data):
+    from services.homeAssistantWS import assert_command_allowed
+    assert_command_allowed(light)
     connection = connect_if_required()
     connection.change_light(light, data)
 
