@@ -61,9 +61,9 @@ def set_light(light, data):
                 if value > 369: value = 369
             payload[cmdPrefix + "set_ct_abx"] = [int((-4800/347) * value + 2989900/347), "smooth", transitiontime]
         elif key == "hue":
-            payload[cmdPrefix + "set_hsv"] = [int(value / 182), int(light.state["sat"] / 2.54), "smooth", transitiontime]
+            payload[cmdPrefix + "set_hsv"] = [yeelight_hue(value), int(light.state["sat"] / 2.54), "smooth", transitiontime]
         elif key == "sat":
-            payload[cmdPrefix + "set_hsv"] = [int(light.state["hue"] / 182), int(value / 2.54), "smooth", transitiontime]
+            payload[cmdPrefix + "set_hsv"] = [yeelight_hue(light.state["hue"]), int(value / 2.54), "smooth", transitiontime]
         elif key == "xy":
             color = convert_xy(value[0], value[1], light.state["bri"])
             payload[cmdPrefix + "set_rgb"] = [(color[0] * 65536) + (color[1] * 256) + color[2], "smooth", transitiontime] #according to docs, yeelight needs this to set rgb. its r * 65536 + g * 256 + b
@@ -76,6 +76,11 @@ def set_light(light, data):
     for key, value in payload.items():
         c.send_command(key, value)
         sleep(0.4)
+
+def yeelight_hue(hue):
+    """Hue's 0-65535 to Yeelight's 0-359 (65535 / 182 would give 360, which the bulb rejects)."""
+    return min(int(hue / 182), 359)
+
 
 def hex_to_rgb(value):
     value = value.lstrip('#')
@@ -101,16 +106,18 @@ def get_light_state(light):
 
     state["bri"] = int(int(light_data[prefix + "bright"]) * 2.54)
 
-    if light_data["color_mode"] == "1": #rgb mode
+    # The bulb reports strings, but the library's music mode cache stores ints.
+    color_mode = str(light_data["color_mode"])
+    if color_mode == "1": #rgb mode
         hex_rgb = "%06x" % int(light_data[prefix + "rgb"])
         rgb=hex_to_rgb(hex_rgb)
         state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
         state["colormode"] = "xy"
-    elif light_data["color_mode"] == "2": #ct mode
+    elif color_mode == "2": #ct mode
         state["ct"] =  calculate_color_temp(light_data[prefix + "ct"])
         state["colormode"] = "ct"
-    elif light_data["color_mode"] == "3": #hs mode
-        state["hue"] = int(light_data[prefix + "hue"] * 182)
-        state["sat"] = int(light_data[prefix + "sat"] * 2.54)
+    elif color_mode == "3": #hs mode
+        state["hue"] = int(int(light_data[prefix + "hue"]) * 182)
+        state["sat"] = int(int(light_data[prefix + "sat"]) * 2.54)
         state["colormode"] = "hs"
     return state
