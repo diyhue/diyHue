@@ -72,7 +72,7 @@ class HomeAssistantClient(WebSocketClient):
         elif message.get('type', None) == "pong":
             self.do_pong(message)
         else:
-            logging.warning("Unexpected message: ", message)
+            logging.warning("Unexpected message: %s", message)
 
     def do_auth_required(self, m):
         logging.info("Home Assistant Web Socket Authorisation required")
@@ -148,7 +148,11 @@ class HomeAssistantClient(WebSocketClient):
                 service_data['transition'] = value / 10
 
         if color_from_hsv:
-            service_data['hs_color'] = [data['hue'], data['sat']]
+            # Hue uses hue 0-65535 and sat 0-254; Home Assistant's hs_color is
+            # [0-360, 0-100]. A request can carry only one of the two.
+            hue = data.get('hue', light.state.get('hue', 0))
+            sat = data.get('sat', light.state.get('sat', 0))
+            service_data['hs_color'] = [round(hue * 360 / 65535, 2), round(sat * 100 / 254, 2)]
 
         self._send_with_id(payload, "service")
 
