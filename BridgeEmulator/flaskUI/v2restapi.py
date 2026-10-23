@@ -25,6 +25,15 @@ v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {},
 "geofence_client": {}, "motion": {}, "light_level": {}, "temperature": {}, "relative_rotary": {}, "button": {}}
 
 
+def stopSmartScenesOn(group):
+    """A scene recalled on a group replaces any smart scene running on it."""
+    from functions.scripts import findGroup
+    for smart_scene in bridgeConfig["smart_scene"].values():
+        if smart_scene.state == "active" and smart_scene.group and findGroup(smart_scene.group["rid"]) is group:
+            smart_scene.stop()
+            configManager.bridgeConfig.mark_dirty("smart_scene")
+
+
 def getObject(element, v2uuid):
     if element in ["behavior_instance"]:
         return bridgeConfig[element][v2uuid]
@@ -662,6 +671,8 @@ class ClipV2ResourceId(Resource):
         elif resource == "scene":
             if "recall" in putDict:
                 object.activate(putDict)
+                if object.group is not None:
+                    stopSmartScenesOn(object.group())
             if "speed" in putDict:
                 object.speed = putDict["speed"]
             if "palette" in putDict:

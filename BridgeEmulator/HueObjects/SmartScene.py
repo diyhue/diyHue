@@ -65,6 +65,21 @@ class SmartScene():
                 return
 
 
+    def stop(self):
+        """Mark the smart scene inactive without touching the lights.
+
+        Used when another scene is recalled on the same group: the new scene
+        already set the lights, and an active smart scene would keep showing as
+        the current scene and keep switching timeslots.
+        """
+        self.state = "inactive"
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [{"id": self.id_v2, "id_v1": "/smart_scene/" + self.id_v1, "state": self.state, "type": "smart_scene"}],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
+        StreamEvent(streamMessage)
+
     def getV2Api(self):
         result = {}
         result["metadata"] = {}
