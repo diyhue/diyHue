@@ -9,6 +9,35 @@ import requests
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
+def in_time_interval(value, now):
+    """Whether `now` falls in a Hue time interval.
+
+    The value is "T08:00:00/T10:00:00", optionally prefixed with a weekday
+    bitmask, "W124/T08:00:00/T10:00:00" (bit 6 is Monday, bit 0 Sunday). An
+    interval whose start is after its end runs past midnight; the weekday is
+    the one it starts on.
+    """
+    parts = value.split('/')
+    weekdays = 127
+    if parts[0].startswith("W"):
+        weekdays = int(parts[0][1:])
+        parts = parts[1:]
+    timeStart = datetime.strptime(parts[0], "T%H:%M:%S").time()
+    timeEnd = datetime.strptime(parts[1], "T%H:%M:%S").time()
+    now_time = now.time()
+    day = now.weekday()  # Monday is 0
+    if timeStart <= timeEnd:
+        inside = timeStart <= now_time <= timeEnd
+    elif timeStart <= now_time:
+        inside = True
+    elif now_time <= timeEnd:
+        inside = True
+        day = (day - 1) % 7  # still the interval that started yesterday
+    else:
+        inside = False
+    return inside and bool(weekdays & (1 << (6 - day)))
+
+
 def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
     #logging.debug("Check " + rule.id_v1)
     ddx = 0
@@ -39,18 +68,10 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
             elif condition["operator"] == "dx":
                 if device_found == False or not bridgeConfig[url_pices[1]][url_pices[2]].dxState[url_pices[4]] == current_time:
                     return [False, 0]
-            elif condition["operator"] == "in":
-                periods = condition["value"].split('/')
-                if condition["value"][0] == "T":
-                    timeStart = datetime.strptime(periods[0], "T%H:%M:%S").time()
-                    timeEnd = datetime.strptime(periods[1], "T%H:%M:%S").time()
-                    now_time = datetime.now().time()
-                    if timeStart < timeEnd:
-                        if not timeStart <= now_time <= timeEnd:
-                            return [False, 0]
-                    else:
-                        if not (timeStart <= now_time or now_time <= timeEnd):
-                            return [False, 0]
+            elif condition["operator"] in ("in", "not in"):
+                inside = in_time_interval(condition["value"], datetime.now())
+                if inside != (condition["operator"] == "in"):
+                    return [False, 0]
             elif condition["operator"] == "ddx" and ignore_ddx is False:
                 if not bridgeConfig[url_pices[1]][url_pices[2]].dxState[url_pices[4]] == current_time:
                     return [False, 0]
