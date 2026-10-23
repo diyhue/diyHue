@@ -31,6 +31,9 @@ def routine(kind, minutes=None):
 
 
 class DaylightSensorTests(unittest.TestCase):
+    def setUp(self):
+        daylight._scheduled.clear()
+
     def run_sensor(self, s, routines, sunset_in, tz="Europe/Amsterdam"):
         events = []
         clock = {"now": NOW}
@@ -73,6 +76,17 @@ class DaylightSensorTests(unittest.TestCase):
         ended = NOW + timedelta(seconds=1800)
         self.assertEqual(s.state, {"daylight": False, "lastupdated": ended.strftime("%Y-%m-%dT%H:%M:%S")})
         self.assertEqual(rules.call_args.args[1], ended)
+
+    def test_repeated_calls_before_sunset_fire_once(self):
+        # The scheduler runs the sensor every 15 minutes; within the last hour
+        # before sunset that used to start a sleeping thread per call.
+        s = sensor()
+        routines = {"1": routine("sunset")}
+        first, _ = self.run_sensor(s, routines, sunset_in=1800)
+        second, rules = self.run_sensor(s, routines, sunset_in=1800)
+        self.assertEqual(first, [("routine", 1800), ("sleep", 1800)])
+        self.assertEqual(second, [])
+        rules.assert_not_called()
 
     def test_timezone_without_a_region(self):
         events, _ = self.run_sensor(sensor(), {}, sunset_in=1800, tz="UTC")

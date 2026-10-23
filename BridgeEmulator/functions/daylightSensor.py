@@ -11,11 +11,22 @@ import configManager
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
+# The scheduler calls daylightSensor every 15 minutes and each call looks an
+# hour ahead, so the same sunrise/sunset is seen up to four times. Remember what
+# was already scheduled so rules and routines run once per event.
+_scheduled = set()
+
+def _first_time(key):
+    if key in _scheduled:
+        return False
+    _scheduled.add(key)
+    return True
+
 def runBackgroundSleep(instance, seconds):
     sleep(seconds)
     triggerScript(instance)
 
-def scheduleRoutines(deltaSunrise, deltaSunset):
+def scheduleRoutines(deltaSunrise, deltaSunset, sunrise=None, sunset=None):
     """Start the v2 sunrise/sunset routines due within the next hour.
 
     The deltas are seconds until sunrise and sunset without the v1 sensor's
@@ -25,15 +36,15 @@ def scheduleRoutines(deltaSunrise, deltaSunset):
         if "when_extended" in instance.configuration:
             time_point = instance.configuration["when_extended"]["start_at"]["time_point"]
             if time_point["type"] == "sunrise":
-                delta = deltaSunrise
+                delta, event = deltaSunrise, sunrise
             elif time_point["type"] == "sunset":
-                delta = deltaSunset
+                delta, event = deltaSunset, sunset
             else:
                 continue
             offset = 0
             if "offset" in time_point:
                 offset = 60 * time_point["offset"]["minutes"]
-            if 0 < delta + offset < 3600:
+            if 0 < delta + offset < 3600 and _first_time(("routine", key, time_point["type"], event)):
                 Thread(target=runBackgroundSleep, args=[instance, delta + offset]).start()
 
 def daylightSensor(tz, sensor):#tz = timezone
@@ -56,8 +67,9 @@ def daylightSensor(tz, sensor):#tz = timezone
             logging.info("set daylight sensor to false")
         # v2 api routines: schedule them before the sleeps below, which can last
         # up to an hour and would delay them by as much.
-        scheduleRoutines(deltaSunrise, deltaSunset)
-        if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600:
+        sunrise, sunset = s['sunrise'].isoformat(), s['sunset'].isoformat()
+        scheduleRoutines(deltaSunrise, deltaSunset, sunrise, sunset)
+        if deltaSunsetOffset > 0 and deltaSunsetOffset < 3600 and _first_time(("sensor", "sunset", sunset)):
             logging.info("will start the sleep for sunset")
             sleep(deltaSunsetOffset)
             current_time = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -65,7 +77,7 @@ def daylightSensor(tz, sensor):#tz = timezone
             sensor.state = {"daylight":False,"lastupdated": current_time.strftime("%Y-%m-%dT%H:%M:%S")}
             sensor.dxState["daylight"] = current_time
             rulesProcessor(sensor, current_time)
-        elif deltaSunriseOffset > 0 and deltaSunriseOffset < 3600:
+        elif deltaSunriseOffset > 0 and deltaSunriseOffset < 3600 and _first_time(("sensor", "sunrise", sunrise)):
             logging.info("will start the sleep for sunrise")
             sleep(deltaSunriseOffset)
             current_time = datetime.now(timezone.utc).replace(tzinfo=None)
