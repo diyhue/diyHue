@@ -348,6 +348,12 @@ def on_message(client, userdata, msg):
                                 # MODEL_ALIASES in sensor_types.py already adds every
                                 # variant ID to sensorTypes, so a plain lookup works.
                                 sensor_model_key = model_id
+                                if sensor_model_key not in sensorTypes:
+                                    # A button mapping without a sensor type can't be added;
+                                    # skip it instead of raising KeyError, which aborted
+                                    # discovery for every device after this one.
+                                    logging.warning("MQTT: no sensor type defined for model " + model_id + ", skipping " + key["friendly_name"])
+                                    continue
                                 switch_id_v2 = None
                                 for sensor_type in sensorTypes[sensor_model_key].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
