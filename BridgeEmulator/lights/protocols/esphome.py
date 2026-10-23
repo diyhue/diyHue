@@ -177,6 +177,16 @@ def set_light(light, data, rgb = None):
 
 
 
+def hue_brightness(light, device, boost_key):
+    """Brightness reported by ESPHome, back in Hue's 1-254 range.
+
+    set_light adds ct_boost/rgb_boost before sending, so take it off again,
+    and ESPHome's 0-255 can otherwise come back as 255.
+    """
+    boost = int(light.protocol_cfg.get(boost_key, 0))
+    return max(1, min(254, int(device['brightness']) - boost))
+
+
 def get_light_state(light):
     logging.debug("ESPHome: <get_light_state> invoked!")
     state = {}
@@ -190,12 +200,12 @@ def get_light_state(light):
         elif white_device['state'] == 'ON':
             state['on'] = True
             state['ct'] = int(white_device['color_temp'])
-            state['bri'] = int(white_device['brightness'])
+            state['bri'] = hue_brightness(light, white_device, "ct_boost")
             state['colormode'] = "ct"
         elif color_device['state'] == 'ON':
             state['on'] = True
             state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
-            state['bri'] = int(color_device['brightness'])
+            state['bri'] = hue_brightness(light, color_device, "rgb_boost")
             state['colormode'] = "xy"
 
     elif light.protocol_cfg["esphome_model"] == "ESPHome-CT":
@@ -206,7 +216,7 @@ def get_light_state(light):
         elif white_device['state'] == 'ON':
             state['on'] = True
             state['ct'] = int(white_device['color_temp'])
-            state['bri'] = int(white_device['brightness'])
+            state['bri'] = hue_brightness(light, white_device, "ct_boost")
             state['colormode'] = "ct"
 
     elif light.protocol_cfg["esphome_model"] == "ESPHome-RGB":
@@ -217,7 +227,7 @@ def get_light_state(light):
         elif color_device['state'] == 'ON':
             state['on'] = True
             state['xy'] = convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b']))
-            state['bri'] = int(color_device['brightness'])
+            state['bri'] = hue_brightness(light, color_device, "rgb_boost")
             state['colormode'] = "xy"
 
     elif light.protocol_cfg["esphome_model"] == "ESPHome-Dimmable":
@@ -227,7 +237,7 @@ def get_light_state(light):
             state['on'] = False
         elif dimmable_device['state'] == 'ON':
             state['on'] = True
-            state['bri'] = int(dimmable_device['brightness'])
+            state['bri'] = hue_brightness(light, dimmable_device, "ct_boost")
 
     elif light.protocol_cfg["esphome_model"] == "ESPHome-Toggle":
         toggle_response = requests.get ("http://" + light.protocol_cfg["ip"] + "/light/toggle_led", timeout=3)
