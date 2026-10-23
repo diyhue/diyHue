@@ -177,7 +177,13 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
         light (Any): The light object containing protocol configuration.
         data (dict): The data containing state information to set.
     """
+    color_sent = False
     for date_type in data:
+        if date_type in ("hue", "sat"):
+            # hue and sat make one colour; send it once even when both changed
+            if color_sent:
+                continue
+            color_sent = True
         request_data = create_request_data(light, data, date_type)
         if request_data is not None:
             response = requests.put(f"{BASE_URL}/device/control", headers=get_headers(), data=json.dumps({"requestId": "1", "payload": request_data}))
@@ -208,14 +214,15 @@ def create_request_data(light: Any, data: Dict[str, Any], data_type: str) -> Dic
         return request_data
 
     elif data_type == "xy":
-        r, g, b = convert_xy(data['xy'][0], data['xy'][1], data.get('bri', 255))
+        r, g, b = convert_xy(data['xy'][0], data['xy'][1], data.get('bri', light.state.get('bri', 254)))
         request_data["capability"] = create_color_capability(r, g, b, light.protocol_cfg.get("segmentedID", -1))
         return request_data
 
     elif data_type == "hue" or data_type == "sat":
-        hue = data.get('hue', 0)
-        sat = data.get('sat', 0)
-        bri = data.get('bri', 255)
+        # a value that didn't change comes from the light, not from 0
+        hue = data.get('hue', light.state.get('hue', 0))
+        sat = data.get('sat', light.state.get('sat', 254))
+        bri = data.get('bri', light.state.get('bri', 254))
         r, g, b = hsv_to_rgb(hue, sat, bri)
         request_data["capability"] = create_color_capability(r, g, b, light.protocol_cfg.get("segmentedID", -1))
         return request_data
@@ -251,7 +258,9 @@ def create_brightness_capability(brightness: int, segment_id: int, bri_range: Di
     Returns:
         Dict[str, Any]: The brightness capability.
     """
-    mapped_value = round(bri_range.get("min", 0) + ((brightness / 255) * (bri_range.get("max", 100) - bri_range.get("min", 0))),bri_range.get("precision", 0))
+    # Hue brightness is 1-254: 254 has to reach the device's max
+    lo, hi = bri_range.get("min", 0), bri_range.get("max", 100)
+    mapped_value = round(lo + ((min(max(brightness, 1), 254) - 1) / 253) * (hi - lo), bri_range.get("precision", 0))
     if segment_id >= 0:
         return {
             "type": f"{BASE_TYPE}segment_color_setting",
@@ -323,11 +332,14 @@ def parse_light_state(state_data: List[Dict[str, Any]], light: Any) -> Dict[str,
     state = {}
     for function in state_data:
         if function["type"] == f"{BASE_TYPE}online":
-            state["reachable"] = function["state"]["value"] == "true"
+            # the API sends a JSON boolean here
+            state["reachable"] = function["state"]["value"] in (True, "true")
         if function["type"] == f"{BASE_TYPE}on_off":
             state["on"] = function["state"]["value"] == 1
         if function["type"] == f"{BASE_TYPE}range" and "brightness" in function["instance"]:
-            state["bri"] = round(((function["state"]["value"] / light.protocol_cfg["bri_range"]["max"]) * 255))
+            lo = light.protocol_cfg["bri_range"].get("min", 0)
+            hi = light.protocol_cfg["bri_range"]["max"]
+            state["bri"] = max(1, min(254, round(1 + (function["state"]["value"] - lo) / (hi - lo) * 253)))
         if function["type"] == f"{BASE_TYPE}color_setting":
             rgb = function["state"]["value"]
             state["xy"] = convert_rgb_xy((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF)
