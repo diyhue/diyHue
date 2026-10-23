@@ -24,6 +24,14 @@ def hue_ct_to_milight(ct):
 def milight_ct_to_hue(color_temp):
     return _scale(color_temp, MILIGHT_CT_MIN, MILIGHT_CT_MAX, HUE_CT_MIN, HUE_CT_MAX)
 
+def hue_to_milight(hue):
+    """Hue's 0-65535 to the hub's 0-359 degrees (hue / 180 could reach 364)."""
+    return min(round(hue * 359 / 65535), 359)
+
+
+def milight_hue_to_hue(degrees):
+    return min(round(degrees * 65535 / 359), 65535)
+
 def set_light(light, data):
     
     url = "http://" + light.protocol_cfg["ip"] + "/gateways/" + light.protocol_cfg["miID"] + "/" + light.protocol_cfg["miModes"] + "/" + str(light.protocol_cfg["miGroups"])
@@ -36,9 +44,10 @@ def set_light(light, data):
         elif key == "ct":
             payload["color_temp"] = hue_ct_to_milight(value)
         elif key == "hue":
-            payload["hue"] = value / 180
+            payload["hue"] = hue_to_milight(value)
         elif key == "sat":
-            payload["saturation"] = value * 100 / 255
+            # Hue saturation tops out at 254, the hub's at 100
+            payload["saturation"] = round(min(value, 254) * 100 / 254)
         elif key == "xy":
             payload["color"] = {}
            # 
@@ -60,13 +69,13 @@ def get_light_state(light):
     else:
         state["on"] = False
     if "brightness" in light_data:
-        state["bri"] = light_data["brightness"]
+        state["bri"] = max(1, min(254, light_data["brightness"]))
     if "color_temp" in light_data:
         state["colormode"] = "ct"
         state["ct"] = milight_ct_to_hue(light_data["color_temp"])
     elif "bulb_mode" in light_data and light_data["bulb_mode"] == "color":
         state["colormode"] = "hs"
-        state["hue"] = light_data["hue"] * 180
+        state["hue"] = milight_hue_to_hue(light_data["hue"])
         if (not "saturation" in light_data) and light.protocol_cfg["miModes"] == "rgbw":
             state["sat"] = 255
         else:
