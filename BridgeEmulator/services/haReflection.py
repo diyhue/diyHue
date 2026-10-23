@@ -15,6 +15,11 @@ def revision(row):
     return stamp
 
 
+def state_content(row):
+    # last_reported and context can change without a state/attribute revision.
+    return row['entity_id'], row['state'], row['attributes']
+
+
 def translate(existing, row):
     result = deepcopy(existing)
     available = row['state'] in ('on', 'off')
@@ -81,6 +86,7 @@ class Reflector:
         with self.lock:
             if epoch != self.epoch:
                 return None
+            self.mapping_budget()
             mapped = self.mapped_entities()
             self.rows = {entity: row for entity, row in self.rows.items() if entity in mapped}
             self.tombstones.intersection_update(mapped)
@@ -92,6 +98,13 @@ class Reflector:
     def mapped_entities(self):
         return {light.protocol_cfg.get('entity_id') for light in list(self.lights.values())
                 if light.protocol == 'homeassistant_ws'}
+
+    def mapping_budget(self):
+        if len(self.mapped_entities()) > self.max_pending:
+            self.ready = False
+            self.needs_sync = True
+            return False
+        return True
 
     def _valid(self, row):
         if not isinstance(row, dict):
@@ -124,6 +137,8 @@ class Reflector:
             if row is not None and (not self._valid(row) or row['entity_id'] != entity):
                 self.needs_sync = True
                 return
+            if not self.mapping_budget():
+                return
             if entity not in self.mapped_entities():
                 return
             self.sequence += 1
@@ -137,7 +152,7 @@ class Reflector:
             if entity in self.pending and (previous is None or row is None or not self.included(previous) or not self.included(row)):
                 self.ambiguous = True
             if previous is not None and row is not None:
-                if revision(row) < revision(previous) or (revision(row) == revision(previous) and row != previous):
+                if revision(row) < revision(previous) or (revision(row) == revision(previous) and state_content(row) != state_content(previous)):
                     self.needs_sync = True
                     self.ready = False
                     return
@@ -151,7 +166,7 @@ class Reflector:
             if row is not None and current is not None:
                 if revision(row) < revision(current):
                     return
-                if revision(row) == revision(current) and row != current:
+                if revision(row) == revision(current) and state_content(row) != state_content(current):
                     self.needs_sync = True
                     return
             try:
@@ -173,7 +188,7 @@ class Reflector:
             all_entities = [row['entity_id'] for row in rows]
             mapped = self.mapped_entities()
             candidate = {row['entity_id']: row for row in rows if row['entity_id'] in mapped}
-            if self.ambiguous or len(set(all_entities)) != len(rows) or len(mapped) > self.max_pending:
+            if not self.mapping_budget() or self.ambiguous or len(set(all_entities)) != len(rows):
                 self.needs_sync = True
                 return False
             for entity, event in self.pending.items():
@@ -182,13 +197,13 @@ class Reflector:
                 if event is None or snapshot is None or not self.included(event):
                     self.needs_sync = True
                     return False
-                if revision(snapshot) < revision(event) or (revision(snapshot) == revision(event) and snapshot != event):
+                if revision(snapshot) < revision(event) or (revision(snapshot) == revision(event) and state_content(snapshot) != state_content(event)):
                     self.needs_sync = True
                     return False
             for entity, current in self.rows.items():
                 snapshot = candidate.get(entity)
                 if snapshot is not None and (revision(snapshot) < revision(current) or
-                        (revision(snapshot) == revision(current) and snapshot != current)):
+                        (revision(snapshot) == revision(current) and state_content(snapshot) != state_content(current))):
                     self.needs_sync = True
                     return False
             # Prepare every translation before mutating any served light. Malformed
@@ -216,6 +231,8 @@ class Reflector:
 
     def command_allowed(self, light):
         with self.lock:
+            if not self.mapping_budget():
+                return False
             entity = light.protocol_cfg.get('entity_id')
             member = any(candidate is light for candidate in list(self.lights.values()))
             return (member and (id(light), entity) in self.qualified_mappings and self.ready

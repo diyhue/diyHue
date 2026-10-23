@@ -145,3 +145,49 @@ class AdditionalReducerTests(unittest.TestCase):
         self.r.begin_snapshot(self.epoch)
         self.assertFalse(self.r.tombstones)
         self.assertFalse(self.r.rows)
+
+class ReviewRegressionTests(unittest.TestCase):
+    setUp = ReflectionTests.setUp
+    baseline = ReflectionTests.baseline
+
+    def test_report_only_metadata_does_not_block_poll_or_reconnect_baseline(self):
+        first = state()
+        first['last_reported'] = '2026-01-01T00:00:01+00:00'
+        self.assertTrue(self.baseline([first]))
+        second = dict(first, last_reported='2026-01-01T00:00:02+00:00')
+        self.assertTrue(self.baseline([second]))
+        self.epoch = self.r.new_session()
+        third = dict(first, last_reported='2026-01-01T00:00:03+00:00')
+        self.assertTrue(self.baseline([third]))
+        self.assertTrue(self.r.command_allowed(self.light))
+
+    def test_report_only_event_during_snapshot_is_compatible(self):
+        self.baseline()
+        ticket = self.r.begin_snapshot(self.epoch)
+        self.r.event(self.epoch, 'light.test', dict(state(), last_reported='2026-01-01T00:00:04+00:00'))
+        self.assertTrue(self.r.snapshot(self.epoch, ticket, [state()]))
+        conflict = state('off')
+        self.r.event(self.epoch, 'light.test', conflict)
+        self.assertTrue(self.r.needs_sync)
+        self.assertTrue(self.light.state['on'])
+
+    def test_mapping_overflow_disables_event_publication_and_command_authority(self):
+        self.r.max_pending = 1
+        self.baseline()
+        extra = SimpleNamespace(protocol='homeassistant_ws', protocol_cfg={'entity_id': 'light.extra'}, state={'on': False})
+        self.r.lights['2'] = extra
+        self.assertFalse(self.r.command_allowed(self.light))
+        for n in range(2, 7):
+            candidate = state('on', n)
+            candidate['entity_id'] = 'light.extra'
+            self.r.begin_snapshot(self.epoch)
+            self.assertFalse(self.r.snapshot(self.epoch, self.r.snapshot_token, [state(), candidate]))
+            self.r.event(self.epoch, 'light.extra', candidate)
+            self.assertFalse(self.r.ready)
+            self.assertLessEqual(len(self.r.rows), self.r.max_pending)
+            self.assertFalse(extra.state['on'])
+        self.epoch = self.r.new_session()
+        self.assertFalse(self.r.command_allowed(self.light))
+        del self.r.lights['2']
+        self.assertTrue(self.baseline())
+        self.assertTrue(self.r.command_allowed(self.light))

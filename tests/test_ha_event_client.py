@@ -23,6 +23,9 @@ def row(value='on', n=1):
 
 class AdapterTests(unittest.TestCase):
     def setUp(self):
+        resolver = patch('services.haEventClient.resolve_address', return_value=(2, ('192.0.2.1', 8123)))
+        resolver.start()
+        self.addCleanup(resolver.stop)
         self.light = SimpleNamespace(protocol='homeassistant_ws', protocol_cfg={'entity_id': 'light.test'},
                                      state={'on': True, 'bri': 100})
         self.reducer = Reflector({'1': self.light}, lambda r: r is not None and r['attributes'].get('diyhue') == 'include')
@@ -160,7 +163,8 @@ class AdapterTests(unittest.TestCase):
         supervisor = EventSession({'lights': {}, 'config': {'homeassistant': cfg}}, factory, lambda r: True)
         supervisor.tick(0)
         epoch = supervisor.reducer.epoch
-        supervisor.tick(16)
+        with patch('services.haEventClient.time.monotonic', return_value=16):
+            supervisor.tick(16)
         self.assertIsNone(supervisor.client)
         self.assertGreater(supervisor.reducer.epoch, epoch)
         self.assertLessEqual(supervisor.next_connect, 77)
@@ -339,6 +343,7 @@ class AdapterTests(unittest.TestCase):
 
     def test_total_upgrade_deadline_stops_slow_drip(self):
         transport = self.handshake_fixture()
+        self.client.deadline = 15
         transport.recv.return_value = b'x'
         context = Mock()
         context.wrap_socket.return_value = transport

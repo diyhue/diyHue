@@ -55,7 +55,8 @@ complete valid `get_states` lists; `[]` is a complete empty list, while missing,
 malformed or failed responses never delete membership. Snapshot tokens and
 session epochs reject old completions. Per-entity timezone-aware `last_updated`
 values prevent an older value from replacing a newer event. Equal timestamps
-with unequal payloads request reconciliation. Deletion/exclusion and
+with unequal entity/state/attributes request reconciliation. Independently changing
+report/context metadata does not conflict with an unchanged state revision. Deletion/exclusion and
 recreation inside one in-flight read are ambiguous and reject that entire read.
 There is no local-arrival-time tie-breaker. A deletion cannot be restored by an
 event; restoration requires a later authoritative complete read. Malformed
@@ -68,8 +69,9 @@ command-blocked tombstone. **It does not implement served-object deletion** as
 proposed in the broader contract. In-memory tombstones/rows/pending candidates
 are restricted to current configured mappings, with retired mappings pruned on
 reconcile. Pending events coalesce per mapping and preserve deletion ambiguity.
-The cap is 4096 configured mappings/candidates; overflow requires reconciliation
-and suppresses event mode. `get_states` itself still returns HA's entire inventory
+The cap is 4096 distinct configured entity mappings/candidates. Overflow fences
+event publication and command authority immediately on admission/read/command
+checks, and a new baseline is required after returning below the cap. `get_states` itself still returns HA's entire inventory
 and transport/frame memory is not a streaming bounded parser.
 
 ## Fixed candidate recovery budgets (not measured safe defaults)
@@ -80,11 +82,15 @@ and transport/frame memory is not a streaming bounded parser.
   a finite timeout, restored after ws4py reader startup resets blocking mode.
   TLS/HTTP upgrade network I/O has a total 15-second monotonic deadline and a
   16 KiB header cap; slow-drip responses cannot extend it. HA ping requests every
-  5 seconds maintain quiet connections. **Deployment blocker:** OS hostname
-  resolution can occur both in the websocket constructor and again inside
-  `socket.connect`; the deadline cannot interrupt the OS resolver. Thus total
-  connection setup and retirement/reconfiguration can wait for the resolver,
-  exceeding 15 seconds. Resolve and qualify this gap before any deployment.
+  5 seconds maintain quiet connections. Hostname resolution runs in one child
+  process using the remaining connection-attempt budget; a stalled child is
+  killed and reaped. ws4py construction uses a numeric bootstrap address and
+  TCP connects to the resolved numeric tuple, avoiding another OS lookup. The
+  original hostname remains the HTTP Host and TLS SNI/verification identity.
+  Numeric IPv4/IPv6 configuration needs no resolver child. Resolution and network
+  I/O share one absolute 15-second attempt deadline; process scheduling,
+  interpreter launch and cleanup are not hard real-time bounds. Retry backoff
+  starts after failed-attempt cleanup, so slow attempts cannot consume the pause.
 - Failed/ambiguous full reads retry no faster than every 2 seconds; three
   consecutive failed reads close the session and require a new baseline.
 - Reconnect backoff is 2, 4, 8, 16, then 32 seconds, plus 0-1 second jitter.
@@ -115,7 +121,7 @@ This is **not full fulfillment of the broader event-reflection proposal**:
 - Attribute validation/translation covers the existing on/off, brightness,
   color temperature, XY and HS fields; model capabilities and every HA provider's
   attribute semantics still need an inventory-specific compatibility review.
-- Live auth rotation/revocation, OS resolver stalls, failed trust/hostname handshakes, measured HA
+- Live auth rotation/revocation, failed trust/hostname handshakes, measured HA
   request load, source timestamp skew/regression, client/group/scene compatibility,
   and accepted recurrence windows remain unqualified.
 - No panel poll cadence, native panel display, physical light, production
@@ -137,36 +143,60 @@ TDD record: the first `test_ha_reflection.py` run failed at import with
 all initial nine reducer cases passed. Subsequent adapter and regression tests
 exercise the actual callback/session code, verified SSLContext construction, real ws4py reader startup after its blocking reset,
 bounded slow-drip/oversized upgrade, legacy/event toggles, concurrent replacement,
-Light guard before optimistic mutation, and v1 REST error behavior.
+Light guard before optimistic mutation, and v1 REST error behavior. Resolver tests
+exercise actual stalled-child termination/reaping and numeric-only parent address
+construction while preserving the configured TLS hostname.
 
 The benchmark executes the production reducer/translation through a finite
-`heapq` discrete-event replay. The workload has 68 source changes (including a
-20-change burst), deterministic 20 ms event delivery / 50 ms full-read service
-assumptions, dropped and delayed events, a full-read/burst overlap, disconnect /
-reconnect baseline, removal and restoration. First matching cache times are
-observed after real reducer operations; no commit timestamp is precomputed.
-The fixture supplies independent atomic source cut identifiers so an event-only
-shadow can be compared before authoritative reconciliation overwrites the main
-lane. That proves only replay same-cut value parity for this static mapping;
-HA runtime inventory-wide parity stays **INCONCLUSIVE**.
+`heapq` discrete-event replay. The workload has 67 brightness changes (including
+a 20-change burst), deterministic 20 ms event delivery / 50 ms full-read service
+assumptions, dropped/delayed events, an injected read/burst overlap, reconnect,
+removal and restoration. Brightness changes pause during the explicit absence.
+First matching cache times are observed after real reducer operations.
 
-Recorded replay (conditional synthetic assumptions):
+This is a **custom reducer stimulus experiment**. Absolute periodic ticks,
+queued retries and an injected overlap read differ from the production
+supervisor's mutable `next_read` scheduling. `fixture_stimulus_requests` counts
+dispatched fixture operations, not production HA reads or scheduling efficiency.
+These counts cannot establish HA load or a safe polling comparator.
 
-| Mode | Matched / 68 | Missed or coalesced | Mean / p95 / max ms among matches | Full reads |
+The event-only shadow is seeded at initialization and explicit reconnect
+baselines only. Comparisons record an independently consumed fixture cut and
+require a ready shadow. Initial-cut equalities are separate from post-change
+comparisons. The fixture provides source cuts for one static mapping; it does
+not establish HA runtime inventory-wide parity, which remains **INCONCLUSIVE**.
+Seven event-lane comparisons have unproven cuts and no qualification deadline;
+they are reported without a PASS claim.
+
+Recorded replay under the declared synthetic assumptions:
+
+| Mode | Brightness matched / 67 | Missed/coalesced | Mean / p95 / max ms among matches | Fixture requests |
 |---|---|---|---|---|
-| 10 s polls | 11 | 57 | 1587.531 / 1536.592 / 9486.304 | 13 |
-| 2 s polls | 46 | 22 | 945.736 / 1874.721 / 1983.846 | 60 |
-| Events + 60 s floor | 64 | 4 | 226.276 / 700 / 9486.304 | 9 |
+| 10 s stimuli | 11 | 56 | 1587.531 / 9486.304 / 9486.304 | 13 |
+| 2 s stimuli | 45 | 22 | 938.522 / 1954.331 / 1983.846 | 60 |
+| Event stimuli + 60 s repair floor | 63 | 4 | 89.340 / 700 / 1903.448 | 9 |
 
-These distributions are conditional on matching samples and must be read with
-the missed/coalesced counts; superseded changes cannot be assigned zero latency.
-The event replay drops four events; two are later matched through real poll
-repair and two are superseded. One overlapping snapshot is rejected. No served
-source revision regresses. The main event lane checks the removal command fence.
-Two event-shadow comparisons establish equal fixture cuts; seven have unproven
-cuts and are reported separately, never converted into PASS. Comparator lanes
-also run the same disconnect/removal workload and source snapshots.
+p95 uses nearest-rank `ceil(0.95 * matched_count)`. These distributions cover only
+matching brightness samples and must be read with missing/coalesced counts;
+superseded or unseen changes are not assigned zero latency. The event fixture
+intentionally drops three connected events; one later matches via poll repair
+and two are superseded. One overlapping snapshot is rejected. No extant row's
+source revision decreases. This metric alone does not prove all cache fields,
+availability or mapping correctness.
 
-These synthetic numbers expose scheduling, loss and recovery effects in the
-actual reducer. They exclude real CPU/network delays, production HA load and
-panel polling. No physical light or display improvement is measured.
+Separate lifecycle accounting observes both expected transitions in each lane:
+removal requires unreachable tombstone plus command rejection; restoration
+requires authoritative available membership at or after the explicit restore
+revision. Synthetic removal/restoration times are 50/7050 ms for 10 s stimuli,
+50/1050 ms for 2 s stimuli, and 0/2050 ms for event stimuli. Reconnect uses the
+real reducer disconnect mutation and a new session; an explicitly delayed old-
+epoch callback is fenced. The event shadow reports one initial-cut equality,
+one post-change equal-cut observation (the removal/tombstone cut, not brightness
+parity) and seven unproven comparisons. These are narrow fixture observations,
+not complete proposal-comparator qualification.
+
+The regression suite covers percentile small samples, fixture-scheduling labels,
+shadow reseeding/cut readiness, lifecycle accounting, absence stability,
+disconnect reachability and old-epoch callbacks. These synthetic observations
+exclude real CPU/network delays, production HA load and panel polling. No
+physical light or native display improvement is measured.

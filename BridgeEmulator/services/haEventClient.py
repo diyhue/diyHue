@@ -1,11 +1,52 @@
 """Opt-in HA session supervisor; legacy websocket path remains the default."""
 import random
+import ipaddress
+import json
+import socket
+import subprocess
+import sys
+from urllib.parse import urlsplit
 import certifi
 import ssl
 import threading
 import time
 from services.haReflection import Reflector
 from ws4py.exc import HandshakeError
+
+
+def resolve_address(host, port, timeout):
+    """Keep libc/NSS resolution in one killable child, never a stuck thread."""
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None:
+        if address.version == 6:
+            return socket.AF_INET6, (str(address), port, 0, 0)
+        return socket.AF_INET, (str(address), port)
+    script = (
+        'import json,socket,sys; host,port=json.load(sys.stdin); '
+        'r=socket.getaddrinfo(host,port,socket.AF_UNSPEC,socket.SOCK_STREAM)[0]; '
+        'json.dump([r[0],r[4]],sys.stdout)'
+    )
+    # No token or payload is sent to the resolver; stderr is never logged.
+    child = subprocess.Popen([sys.executable, '-I', '-c', script],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, text=True)
+    try:
+        output, _ = child.communicate(json.dumps([host, port]), timeout=timeout)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.communicate()
+        raise TimeoutError('HA hostname resolution deadline') from None
+    if child.returncode:
+        raise ValueError('HA hostname resolution failed')
+    family, values = json.loads(output)
+    address = ipaddress.ip_address(values[0])
+    expected = socket.AF_INET6 if address.version == 6 else socket.AF_INET
+    if family != expected or values[1] != port or len(values) != (4 if address.version == 6 else 2):
+        raise ValueError('Invalid HA resolver response')
+    return family, tuple(values)
 
 
 class EventSession:
@@ -35,7 +76,10 @@ class EventSession:
         ca = cfg.get('homeAssistantCaFile') or ssl.get_default_verify_paths().cafile or certifi.where()
         if not ca:
             raise ValueError('HA event reflection requires a trusted CA file')
-        url = 'wss://{}:{}/api/websocket'.format(cfg['homeAssistantIp'], cfg['homeAssistantPort'])
+        host = cfg['homeAssistantIp']
+        if ':' in host and not host.startswith('['):
+            host = '[' + host + ']'
+        url = 'wss://{}:{}/api/websocket'.format(host, cfg['homeAssistantPort'])
         return url, cfg['homeAssistantToken'], ca
 
     def retire(self):
@@ -86,7 +130,7 @@ class EventSession:
         if client is not None and (client.client_terminated or now >= client.deadline):
             self.invalidate()
             self.failures = min(self.failures + 1, 5)
-            self.next_connect = now + min(60, 2 ** self.failures) + random.uniform(0, 1)
+            self.next_connect = time.monotonic() + min(60, 2 ** self.failures) + random.uniform(0, 1)
             client = None
         if client is None:
             if now < self.next_connect:
@@ -99,7 +143,7 @@ class EventSession:
             except Exception:
                 self.invalidate()
                 self.failures = min(self.failures + 1, 5)
-                self.next_connect = now + min(60, 2 ** self.failures) + random.uniform(0, 1)
+                self.next_connect = time.monotonic() + min(60, 2 ** self.failures) + random.uniform(0, 1)
             return
         with self.reducer.lock:
             if client.subscribed and now >= client.next_ping:
@@ -134,13 +178,32 @@ def make_client_class(legacy):
             self.next_read = 0
             self.next_ping = 0
             self.deadline = time.monotonic() + owner.read_timeout
-            super().__init__(url, ssl_options={'cert_reqs': ssl.CERT_REQUIRED, 'ca_certs': ca})
+            parsed = urlsplit(url)
+            if parsed.scheme != 'wss' or not parsed.hostname or parsed.username or parsed.password:
+                raise ValueError('HA reflection requires a TLS endpoint')
+            remaining = self.deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('HA connection deadline')
+            family, self._resolved_address = resolve_address(parsed.hostname, parsed.port or 443,
+                                                              remaining)
+            numeric_host = '[::1]' if family == socket.AF_INET6 else '127.0.0.1'
+            # ws4py resolves during construction. Give it a numeric bootstrap
+            # endpoint, then restore the original host for Host, SNI and trust.
+            super().__init__('wss://' + numeric_host + ':443/',
+                             ssl_options={'cert_reqs': ssl.CERT_REQUIRED, 'ca_certs': ca})
+            self.url = url
+            self.port = None
+            self._parse_url()
             self.sock.settimeout(owner.read_timeout)
+
+        @property
+        def bind_addr(self):
+            return self._resolved_address
 
         def connect(self):
             # ws4py's stock HTTP upgrade has neither a total deadline nor a
             # header-size bound. Keep its parser/thread startup, bound the I/O.
-            deadline = time.monotonic() + self.owner.read_timeout
+            deadline = self.deadline
             def bounded():
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
