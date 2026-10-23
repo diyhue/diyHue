@@ -30,6 +30,17 @@ briTolerange = 16 # new frames will be ignored if the brightness change is small
 lastAppliedFrame = {}
 YeelightConnections = {}
 
+def _accept_address(port=2100):
+    """Return the s_server -accept value, limited to --bind-ip when one is set.
+
+    OpenSSL accepts "host:port" here; a bare port listens on every interface.
+    """
+    runtime_config = getattr(configManager, "runtimeConfig", None)
+    bind_ip = getattr(runtime_config, "arg", {}).get("BIND_IP", "")
+    if bind_ip and bind_ip != "0.0.0.0":
+        return f"{bind_ip}:{port}"
+    return str(port)
+
 def _psk_value(key):
     """Return the PSK in the hex form that OpenSSL expects.
 
@@ -202,7 +213,7 @@ def _entertainmentService(group, user, session):
         "-4", "-dtls1_2", "-listen",
         "-cipher", "PSK-AES128-GCM-SHA256:PSK-AES128-CCM8:PSK-AES128-CCM:@SECLEVEL=0",
         "-psk", psk, "-psk_identity", user.username,
-        "-nocert", "-accept", "2100",
+        "-nocert", "-accept", _accept_address(),
     ]
     _logged_cmd = []
     _hide = False
