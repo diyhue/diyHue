@@ -231,7 +231,9 @@ class WledDevice:
         state = {}
         data = self.getLightState()['state']
         seg = data['seg'][seg]
-        state['bri'] = seg['bri']
+        # send_light_data sends Hue's 1-254 as bri + 1, so undo that and keep the
+        # value in Hue's range (WLED's 255 would otherwise come back as 255).
+        state['bri'] = clamp(seg['bri'] - 1, 1, 254)
         state['on'] = seg['on']
         # Weird division by zero when a color is 0
         r = int(seg['col'][0][0])+1
