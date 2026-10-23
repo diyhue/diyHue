@@ -72,34 +72,23 @@ def convert_xy(x, y, bri): #needed for milight hub that don't work with xy value
     return clampRGB([r * bri, g * bri, b * bri])
 
 def hsv_to_rgb(h, s, v):
+    """Convert Hue's hue (0-65535), sat (0-254) and bri (0-254) to an RGB list (0-255)."""
     s = float(s / 254)
     v = float(v / 254)
-    c=v*s
-    x=c*(1-abs(((h/11850)%2)-1))
-    m=v-c
-    if h>=0 and h<10992:
-        r=c
-        g=x
-        b=0
-    elif h>=10992 and h<21845:
-        r=x
-        g=c
-        b=0
-    elif h>=21845 and h<32837:
-        r = 0
-        g = c
-        b = x
-    elif h>=32837 and h<43830:
-        r = 0
-        g = x
-        b = c
-    elif h>=43830 and h<54813:
-        r = x
-        g = 0
-        b = c
+    c = v * s
+    sector = (h % 65536) / 65536 * 6  # hue in sixths of the circle, 0 <= sector < 6
+    x = c * (1 - abs(sector % 2 - 1))
+    m = v - c
+    if sector < 1:
+        r, g, b = c, x, 0
+    elif sector < 2:
+        r, g, b = x, c, 0
+    elif sector < 3:
+        r, g, b = 0, c, x
+    elif sector < 4:
+        r, g, b = 0, x, c
+    elif sector < 5:
+        r, g, b = x, 0, c
     else:
-        r = c
-        g = 0
-        b = x
-
-    return clampRGB([r * 255, g * 255, b * 255])
+        r, g, b = c, 0, x
+    return clampRGB([round((r + m) * 255), round((g + m) * 255), round((b + m) * 255)])
