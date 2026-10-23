@@ -116,7 +116,7 @@ standardSensors = {
             "quadruple": {"buttonevent": 1004},
             "hold": {"buttonevent": 2001},
             "release": {"buttonevent": 2002},
-            "release": {"many": 2003},
+            "many": {"buttonevent": 2003},
         }
     },
     "Remote Control N2": {
@@ -128,7 +128,7 @@ standardSensors = {
             "brightness_stop": {"buttonevent": 1003},
             "brightness_move_down": {"buttonevent": 2002},
             "arrow_left_click": {"buttonevent": 3002},
-            "arrow_right_click": {"many": 4002},
+            "arrow_right_click": {"buttonevent": 4002},
         }
     },
     "RDM002": {
