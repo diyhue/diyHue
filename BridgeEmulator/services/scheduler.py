@@ -17,6 +17,7 @@ logging = logManager.logger.get_logger(__name__)
 
 def runScheduler():
     while True:
+        expired = []
         for schedule, obj in bridgeConfig["schedules"].items():
             try:
                 delay = 0
@@ -55,10 +56,16 @@ def runScheduler():
                             logging.info("execute schedule: " + schedule + " withe delay " + str(delay))
                             sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
                             if obj.autodelete:
-                                del obj
+                                # removed after the loop, the dict can't change while iterating
+                                expired.append(schedule)
 
             except Exception as e:
                 logging.info("Exception while processing the schedule " + schedule + " | " + str(e))
+
+        for schedule in expired:
+            logging.info("autodelete schedule: " + schedule)
+            del bridgeConfig["schedules"][schedule]
+            configManager.bridgeConfig.mark_dirty("schedules")
 
         for instance, obj in bridgeConfig["behavior_instance"].items():
             try:
