@@ -197,6 +197,21 @@ for _alias, _canonical in MODEL_ALIASES.items():
         standardSensors[_alias] = standardSensors[_canonical]
 
 
+def lux_to_lightlevel(lux):
+    """Hue's light level, 10000 * log10(lux) + 1, kept within 0..65535.
+
+    Under 1 lux the logarithm is negative, which is not a valid light level.
+    """
+    if lux <= 0:
+        return 0
+    return max(0, min(65535, round(10000 * math.log10(lux) + 1)))
+
+
+def celsius_to_hue(temperature):
+    """Hue reports temperature in hundredths of a degree Celsius."""
+    return round(temperature * 100)
+
+
 def getClient():
     return client
 
@@ -400,9 +415,9 @@ def on_message(client, userdata, msg):
                             lightSensor = findLightSensor(device)
                             if "temperature" in data:
                                 tempSensor = findTempSensor(device)
-                                tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
+                                tempSensor.state = {"temperature": celsius_to_hue(data["temperature"]), "lastupdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
                             if "illuminance_lux" in data:
-                                hue_lightlevel = int(10000 * math.log10(data["illuminance_lux"])) if data["illuminance_lux"] != 0 else 0
+                                hue_lightlevel = lux_to_lightlevel(data["illuminance_lux"])
                                 if hue_lightlevel > lightSensor.config["tholddark"]:
                                     lightPayload["dark"] = False
                                 else:
