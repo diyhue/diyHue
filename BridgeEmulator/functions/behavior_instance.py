@@ -176,6 +176,11 @@ def checkBehaviorInstances(device):
             else:
               button = str(uuid.uuid5(uuid.NAMESPACE_URL, device.id_v2  + 'button4'))
             if button in instance.configuration["buttons"]:
+                button_cfg = instance.configuration["buttons"][button]
+                # The Hue app stores "where" on each button; older configs have it once at the top level.
+                where = button_cfg.get("where", instance.configuration.get("where", []))
+                groups = [findGroup(r["group"]["rid"], r["group"]["rtype"]) for r in where if "group" in r]
+                groups = [group for group in groups if group is not None]
                 lastDigit = device.state["buttonevent"] % 1000
                 buttonAction = None
                 if lastDigit == 0:
@@ -186,36 +191,48 @@ def checkBehaviorInstances(device):
                     buttonAction = "on_short_release"
                 elif lastDigit == 3:
                     buttonAction = "on_long_press"
-                if buttonAction in instance.configuration["buttons"][button]:
-                    if "time_based" in instance.configuration["buttons"][button][buttonAction]:
-                        any_on = False
-                        for resource in instance.configuration["where"]:
-                            if "group" in resource:
-                                group = findGroup(resource["group"]["rid"], resource["group"]["rtype"])
+                if buttonAction in button_cfg:
+                    action_cfg = button_cfg[buttonAction]
+                    if "time_based" in action_cfg or "time_based_extended" in action_cfg:
+                        if "time_based" in action_cfg:
+                            turn_off = True
+                            slots = action_cfg["time_based"]
+                        else:
+                            turn_off = action_cfg["time_based_extended"].get("with_off", {}).get("enabled", False)
+                            slots = action_cfg["time_based_extended"].get("slots", [])
+                        if turn_off:
+                            any_on = False
+                            for group in groups:
                                 if group.update_state()["any_on"] == True:
                                     any_on = True
                                     group.setV1Action({"on": False})
-                        if any_on == True:
-                            return
+                            if any_on == True:
+                                return
                         allTimes = []
-                        for time in instance.configuration["buttons"][button][buttonAction]["time_based"]:
+                        for time in slots:
                             allTimes.append({"hour": time["start_time"]["hour"], "minute": time["start_time"]["minute"], "actions": time["actions"]})
                         actions = findTriggerTime(allTimes)
                         for action in actions:
                             if "recall" in action["action"] and action["action"]["recall"]["rtype"] == "scene":
                                 callScene(action["action"]["recall"]["rid"])
-                    elif "scene_cycle" in instance.configuration["buttons"][button][buttonAction]:
-                        callScene(random.choice(instance.configuration["buttons"][button][buttonAction]["scene_cycle"])[0]["action"]["recall"]["rid"])
-                    elif "action" in instance.configuration["buttons"][button][buttonAction]:
-                        for resource in instance.configuration["where"]:
-                            if "group" in resource:
-                                group = findGroup(resource["group"]["rid"], resource["group"]["rtype"])
-                                if instance.configuration["buttons"][button][buttonAction]["action"] == "all_off":
-                                    group.setV1Action({"on": False})
-                                elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_up":
-                                    group.setV1Action({"bri_inc": +30})
-                                elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_down":
-                                    group.setV1Action({"bri_inc": -30})
+                    elif "scene_cycle" in action_cfg:
+                        callScene(random.choice(action_cfg["scene_cycle"])[0]["action"]["recall"]["rid"])
+                    elif "scene_cycle_extended" in action_cfg:
+                        slots = action_cfg["scene_cycle_extended"].get("slots", [])
+                        if slots:
+                            callScene(random.choice(slots)[0]["action"]["recall"]["rid"])
+                    elif "recall_single_extended" in action_cfg:
+                        for action in action_cfg["recall_single_extended"].get("actions", []):
+                            if "recall" in action["action"] and action["action"]["recall"]["rtype"] == "scene":
+                                callScene(action["action"]["recall"]["rid"])
+                    elif "action" in action_cfg:
+                        for group in groups:
+                            if action_cfg["action"] == "all_off":
+                                group.setV1Action({"on": False})
+                            elif action_cfg["action"] == "dim_up":
+                                group.setV1Action({"bri_inc": +30})
+                            elif action_cfg["action"] == "dim_down":
+                                group.setV1Action({"bri_inc": -30})
 
         elif device.type == "ZLLRelativeRotary": # Hue tap dial switch - rotary
             direction = device.state.get("direction", "clock_wise")
