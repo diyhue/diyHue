@@ -64,13 +64,13 @@ def set_light(light, data):
         request_data = {"command": "clear", "priority": PRIORITY}
     else:
         request_data = {"command": "color", "origin": "diyHue", "priority": PRIORITY}
-        if light["state"]["colormode"] == "hs":
+        if light.state["colormode"] == "hs":
             if "hue" in data and "sat" in data:
-                color = hsv_to_rgb(data["hue"], data["sat"], light["state"]["bri"])
+                color = hsv_to_rgb(data["hue"], data["sat"], light.state["bri"])
             else:
-                color = hsv_to_rgb(light["state"]["hue"], light["state"]["sat"], light["state"]["bri"])
+                color = hsv_to_rgb(light.state["hue"], light.state["sat"], light.state["bri"])
         else:
-            color = convert_xy(light["state"]["xy"][0], light["state"]["xy"][1], light["state"]["bri"])
+            color = convert_xy(light.state["xy"][0], light.state["xy"][1], light.state["bri"])
         request_data["color"] = color
 
     c.command(request_data)
