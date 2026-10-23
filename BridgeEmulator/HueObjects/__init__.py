@@ -36,6 +36,9 @@ def v2StateToV1(v2State):
                              ["x"], v2State["color"]["xy"]["y"]]
     if "gradient" in v2State:
         v1State["gradient"] = v2State["gradient"]
+    if "dynamics" in v2State and "duration" in v2State["dynamics"]:
+        # v2 gives the transition in milliseconds, v1 in steps of 100 ms.
+        v1State["transitiontime"] = round(v2State["dynamics"]["duration"] / 100)
     if "transitiontime" in v2State:  # to be replaced once api will be public
         v1State["transitiontime"] = v2State["transitiontime"]
     return v1State
