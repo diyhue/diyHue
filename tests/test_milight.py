@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -45,6 +46,47 @@ class MilightColorTemperatureTests(unittest.TestCase):
             state = milight.get_light_state(light())
         self.assertEqual(state["ct"], 500)
         self.assertEqual(state["colormode"], "ct")
+
+
+
+def rgb_light():
+    return SimpleNamespace(protocol_cfg={"ip": "10.0.0.4", "miID": "0x1", "miModes": "rgb_cct", "miGroups": 1},
+                           state={"bri": 254, "hue": 0, "sat": 254})
+
+
+def sent_payload(data):
+    with patch.object(milight.requests, "put") as put:
+        milight.set_light(rgb_light(), data)
+    return put.call_args.kwargs["json"]
+
+
+def reported_state(body):
+    with patch.object(milight.requests, "get", return_value=SimpleNamespace(text=json.dumps(body))):
+        return milight.get_light_state(rgb_light())
+
+
+class RangeTests(unittest.TestCase):
+    def test_hue_stays_within_the_hubs_degrees(self):
+        self.assertEqual(sent_payload({"hue": 65535})["hue"], 359)
+        self.assertEqual(sent_payload({"hue": 0})["hue"], 0)
+        self.assertEqual(sent_payload({"hue": 21845})["hue"], 120)
+
+    def test_full_saturation_is_100(self):
+        self.assertEqual(sent_payload({"sat": 254})["saturation"], 100)
+        self.assertEqual(sent_payload({"sat": 127})["saturation"], 50)
+
+    def test_state_maps_back_to_hue_ranges(self):
+        s = reported_state({"state": "ON", "brightness": 255, "bulb_mode": "color", "hue": 359, "saturation": 100})
+        self.assertEqual(s["bri"], 254)
+        self.assertEqual(s["hue"], 65535)
+        self.assertEqual(s["sat"], 254)
+
+    def test_hue_round_trips(self):
+        for hue in (0, 21845, 43690, 65535):
+            with self.subTest(hue=hue):
+                back = reported_state({"state": "ON", "bulb_mode": "color", "hue": sent_payload({"hue": hue})["hue"],
+                              "saturation": 100})["hue"]
+                self.assertAlmostEqual(back, hue, delta=65535 / 359)
 
 
 if __name__ == "__main__":
