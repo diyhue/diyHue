@@ -150,6 +150,15 @@ class Light():
             self.state["colormode"] = "hs"
 
     def setV1State(self, state, advertise=True):
+        if self.protocol == "homeassistant_ws":
+            from services import homeAssistantWS
+            if homeAssistantWS.event_session is not None:
+                with homeAssistantWS.event_session.reducer.lock:
+                    homeAssistantWS.assert_command_allowed(self)
+                    return self._setV1State(state, advertise)
+        return self._setV1State(state, advertise)
+
+    def _setV1State(self, state, advertise=True):
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
