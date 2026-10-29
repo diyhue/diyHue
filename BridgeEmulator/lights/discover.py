@@ -38,7 +38,8 @@ def scanHost(host: str, port: int) -> int:
         int: The result of the connection attempt (0 if successful).
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(0.02)
+        #sock.settimeout(0.02) this is too fast for a Raspberry Pi 3B+ so slowing it down
+        sock.settimeout(2)
         return sock.connect_ex((host, port))
 
 def iter_ips(port: int) -> Generator[Tuple[str, int], None, None]:
