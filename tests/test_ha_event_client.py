@@ -51,6 +51,35 @@ class AdapterTests(unittest.TestCase):
         self.assertTrue(self.reducer.ready)
         self.assertFalse(self.client.id_to_type)
 
+    def test_auth_ok_marks_the_event_client_authenticated(self):
+        # #1155 makes commands wait on `authenticated`; the event client must set it
+        # on auth_ok or every panel command fails as "not connected or not authorised".
+        self.assertFalse(self.client.authenticated.is_set())
+        self.client.do_auth_complete()
+        self.assertTrue(self.client.authenticated.is_set())
+
+    def test_stale_auth_ok_does_not_authenticate_a_fenced_client(self):
+        self.reducer.new_session()  # a newer session fences this client's epoch
+        self.client.do_auth_complete()
+        self.assertFalse(self.client.authenticated.is_set())
+        self.client._send.assert_not_called()
+
+    def test_close_clears_authentication(self):
+        self.client.do_auth_complete()
+        self.client.closed(1006)
+        self.assertFalse(self.client.authenticated.is_set())
+
+    def test_command_reaches_home_assistant_after_auth_ok(self):
+        from lights.protocols import homeassistant_ws
+        self.test_subscribe_ack_precedes_baseline_and_null_result_is_valid_ack()
+        self.client._send.reset_mock()
+        session = SimpleNamespace(client=self.client, reducer=self.reducer)
+        with patch.object(ha, 'event_session', session), patch.object(ha, 'auth_timeout_seconds', 0.2):
+            homeassistant_ws.set_light(self.light, {'on': False})
+        payload = self.client._send.call_args.args[0]
+        self.assertEqual((payload['type'], payload['domain'], payload['service']),
+                         ('call_service', 'light', 'turn_off'))
+
     def test_empty_authoritative_baseline_removes_mapping(self):
         self.test_subscribe_ack_precedes_baseline_and_null_result_is_valid_ack()
         self.client.get_all_lights()
