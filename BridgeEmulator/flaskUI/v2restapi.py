@@ -106,7 +106,10 @@ v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {},
 
 
 def getObject(element, v2uuid):
-    if element in ["behavior_instance", "device"]:
+    if element == "device":
+        # The synthesized bridge device is not in the stored device map.
+        return bridgeConfig[element].get(v2uuid, False)
+    elif element == "behavior_instance":
         return bridgeConfig[element][v2uuid]
     elif element in v2Resources and v2uuid in v2Resources[element]:
         logging.debug("Cache Hit for " + element)
@@ -864,6 +867,10 @@ class ClipV2ResourceId(Resource):
             if resource in PRO_EMPTY_RESOURCE_TYPES:
                 return {"errors": [], "data": []}
 
+        # Bridge services are synthesized rather than stored in V1 collections.
+        if resource == "bridge" and resourceid == v2Bridge()["id"]:
+            return {"errors": [], "data": [v2Bridge()]}
+
         # Special handling for bridge device (not stored in bridgeConfig["device"])
         if resource == "device":
             bridge_device_id = str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device'))
@@ -878,6 +885,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "room":
             return {"errors": [], "data": [object.getV2Room()]}
+        elif resource == "zone":
+            return {"errors": [], "data": [object.getV2Zone()]}
         elif resource == "grouped_light":
             return {"errors": [], "data": [object.getV2GroupedLight()]}
         elif resource == "device":
@@ -1169,7 +1178,7 @@ class ClipV2ResourceId(Resource):
                 }]
             }, 500
 
-        response = {"data": [{
+        response = {"errors": [], "data": [{
             "rid": resourceid,
             "rtype": resource
         }]}
