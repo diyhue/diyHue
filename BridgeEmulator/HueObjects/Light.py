@@ -16,10 +16,13 @@ class Light():
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
-        self.state = data["state"] if "state" in data else deepcopy(
+        # Saved lights pass their own state in, and new lights pass the catalog
+        # template. Either way this object has to own the dicts, including nested
+        # lists such as xy and gradient points.
+        self.state = deepcopy(data["state"]) if "state" in data else deepcopy(
             lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
-        self.config = data["config"] if "config" in data else deepcopy(
+        self.config = deepcopy(data["config"]) if "config" in data else deepcopy(
             lightTypes[self.modelid]["config"])
         self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
@@ -118,7 +121,7 @@ class Light():
         StreamEvent(streamMessage)
 
     def getV1Api(self):
-        result = lightTypes[self.modelid]["v1_static"]
+        result = deepcopy(lightTypes[self.modelid]["v1_static"])
         result["config"] = self.config
         result["state"] = {"on": self.state["on"]}
         if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
@@ -240,7 +243,7 @@ class Light():
             "archetype": archetype[self.config["archetype"]],
             "name": self.name
         }
-        result["product_data"] = lightTypes[self.modelid]["device"]
+        result["product_data"] = deepcopy(lightTypes[self.modelid]["device"])
         result["product_data"]["model_id"] = self.modelid
         result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["services"] = [

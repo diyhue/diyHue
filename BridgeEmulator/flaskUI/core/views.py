@@ -4,6 +4,7 @@ from flaskUI.core.forms import LoginForm
 import flask_login
 import uuid
 import json
+from copy import deepcopy
 import configManager
 from HueObjects import ApiUser
 from flaskUI.core import User
@@ -61,8 +62,8 @@ def get_light_types():
         lightId = list(data)[0]
         modelId = data[lightId]
         bridgeConfig["lights"][lightId].modelid = modelId
-        bridgeConfig["lights"][lightId].state = lightTypes[modelId]["state"]
-        bridgeConfig["lights"][lightId].config = lightTypes[modelId]["config"]
+        bridgeConfig["lights"][lightId].state = deepcopy(lightTypes[modelId]["state"])
+        bridgeConfig["lights"][lightId].config = deepcopy(lightTypes[modelId]["config"])
         if modelId in ["LCX002", "915005987201", "LCX004", "LCX006"]:
             bridgeConfig["lights"][lightId].protocol_cfg["points_capable"] = 5
         return "success"
