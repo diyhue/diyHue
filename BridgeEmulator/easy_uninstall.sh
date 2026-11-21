@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 cd /tmp
 
 echo -e "\033[36m Stopping diyHue.\033[0m"
