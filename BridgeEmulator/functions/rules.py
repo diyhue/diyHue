@@ -5,6 +5,7 @@ from datetime import datetime
 from threading import Thread
 from time import sleep
 import requests
+from functions.request import localBaseUrl
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -79,13 +80,21 @@ def checkRuleConditions(rule, device, current_time, ignore_ddx=False):
                     ddx = int(condition["value"][2:4]) * 3600 + int(condition["value"][5:7]) * 60 + int(condition["value"][-2:])
                     ddx_sensor = url_pices
         except Exception as e:
+            # A condition that can't be evaluated (e.g. its sensor was deleted)
+            # is not met; don't let the rule fire.
             logging.exception("rule " + rule.name + " failed, reason: " + str(type(e).__name__) + " " + str(e))
+            return [False, 0]
 
 
     if device_found:
         return [True, ddx, ddx_sensor]
     else:
         return [False]
+
+def localApiUrl():
+    """Base URL of this bridge's own v1 API, honouring --http-port and --bind-ip."""
+    return localBaseUrl() + "/api/local"
+
 
 def ddxRecheck(rule, device, current_time, ddx_delay, ddx_sensor):
     for x in range(ddx_delay):
@@ -101,14 +110,14 @@ def ddxRecheck(rule, device, current_time, ddx_delay, ddx_sensor):
         rule.timestriggered += 1
         for action in rule.actions:
             if action["method"] == "POST":
-                requests.post("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
+                requests.post(localApiUrl() + action["address"], json=action["body"], timeout=5)
             elif action["method"] == "PUT":
-                requests.put("http://localhost/api/local" + action["address"], json=action["body"], timeout=5)
+                requests.put(localApiUrl() + action["address"], json=action["body"], timeout=5)
 
 def threadActions(actionsToExecute):
     sleep(0.2)
     for action in actionsToExecute:
-        urlPrefix = "http://localhost/api/local"
+        urlPrefix = localApiUrl()
         if action["address"].startswith("http"):
             urlPrefix = ""
         if action["method"] == "POST":

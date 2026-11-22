@@ -588,7 +588,7 @@ def checkBehaviorInstances(device, element=None):
         elif device.modelid == "SML001": # Motion Sensor
             if "settings" in instance.configuration:
                 if "daylight_sensitivity" in instance.configuration["settings"]:
-                    if device.elements["ZLLLightLevel"]().protocol_cfg["lightSensor"] == "on":
+                    if device.elements["ZLLLightLevel"]().protocol_cfg.get("lightSensor") == "on":
                         device.elements["ZLLLightLevel"]().state["lightlevel"] = 25000 if bridgeConfig["sensors"]["1"].state["daylight"] else 6000
                     if instance.configuration["settings"]["daylight_sensitivity"]["dark_threshold"] >= device.elements["ZLLLightLevel"]().state["lightlevel"]:
                         logging.debug("Light ok")

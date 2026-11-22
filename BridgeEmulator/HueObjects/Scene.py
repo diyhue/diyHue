@@ -7,6 +7,15 @@ from HueObjects import genV2Uuid, StreamEvent
 
 logging = logManager.logger.get_logger(__name__)
 
+def _memberLight(member):
+    """Group members are v2 devices (or, for old data, lights); return the light."""
+    if member is not None and hasattr(member, "elements"):
+        if "light" in member.elements:
+            return member.elements["light"]()
+        return member.firstElement()
+    return member
+
+
 class Scene():
 
     DEFAULT_SPEED = 0.6269841194152832
@@ -149,9 +158,10 @@ class Scene():
                     result["lights"].append(light().id_v1)
         elif self.type == "GroupScene":
             result["group"] = self.group().id_v1
-            for light in self.group().lights:
-                if light():
-                    result["lights"].append(light().id_v1)
+            for member in self.group().lights:
+                light = _memberLight(member())
+                if light is not None:
+                    result["lights"].append(light.id_v1)
 
         lightstates = list(self.lightstates.items())
         for light, state in lightstates:

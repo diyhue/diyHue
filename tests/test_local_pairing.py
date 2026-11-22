@@ -41,6 +41,7 @@ class LocalPairingTests(unittest.TestCase):
 
         hue_objects = types.ModuleType("HueObjects")
         hue_objects.ApiUser = types.SimpleNamespace(ApiUser=ApiUser)
+        hue_objects.StreamEvent = Mock()
         for name in (
             "EntertainmentConfiguration",
             "Group",

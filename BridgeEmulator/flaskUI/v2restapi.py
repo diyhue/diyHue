@@ -118,7 +118,7 @@ def getObject(element, v2uuid):
         # The synthesized bridge device is not in the stored device map.
         return bridgeConfig[element].get(v2uuid, False)
     elif element == "behavior_instance":
-        return bridgeConfig[element][v2uuid]
+        return bridgeConfig[element].get(v2uuid, False)
     elif element in v2Resources and v2uuid in v2Resources[element]:
         logging.debug("Cache Hit for " + element)
         return v2Resources[element][v2uuid]()
@@ -126,24 +126,27 @@ def getObject(element, v2uuid):
         for v1Element in ["lights", "groups", "scenes", "smart_scene"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if obj.id_v2 == v2uuid:
-                    v2Resources[element][v2uuid] = weakref.ref(obj)
+                    v2Resources.setdefault(element, {})[v2uuid] = weakref.ref(obj)
                     logging.debug("Cache Miss " + element)
                     return obj
-    elif element in ["entertainment", "zigbee_connectivity", "motion", "light_level", "temperature", "relative_rotary", "button", "tamper", "contact"]:
+    elif element in ["entertainment", "zigbee_connectivity", "motion", "light_level", "temperature", "relative_rotary", "button", "tamper", "contact", "device_power"]:
+        # services of a v2 device; buttons are numbered (button1..button4)
+        suffixes = ["button" + str(n) for n in range(1, 5)] if element == "button" else [element]
         for key, obj in bridgeConfig["device"].items():
-            if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + element)) == v2uuid:
-                v2Resources[element][v2uuid] = weakref.ref(obj)
-                return obj
+            for suffix in suffixes:
+                if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + suffix)) == v2uuid:
+                    v2Resources.setdefault(element, {})[v2uuid] = weakref.ref(obj)
+                    return obj
     else:
         for v1Element in ["lights", "groups", "scenes", "sensors", "geofence_clients"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + element)) == v2uuid:
                     logging.debug("Cache Miss " + element)
-                    v2Resources[element][v2uuid] = weakref.ref(obj)
+                    v2Resources.setdefault(element, {})[v2uuid] = weakref.ref(obj)
                     return obj
                 elif obj.id_v2 == v2uuid:
                     logging.debug("Cache Miss " + element)
-                    v2Resources[element][v2uuid] = weakref.ref(obj)
+                    v2Resources.setdefault(element, {})[v2uuid] = weakref.ref(obj)
                     return obj
     logging.info("element not found!")
     return False
@@ -943,9 +946,10 @@ class ClipV2ResourceId(Resource):
         elif resource == "device_power":
             return {"errors": [], "data": [object.getDevicePower()]}
         elif resource == "button":
-            return {"errors": [], "data": [object.getButtons()]}
+            # getButtons returns all buttons of the device; return the requested one
+            return {"errors": [], "data": [b for b in object.getButtons() if b["id"] == resourceid]}
         elif resource == "relative_rotary":
-            return {"errors": [], "data": [object.getRotary()]}
+            return {"errors": [], "data": [r for r in object.getRotary() if r["id"] == resourceid]}
         elif resource == "temperature":
             return {"errors": [], "data": [object.getTemperature()]}
         elif resource == "light_level":

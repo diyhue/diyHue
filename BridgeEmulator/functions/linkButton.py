@@ -19,13 +19,18 @@ def pressLinkButton(config, now=None):
     still goes through the normal API endpoint and is the operation that is
     persisted by the configuration manager.
     """
-    config.setdefault("linkbutton", {})["lastlinkbuttonpushed"] = _timestamp(now)
+    if not isinstance(config.get("linkbutton"), dict):
+        config["linkbutton"] = {}
+    config["linkbutton"]["lastlinkbuttonpushed"] = _timestamp(now)
 
 
 def linkButtonIsOpen(config, now=None):
     """Return whether a normal API registration is currently permitted."""
+    linkbutton = config.get("linkbutton", {})
+    if not isinstance(linkbutton, dict):
+        return False  # e.g. a bool written through PUT /config
     try:
-        pressed_at = float(config.get("linkbutton", {}).get("lastlinkbuttonpushed", 0))
+        pressed_at = float(linkbutton.get("lastlinkbuttonpushed", 0))
     except (TypeError, ValueError):
         return False
     return 0 <= _timestamp(now) - pressed_at <= LINK_BUTTON_WINDOW_SECONDS

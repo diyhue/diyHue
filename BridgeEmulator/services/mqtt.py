@@ -444,12 +444,11 @@ def on_message(client, userdata, msg):
                             else:
                                 lightPayload["dark"] = True
                             lightPayload["lightlevel"] = hue_lightlevel
-                            if lightSensor.protocol_cfg["lightSensor"] == "on":
+                            if lightSensor.protocol_cfg.get("lightSensor") == "on":
+                                # no usable light sensor: follow the daylight sensor
                                 lightPayload["dark"] = not bridgeConfig["sensors"]["1"].state["daylight"]
                                 lightPayload["lightlevel"] = 6000 if lightPayload["dark"] else 25000
-                            else: # is always dark
-                                lightPayload["dark"] = True
-                                lightPayload["lightlevel"] = 6000
+                            # otherwise keep the measured light level
                             lightPayload["daylight"] = not lightPayload["dark"]
                             if lightPayload["dark"] != lightSensor.state["dark"]:
                                 lightSensor.dxState["dark"] = current_time
@@ -488,7 +487,11 @@ def on_message(client, userdata, msg):
                             rulesProcessor(element, current_time)
                             checkBehaviorInstances(device, element)
                         else:
-                            rulesProcessor(device.firstElement(), current_time)
+                            # every element (presence, light level, temperature, contact)
+                            # can be the subject of a rule condition
+                            for element in device.elements.values():
+                                if element() is not None:
+                                    rulesProcessor(element(), current_time)
                             checkBehaviorInstances(device)
                     elif device.group_v1 == "lights":
                         light = device.firstElement()

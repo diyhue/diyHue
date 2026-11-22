@@ -25,8 +25,9 @@ class Device():
 
     def __del__(self):
         logging.info(self.name + " device was destroyed.")
+        # elements may already be gone, so don't build the full device document
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.getDevice()["id"], "type": "device"}],
+                         "data": [{"id": self.id_v2, "type": "device"}],
                          "id": str(uuid.uuid4()),
                          "type": "delete"
                          }
@@ -40,14 +41,14 @@ class Device():
             uuid.NAMESPACE_URL, element.id_v2 + 'device'))
         self.id_v1 = self.id_v2  # the device is stored and referenced by its v2 id
         # device
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getDevice()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
         StreamEvent(streamMessage)
         # zigbee_connectivity
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getZigBee()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -56,7 +57,7 @@ class Device():
 
         if self.group_v1 == "lights":
             # entertainment
-            streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                              "data": [{"id": str(uuid.uuid5(
                                  uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
                              "id": str(uuid.uuid4()),
@@ -67,6 +68,8 @@ class Device():
             StreamEvent(streamMessage)
 
     def firstElement(self):
+        if not self.elements:
+            return None
         rootKey = list(self.elements.keys())[0]
         return self.elements[rootKey]()
 
@@ -116,7 +119,7 @@ class Device():
         if "enabled" in data:
             obj.config["on"] = data["enabled"]
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [data],
                          "id": str(uuid.uuid4()),
                          "type": "update"
@@ -288,14 +291,24 @@ class Device():
     
     def getGenericDevice(self):
         result = {}
+        # static data of the model's first sensor type (ZHASwitch, ZGPSwitch, ...)
+        static = {}
+        if self.modelid in sensorTypes and sensorTypes[self.modelid]:
+            static = next(iter(sensorTypes[self.modelid].values())).get("static", {})
+        element = self.firstElement()
         result["product_data"] = {"model_id": self.modelid,
-                                  "product_name": "Hue secure contact sensor",
-                                  "manufacturer_name": sensorTypes[self.modelid]["ZHASwitch"]["static"]["manufacturername"],
+                                  "product_name": static.get("productname", self.name),
+                                  "manufacturer_name": static.get("manufacturername", getattr(element, "manufacturername", "unknown")),
                                   "product_archetype": "unknown_archetype",
                                   "certified": False,
-                                  "software_version": sensorTypes[self.modelid]["ZHASwitch"]["static"]["swversion"],
+                                  "software_version": static.get("swversion") or getattr(element, "swversion", None) or "",
                                   }
         result["services"] = []
+        if element is not None and "battery" in getattr(element, "config", {}):
+            result["services"].append({
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+            })
         return result
 
     def getDevice(self):

@@ -1,6 +1,6 @@
 import configManager
 import logManager
-from HueObjects import ApiUser, Group, EntertainmentConfiguration, Scene, Rule, ResourceLink, Sensor, Schedule
+from HueObjects import ApiUser, Group, EntertainmentConfiguration, Scene, Rule, ResourceLink, Sensor, Schedule, StreamEvent
 import weakref
 import uuid
 import json
@@ -50,8 +50,20 @@ def GroupZeroMessage():
         bridge_device_id,
     )
 
+def _isLocalRequest():
+    """Requests the bridge sends to itself (rules, schedules).
+
+    With --bind-ip they arrive from that address instead of 127.0.0.1.
+    """
+    local = {"127.0.0.1", "::1"}
+    args = getattr(getattr(configManager, "runtimeConfig", None), "arg", {}) or {}
+    if args.get("BIND_IP") not in (None, "", "0.0.0.0", "::"):
+        local.add(args["BIND_IP"])
+    return request.remote_addr in local
+
+
 def authorize(username, resource='', resourceId='', resourceParam=''):
-    if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
+    if username not in bridgeConfig["apiUsers"] and not _isLocalRequest():
         return [{"error": {"type": 1, "address": "/" + resource + "/" + resourceId, "description": "unauthorized user"}}]
 
     if resourceId not in ["0", "new", "timezones", "whitelist"] and resourceId != '' and resourceId not in bridgeConfig[resource]:
@@ -61,10 +73,17 @@ def authorize(username, resource='', resourceId='', resourceParam=''):
     if resourceId != "0" and resourceParam != '' and not hasattr(bridgeConfig[resource][resourceId], resourceParam):
         logging.debug(str(resourceId) + " has no attribute " + str(resourceParam))
         return [{"error": {"type": 3, "address": "/" + resource + "/" + resourceId + "/" + resourceParam, "description": "resource, " + resource + "/" + resourceId + "/" + resourceParam + ", not available"}}]
-    if request.remote_addr != "127.0.0.1":
+    if username in bridgeConfig["apiUsers"]:
         bridgeConfig["apiUsers"][username].last_use_date = datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%S")
     return ["success"]
+
+
+def _memberLight(member):
+    """Group members are v2 devices (or, for old data, lights); return the light."""
+    if member is not None and hasattr(member, "elements"):
+        return member.firstElement()
+    return member
 
 
 def deviceOfLight(light):
@@ -336,9 +355,10 @@ class ResourceElements(Resource):
                     scene.lightstates[bridgeConfig["lights"][light]] = state
             else:
                 if "group" in postDict:
-                    for light in postDict["group"]().lights:
-                        scene.lightstates[light()] = {
-                            "on": light().state["on"]}
+                    for member in postDict["group"]().lights:
+                        light = _memberLight(member())
+                        if light is not None:
+                            scene.lightstates[light] = {"on": light.state["on"]}
                 elif "lights" in postDict:
                     for light in postDict["lights"]:
                         scene.lightstates[light()] = {
@@ -385,7 +405,7 @@ class ResourceElements(Resource):
                     streamMessage["data"].append(newObject.getV2GroupedLight())
             elif hasattr(newObject, 'getV2Api'):
                 streamMessage["data"].append(newObject.getV2Api())
-            bridgeConfig["temp"]["eventstream"].append(streamMessage)
+            StreamEvent(streamMessage)  # publish on the v2 event stream
             logging.debug(streamMessage)
         logging.info(json.dumps([{"success": {"id": new_object_id}}],
                                 sort_keys=True, indent=4, separators=(',', ': ')))
@@ -403,8 +423,12 @@ class ResourceElements(Resource):
             if tzset is not None:
                 tzset()
 
+        if resource == "config" and "linkbutton" in putDict:
+            # The link button is pressed only locally (see functions/linkButton.py);
+            # the network API must not open pairing nor replace its state.
+            putDict = {k: v for k, v in putDict.items() if k != "linkbutton"}
         for key, value in putDict.items():
-            if isinstance(value, dict):
+            if isinstance(value, dict) and isinstance(bridgeConfig[resource].get(key), dict):
                 bridgeConfig[resource][key].update(value)
             else:
                 bridgeConfig[resource][key] = value
