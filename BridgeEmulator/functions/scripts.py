@@ -18,10 +18,11 @@ def findScene(element):
 
 def findGroup(id_v2):
     for group, obj in bridgeConfig["groups"].items():
-        if obj.getV2Room()["id"] == id_v2:
-            return obj
-        elif obj.getV2Zone()["id"] == id_v2:
-            return obj
+        if obj.type != "Entertainment":
+            if obj.getV2Room()["id"] == id_v2:
+                return obj
+            elif obj.getV2Zone()["id"] == id_v2:
+                return obj
     return False
 
 def triggerScript(behavior_instance):

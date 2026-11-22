@@ -1,19 +1,62 @@
 from time import sleep
+import logging as _logging
 import logManager
 import configManager
 import requests
-import socket, json, uuid
+import socket, json, uuid, select
+import os
+import base64
+import binascii
 from subprocess import Popen, PIPE
+import subprocess as _sp
+from datetime import datetime, timezone
 from functions.colors import convert_rgb_xy, convert_xy
+from functions.entertainment import apply_stop_preference, snapshot_lights
+from HueObjects import StreamEvent
 import paho.mqtt.publish as publish
 import time
 logging = logManager.logger.get_logger(__name__)
+
+# macOS ships LibreSSL which lacks PSK support. Use Homebrew's OpenSSL if available.
+_OPENSSL_BIN = "openssl"
+for _candidate in ["/opt/homebrew/opt/openssl/bin/openssl", "/usr/local/opt/openssl/bin/openssl"]:
+    if os.path.isfile(_candidate):
+        _OPENSSL_BIN = _candidate
+        break
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller than this values
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
 YeelightConnections = {}
+
+def _accept_address(port=2100):
+    """Return the s_server -accept value, limited to --bind-ip when one is set.
+
+    OpenSSL accepts "host:port" here; a bare port listens on every interface.
+    """
+    runtime_config = getattr(configManager, "runtimeConfig", None)
+    bind_ip = getattr(runtime_config, "arg", {}).get("BIND_IP", "")
+    if bind_ip and bind_ip != "0.0.0.0":
+        return f"{bind_ip}:{port}"
+    return str(port)
+
+def _psk_value(key):
+    """Return the PSK in the hex form that OpenSSL expects.
+
+    OpenSSL only accepts a PSK as hex digits. A client key is usually already
+    hex, but a key that arrived base64url encoded (the HDMI Sync Box sends
+    one) has to be decoded first.
+    """
+    if not key:
+        return ""
+    if all(c in "0123456789abcdefABCDEF" for c in key) and len(key) % 2 == 0:
+        return key
+    try:
+        decoded = base64.urlsafe_b64decode(key + "=" * (-len(key) % 4))
+        return binascii.hexlify(decoded).decode()
+    except Exception:
+        return binascii.hexlify(key.encode()).decode()
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -30,7 +73,47 @@ def skipSimilarFrames(light, color, brightness):
         return 1
     return 0
 
+def updateNonUdpLight(light):
+    """Send the latest entertainment frame to a light that has no streaming protocol.
+
+    A black frame only sets light.state["on"] to False and leaves xy/bri as they
+    were, so comparing xy/bri alone never sent anything and the light stayed on.
+    Track the on state that was last sent as well.
+    """
+    last = lastAppliedFrame.setdefault(light.id_v1, {"xy": [0, 0], "bri": 0})
+    if not light.state["on"]:
+        if last.get("on", True):
+            light.setV1State({"on": False, "transitiontime": 3})
+            last["on"] = False
+        return
+    if last.get("on") is False:
+        light.setV1State({"on": True, "bri": light.state["bri"], "xy": light.state["xy"], "transitiontime": 3})
+        last.update({"on": True, "bri": light.state["bri"], "xy": light.state["xy"]})
+        return
+    operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
+    if operation == 1:
+        light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
+    elif operation == 2:
+        light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+
+def _asLight(member):
+    """Entertainment areas reference v2 devices; streaming works on their light element."""
+    if member is not None and hasattr(member, "elements"):
+        return member.firstElement()
+    return member
+
+def _groupLights(group):
+    lights = []
+    for ref in list(group.lights):
+        light = _asLight(ref())
+        if light is not None:
+            lights.append(light)
+    return lights
+
 def getObject(v2uuid):
+    for key, obj in bridgeConfig.get("device", {}).items():
+        if obj.group_v1 == "lights" and str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
+            return obj.firstElement()
     for key, obj in bridgeConfig["lights"].items():
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
             return obj
@@ -38,9 +121,9 @@ def getObject(v2uuid):
     return False
 
 def findGradientStrip(group):
-    for light in group.lights:
-        if light().modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
-            return light()
+    for light in _groupLights(group):
+        if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
+            return light
     return "not found"
 
 def get_hue_entertainment_group(light, groupname):
@@ -57,26 +140,145 @@ def get_hue_entertainment_group(light, groupname):
 
 YeelightConnections = {}
 
+def finish_entertainment(group, proc, hue_connection, snapshots):
+    """Release this worker's stream, then apply the area's saved preference."""
+    if proc is not None:
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+    # An old worker must not restore over a replacement stream.
+    # Snapshots stay in the worker; they are not stored on group.stream.
+    if (bridgeConfig["groups"].get(group.id_v1) is not group
+            or group.stream.get("_proc") is not proc):
+        return
+    if hue_connection is not None:
+        try:
+            hue_connection.disconnect()
+        except Exception:
+            logging.exception("Could not disconnect the Hue entertainment relay")
+    lights = _groupLights(group)
+    # getV2Api assumes that the first light reference is still alive.
+    group.lights = [ref for ref in group.lights if ref() is not None]
+    for ip in {light.protocol_cfg["ip"] for light in lights
+               if light.protocol == "yeelight"}:
+        try:
+            disableMusic(ip)
+        except Exception:
+            logging.exception("Could not release Yeelight music mode for %s", ip)
+    for light in lights:
+        light.state["mode"] = "homeautomation"
+        lastAppliedFrame.pop(light.id_v1, None)
+    try:
+        apply_stop_preference(group, bridgeConfig, snapshots)
+    except Exception:
+        logging.exception("Could not apply after-streaming preference for %s", group.name)
+    finally:
+        group.stream.pop("_hue", None)
+        group.stream.pop("_proc", None)
+        group.state = group.update_state()
+        group.action["on"] = group.state["any_on"]
+        group.update_attr({"stream": {"active": False, "owner": None}})
+        for light in lights:
+            try:
+                light.genStreamEvent(light.getV2Api())
+            except Exception:
+                logging.exception("Could not advertise restored light %s", light.id_v1)
+        StreamEvent({
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "data": [group.getV2GroupedLight()],
+            "id": str(uuid.uuid4()),
+            "type": "update",
+        })
+
 def entertainmentService(group, user):
+    snapshots = snapshot_lights(group)
+    session = {"proc": None, "hue": None}
+    try:
+        _entertainmentService(group, user, session)
+    except Exception as e:
+        logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
+    finally:
+        finish_entertainment(group, session["proc"], session["hue"], snapshots)
+    logging.info("Entertainment service stopped")
+
+def _entertainmentService(group, user, session):
     logging.debug("User: " + user.username)
-    logging.debug("Key: " + user.client_key)
+    logging.debug("Key: " + str(user.client_key))
     bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
     bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
+
+    # Bind UDP 2100 immediately. The TV sends DTLS ClientHello right after
+    # stream active=True; delaying listen drops the handshake.
+    try:
+        _sp.run(["pkill", "-f", "openssl.*s_server.*2100"], capture_output=True, timeout=2)
+    except Exception:
+        pass
+
+    # Match 2.0.31 as closely as OpenSSL 3 allows: DTLS 1.2, IPv4, no -quiet
+    # so handshake errors reach the log. Broad PSK list — TVs may not offer GCM-only.
+    # A user without a client key cannot serve as DTLS identity. Fall back to
+    # the username so the entertainment server still starts instead of
+    # crashing on a None key.
+    psk = _psk_value(user.client_key or user.username)
+    opensslCmd = [
+        _OPENSSL_BIN, "s_server",
+        "-4", "-dtls1_2", "-listen",
+        "-cipher", "PSK-AES128-GCM-SHA256:PSK-AES128-CCM8:PSK-AES128-CCM:@SECLEVEL=0",
+        "-psk", psk, "-psk_identity", user.username,
+        "-nocert", "-accept", _accept_address(),
+    ]
+    _logged_cmd = []
+    _hide = False
+    for _a in opensslCmd:
+        if _hide:
+            _logged_cmd.append("<redacted>")
+            _hide = False
+            continue
+        if _a == "-psk":
+            _logged_cmd.append(_a)
+            _hide = True
+            continue
+        _logged_cmd.append(_a)
+    logging.info("entertainment: starting %s", " ".join(_logged_cmd))
+    p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    logging.info("entertainment: openssl s_server pid=%s", p.pid)
+    _dtls_wait_started = time.time()
+    bridgeConfig["groups"][group.id_v1].stream["_proc"] = p
+    session["proc"] = p
+    def _log_stderr(proc, name):
+        try:
+            for line in proc.stderr:
+                if not line:
+                    continue
+                msg = line.decode("utf-8", errors="replace").strip()
+                low = msg.lower()
+                if any(k in low for k in ("error", "fail", "alert", "no shared", "psk identity")):
+                    logging.info("openssl s_server [%s] stderr: %s", name, msg)
+                else:
+                    logging.debug("openssl s_server [%s] stderr: %s", name, msg)
+        except Exception:
+            pass
+    import threading as _thr
+    _thr.Thread(target=_log_stderr, args=[p, group.name], daemon=True).start()
+
     lights_v2 = []
     lights_v1 = {}
     hueGroup  = -1
     hueGroupLights = {}
     prev_frame_time = 0
-    new_frame_time = 0
-    prev_frameID = 0
-    for light in group.lights:
-        lights_v1[int(light().id_v1)] = light()
-        if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
-            hueGroup = get_hue_entertainment_group(light(), group.name)
-            hueGroupLights[int(light().protocol_cfg["id"])] = [] # Add light id to list
-        bridgeConfig["lights"][light().id_v1].state["mode"] = "streaming"
-        bridgeConfig["lights"][light().id_v1].state["on"] = True
-        bridgeConfig["lights"][light().id_v1].state["colormode"] = "xy"
+    fps_frame_count = 0
+    non_UDP_update_counter = 0
+    for light in _groupLights(group):
+        lights_v1[int(light.id_v1)] = light
+        if light.protocol == "hue":
+            matched_group = get_hue_entertainment_group(light, group.name)
+            if matched_group != -1:
+                hueGroup = matched_group
+                hueGroupLights[int(light.protocol_cfg["id"])] = [] # Add light id to list
+        light.state["mode"] = "streaming"
+        light.state["on"] = True
+        light.state["colormode"] = "xy"
     v2LightNr = {}
     for channel in group.getV2Api()["channels"]:
         lightObj =  getObject(channel["members"][0]["service"]["rid"])
@@ -87,54 +289,102 @@ def entertainmentService(group, user):
         lights_v2.append({"light": lightObj, "lightNr": v2LightNr[lightObj.id_v1]})
     logging.debug(lights_v1)
     logging.debug(lights_v2)
-    opensslCmd = ['openssl', 's_server', '-dtls', '-psk', user.client_key, '-psk_identity', user.username, '-nocert', '-accept', '2100', '-quiet']
-    p = Popen(opensslCmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     if hueGroup != -1:  # If we have found a hue Brige containing a suitable entertainment group for at least one Lamp, we connect to it
         h = HueConnection(bridgeConfig["config"]["hue"]["ip"])
         h.connect(hueGroup, hueGroupLights)
+        bridgeConfig["groups"][group.id_v1].stream["_hue"] = h  # store for shutdown cleanup
+        session["hue"] = h
         if h._connected == False:
             hueGroupLights = {} # on a failed connection, empty the list
 
     init = False
-    frameBites = 10
+    frameBites = 0
     frameID = 1
-    initMatchBytes = 0
+    headerBuf = b''
+    HUE_STREAM_MAGIC = b'HueStream'
     host_ip = bridgeConfig["config"]["ipaddress"]
-    p.stdout.read(1) # read one byte so the init function will correctly detect the frameBites
+    _last_frame_ts = 0.0          # timestamp of previous frame for inter-frame interval (debug only)
+    _light_prev_state = {}        # per-light previous (r,g,b,bri) for delta tracking (debug only)
+    _light_frame_count = {}       # per-light frame update count for FPS interval (debug only)
+    _hue_send_count = 0           # sampled counter for hue bridge relay log (debug only)
+    _first_byte_logged = False
+    _first_frame_logged = False
+    _decrypted_bytes = 0
     try:
         while bridgeConfig["groups"][group.id_v1].stream["active"]:
             if not init:
-                readByte = p.stdout.read(1)
-                if not readByte:
-                    logging.info(
-                        "Entertainment DTLS client disconnected before HueStream initialization"
-                    )
+                if p.poll() is not None:
+                    logging.error("entertainment: openssl s_server exited before HueStream rc=%s after %.1fs",
+                                  p.returncode, time.time() - _dtls_wait_started)
                     break
-                logging.debug(readByte)
-                if readByte in b'\x48\x75\x65\x53\x74\x72\x65\x61\x6d':
-                    initMatchBytes += 1
-                else:
-                    initMatchBytes = 0
-                if initMatchBytes == 9:
-                    frameBites = frameID - 8
-                    logging.debug("frameBites: " + str(frameBites))
-                    p.stdout.read(frameBites - 9) # sync streaming bytes
+                _ready, _, _ = select.select([p.stdout], [], [], 1.0)
+                if not _ready:
+                    logging.debug("entertainment: waiting for first decrypted DTLS byte (%.0fs, openssl pid=%s alive, no HueStream yet)",
+                                 time.time() - _dtls_wait_started, p.pid)
+                    continue
+                readByte = p.stdout.read(1)
+                if not readByte:                           # EOF — DTLS process died
+                    logging.info("entertainment: openssl stdout EOF before HueStream after %.1fs",
+                                 time.time() - _dtls_wait_started)
+                    break
+                _decrypted_bytes += 1
+                if not _first_byte_logged:
+                    logging.debug("entertainment: first decrypted byte after %.3fs: 0x%02x",
+                                 time.time() - _dtls_wait_started, readByte[0])
+                    _first_byte_logged = True
+                headerBuf += readByte
+                if len(headerBuf) > 64:                   # keep only the trailing window, prevent unbounded growth
+                    headerBuf = headerBuf[-64:]
+                if headerBuf.endswith(HUE_STREAM_MAGIC):
+                    logging.debug("entertainment: HueStream magic found after %d decrypted byte(s)", _decrypted_bytes)
+                    # Read the rest of the header to determine frame size.
+                    # After the 9-byte magic, byte 9 carries the API version.
+                    rest_header = p.stdout.read(7)        # bytes 9–15 (API v1 header ends at 15)
+                    if not rest_header or len(rest_header) < 7:
+                        logging.warning("entertainment: incomplete frame header, retrying init")
+                        headerBuf = b''
+                        continue
+                    full_header = HUE_STREAM_MAGIC + rest_header
+                    api_ver = full_header[9]
+                    if api_ver == 1:
+                        # v1: 16-byte header + N * 9 bytes per light
+                        frameBites = 16 + len(lights_v1) * 9
+                    elif api_ver == 2:
+                        # v2: 52-byte header + N * 7 bytes per channel
+                        frameBites = 52 + len(lights_v2) * 7
+                    else:
+                        logging.error("entertainment: unknown API version " + str(api_ver))
+                        headerBuf = b''
+                        continue
+                    logging.info("entertainment: init complete, frameBites=%d, api_version=%d — entering frame loop", frameBites, api_ver)
+                    # Sync to the next frame boundary: we've consumed 16 header
+                    # bytes (9 magic + 7 rest). Read the remaining bytes of
+                    # this frame (rest of header + payload) so the parse loop
+                    # starts aligned to frame 2.
+                    sync_bytes = frameBites - 16
+                    if sync_bytes > 0:
+                        p.stdout.read(sync_bytes)
                     init = True
-                frameID += 1
 
             else:
                 data = p.stdout.read(frameBites)
-                if not data:
-                    logging.info(
-                        "Entertainment DTLS client disconnected"
-                    )
+                new_frame_time = time.time()  # capture AFTER read for true inter-frame interval
+                if logManager.logger.logLevel <= _logging.DEBUG:
+                    frame_interval_ms = (new_frame_time - _last_frame_ts) * 1000 if _last_frame_ts > 0 else 0.0
+                    _last_frame_ts = new_frame_time
+                if not data or len(data) < 9:
+                    logging.info("Entertainment DTLS client disconnected (EOF)")
                     break
-                #logging.debug(",".join('{:02x}'.format(x) for x in data))
                 nativeLights = {}
                 esphomeLights = {}
                 mqttLights = []
                 wledLights = {}
-                if data[:9] == b"HueStream":
+                non_UDP_lights = []
+                if data[:9].decode('utf-8') == "HueStream":
+                    if not _first_frame_logged:
+                        logging.debug("entertainment: first HueStream frame in processing loop, len=%d api=%s",
+                                     len(data), data[9] if len(data) > 9 else "?")
+                        _first_frame_logged = True
                     i = 0
                     apiVersion = 0
                     counter = 0
@@ -186,6 +436,22 @@ def entertainmentService(group, user):
                             logging.info("error in light identification")
                             break
                         logging.debug("Frame: " + str(frameID) + " Light:" + str(light.name) + " RED: " + str(r) + ", GREEN: " + str(g) + ", BLUE: " + str(b) )
+                        # Track per-light transition deltas for summary logging (debug only)
+                        if logManager.logger.logLevel <= _logging.DEBUG:
+                            lid = light.id_v1
+                            prev = _light_prev_state.get(lid)
+                            bri_val = int((r + g + b) / 3) if bri == 0 else bri
+                            if prev:
+                                dr = abs(r - prev[0])
+                                dg = abs(g - prev[1])
+                                db = abs(b - prev[2])
+                                dbri = abs(bri_val - prev[3])
+                                if dr > 0 or dg > 0 or db > 0 or dbri > 0:
+                                    logging.debug("Transition  Light:%s  ΔRGB:(%+d,%+d,%+d)  ΔBri:%+d  interval:%.1fms",
+                                                 light.name, r - prev[0], g - prev[1], b - prev[2],
+                                                 bri_val - prev[3], frame_interval_ms)
+                                    _light_frame_count[lid] = _light_frame_count.get(lid, 0) + 1
+                            _light_prev_state[lid] = (r, g, b, bri_val)
                         proto = light.protocol
                         if r == 0 and  g == 0 and  b == 0:
                             light.state["on"] = False
@@ -240,19 +506,17 @@ def entertainmentService(group, user):
                         elif proto == "wled":
                             if light.protocol_cfg["ip"] not in wledLights:
                                 wledLights[light.protocol_cfg["ip"]] = {}
-                                wledLights[light.protocol_cfg["ip"]
-                                           ]["ledCount"] = light.protocol_cfg["ledCount"]
-                            wledLights[light.protocol_cfg["ip"]
-                                       ]["color"] = [r, g, b]
+                            if light.protocol_cfg["segmentId"] not in wledLights[light.protocol_cfg["ip"]]:
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]] = {}
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["ledCount"] = light.protocol_cfg["ledCount"]
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["start"] = light.protocol_cfg["segment_start"]
+                                wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["udp_port"] = light.protocol_cfg["udp_port"]
+                            wledLights[light.protocol_cfg["ip"]][light.protocol_cfg["segmentId"]]["color"] = [r, g, b]
                         elif proto == "hue" and int(light.protocol_cfg["id"]) in hueGroupLights:
                             hueGroupLights[int(light.protocol_cfg["id"])] = [r,g,b]
                         else:
-                            if frameID % 4 == 0: # can use 2, 4, 6, 8, 12 => increase in case the destination device is overloaded
-                                operation = skipSimilarFrames(light.id_v1, light.state["xy"], light.state["bri"])
-                                if operation == 1:
-                                    light.setV1State({"bri": light.state["bri"], "transitiontime": 3})
-                                elif operation == 2:
-                                    light.setV1State({"xy": light.state["xy"], "transitiontime": 3})
+                            if light not in non_UDP_lights:
+                                non_UDP_lights.append(light)
 
                         frameID += 1
                         if frameID == 25:
@@ -281,40 +545,42 @@ def entertainmentService(group, user):
                             auth = {'username':bridgeConfig["config"]["mqtt"]["mqttUser"], 'password':bridgeConfig["config"]["mqtt"]["mqttPassword"]}
                         publish.multiple(mqttLights, hostname=bridgeConfig["config"]["mqtt"]["mqttServer"], port=bridgeConfig["config"]["mqtt"]["mqttPort"], auth=auth)
                     if len(wledLights) != 0:
-                        wled_udpmode = 2
+                        wled_udpmode = 4 #DNRGB mode
                         wled_secstowait = 2
                         for ip in wledLights.keys():
-                            udphead = [wled_udpmode, wled_secstowait]
-                            color = wledLights[ip]["color"] * int(wledLights[ip]["ledCount"])
-                            udpdata = bytes(udphead+color)
-                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                            sock.sendto(udpdata, (ip.split(":")[0], 21324))
+                            for segments in wledLights[ip]:
+                                udphead = bytes([wled_udpmode, wled_secstowait])
+                                start_seg = wledLights[ip][segments]["start"].to_bytes(2,"big")
+                                color = bytes(wledLights[ip][segments]["color"] * int(wledLights[ip][segments]["ledCount"]))
+                                udpdata = udphead+start_seg+color
+                                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                sock.sendto(udpdata, (ip.split(":")[0], wledLights[ip][segments]["udp_port"]))
                     if len(hueGroupLights) != 0:
+                        if logManager.logger.logLevel <= _logging.DEBUG:
+                            _hue_send_count += 1
+                            if _hue_send_count % 30 == 1:  # sample ~every 30 frames (~0.5s at 56fps)
+                                logging.debug("Hue relay: sending 1 batch DTLS frame with %d light(s) to bridge %s (frame #%d)",
+                                             len(hueGroupLights), bridgeConfig["config"]["hue"]["ip"], _hue_send_count)
                         h.send(hueGroupLights, hueGroup)
-                    new_frame_time = time.time()
-                    if new_frame_time - prev_frame_time > 1:
-                        fps = frameID - prev_frameID
-                        prev_frame_time = new_frame_time
-                        prev_frameID = frameID
-                        logging.info("Entertainment FPS: " + str(fps))
-                else:
-                    logging.warning(
-                        "HueStream was missing in the frame; stopping entertainment session"
-                    )
-                    break
-    except Exception as e: #Assuming the only exception is a network timeout, please don't scream at me
-        logging.info("Entertainment Service was syncing and has timed out, stopping server and clearing state" + str(e))
+                    if len(non_UDP_lights) != 0:
+                        light = non_UDP_lights[non_UDP_update_counter]
+                        updateNonUdpLight(light)
+                        non_UDP_update_counter = non_UDP_update_counter + 1 if non_UDP_update_counter < len(non_UDP_lights)-1 else 0
 
-    p.kill()
-    bridgeConfig["groups"][group.id_v1].stream["owner"] = None
-    try:
-        h.disconnect()
-    except UnboundLocalError:
-        pass
-    bridgeConfig["groups"][group.id_v1].stream["active"] = False
-    for light in group.lights:
-         bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
-    logging.info("Entertainment service stopped")
+                    fps_frame_count += 1
+                    if prev_frame_time > 0 and new_frame_time - prev_frame_time >= 1:
+                        fps = fps_frame_count / (new_frame_time - prev_frame_time)
+                        logging.info("Entertainment FPS: %.1f", fps)
+                        prev_frame_time = new_frame_time
+                        fps_frame_count = 0
+                    elif prev_frame_time == 0:
+                        prev_frame_time = new_frame_time
+                        fps_frame_count = 0
+                else:
+                    logging.info("HueStream was missing in the frame, client disconnected")
+                    break
+    except Exception as e:
+        logging.error("Entertainment Service error, stopping server and clearing state: %s", e, exc_info=True)
 
 def enableMusic(ip, host_ip):
     if ip in YeelightConnections:
@@ -452,13 +718,26 @@ class HueConnection(object):
         r = requests.put(url, json={"stream":{"active":True}})
         logging.debug("Outgoing connection to hue Bridge returned: " + r.text)
         try:
-            _opensslCmd = ['openssl', 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256', '-dtls', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
-            self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=None) # Open a dtls connection to the Hue bridge
-            self._connected = True
-            sleep(1) # Wait a bit to catch errors
+            _opensslCmd = [_OPENSSL_BIN, 's_client', '-quiet', '-cipher', 'PSK-AES128-GCM-SHA256:@SECLEVEL=0', '-dtls1_2', '-psk', bridgeConfig["config"]["hue"]["hueKey"], '-psk_identity', bridgeConfig["config"]["hue"]["hueUser"], '-connect', self._ip + ':2100']
+            self._connection = Popen(_opensslCmd, stdin=PIPE, stdout=None, stderr=PIPE)
+            # Drain stderr in a daemon thread to prevent pipe buffer from filling
+            # and deadlocking the openssl process (stderr pipe is OS-buffered and
+            # will block the child if never consumed).
+            def _drain_stderr(proc):
+                try:
+                    for _line in proc.stderr:
+                        pass
+                except Exception:
+                    pass
+            import threading as _thr
+            _thr.Thread(target=_drain_stderr, args=[self._connection], daemon=True).start()
+            sleep(1) # Wait for DTLS handshake
             err = self._connection.poll()
-            if err != None:
-                raise ConnectionError(err)
+            if err is not None:
+                self._connected = False
+                self.disconnect()
+                return
+            self._connected = True
         except Exception as e:
             logging.info("Error connecting to Hue bridge for entertainment. Is a proper hueKey set? openssl connection returned: %s", e)
             self.disconnect()
@@ -468,7 +747,7 @@ class HueConnection(object):
             url = "HTTP://" + str(self._ip) + "/api/" + bridgeConfig["config"]["hue"]["hueUser"] + "/groups/" + str(self._entGroup)
             if self._connected:
                 self._connection.kill()
-            requests.put(url, data={"stream":{"active":False}})
+            requests.put(url, json={"stream": {"active": False}}, timeout=3)
             self._connected = False
         except:
             pass
@@ -497,5 +776,10 @@ class HueConnection(object):
             self._connection.stdin.flush()
         except:
             logging.debug("Reconnecting to Hue bridge to sync. This is normal.") #Reconnect if the connection timed out
-            self.disconnect()
             self.connect(hueGroup)
+            # Retry sending the frame once after reconnect
+            try:
+                self._connection.stdin.write(arr)
+                self._connection.stdin.flush()
+            except Exception as e:
+                logging.debug("Hue bridge send failed after reconnect: %s", e)

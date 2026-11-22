@@ -20,22 +20,31 @@ jobs:
             arch_friendly: armv6
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create builder instance
+        run: |
+          docker buildx create --name mybuilder --use
+          docker buildx inspect --bootstrap
 
       - name: Enable qemu
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      - uses: satackey/action-docker-layer-caching@v0.0.8
-        continue-on-error: true
+      - name: Cache Docker layers
+        uses: actions/cache@v4
         with:
-          key: diyhue-cache-ci-${{ matrix.arch }}-{hash}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.arch }}-${{ github.ref }}-${{ github.sha }}
           restore-keys: |
-            diyhue-cache-ci-${{ matrix.arch }}-
+            ${{ runner.os }}-buildx-${{ matrix.arch }}-
 
       - name: Build docker image
         run: |
-          docker build --provenance=false --sbom=false -t diyhue/diyhue:ci -f ./.build/Dockerfile --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} .
+          docker buildx build --builder mybuilder --provenance=false --sbom=false --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} --cache-from=type=local,src=/tmp/.buildx-cache --cache-to=type=local,dest=/tmp/.buildx-cache -t diyhue/diyhue:ci -f ./.build/Dockerfile --load .
 
       - name: Save tarball
         run: |
@@ -387,6 +396,6 @@ jobs:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
     steps:
-    - uses: geekyeggo/delete-artifact@v1
+    - uses: geekyeggo/delete-artifact@v5
       with:
         name: ci-${{ matrix.arch }}-${{ github.run_number }}.tar

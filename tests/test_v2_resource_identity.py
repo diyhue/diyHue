@@ -30,7 +30,7 @@ class ResourceIdentityTests(unittest.TestCase):
         self.config['config'] = dict(
             bridgeid='001788FFFE123456', name='Test bridge',
             timezone='Europe/London', swversion='1948086000', apiversion='1.65.0')
-        self.bridge_config = types.SimpleNamespace(yaml_config=self.config, save_config=Mock())
+        self.bridge_config = types.SimpleNamespace(yaml_config=self.config, save_config=Mock(), mark_dirty=Mock())
         self.events = Mock()
         hue = types.ModuleType('HueObjects')
         for name in ('Group', 'EntertainmentConfiguration', 'Scene', 'BehaviorInstance',
@@ -83,7 +83,7 @@ class ResourceIdentityTests(unittest.TestCase):
                 readback = self.get('device', rid).json['data'][0]
                 self.assertEqual(readback['metadata']['name'], 'Renamed bridge')
                 self.assertEqual(self.events.call_args.args[0]['data'][0]['id'], rid)
-                self.bridge_config.save_config.assert_called_with(backup=False, resource='config')
+                self.bridge_config.mark_dirty.assert_called_with('config')
                 bridge = self.get('bridge').json['data'][0]
                 self.assertEqual(self.get('bridge', bridge['id']).json, {'errors': [], 'data': [bridge]})
 

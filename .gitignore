@@ -19,3 +19,9 @@ Sensors/*
 BridgeEmulator/export/
 BridgeEmulator/cert.pem
 diyhue.log
+/config
+*.log
+*.js
+*.css
+*.webp
+BridgeEmulator/flaskUI/templates/index.html

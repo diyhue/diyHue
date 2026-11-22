@@ -4,14 +4,20 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "Launch diyHue",
-            "type": "python",
-            "request": "launch",
-            "program": "/opt/hue-emulator/HueEmulator3.py",
-            "args" : ["--docker"],
-            "pythonPath": "/usr/bin/python3",
-            "console": "integratedTerminal"
-        }
+      {
+        "name": "Launch diyHue",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/BridgeEmulator/HueEmulator3.py",
+        "args": [
+          "--docker",
+          "--mac",
+          "xx:xx:xx:xx:xx:xx",
+          "--config_path",
+          "${workspaceFolder}/config",
+          "--debug"
+        ],
+        "console": "integratedTerminal"
+      }
     ]
-}
+  }

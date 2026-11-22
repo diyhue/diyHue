@@ -43,8 +43,20 @@ class FakeGroup:
             "any_on": False,
         }
 
+        self.action = {"on": False}
+
     def getV2Api(self):
         return {"channels": []}
+
+    def update_state(self):
+        return dict(self.state)
+
+    def update_attr(self, data):
+        if "stream" in data:
+            self.stream.update(data["stream"])
+
+    def getV2GroupedLight(self):
+        return {"id": "grouped-light", "type": "grouped_light"}
 
 
 class FakeStdout:
@@ -61,7 +73,7 @@ class FakeStdout:
         if self.process.killed:
             self.read_after_kill += 1
 
-            # Safety valve for the old buggy implementation: prevent an
+            # Safety valve for a buggy implementation: prevent an
             # accidental infinite busy-loop during the regression test.
             self.group.stream["active"] = False
             return b""
@@ -72,27 +84,23 @@ class FakeStdout:
             if self.eof_before_init:
                 return b""
 
-            # Call 1 is the existing pre-loop discard.
-            #
-            # Calls 2-21 provide 20 filler bytes. Calls 22-30 then provide
-            # the real HueStream magic sequence. With the current framing
-            # algorithm this yields a synthetic 21-byte frame.
-            if self.one_byte_reads <= 21:
+            # 20 filler bytes, then the HueStream magic sequence.
+            if self.one_byte_reads <= 20:
                 return b"\x00"
 
-            magic_index = self.one_byte_reads - 22
+            magic_index = self.one_byte_reads - 21
             if 0 <= magic_index < len(b"HueStream"):
                 return bytes([b"HueStream"[magic_index]])
 
             return b"\x00"
 
-        if size == 12:
-            # Remaining bytes consumed while synchronising the first frame.
-            return b"\x00" * 12
+        if size == 7:
+            # Rest of the frame header: API version 1.
+            return b"\x01" + b"\x00" * 6
 
-        if size == 21:
-            # Deliberately malformed next Entertainment frame.
-            return b"BADFRAME!" + (b"x" * 12)
+        if size == 16:
+            # Deliberately malformed next Entertainment frame (16-byte v1 header, no lights).
+            return b"BADFRAME!" + (b"x" * 7)
 
         return b"\x00" * max(size, 0)
 
@@ -107,6 +115,12 @@ class FakeProcess:
             eof_before_init=eof_before_init,
         )
         self.stderr = Mock()
+
+        self.pid = 4242
+        self.returncode = None
+
+    def poll(self):
+        return None
 
     def kill(self):
         self.kill_calls += 1
@@ -145,7 +159,8 @@ class EntertainmentLifecycleTests(unittest.TestCase):
 
         log_manager = types.ModuleType("logManager")
         log_manager.logger = types.SimpleNamespace(
-            get_logger=lambda _: self.logger
+            get_logger=lambda _: self.logger,
+            logLevel=20,
         )
 
         functions = package("functions")
@@ -165,11 +180,21 @@ class EntertainmentLifecycleTests(unittest.TestCase):
         requests.get = Mock()
         requests.put = Mock()
 
+        functions_entertainment = types.ModuleType("functions.entertainment")
+        functions_entertainment.apply_stop_preference = Mock()
+        functions_entertainment.snapshot_lights = Mock(return_value={})
+        functions.entertainment = functions_entertainment
+
+        hue_objects = types.ModuleType("HueObjects")
+        hue_objects.StreamEvent = Mock()
+
         modules = {
             "configManager": config_manager,
             "logManager": log_manager,
             "functions": functions,
             "functions.colors": colors,
+            "functions.entertainment": functions_entertainment,
+            "HueObjects": hue_objects,
             "paho": paho,
             "paho.mqtt": paho_mqtt,
             "paho.mqtt.publish": paho_publish,
@@ -196,6 +221,10 @@ class EntertainmentLifecycleTests(unittest.TestCase):
             eof_before_init=eof_before_init,
         )
         self.entertainment.Popen = Mock(return_value=process)
+        # the fake stdout is always readable
+        self.entertainment.select = types.SimpleNamespace(
+            select=lambda r, w, x, timeout=None: (r, [], []))
+        self.entertainment._sp = types.SimpleNamespace(run=Mock())
         self.entertainment.entertainmentService(
             self.group,
             self.user,
@@ -217,8 +246,8 @@ class EntertainmentLifecycleTests(unittest.TestCase):
         self.assertEqual(process.kill_calls, 1)
         self.assertFalse(self.group.stream["active"])
 
-        self.logger.warning.assert_called_once_with(
-            "HueStream was missing in the frame; stopping entertainment session"
+        self.logger.info.assert_any_call(
+            "HueStream was missing in the frame, client disconnected"
         )
 
     def test_eof_before_huestream_initialization_stops_cleanly(self):
@@ -228,8 +257,10 @@ class EntertainmentLifecycleTests(unittest.TestCase):
         self.assertEqual(process.kill_calls, 1)
         self.assertFalse(self.group.stream["active"])
 
-        self.logger.info.assert_any_call(
-            "Entertainment DTLS client disconnected before HueStream initialization"
+        messages = [call.args[0] for call in self.logger.info.call_args_list]
+        self.assertIn(
+            "entertainment: openssl stdout EOF before HueStream after %.1fs",
+            messages,
         )
 
 

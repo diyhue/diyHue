@@ -5,6 +5,7 @@ from sensors.sensor_types import sensorTypes
 from lights.light_types import lightTypes, archetype
 from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
+from copy import deepcopy
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -37,6 +38,7 @@ class Device():
         self.elements[type] = weakref.ref(element)
         self.id_v2 = str(uuid.uuid5(
             uuid.NAMESPACE_URL, element.id_v2 + 'device'))
+        self.id_v1 = self.id_v2  # the device is stored and referenced by its v2 id
         # device
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getDevice()],
@@ -123,24 +125,44 @@ class Device():
             {"id_v1": "/sensors/" + obj.id_v1, "owner": {"rid": self.id_v2, "rtype": "device"}})
         StreamEvent(streamMessage)
 
+    def _switchElement(self):
+        for key in ("ZLLSwitch", "ZHASwitch", "ZGPSwitch"):
+            if key in self.elements and self.elements[key]():
+                return self.elements[key]()
+        return self.firstElement()
+
     def getButtons(self):
+        _BUTTONEVENT_TO_EVENT = {0: "initial_press", 1: "repeat", 2: "short_release", 3: "long_release", 10: "long_press"}
         result = []
         start, buttonsCount = 0, 0
         if self.modelid in ["RWL022", "RWL021", "RWL020", "RDM002"]:
             buttonsCount = 4
-
+        if buttonsCount == 0:
+            return result
+        switch = self._switchElement()
+        buttonevent = switch.state.get("buttonevent")
         for button in range(start, buttonsCount):
+            button_number = button + 1
+            if buttonevent is not None and 1000 * button_number <= buttonevent < 1000 * (button_number + 1):
+                event = _BUTTONEVENT_TO_EVENT.get(buttonevent % 1000, "initial_press")
+            else:
+                event = "initial_press"
             result.append({
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button + 1))),
-                "id_v1": "/sensors/" + self.id_v1,
+                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button' + str(button_number))),
+                "id_v1": "/sensors/" + switch.id_v1,
                 "owner": {
                     "rid": self.id_v2,
                     "rtype": "device"
                 },
                 "metadata": {
-                    "control_id": button + 1
+                    "control_id": button_number
                 },
                 "button": {
+                    "last_event": event,
+                    "button_report": {
+                        "updated": switch.state.get("lastupdated"),
+                        "event": event
+                    },
                     "repeat_interval": 800,
                     "event_values": [
                         "initial_press",
@@ -195,13 +217,18 @@ class Device():
                                   }
 
         result["services"] = []
-        for button in self.getButtons:
+        for button in self.getButtons():
             result["services"].append(
                 {
                     "rid": button["id"],
                     "rtype": "button"
                 }
             )
+        if "ZLLRelativeRotary" in self.elements:
+            result["services"].append({
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'relative_rotary')),
+                "rtype": "relative_rotary"
+            })
 
         result["services"].extend([{
             "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
@@ -241,7 +268,7 @@ class Device():
 
     def getLightData(self):
         result = {}
-        result["product_data"] = lightTypes[self.modelid]["device"]
+        result["product_data"] = deepcopy(lightTypes[self.modelid]["device"])
         result["product_data"]["model_id"] = self.modelid
         result["services"] = [
             {
@@ -331,6 +358,8 @@ class Device():
         if self.modelid == "SML001":
             temperature = self.elements["ZLLTemperature"](
             ).state["temperature"]
+            if isinstance(temperature, int):
+                temperature = temperature / 100  # v1 stores centidegrees
             result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
                       "id_v1": "/sensors/" + self.elements["ZLLTemperature"]().id_v1,
                       "owner": {
@@ -418,27 +447,40 @@ class Device():
             "rtype": "device"
         }
         result["type"] = "zigbee_connectivity"
-        result["mac_address"] = self.firstElement().uniqueid[:23]
-        result["status"] = "connected"
+        result["mac_address"] = (self.firstElement().uniqueid or "")[:23]
+        element = self.firstElement()
+        if self.group_v1 == "lights":
+            reachable = element.state.get("reachable", True)
+        else:
+            reachable = element.config.get("reachable", True)
+        result["status"] = "connected" if reachable else "connectivity_issue"
         return result
 
     def getRotary(self):
         result = []
-        if self.modelid == "RDM002" and self.type == "ZLLRelativeRotary":
+        if self.modelid == "RDM002" and "ZLLRelativeRotary" in self.elements and self.elements["ZLLRelativeRotary"]():
+            rotary = self.elements["ZLLRelativeRotary"]()
+            raw_direction = rotary.state.get("direction", "clock_wise")
+            direction = "counter_clock_wise" if raw_direction in ("left", "counter_clock_wise") else "clock_wise"
             result.append({
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'relative_rotary')),
-                "id_v1": "/sensors/" + self.id_v1,
+                "id_v1": "/sensors/" + rotary.id_v1,
                 "owner": {
                     "rid": self.id_v2,
                     "rtype": "device"
                 },
-                "rotary_report": {
-                    "updated": self.state["lastupdated"],
-                    "action": "start" if self.state["rotaryevent"] == 1 else "repeat",
-                    "rotation": {
-                        "direction": "right",  # self.state["direction"],
-                        "steps": self.state["expectedrotation"],
-                        "duration": self.state["expectedeventduration"]
+                "metadata": {
+                    "control_id": 0
+                },
+                "relative_rotary": {
+                    "rotary_report": {
+                        "updated": rotary.state.get("lastupdated"),
+                        "action": "start" if rotary.state.get("rotaryevent") == 1 else "repeat",
+                        "rotation": {
+                            "direction": direction,
+                            "steps": rotary.state.get("expectedrotation"),
+                            "duration": rotary.state.get("expectedeventduration")
+                        }
                     }
                 },
                 "type": "relative_rotary"

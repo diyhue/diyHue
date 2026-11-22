@@ -93,6 +93,10 @@ class Scene():
                 self.status = "inactive"
                 return
             self.status = data["recall"]["action"]
+        else:
+            # Internal callers such as behavior_instance automation pass a plain
+            # transition dict without "recall".
+            self.status = "active"
 
         queueState = {}
         for light, state in self.lightstates.items():
@@ -226,10 +230,11 @@ class Scene():
                 if device():
                     lights.append(weakref.ref(device().firstElement()))
         else:
-            for light in self.lightstates.keys():
-                if light():
-                    lights.append(light)
+            for light in list(self.lightstates.keys()):
+                lights.append(weakref.ref(light))
         for light in lights:
+            if "on" not in light().state:
+                continue
             state = {}
             state["on"] = light().state["on"]
             if "colormode" in light().state:

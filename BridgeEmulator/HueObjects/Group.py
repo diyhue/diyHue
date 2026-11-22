@@ -12,12 +12,15 @@ class Group():
         self.name = data["name"] if "name" in data else "Group " + data["id_v1"]
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
-        self.icon_class = data["class"] if "class" in data else "Other"
+        self.icon_class = data["class"] if "class" in data else data["icon_class"] if "icon_class" in data else "Other"
+        # non-light devices (switches, sensors) that are children of a room
+        self.device_children = list(data["device_children"]) if "device_children" in data else []
         logging.debug(f"Group {data.get('id_v1', 'unknown')} created with icon_class: {self.icon_class}")
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
             0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"}
         self.sensors = []
+        self.device_children = list(data["device_children"]) if "device_children" in data else []
         self.type = data["type"] if "type" in data else "LightGroup"
         self.state = {"all_on": False, "any_on": False}
         self.dxState = {"all_on": None, "any_on": None}
@@ -159,21 +162,30 @@ class Group():
         StreamEvent(streamMessage)
         groupChildrens = []
         groupServices = []
+        seen_child_ids = set()
         for device in self.lights:
             if device():
                 # Handle both Device objects (with group_v1) and Light objects (without group_v1)
                 if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
                     # It's a Device object, get the light from it
                     light = device().firstElement()
-                    groupChildrens.append(
-                        {"rid": device().getDevice()["id"], "rtype": "device"})
+                    dev_id = device().getDevice()["id"]
+                    if dev_id not in seen_child_ids:
+                        seen_child_ids.add(dev_id)
+                        groupChildrens.append({"rid": dev_id, "rtype": "device"})
                     groupServices.append({"rid": light.id_v2, "rtype": "light"})
                 elif hasattr(device(), 'id_v2') and not hasattr(device(), 'group_v1'):
                     # It's a Light object directly - use owner if available, otherwise skip device entry
-                    if hasattr(device(), 'owner') and device().owner:
+                    if hasattr(device(), 'owner') and device().owner and device().owner not in seen_child_ids:
+                        seen_child_ids.add(device().owner)
                         groupChildrens.append(
                             {"rid": device().owner, "rtype": "device"})
                     groupServices.append({"rid": device().id_v2, "rtype": "light"})
+        # non-light devices (switches, sensors) placed in the room
+        for dev_id in self.device_children:
+            if dev_id not in seen_child_ids:
+                seen_child_ids.add(dev_id)
+                groupChildrens.append({"rid": dev_id, "rtype": "device"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"children": groupChildrens, "id": elementId, "id_v1": "/groups/" + self.id_v1, "services": groupServices, "type": elementType}],
@@ -215,22 +227,18 @@ class Group():
                 if hasattr(device(), 'group_v1') and device().group_v1 == "lights":
                     # It's a Device object, get the light from it
                     light = device().firstElement()
-                    if light.state["on"]:
-                        any_on = True
-                        if "bri" in light.state:
-                            bri = bri + light.state["bri"]
-                            lights_on = lights_on + 1
-                    else:
-                        all_on = False
                 elif hasattr(device(), 'state') and not hasattr(device(), 'group_v1'):
                     # It's a Light object directly
-                    if device().state["on"]:
-                        any_on = True
-                        if "bri" in device().state:
-                            bri = bri + device().state["bri"]
-                            lights_on = lights_on + 1
-                    else:
-                        all_on = False
+                    light = device()
+                else:
+                    continue
+                if light.state.get("on"):
+                    any_on = True
+                    if "bri" in light.state:
+                        bri = bri + light.state["bri"]
+                        lights_on = lights_on + 1
+                else:
+                    all_on = False
         if any_on:
             bri = (((bri/lights_on)/254)*100) if bri > 0 else 0
         return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
@@ -302,10 +310,20 @@ class Group():
 
     def getV2Room(self):
         result = {"children": [], "services": []}
+        seen_device_ids = set()
         for device in self.lights:
-            if device():
+            if device() and device().id_v2 not in seen_device_ids:
+                seen_device_ids.add(device().id_v2)
                 result["children"].append({
                     "rid": device().id_v2,
+                    "rtype": "device"
+                })
+        # non-light devices (switches, sensors) placed in the room
+        for dev_id in self.device_children:
+            if dev_id not in seen_device_ids:
+                seen_device_ids.add(dev_id)
+                result["children"].append({
+                    "rid": dev_id,
                     "rtype": "device"
                 })
         result["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'room'))
@@ -406,7 +424,8 @@ class Group():
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type}
+                  "lights": [], "action": self.action, "type": self.type,
+                  "device_children": self.device_children}
         if self.id_v1 != "0":
             for device in self.lights:
                 if device():

@@ -3,6 +3,9 @@ from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
 from threading import Thread
+import signal
+import sys
+import os
 import ssl
 import configManager
 import logManager
@@ -102,7 +105,7 @@ def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
 def runHttp(BIND_IP, HOST_HTTP_PORT):
     app.run(host=BIND_IP, port=HOST_HTTP_PORT)
 
-if __name__ == '__main__':
+def main():
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS, updateManager
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
@@ -122,6 +125,35 @@ if __name__ == '__main__':
         installLinkButtonSignal(bridgeConfig["config"], logging)
     updateManager.startupCheck()
 
+    def shutdown(signum, frame):
+        logging.info("Received signal %s, saving config and shutting down", signum)
+        for group in bridgeConfig["groups"].values():
+            if hasattr(group, 'stream') and group.stream.get("active"):
+                h = group.stream.get("_hue")
+                if h:
+                    try:
+                        h.disconnect()
+                    except Exception:
+                        pass
+                proc = group.stream.get("_proc")
+                if proc:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                group.stream["active"] = False
+        # Full save — catches everything including undirtied background mutations.
+        # blocking=True ensures we wait if restore/reset is in progress.
+        try:
+            configManager.bridgeConfig.save_config(backup=False, blocking=True)
+            configManager.bridgeConfig.save_config(backup=True, blocking=True)
+        except Exception as e:
+            logging.error(f"Shutdown save failed: {e}")
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
     if bridgeConfig["config"]["deconz"]["enabled"]:
@@ -132,7 +164,7 @@ if __name__ == '__main__':
         homeAssistantWS.create_ws_client(bridgeConfig)
     if not ("discovery" in bridgeConfig["config"] and bridgeConfig["config"]["discovery"] == False):
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
-    Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
+    Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"], HOST_HTTP_PORT]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
     if discoverySettings["advertise_ssdp"]:
         Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
@@ -154,3 +186,6 @@ if __name__ == '__main__':
     if not DISABLE_HTTPS:
         Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
     runHttp(BIND_IP, HOST_HTTP_PORT)
+
+if __name__ == '__main__':
+    main()

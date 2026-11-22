@@ -1,13 +1,13 @@
 # This image just moves the correct bins to a specific folder.
 # Can also be used to compile the binaries (for an even better experience)
-FROM busybox as binselector
+FROM busybox AS binselector
 WORKDIR /opt/hue-emulator
 
 # Architecture automatically set by docker eg. linux/amd64, linux/arm/v7, linux/arm64
 ARG TARGETPLATFORM
 
 # ============================ Actual image from here ====================
-FROM debian:stable-slim as prod
+FROM debian:stable-slim AS prod
 WORKDIR /opt/hue-emulator
 ARG TARGETPLATFORM
 
@@ -16,6 +16,7 @@ COPY requirements.txt ./
 ## Install requirements
 # Use get-pip.py instead of apt's python3-pip/setuptools: Debian's setuptools
 # pulls python3-typeguard, whose postinst segfaults under QEMU (linux/arm64 CI).
+# --ignore-installed: pip cannot uninstall Debian's typing_extensions (no RECORD).
 # Keep the bootstrap tooling: its post-install uninstaller can also segfault
 # under QEMU linux/arm64 after dependencies have been installed.
 RUN apt update \

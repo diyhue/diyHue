@@ -534,4 +534,4 @@ def discover(mqtt_config):
             )
 
         except Exception as e:
-            print (str(e))
+            logging.error("MQTT publish failed: " + str(e))

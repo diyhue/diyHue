@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from lights.light_types import lightTypes, archetype
-from lights.protocols import protocols
+from lights.protocols import protocols, wled
 from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v2StateToV1, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -16,10 +16,13 @@ class Light():
         self.id_v1 = data["id_v1"]
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.uniqueid = data["uniqueid"] if "uniqueid" in data else generate_unique_id()
-        self.state = data["state"] if "state" in data else deepcopy(
+        # Saved lights pass their own state in, and new lights pass the catalog
+        # template. Either way this object has to own the dicts, including nested
+        # lists such as xy and gradient points.
+        self.state = deepcopy(data["state"]) if "state" in data else deepcopy(
             lightTypes[self.modelid]["state"])
         self.protocol = data["protocol"] if "protocol" in data else "dummy"
-        self.config = data["config"] if "config" in data else deepcopy(
+        self.config = deepcopy(data["config"]) if "config" in data else deepcopy(
             lightTypes[self.modelid]["config"])
         self.protocol_cfg = data["protocol_cfg"] if "protocol_cfg" in data else {}
         self.streaming = False
@@ -59,7 +62,7 @@ class Light():
                 setattr(self, key, value)
 
     def getV1Api(self):
-        result = lightTypes[self.modelid]["v1_static"]
+        result = deepcopy(lightTypes[self.modelid]["v1_static"])
         result["config"] = self.config
         result["state"] = {"on": self.state["on"]}
         if "bri" in self.state and self.modelid not in ["LOM001", "LOM004", "LOM010"]:
@@ -91,6 +94,15 @@ class Light():
             self.state["colormode"] = "hs"
 
     def setV1State(self, state, advertise=True):
+        if self.protocol == "homeassistant_ws":
+            from services import homeAssistantWS
+            if homeAssistantWS.event_session is not None:
+                with homeAssistantWS.event_session.reducer.lock:
+                    homeAssistantWS.assert_command_allowed(self)
+                    return self._setV1State(state, advertise)
+        return self._setV1State(state, advertise)
+
+    def _setV1State(self, state, advertise=True):
         if "lights" not in state:
 
             # OFF must terminate a dynamic scene regardless of
@@ -123,15 +135,16 @@ class Light():
                 if "max_bri" in self.protocol_cfg and self.protocol_cfg["max_bri"] < state["bri"]:
                     state["bri"] = self.protocol_cfg["max_bri"]
 
-        for protocol in protocols:
-            if "lights.protocols." + self.protocol == protocol.__name__:
-                try:
-                    protocol.set_light(self, state)
-                    self.state["reachable"] = True
-                except Exception as e:
-                    self.state["reachable"] = False
-                    logging.warning(self.name + " light error, details: %s", e)
-                return
+        if self.protocol not in ["dummy"]:
+            for protocol in protocols:
+                if "lights.protocols." + self.protocol == protocol.__name__:
+                    try:
+                        protocol.set_light(self, state)
+                        self.state["reachable"] = True
+                    except Exception as e:
+                        self.state["reachable"] = False
+                        logging.warning(self.name + " light error, details: %s", e)
+                    return
         if advertise:
             v2State = v1StateToV2(state)
             self.genStreamEvent(v2State)
@@ -208,7 +221,7 @@ class Light():
             result["gradient_points_capable"] = self.protocol_cfg.get("points_capable", 5)
 
         # color lights only
-        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010"]:
+        if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010", "LCG001"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
             result["color"] = {
                 "gamut": {
@@ -247,15 +260,29 @@ class Light():
             "effect_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ],
-            "status": "no_effect",
+            "status": self.effect,
             "status_values": [
                 "no_effect",
                 "candle",
-                "fire"
+                "fire",
+                "colorloop"
             ]
         }
+        if self.protocol == "wled":
+            # "none" is a v1-only internal alias for "no_effect"; "sunbeam" is a
+            # silent input alias for "sunrise" (see wled.py) -- neither is advertised.
+            wled_effect_values = [e for e in wled.HUE_EFFECT_TO_WLED_FX if e not in ("none", "sunbeam")]
+            result["effects_v2"] = {
+                "action": {"effect_values": wled_effect_values},
+                "status": {
+                    "effect": self.effect,
+                    "effect_values": wled_effect_values
+                }
+            }
+        result["timed_effects"] = {}
         result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1

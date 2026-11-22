@@ -12,7 +12,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from sensors.discover import addHueMotionSensor, addHueSecureContactSensor
-from sensors.sensor_types import sensorTypes
+from sensors.sensor_types import sensorTypes, MODEL_ALIASES
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 from functions.behavior_instance import checkBehaviorInstances
@@ -121,7 +121,7 @@ standardSensors = {
             "quadruple": {"buttonevent": 1004},
             "hold": {"buttonevent": 2001},
             "release": {"buttonevent": 2002},
-            "release": {"many": 2003},
+            "many": {"buttonevent": 2003},
         }
     },
     "Remote Control N2": {
@@ -133,7 +133,7 @@ standardSensors = {
             "brightness_stop": {"buttonevent": 1003},
             "brightness_move_down": {"buttonevent": 2002},
             "arrow_left_click": {"buttonevent": 3002},
-            "arrow_right_click": {"many": 4002},
+            "arrow_right_click": {"buttonevent": 4002},
         }
     },
     "RDM002": {
@@ -164,6 +164,9 @@ standardSensors = {
             "dial_rotate_right_step": {"rotaryevent": 1},
             "dial_rotate_right_slow": {"rotaryevent": 2},
             "dial_rotate_right_fast": {"rotaryevent": 2},
+            "brightness_step_up": {"rotaryevent": 1},
+            "brightness_step_down": {"rotaryevent": 1},
+            "rotaryevent": {},
             "expectedrotation":90,
             "expectedeventduration":400
         }
@@ -192,12 +195,26 @@ standardSensors = {
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
-standardSensors["RWL020"] = standardSensors["RWL021"]
-standardSensors["RWL022"] = standardSensors["RWL021"]
-standardSensors["8719514440937"] = standardSensors["RDM002"]
-standardSensors["8719514440999"] = standardSensors["RDM002"]
-standardSensors["9290035001"] = standardSensors["RDM002"]
-standardSensors["9290035003"] = standardSensors["RDM002"]
+# Register the same model aliases used in sensorTypes so that MQTT auto-discovery
+# can look up MQTT action mappings by the same alternative model IDs.
+for _alias, _canonical in MODEL_ALIASES.items():
+    if _canonical in standardSensors:
+        standardSensors[_alias] = standardSensors[_canonical]
+
+
+def lux_to_lightlevel(lux):
+    """Hue's light level, 10000 * log10(lux) + 1, kept within 0..65535.
+
+    Under 1 lux the logarithm is negative, which is not a valid light level.
+    """
+    if lux <= 0:
+        return 0
+    return max(0, min(65535, round(10000 * math.log10(lux) + 1)))
+
+
+def celsius_to_hue(temperature):
+    """Hue reports temperature in hundredths of a degree Celsius."""
+    return round(temperature * 100)
 
 
 def getClient():
@@ -239,6 +256,25 @@ def getObject(friendly_name):
                     return device
         logging.debug("Device not found for " + friendly_name)
         return False
+
+def getDeviceByIeeeAddr(ieee_address):
+    """Return the mqtt device whose protocol_cfg.ieeeAddr matches, or None."""
+    for key, device in bridgeConfig["device"].items():
+        if device.protocol == "mqtt" and device.protocol_cfg.get("ieeeAddr") == ieee_address:
+            return device
+    return None
+
+
+def renameDevice(device, new_name):
+    """Follow a friendly name change in zigbee2mqtt instead of adding the sensor again."""
+    old_name = device.protocol_cfg.get("friendly_name")
+    logging.info("MQTT: renaming sensor %s -> %s", old_name, new_name)
+    devices_ids.pop(old_name, None)
+    device.protocol_cfg["friendly_name"] = new_name
+    for element in device.elements.values():
+        if element() and element().protocol_cfg.get("friendly_name") == old_name:
+            element().protocol_cfg["friendly_name"] = new_name
+    devices_ids[new_name] = weakref.ref(device)
 
 # Will get called zero or more times depending on how many lights are available for autodiscovery
 def on_autodiscovery_light(msg):
@@ -312,11 +348,16 @@ def on_message(client, userdata, msg):
             elif msg.topic == "zigbee2mqtt/bridge/devices":
                 for key in data:
                     if "model_id" in key:
-                        if getObject(key["friendly_name"]) == False: ## Sensor not present in bridge config
+                        existing = getDeviceByIeeeAddr(key.get("ieee_address"))
+                        if existing is not None:
+                            # Known by IEEE address: follow a friendly name change
+                            if existing.protocol_cfg.get("friendly_name") != key["friendly_name"]:
+                                renameDevice(existing, key["friendly_name"])
+                        elif getObject(key["friendly_name"]) == False: ## Sensor not present in bridge config
                             logging.info("MQTT: Found new mqtt sensor " + key["friendly_name"])
                             ### check if is a motion sensor
                             hadMotion, hasLightLevel, hasTemperature, hasContact = False, False, False, False
-                            for feature in key["definition"]["exposes"]:
+                            for feature in (key.get("definition") or {}).get("exposes", []):
                                 if "property" in feature:
                                     if feature["property"] == "occupancy":
                                         hadMotion = True
@@ -333,23 +374,32 @@ def on_message(client, userdata, msg):
                                 logging.info("MQTT: add new contact sensor " + key["model_id"])
                                 addHueSecureContactSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "friendly_name": key["friendly_name"]})                      
                             elif key["model_id"] in standardSensors:
-                                if key["model_id"] not in sensorTypes:
+                                # Numeric product ids (e.g. the tap dial EAN) map to the Hue model id
+                                model_id = MODEL_ALIASES.get(key["model_id"], key["model_id"]) if key["model_id"].isdigit() else key["model_id"]
+                                if model_id not in sensorTypes:
+                                    # A button mapping without a sensor type can't be added;
+                                    # skip it instead of aborting discovery for the other devices.
                                     logging.warning(
                                         "MQTT: sensor definition missing for %s; skipping device",
                                         key["model_id"],
                                     )
                                     continue
-                                for sensor_type in sensorTypes[key["model_id"]].keys():
+                                uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
+                                newDeviceObj = None
+                                # one v2 device for all v1 sensors of the product
+                                # (e.g. RDM002: ZLLSwitch + ZLLRelativeRotary)
+                                for sensor_type in sensorTypes[model_id].keys():
                                     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-                                    #sensor_type = sensorTypes[key["model_id"]][sensor]
-                                    uniqueid = convertHexToMac(key["ieee_address"]) + "-01-1000"
-                                    sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": key["model_id"], "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
+                                    sensorData = {"name": key["friendly_name"], "protocol": "mqtt", "modelid": model_id, "type": sensor_type, "uniqueid": uniqueid,"protocol_cfg": {"friendly_name": key["friendly_name"], "ieeeAddr": key["ieee_address"], "model": key["definition"]["model"]}, "id_v1": new_sensor_id}
                                     bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(sensorData)
-                                    newDeviceObj = Device.Device(sensorData)
-                                    newDeviceObj.type = "sensors" # to look for another name
-                                    newDeviceObj.add_element(sensorData["type"], bridgeConfig["sensors"][new_sensor_id])
+                                    if newDeviceObj is None:
+                                        newDeviceObj = Device.Device(sensorData)
+                                        newDeviceObj.type = "sensors" # to look for another name
+                                    newDeviceObj.add_element(sensor_type, bridgeConfig["sensors"][new_sensor_id])
+                                if newDeviceObj is not None:
                                     bridgeConfig["device"][newDeviceObj.id_v2] = newDeviceObj
-                                    
+                                    configManager.bridgeConfig.mark_dirty("sensors")
+                                    configManager.bridgeConfig.mark_dirty("device")
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
             elif msg.topic == "zigbee2mqtt/bridge/log":
@@ -384,10 +434,11 @@ def on_message(client, userdata, msg):
                             )
                             # send email if alarm is enabled:
                             notifyEmail(motionSensor.name)
-                        if "illuminance" in data:
+                        if "illuminance" in data or "illuminance_lux" in data:
                             lightSensor = device.elements["ZLLLightLevel"]()
                             lightPayload = {"lastupdated": lastupdated}
-                            hue_lightlevel = int(10000 * math.log10(data["illuminance"]) + 1) if data["illuminance"] != 0 else 0
+                            lux = data["illuminance_lux"] if "illuminance_lux" in data else data["illuminance"]
+                            hue_lightlevel = lux_to_lightlevel(lux)
                             if hue_lightlevel > lightSensor.config["tholddark"]:
                                 lightPayload["dark"] = False
                             else:
@@ -405,22 +456,40 @@ def on_message(client, userdata, msg):
                             lightSensor.state.update(lightPayload)
                         if "temperature" in data:
                             tempSensor = device.elements["ZLLTemperature"]()
-                            tempSensor.state = {"temperature": int(data["temperature"] * 100), "lastupdated": lastupdated}
+                            tempSensor.state = {"temperature": celsius_to_hue(data["temperature"]), "lastupdated": lastupdated}
                         if "contact" in data:
                             contactSensor = device.elements["ZLLContact"]()
                             contactSensor.state = {"contact": "contact" if data["contact"] else "no_contact", "lastupdated": lastupdated}
                         elif device.modelid in standardSensors:
                             convertedPayload = {"lastupdated": lastupdated}
                             convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
+                            element = device.firstElement()
+                            # RDM002: rotary events belong to the ZLLRelativeRotary element of the device
+                            if "rotaryevent" in convertedPayload:
+                                action = data.get("action", "")
+                                if action.startswith("dial_rotate_"):
+                                    # brightness_step_* is the canonical per-detent event; skip dial_rotate_* to avoid double-firing
+                                    return
+                                convertedPayload["direction"] = "counter_clock_wise" if "down" in action else "clock_wise"
+                                convertedPayload["rotary_step_size"] = data.get("action_step_size", 8)
+                                if "ZLLRelativeRotary" in device.elements and device.elements["ZLLRelativeRotary"]():
+                                    element = device.elements["ZLLRelativeRotary"]()
                             for key in convertedPayload.keys():
-                                if device.firstElement().state[key] != convertedPayload[key]:
-                                    device.firstElement().dxState[key] = current_time
-                            device.firstElement().state.update(convertedPayload)
+                                if key in element.state and element.state[key] != convertedPayload[key]:
+                                    element.dxState[key] = current_time
+                            element.state.update(convertedPayload)
                             logging.debug(convertedPayload)
-                            if "buttonevent" in convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001]:
-                                Thread(target=longPressButton, args=[device.firstElement(), convertedPayload["buttonevent"]]).start()
-                        rulesProcessor(device.firstElement(), current_time)
-                        checkBehaviorInstances(device)
+                            # zigbee2mqtt already repeats *_hold events for some models
+                            z2m_sends_hold_repeats = any(
+                                k.endswith("_hold") for k in standardSensors[device.modelid]["dataConversion"]
+                            )
+                            if "buttonevent" in convertedPayload and convertedPayload["buttonevent"] in [1001, 2001, 3001, 4001, 5001] and not z2m_sends_hold_repeats:
+                                Thread(target=longPressButton, args=[element, convertedPayload["buttonevent"]]).start()
+                            rulesProcessor(element, current_time)
+                            checkBehaviorInstances(device, element)
+                        else:
+                            rulesProcessor(device.firstElement(), current_time)
+                            checkBehaviorInstances(device)
                     elif device.group_v1 == "lights":
                         light = device.firstElement()
                         state = {"reachable": True}
@@ -512,7 +581,7 @@ def on_connect(client, userdata, flags, rc):
 
 def mqttServer():
 
-    logging.info("Strting MQTT service...")
+    logging.info("Starting MQTT service...")
     # ================= MQTT CLIENT Connection========================
     # Set user/password on client if supplied
 

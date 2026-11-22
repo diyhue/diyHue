@@ -79,6 +79,7 @@ class MqttSensorDiscoveryTests(unittest.TestCase):
         sensors_discover.addHueSecureContactSensor = Mock()
         sensors_types = types.ModuleType("sensors.sensor_types")
         sensors_types.sensorTypes = {}
+        sensors_types.MODEL_ALIASES = {}
 
         lights = package("lights")
         lights_discover = types.ModuleType("lights.discover")

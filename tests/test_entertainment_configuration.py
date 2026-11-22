@@ -99,6 +99,8 @@ class PlacementTests(unittest.TestCase):
         self.addCleanup(self.modules.stop)
         self.model = load("placement_model", "HueObjects/EntertainmentConfiguration.py")
         hue.EntertainmentConfiguration = self.model
+        # the loader creates the daylight sensor when sensors.yaml has none
+        hue.Sensor = types.SimpleNamespace(Sensor=lambda data: Mock(**{"id_v1": data["id_v1"]}))
         config_module = load("placement_config", "configManager/configHandler.py")
         self.config = config_module.Config()
         self.lamps = [Lamp(1), Lamp(2), Lamp(3, "LCX004")]

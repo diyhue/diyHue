@@ -61,7 +61,7 @@ class Sensor():
     def getV1Api(self):
         result = {}
         if self.modelid in sensorTypes:
-            result = sensorTypes[self.modelid][self.type]["static"]
+            result = deepcopy(sensorTypes[self.modelid][self.type]["static"])
         result["state"] = self.state
         if self.config != None:
             result["config"] = self.config

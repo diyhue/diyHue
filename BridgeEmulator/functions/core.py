@@ -77,8 +77,13 @@ def bridgeV2ProductData(config):
     identity = bridgeIdentity(config)
     software_version = identity["software_version"]
     if software_version is None:
+        # CLIP v2 product_data.software_version is <api major>.<api minor>.<build>,
+        # e.g. 1.72.1967054020 or, since Philips moved to 6.1, 6.1.1978418030.
         swversion = str(config["swversion"])
-        if len(swversion) == 10:
+        parts = [part for part in str(config.get("apiversion", "")).split(".") if part.isdigit()]
+        if len(parts) >= 2:
+            software_version = f"{parts[0]}.{parts[1]}.{swversion}"
+        elif len(swversion) == 10:
             software_version = f"{swversion[0]}.{swversion[1:3]}.{swversion[3:]}"
         else:
             software_version = swversion
@@ -656,7 +661,6 @@ def capabilities():
             "Europe/Istanbul",
             "Europe/Jersey",
             "Europe/Kaliningrad",
-            "Europe/Kiev",
             "Europe/Kirov",
             "Europe/Kyiv",
             "Europe/Lisbon",

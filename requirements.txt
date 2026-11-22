@@ -1,5 +1,5 @@
 astral
-ws4py
+ws4py>=0.6.0
 requests
 paho-mqtt
 email-validator
@@ -15,5 +15,5 @@ zeroconf==0.38.3
 flask_cors
 yeelight
 python-kasa==0.4.1
-bleak
+bleak>=0.21
 rgbxy

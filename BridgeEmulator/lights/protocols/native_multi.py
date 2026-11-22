@@ -52,7 +52,7 @@ def discover(detectedLights, device_ips):
                         logging.info(device_data['name'])
                         lightName = generate_light_name(device_data['name'], x)
                         protocol_cfg = {"ip": ip, "version": device_data["version"], "type": device_data["type"], "light_nr": x, "mac": device_data["mac"]}
-                        if device_data["modelid"] in ["LCX002", "915005987201", "LCX004"]:
+                        if device_data["modelid"] in ["LCX002", "915005987201", "LCX004", "LCX006"]:
                             protocol_cfg["points_capable"] = 5
                         detectedLights.append({"protocol": protocol, "name": lightName, "modelid": device_data["modelid"], "protocol_cfg": protocol_cfg})
 

@@ -22,11 +22,15 @@ def on_mdns_discover(zeroconf, service_type, name, state_change):
 def discover(detectedLights, elgato_ips):
     mdns_string = "_elgo._tcp.local."
     logging.info('<Elgato> mDNS discovery for ' + mdns_string + ' started')
+    # Start from scratch, otherwise every scan adds the same lights again.
+    discovered_lights.clear()
     ip_version = IPVersion.V4Only
     zeroconf = Zeroconf(ip_version=ip_version)
-    ServiceBrowser(zeroconf, mdns_string, handlers=[on_mdns_discover])
-
-    sleep(2)
+    try:
+        ServiceBrowser(zeroconf, mdns_string, handlers=[on_mdns_discover])
+        sleep(2)
+    finally:
+        zeroconf.close()
 
     if len(discovered_lights) == 0:
         # Didn't find anything using mdns, trying elgato_ips
@@ -46,8 +50,10 @@ def discover(detectedLights, elgato_ips):
     for device in discovered_lights:
         try:
             response = requests.get("http://"+ device[0] +":9123/elgato/accessory-info", timeout=3)
-            if response.status_code == 200:
-                json_accessory_info = json.loads(response.content)
+            if response.status_code != 200:
+                logging.warning("<Elgato> %s answered %s, skipping it", device[0], response.status_code)
+                continue
+            json_accessory_info = json.loads(response.content)
 
             logging.info("<Elgato> Found device: %s at IP %s" % (device[1], device[0]))
 
@@ -61,8 +67,8 @@ def discover(detectedLights, elgato_ips):
                                }
                             })
         except Exception as e:
+            # Keep going, one unreachable light shouldn't hide the others.
             logging.warning("<Elgato> EXCEPTION: " + str(e))
-            break
 
     for light in lights:
         detectedLights.append(light)
@@ -81,7 +87,7 @@ def set_light(light, data):
         light_state['on'] = 1 if data['on'] else 0
 
     if 'bri' in data and data['bri'] > 0:
-        light_state['brightness'] = round((data['bri'] / 255) * 100)
+        light_state['brightness'] = max(1, round((data['bri'] / 254) * 100))
 
     if 'ct' in data:
         light_state['temperature'] = translate_range(data['ct'], 153, 500, 143, 344)
@@ -103,7 +109,7 @@ def get_light_state(light):
         light_state_on = False
 
     converted_state = {
-        'bri': round((light_info['brightness']/100)*255),
+        'bri': max(1, round((light_info['brightness']/100)*254)),
         'on': light_state_on,
         'ct': translate_range(light_info['temperature'], 143, 344, 153, 500),
         'colormode': 'ct'

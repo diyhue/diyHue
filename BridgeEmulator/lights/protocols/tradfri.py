@@ -31,15 +31,15 @@ def set_light(light, data):
         if("hue" in data):
             hue = data["hue"]
         else:
-            hue = lights[light]["state"]["hue"]
+            hue = light.state["hue"]
         if("sat" in data):
             sat = data["sat"]
         else:
-            sat = lights[light]["state"]["sat"]
+            sat = light.state["sat"]
         if("bri" in data):
             bri = data["bri"]
         else:
-            bri = lights[light]["state"]["bri"]
+            bri = light.state["bri"]
         rgbValue = hsv_to_rgb(hue, sat, bri)
         xyValue = convert_rgb_xy(rgbValue[0], rgbValue[1], rgbValue[2])
         payload["5709"] = int(xyValue[0] * 65535)

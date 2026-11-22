@@ -13,6 +13,29 @@ logging = logManager.logger.get_logger(__name__)
 discovered_lights = []
 Connections = {}
 
+# Hue effect name -> WLED segment parameters (seg.fx/sx/ix/pal). fx/pal IDs
+# are WLED's real FX_MODE_*/palette constants (verified against WLED's
+# upstream FX.h) and aligned with the equivalent mapping in the netmindz
+# PhilipsHueV2 WLED usermod so all integration paths produce consistent
+# WLED effects. sx/ix are defaults used only when the request doesn't
+# supply dynamics.speed (for sx) -- see send_light_data().
+HUE_EFFECT_TO_WLED_FX = {
+    "no_effect":  {"fx": 0},                                     # Solid (FX_MODE_STATIC)
+    "none":       {"fx": 0},                                     # classic v1 API "off" value
+    "candle":     {"fx": 102, "sx": 128, "ix": 128, "pal": 2},    # Candle Multi (FX_MODE_CANDLE_MULTI) + Color 1 -- NOT plain Candle (88), which has a WLED bug: dereferences uninitialised data on first call after a mode change
+    "fire":       {"fx": 66,  "sx": 128, "ix": 128, "pal": 2},    # Fire 2012 (FX_MODE_FIRE_2012) + Color 1
+    "colorloop":  {"fx": 8,   "sx": 128, "ix": 128},              # Rainbow (FX_MODE_RAINBOW) -- classic v1 API "colorloop"; WLED has no effect literally named "Colorloop"
+    "sparkle":    {"fx": 20,  "sx": 128, "ix": 128, "pal": 2},    # Sparkle (FX_MODE_SPARKLE) + Color 1
+    "prism":      {"fx": 9,   "sx": 128, "ix": 128},              # Rainbow Cycle (FX_MODE_RAINBOW_CYCLE) -- uses its own colours
+    "opal":       {"fx": 2,   "sx": 60,  "ix": 100, "pal": 2},    # Breath (FX_MODE_BREATH) + Color 1, slow and gentle
+    "glisten":    {"fx": 80,  "sx": 180, "ix": 200, "pal": 2},    # Twinkle Fox (FX_MODE_TWINKLEFOX) + Color 1, faster/more intense per Hue's own description
+    "sunrise":    {"fx": 104, "sx": 128, "ix": 128},              # Sunrise (FX_MODE_SUNRISE) -- uses its own colours; this is the field name observed on the wire by sibling usermods
+    "sunbeam":    {"fx": 104, "sx": 128, "ix": 128},              # alias for "sunrise" in case the Bridge sends this name instead -- not advertised (see Light.py)
+    "cosmos":     {"fx": 2,   "sx": 40,  "ix": 128, "pal": 2},    # Breath (FX_MODE_BREATH) + Color 1, pulses base colour off<->full per Hue's description
+    "enchant":    {"fx": 51,  "sx": 100, "ix": 128, "pal": 2},    # Fairytwinkle (FX_MODE_FAIRYTWINKLE) + Color 1, whimsical multicolor twinkle
+    "underwater": {"fx": 101, "sx": 80,  "ix": 128},              # Pacifica (FX_MODE_PACIFICA) -- uses its own ocean-themed colours
+}
+
 
 def on_mdns_discover(zeroconf, service_type, name, state_change):
     global discovered_lights
@@ -28,7 +51,7 @@ def discover(detectedLights, device_ips):
     logging.info('<WLED> discovery started')
     ip_version = IPVersion.V4Only
     zeroconf = Zeroconf(ip_version=ip_version)
-    services = ["_http._tcp.local."]
+    services = "_http._tcp.local."
     browser = ServiceBrowser(zeroconf, services, handlers=[on_mdns_discover])
     sleep(2)
     if len(discovered_lights) == 0:
@@ -60,10 +83,12 @@ def discover(detectedLights, device_ips):
                                "modelid": modelid,
                                "protocol_cfg": {
                                    "ip": x.ip,
-                                   "ledCount": x.ledCount,
+                                   "ledCount": x.segments[segmentid]["len"],
                                    "mdns_name": device[1],
                                    "mac": x.mac,
-                                   "segmentId": segmentid
+                                   "segmentId": segmentid,
+                                   "segment_start": x.segments[segmentid]["start"],
+                                   "udp_port": x.udpPort
                                }
                                })
                 segmentid = segmentid + 1
@@ -100,9 +125,9 @@ def send_light_data(c, light, data):
         if k == "on":
             # Handle on/off at light level
             if v:
-                state["on"] = True
+                seg["on"] = True
             else:
-                state["on"] = False
+                seg["on"] = False
         elif k == "bri":
             seg["bri"] = v+1
         elif k == "ct":
@@ -112,6 +137,21 @@ def send_light_data(c, light, data):
         elif k == "xy":
             color = convert_xy(v[0], v[1], 255)
             seg["col"] = [[color[0], color[1], color[2]]]
+        elif k == "effect":
+            effect_cfg = HUE_EFFECT_TO_WLED_FX.get(v)
+            if effect_cfg is not None:
+                seg["fx"] = effect_cfg["fx"]
+                if "pal" in effect_cfg:
+                    seg["pal"] = effect_cfg["pal"]
+                speed = light.dynamics.get("speed")
+                if speed:
+                    seg["sx"] = round(clamp(speed, 0, 1) * 255)
+                elif "sx" in effect_cfg:
+                    seg["sx"] = effect_cfg["sx"]
+                if "ix" in effect_cfg:
+                    seg["ix"] = effect_cfg["ix"]
+            else:
+                logging.warning("<WLED> Unknown Hue effect '%s', ignoring", v)
         elif k == "alert" and v != "none":
             state = c.getSegState(light.protocol_cfg['segmentId'])
             c.setBriSeg(0, light.protocol_cfg['segmentId'])
@@ -172,20 +212,15 @@ class WledDevice:
 
     def getInitialState(self):
         self.state = self.getLightState()
-        self.getSegments()
-        self.getLedCount()
-        self.getMacAddr()
-
-    def getLedCount(self):
+        self.getInfo()
+    
+    def getInfo(self):
         self.ledCount = self.state['info']['leds']['count']
-
-    def getMacAddr(self):
         self.mac = ':'.join(self.state[
                             'info']['mac'][i:i+2] for i in range(0, 12, 2))
-
-    def getSegments(self):
         self.segments = self.state['state']['seg']
         self.segmentCount = len(self.segments)
+        self.udpPort = self.state['info']['udpport']
 
     def getLightState(self):
         with urllib.request.urlopen(self.url + '/json') as resp:
@@ -196,9 +231,10 @@ class WledDevice:
         state = {}
         data = self.getLightState()['state']
         seg = data['seg'][seg]
-        state['bri'] = seg['bri']
-        state['on'] = data['on'] # Get on/off at light level
-        state['bri'] = seg['bri']
+        # send_light_data sends Hue's 1-254 as bri + 1, so undo that and keep the
+        # value in Hue's range (WLED's 255 would otherwise come back as 255).
+        state['bri'] = clamp(seg['bri'] - 1, 1, 254)
+        state['on'] = seg['on']
         # Weird division by zero when a color is 0
         r = int(seg['col'][0][0])+1
         g = int(seg['col'][0][1])+1

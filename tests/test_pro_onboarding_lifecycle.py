@@ -52,6 +52,7 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
         bridge_config = types.SimpleNamespace(
             yaml_config=self.yaml_config,
             save_config=Mock(),
+            mark_dirty=Mock(),
         )
 
         # Use diyHue's real ApiUser serialization contract.  This lets the
@@ -295,7 +296,9 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(wrong_credential.status_code, 403)
+        # Devices that pair through the v2 flow (HDMI Sync Box) authenticate
+        # with the client key, so it is accepted too (ApiUser.matches_key).
+        self.assertEqual(wrong_credential.status_code, 200)
 
 
     def test_fresh_pro_registration_survives_restart(self):
@@ -447,9 +450,11 @@ class ProOnboardingLifecycleTests(unittest.TestCase):
             },
         )
 
+        # Devices that pair through the v2 flow (HDMI Sync Box) authenticate
+        # with the client key, so it is accepted too (ApiUser.matches_key).
         self.assertEqual(
             wrong_credential.status_code,
-            403,
+            200,
         )
 
 

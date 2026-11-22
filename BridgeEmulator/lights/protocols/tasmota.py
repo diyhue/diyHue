@@ -52,7 +52,7 @@ def set_light(light, data, rgb = None):
             color = {}
         elif key == "xy":
             if rgb:
-                color = rgbBrightness(rgb, light["state"]["bri"])
+                color = rgbBrightness(rgb, light.state["bri"])
             else:
                 color = convert_xy(value[0], value[1], light.state["bri"])
             sendRequest ("http://"+light.protocol_cfg["ip"]+"/cm?cmnd=Color%20" + str(color[0]) + "," + str(color[1]) + "," + str(color[2]))
@@ -62,10 +62,24 @@ def set_light(light, data, rgb = None):
 
 
 def hex_to_rgb(value):
+    """Return [r, g, b] from a Tasmota hex color.
+
+    Tasmota appends white channels to the hex string (RRGGBBWW, RRGGBBCCWW),
+    so only the first three byte pairs are the RGB part.
+    """
     value = value.lstrip('#')
-    lv = len(value)
-    tup = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-    return list(tup)
+    return [int(value[i:i + 2], 16) for i in (0, 2, 4)]
+
+
+def color_to_rgb(value):
+    """Return [r, g, b] from the "Color" field of a Tasmota status.
+
+    It is a hex string by default and comma separated decimals with
+    SetOption17 1, both possibly followed by white channels.
+    """
+    if "," in value:
+        return [int(channel) for channel in value.split(",")[:3]]
+    return hex_to_rgb(value)
 
 
 def rgb_to_hex(rgb):
@@ -96,15 +110,8 @@ def get_light_state(light):
     else:
         #logging.debug('Color')
         #logging.debug(light_data["Color"])
-        if "," in light_data["Color"]:
-            # RGB
-            rgb = light_data["Color"].split(",")
-            state["xy"] = convert_rgb_xy(int(rgb[0],16), int(rgb[1],16), int(rgb[2],16))
-        else:
-            # HEX
-            hex = light_data["Color"]
-            rgb = hex_to_rgb(hex)
-            state["xy"] = convert_rgb_xy(rgb[0],rgb[1],rgb[2])
+        rgb = color_to_rgb(light_data["Color"])
+        state["xy"] = convert_rgb_xy(rgb[0], rgb[1], rgb[2])
 
         state["bri"] = int(light_data["Dimmer"] / 100.0 * 254.0)
         state["colormode"] = "xy"

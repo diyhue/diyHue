@@ -78,6 +78,7 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
 
         requests = types.ModuleType("requests")
         requests.get = Mock()
+        requests.RequestException = Exception
         self.requests_get = requests.get
 
         flask_ui = types.ModuleType("flaskUI")
@@ -154,7 +155,7 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.assertEqual(device["product_data"]["model_id"], "BSB002")
         self.assertEqual(device["product_data"]["product_archetype"], "bridge_v2")
         self.assertEqual(device["product_data"]["product_name"], "Philips hue")
-        self.assertEqual(device["product_data"]["software_version"], "1.97.2076030")
+        self.assertEqual(device["product_data"]["software_version"], "1.97.1972076030")
 
     def test_bridge_owned_zigbee_connectivity_is_classic_only(self):
         # Physical BSB003 resource graphs do not contain a
@@ -189,6 +190,8 @@ class BridgeProfileSurfaceTests(unittest.TestCase):
         self.requests_get.return_value = types.SimpleNamespace(
             status_code=200,
             text='{"updates": []}',
+            raise_for_status=lambda: None,
+            json=lambda: {"updates": []},
         )
         self.updates.versionCheck()
         self.requests_get.assert_called_once_with(

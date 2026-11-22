@@ -58,7 +58,7 @@ lightTypes["LTW001"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": 
 ## Hue Iris
 lightTypes["LLC010"] = {"v1_static": {"type": "Color Gamut light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.104.2"}}
 lightTypes["LLC010"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
-lightTypes["LLC010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.215,0.711],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 600,"mindimlevel": 5000},"streaming": {"renderer": False,"proxy": False}}
+lightTypes["LLC010"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.704,0.296],[0.215,0.711],[0.138,0.08]],"colorgamuttype": "A","maxlumen": 600,"mindimlevel": 5000},"streaming": {"renderer": True,"proxy": True}}
 lightTypes["LLC010"]["config"] = {"archetype": "hueiris","function": "functional","direction": "omnidirectional", "startup":{"mode":"safety","configured":True}}
 lightTypes["LLC010"]["device"] = {"certified": True, "manufacturer_name": "Signify Netherlands B.V.", "product_archetype": "hueiris", "product_name": "Dimmable light", "software_version": "1.76.6"}
 lightTypes["LLC010"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none", "hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0, "xy": [0.408,0.517]}
@@ -95,7 +95,7 @@ lightTypes["LCX004"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": 
 lightTypes["LCX006"] = {"v1_static": {"type": "Extended color light", "manufacturername": "Signify Netherlands B.V.", "productname": "Hue gradient lightstrip","swversion": "1.94.2","swconfigid": "DC0A18AF","productid": "4422-9482-0441_HG01_PSU03"}}
 lightTypes["LCX006"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2022-01-13T22:54:51"}
 lightTypes["LCX006"]["v1_static"]["capabilities"] = {"certified": True,"control": {"mindimlevel": 100,"maxlumen": 1600,"colorgamuttype": "C","colorgamut": [[0.6915,0.3083],[0.1700,0.7000],[0.1532,0.0475]],"ct": {"min": 153,"max": 500}},"streaming": {"renderer": True,"proxy": True}}
-lightTypes["LCX006"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "LCX004","product_archetype": "hue_lightstrip","product_name": "Hue gradient lightstrip","software_version": "1.94.2"}
+lightTypes["LCX006"]["device"] = {"certified": True,"hardware_platform_type": "100b-118","manufacturer_name": "Signify Netherlands B.V.","model_id": "LCX006","product_archetype": "hue_lightstrip","product_name": "Hue gradient lightstrip","software_version": "1.94.2"}
 lightTypes["LCX006"]["state"] = {"on": False, "bri": 254,"hue": 8417,"sat": 140,"effect": "none","xy": [0.0,0.0],"ct": 366,"alert": "select","colormode": "ct","mode": "homeautomation","reachable": True, "gradient": {"points": []}}
 lightTypes["LCX006"]["config"] = {"archetype": "huelightstrip", "function": "mixed", "direction": "omnidirectional","startup": {"mode": "safety","configured": False}}
 lightTypes["LCX006"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
@@ -125,6 +125,15 @@ lightTypes["LOM010"]["device"] = {"certified": True,"manufacturer_name": "Signif
 lightTypes["LOM010"]["state"] = {"on": False,"alert": "select","mode": "homeautomation","reachable": True}
 lightTypes["LOM010"]["config"] = {"archetype": "plug","function": "functional","direction": "omnidirectional","startup":{"mode": "safety","configured": True}}
 lightTypes["LOM010"]["dynamics"] = {"status": "none", "status_values": ["none"]}
+
+# Hue Spot
+lightTypes["LCG001"] = {"v1_static": {"type":"Extended color light", "manufacturername": "Signify Netherlands B.V.", "swversion": "1.104.2"}}
+lightTypes["LCG001"]["v1_static"]["swupdate"] = {"state": "noupdates","lastinstall": "2020-12-09T19:13:52"}
+lightTypes["LCG001"]["v1_static"]["capabilities"] = {"certified": True,"control": {"colorgamut": [[0.675,0.322],[0.409,0.518],[0.167,0.04]],"colorgamuttype": "B","ct": {"max": 500,"min": 153},"maxlumen": 600,"mindimlevel": 5000},"streaming": {"proxy": False,"renderer": True}}
+lightTypes["LCG001"]["device"] = {"certified": True,"manufacturer_name": "Signify Netherlands B.V.","product_archetype": "sultan_bulb","product_name": "Hue color spot","software_version": "1.104.2"}
+lightTypes["LCG001"]["state"] = {"alert": "none", "bri":0, "colormode": "xy", "effect": "none","hue": 0, "mode": "homeautomation","on": False,"reachable": True, "sat": 0,"xy": [0.408,0.517]}
+lightTypes["LCG001"]["config"] = {"archetype": "sultanbulb","direction": "omnidirectional","function": "mixed","startup": {"configured": True, "mode": "safety"}}
+lightTypes["LCG001"]["dynamics"] = {"speed": 0, "speed_valid": False, "status": "none", "status_values": ["none", "dynamic_palette"]}
 
 
 archetype = {"tableshade":"table_shade",

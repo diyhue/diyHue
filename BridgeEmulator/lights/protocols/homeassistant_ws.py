@@ -1,5 +1,5 @@
 import logManager
-from services.homeAssistantWS import connect_if_required, latest_states
+from services.homeAssistantWS import connect_and_authenticate, connect_if_required, latest_states
 from pprint import pprint
 logging = logManager.logger.get_logger(__name__)
 
@@ -74,7 +74,11 @@ def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state, ha_sta
     return diyhue_state
 
 def set_light(light, data):
-    connection = connect_if_required()
+    from services.homeAssistantWS import assert_command_allowed
+    assert_command_allowed(light)
+    connection = connect_and_authenticate()
+    if connection is None:
+        raise ConnectionError("Home Assistant WebSocket is not connected or not authorised")
     connection.change_light(light, data)
 
 def get_light_state(light):

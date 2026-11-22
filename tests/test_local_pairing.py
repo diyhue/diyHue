@@ -30,6 +30,7 @@ class LocalPairingTests(unittest.TestCase):
         bridge_config = types.SimpleNamespace(
             yaml_config={"config": self.config, "apiUsers": {}},
             save_config=Mock(),
+            mark_dirty=Mock(),
         )
 
         class ApiUser:
@@ -95,7 +96,7 @@ class LocalPairingTests(unittest.TestCase):
         rejected = self.post_registration()
         self.assertEqual(rejected.status_code, 200)
         self.assertEqual(rejected.json[0]["error"]["type"], 101)
-        self.bridge_config.save_config.assert_not_called()
+        self.bridge_config.mark_dirty.assert_not_called()
 
         pressLinkButton(self.config)
         accepted = self.post_registration()
@@ -104,7 +105,8 @@ class LocalPairingTests(unittest.TestCase):
         self.assertTrue(success["username"])
         self.assertTrue(success["clientkey"])
         self.assertIn(success["username"], self.bridge_config.yaml_config["apiUsers"])
-        self.bridge_config.save_config.assert_called_once()
+        # persisted by the debounced config writer
+        self.bridge_config.mark_dirty.assert_called_once_with("config")
 
         # API credentials are returned only to the requesting client, never
         # emitted through the registration logger.

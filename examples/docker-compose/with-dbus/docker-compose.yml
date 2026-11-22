@@ -1,0 +1,15 @@
+version: '3'
+services:
+  diyhue:
+    container_name: diyhue
+    image: diyhue/core:latest
+    volumes:
+      - ./diyHue:/opt/hue-emulator/config
+      - /run/dbus:/run/dbus:ro # set this to /var/run/dbus:/run/dbus:ro if the host system uses /var/run/dbus
+    restart: always
+    privileged: true
+    environment:
+      - DEBUG=false
+      - MAC=dc:a6:32:xx:xx:xx # Hue app will not pair if MAC and IP variable are not set correctly. Must be the mac of the host main interface
+      - IP=192.168.x.x   
+      - TZ=Europe/Berlin
