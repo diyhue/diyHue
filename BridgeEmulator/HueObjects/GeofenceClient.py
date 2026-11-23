@@ -39,7 +39,7 @@ class GeofenceClient():
                 setattr(self, key, value)
 
         streamMessage = {
-            "creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [self.getV2GeofenceClient()],
             "id": str(uuid.uuid4()),
             "type": "update"

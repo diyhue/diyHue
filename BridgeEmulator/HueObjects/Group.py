@@ -123,7 +123,7 @@ class Group():
             else:
                 setattr(self, key, value)
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
                          "id": str(uuid.uuid4()),
                          "type": "update"
