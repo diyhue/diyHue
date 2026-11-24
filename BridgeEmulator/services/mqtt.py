@@ -523,6 +523,14 @@ def on_message(client, userdata, msg):
                         for measurement in ("power", "voltage", "current", "energy"):
                             if measurement in data and isinstance(data[measurement], (int, float)):
                                 state[measurement] = data[measurement]
+                        if "child_lock" in data:
+                            state["childlock"] = data["child_lock"] == "ON"
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
                         device.state.update(state)
                         streamGroupEvent(device, v2State)
 

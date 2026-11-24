@@ -46,6 +46,8 @@ def set_light(light, data):
                 payload['transition'] = value / 10
             if key == "effect":
                 payload["effect"] = value
+            if key == "childlock":
+                payload["child_lock"] = "ON" if value else "OFF"
         if colorFromHsv:
             color = hsv_to_rgb(data['hue'], data['sat'], light.state["bri"])
             payload['color'] = { 'r': color[0], 'g': color[1], 'b': color[2] }
