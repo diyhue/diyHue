@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from sensors.discover import addHueMotionSensor
-from sensors.sensor_types import sensorTypes, MODEL_ALIASES
+from sensors.sensor_types import sensorTypes, MODEL_ALIASES, MOTION_SENSOR_MODELS
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 from functions.behavior_instance import checkBehaviorInstances
@@ -28,8 +28,21 @@ discoveryPrefix = "homeassistant"
 latestStates = {}
 discoveredDevices = {}
 
+# Zigbee2MQTT publishes its device list, its log and its state topics under its
+# own base topic (Zigbee2MQTT: "base_topic", default "zigbee2mqtt"). A bridge
+# that talks to an installation with a different base topic would never see
+# the device list, so the base topic is configurable via mqtt.baseTopic.
+DEFAULT_Z2M_BASE_TOPIC = "zigbee2mqtt"
 
-motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001"]
+
+def getBaseTopic():
+    """Return the Zigbee2MQTT base topic (config mqtt.baseTopic, default "zigbee2mqtt")."""
+    mqtt_config = (bridgeConfig.get("config") or {}).get("mqtt") or {}
+    topic = str(mqtt_config.get("baseTopic") or DEFAULT_Z2M_BASE_TOPIC).strip("/")
+    return topic or DEFAULT_Z2M_BASE_TOPIC
+
+
+motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001", "SML002", "SML003"]
 standardSensors = {
     "TRADFRI remote control": {
         "dataConversion": {
@@ -190,6 +203,16 @@ standardSensors = {
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
+# Hue Secure contact sensor: Zigbee2MQTT sends `contact` (true = magnet in
+# place, i.e. closed), Hue's CLIPOpenClose sensor reports `open`.
+standardSensors["SOC001"] = {
+    "dataConversion": {
+        "rootKey": "contact",
+        True: {"open": False},
+        False: {"open": True},
+    }
+}
+
 # Register the same model aliases used in sensorTypes so that MQTT auto-discovery
 # can look up MQTT action mappings by the same alternative model IDs.
 for _alias, _canonical in MODEL_ALIASES.items():
@@ -245,12 +268,12 @@ def getObject(friendly_name):
             for key, device in bridgeConfig[resource].items():
                 if device.protocol == "mqtt":
                     if "friendly_name" in device.protocol_cfg and device.protocol_cfg["friendly_name"] == friendly_name:
-                        if device.modelid == "SML001" and device.type != "ZLLPresence":
+                        if device.modelid in MOTION_SENSOR_MODELS and device.type != "ZLLPresence":
                             continue
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
                         return device
-                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
+                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == getBaseTopic() + "/" + friendly_name:
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
                         return device
@@ -327,9 +350,17 @@ def on_message(client, userdata, msg):
             logging.debug("MQTT: got state message on " + msg.topic)
             data = json.loads(msg.payload)
             logging.debug(msg.payload)
-            if msg.topic.startswith(discoveryPrefix + "/light/"):
+            switch_topic = msg.topic.startswith(discoveryPrefix + "/switch/")
+            # Only the main switch entity of a device is a socket; the same
+            # devices also announce child_lock, led_indication or permit_join
+            # entities that must not become lights.
+            if msg.topic.startswith(discoveryPrefix + "/light/") or (
+                    switch_topic and msg.topic.split("/")[-2] == "switch"):
+                # Zigbee2MQTT announces sockets (smart plugs) as HA switch
+                # entities; they carry the same command/state topics as a light,
+                # so the light path turns them into a Hue on/off plug.
                 on_autodiscovery_light(msg)
-            elif msg.topic == "zigbee2mqtt/bridge/devices":
+            elif msg.topic == getBaseTopic() + "/bridge/devices":
                 for key in data:
                     if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
                         # Check by IEEE address first to catch sensors registered under a stale friendly name
@@ -382,10 +413,10 @@ def on_message(client, userdata, msg):
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["model_id"] in motionSensors:
                                     logging.info("MQTT: add new motion sensor " + key["model_id"])
-                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
+                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]}, key["model_id"])
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
-            elif msg.topic == "zigbee2mqtt/bridge/log":
+            elif msg.topic == getBaseTopic() + "/bridge/log":
                 light = getObject(data["meta"]["friendly_name"])
                 if data["type"] == "device_announced":
                     if light.config["startup"]["mode"] == "powerfail":
@@ -442,7 +473,12 @@ def on_message(client, userdata, msg):
                                 requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": device.name}, timeout=10)
                                 bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
                         elif device.modelid in standardSensors:
-                            convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
+                            conversion = standardSensors[device.modelid]["dataConversion"]
+                            # Battery or link quality messages carry no action
+                            # value; those must not abort the update.
+                            value = data.get(conversion["rootKey"])
+                            if value in conversion:
+                                convertedPayload.update(conversion[value])
                         # For RDM002: extract rotation direction and route rotary events to ZLLRelativeRotary
                         if "rotaryevent" in convertedPayload:
                             action = data.get("action", "")
@@ -482,6 +518,20 @@ def on_message(client, userdata, msg):
                             state["bri"] = data["brightness"]
                             v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
                             device.genStreamEvent(v2State)
+                        # Smart plugs report their measurements; keep them in the
+                        # light state so the WebUI can show them.
+                        for measurement in ("power", "voltage", "current", "energy"):
+                            if measurement in data and isinstance(data[measurement], (int, float)):
+                                state[measurement] = data[measurement]
+                        if "child_lock" in data:
+                            # Tuya plugs report LOCK/UNLOCK, some report ON/OFF.
+                            state["childlock"] = str(data["child_lock"]).upper() in ("LOCK", "ON", "TRUE")
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
+                        if "child_lock" in data:
+                            state["child_lock"] = data["child_lock"]
                         device.state.update(state)
                         streamGroupEvent(device, v2State)
 
@@ -514,10 +564,13 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     # Start autodetection on lights
     autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
+    baseTopic = getBaseTopic()
     client.subscribe(autodiscoveryTopic)
-    client.subscribe("zigbee2mqtt/+")
-    client.subscribe("zigbee2mqtt/bridge/devices")
-    client.subscribe("zigbee2mqtt/bridge/log")
+    # Zigbee2MQTT announces sockets (smart plugs) as HA "switch" entities.
+    client.subscribe(discoveryPrefix + "/switch/+/+/config")
+    client.subscribe(baseTopic + "/+")
+    client.subscribe(baseTopic + "/bridge/devices")
+    client.subscribe(baseTopic + "/bridge/log")
 
 def mqttServer():
 
@@ -530,6 +583,8 @@ def mqttServer():
 
     if bridgeConfig["config"]["mqtt"]['discoveryPrefix'] is not None:
         discoveryPrefix = bridgeConfig["config"]["mqtt"]['discoveryPrefix']
+    if not bridgeConfig["config"]["mqtt"].get("baseTopic"):
+        bridgeConfig["config"]["mqtt"]["baseTopic"] = DEFAULT_Z2M_BASE_TOPIC
 
     # defaults for TLS and certs
     if 'mqttCaCerts' not in bridgeConfig["config"]["mqtt"]:

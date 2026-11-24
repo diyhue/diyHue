@@ -47,6 +47,66 @@ sensorTypes["SML001"] = {
     }
 }
 
+# Hue motion sensor, second hardware revision (model 9290030675).
+# Same three sub-sensors as SML001, but its own model id so apps and the
+# firmware metadata stay accurate.
+sensorTypes["SML002"] = {
+    "ZLLTemperature": {
+        "state": {"temperature": 2100, "lastupdated": "none"},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "ledindication": False, "usertest": False, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue temperature sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": False}}
+    },
+    "ZLLPresence": {
+        "state": {"lastupdated": "none", "presence": None},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue motion sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": True}}
+    },
+    "ZLLLightLevel": {
+        "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "tholddark": 9346, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue ambient light sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": False}}
+    }
+}
+
+# Hue motion sensor, current hardware revision (model 9290030675).
+sensorTypes["SML003"] = {
+    "ZLLTemperature": {
+        "state": {"temperature": 2100, "lastupdated": "none"},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "ledindication": False, "usertest": False, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue temperature sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": False}}
+    },
+    "ZLLPresence": {
+        "state": {"lastupdated": "none", "presence": None},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "ledindication": False, "usertest": False, "sensitivity": 2, "sensitivitymax": 2, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue motion sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": True}}
+    },
+    "ZLLLightLevel": {
+        "state": {"dark": True, "daylight": False, "lightlevel": 6000, "lastupdated": "none"},
+        "config": {"on": False, "battery": 100, "reachable": True, "alert": "none", "tholddark": 9346, "tholdoffset": 7000, "ledindication": False, "usertest": False, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2021-03-16T21:16:40Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue ambient light sensor", "swversion": "6.1.1.27575", "capabilities": {"certified": True, "primary": False}}
+    }
+}
+
+# Motion sensor revisions that share the same behaviour (presence, ambient
+# light and temperature) and therefore the same handling in the bridge.
+MOTION_SENSOR_MODELS = ("SML001", "SML002", "SML003")
+
+# Hue Secure contact sensor (Zigbee model 9290035639). Zigbee2MQTT reports the
+# state as `contact`, where true means the magnet is in place (door/window
+# closed). Hue exposes the same information as a CLIPOpenClose sensor with
+# `open`, so the MQTT service inverts the value.
+sensorTypes["SOC001"] = {
+    "CLIPOpenClose": {
+        "state": {"open": False, "lastupdated": "none"},
+        "config": {"on": True, "battery": 100, "reachable": True, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2024-01-01T00:00:00Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue contact sensor", "swversion": "1.0.1", "capabilities": {"certified": True, "primary": True}}
+    }
+}
+
+# Contact sensors report their state through the standardSensors value mapping,
+# so only the model list is needed here.
+CONTACT_SENSOR_MODELS = ("SOC001",)
+
 # Hue tap dial switch — 4 physical buttons (ZLLSwitch) + rotary encoder (ZLLRelativeRotary)
 sensorTypes["RDM002"] = {
     "ZLLSwitch": {

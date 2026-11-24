@@ -265,7 +265,7 @@ class Config:
                 "Hue Essentials key": str(uuid.uuid1()).replace('-', ''),
                 "discovery": True,
                 "scanonhostip": False,
-                "mqtt":{"enabled":False},
+                "mqtt":{"enabled":False,"baseTopic":"zigbee2mqtt"},
                 "deconz":{"enabled":False},
                 "alarm":{"enabled": False,"lasttriggered": 0},
                 "port":{"enabled": False,"ports": [80]},
