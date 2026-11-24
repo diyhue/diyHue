@@ -203,6 +203,16 @@ standardSensors = {
 
 # WXKG01LM MiJia wireless switch https://www.zigbee2mqtt.io/devices/WXKG01LM.html
 
+# Hue Secure contact sensor: Zigbee2MQTT sends `contact` (true = magnet in
+# place, i.e. closed), Hue's CLIPOpenClose sensor reports `open`.
+standardSensors["SOC001"] = {
+    "dataConversion": {
+        "rootKey": "contact",
+        True: {"open": False},
+        False: {"open": True},
+    }
+}
+
 # Register the same model aliases used in sensorTypes so that MQTT auto-discovery
 # can look up MQTT action mappings by the same alternative model IDs.
 for _alias, _canonical in MODEL_ALIASES.items():
@@ -455,7 +465,12 @@ def on_message(client, userdata, msg):
                                 requests.post("https://diyhue.org/cdn/mailNotify.php", json={"to": bridgeConfig["config"]["alarm"]["email"], "sensor": device.name}, timeout=10)
                                 bridgeConfig["config"]["alarm"]["lasttriggered"] = int(current_time.timestamp())
                         elif device.modelid in standardSensors:
-                            convertedPayload.update(standardSensors[device.modelid]["dataConversion"][data[standardSensors[device.modelid]["dataConversion"]["rootKey"]]])
+                            conversion = standardSensors[device.modelid]["dataConversion"]
+                            # Battery or link quality messages carry no action
+                            # value; those must not abort the update.
+                            value = data.get(conversion["rootKey"])
+                            if value in conversion:
+                                convertedPayload.update(conversion[value])
                         # For RDM002: extract rotation direction and route rotary events to ZLLRelativeRotary
                         if "rotaryevent" in convertedPayload:
                             action = data.get("action", "")

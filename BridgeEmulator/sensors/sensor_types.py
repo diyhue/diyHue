@@ -91,6 +91,22 @@ sensorTypes["SML003"] = {
 # light and temperature) and therefore the same handling in the bridge.
 MOTION_SENSOR_MODELS = ("SML001", "SML002", "SML003")
 
+# Hue Secure contact sensor (Zigbee model 9290035639). Zigbee2MQTT reports the
+# state as `contact`, where true means the magnet is in place (door/window
+# closed). Hue exposes the same information as a CLIPOpenClose sensor with
+# `open`, so the MQTT service inverts the value.
+sensorTypes["SOC001"] = {
+    "CLIPOpenClose": {
+        "state": {"open": False, "lastupdated": "none"},
+        "config": {"on": True, "battery": 100, "reachable": True, "pending": []},
+        "static": {"swupdate": {"state": "noupdates", "lastinstall": "2024-01-01T00:00:00Z"}, "manufacturername": "Signify Netherlands B.V.", "productname": "Hue contact sensor", "swversion": "1.0.1", "capabilities": {"certified": True, "primary": True}}
+    }
+}
+
+# Contact sensors report their state through the standardSensors value mapping,
+# so only the model list is needed here.
+CONTACT_SENSOR_MODELS = ("SOC001",)
+
 # Hue tap dial switch — 4 physical buttons (ZLLSwitch) + rotary encoder (ZLLRelativeRotary)
 sensorTypes["RDM002"] = {
     "ZLLSwitch": {

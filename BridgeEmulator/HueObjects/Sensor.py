@@ -1,6 +1,6 @@
 import uuid
 import logManager
-from sensors.sensor_types import sensorTypes, MOTION_SENSOR_MODELS
+from sensors.sensor_types import sensorTypes, MOTION_SENSOR_MODELS, CONTACT_SENSOR_MODELS
 from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -174,6 +174,35 @@ class Sensor():
                     "rtype": "temperature"
                 }]
             result["type"] = "device"
+        elif self.modelid in CONTACT_SENSOR_MODELS and self.type == "CLIPOpenClose":
+            result = {"id": self.v2DeviceId(), "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["product_data"] = {
+                "certified": True,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "model_id": self.modelid,
+                "product_archetype": "unknown_archetype",
+                "product_name": "Hue contact sensor",
+                "software_version": "1.0.1"
+            }
+            result["services"] = [
+                {
+                    "rid": self.v2ServiceId('contact'),
+                    "rtype": "contact"
+                },
+                {
+                    "rid": self.v2ServiceId('device_power'),
+                    "rtype": "device_power"
+                },
+                {
+                    "rid": self.v2ServiceId('zigbee_connectivity'),
+                    "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
         elif self.modelid == "RWL022" or self.modelid == "RWL021" or self.modelid == "RWL020":
             result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
             result["identify"] = {}
@@ -275,7 +304,27 @@ class Sensor():
                 },
                 "type": "motion"}
         return result
-    
+
+    def getContact(self):
+        result = None
+        if self.modelid in CONTACT_SENSOR_MODELS and self.type == "CLIPOpenClose":
+            result = {
+                "enabled": self.config["on"],
+                "id": self.v2ServiceId('contact'),
+                "id_v1": "/sensors/" + self.id_v1,
+                "contact": {
+                    "contact_report": {
+                        "changed": self.state["lastupdated"],
+                        "state": "NO_CONTACT" if self.state["open"] else "CONTACT",
+                    }
+                },
+                "owner": {
+                    "rid": self.v2DeviceId(),
+                    "rtype": "device"
+                },
+                "type": "contact"}
+        return result
+
     def getTemperature(self):
         result = None
         if self.modelid in MOTION_SENSOR_MODELS and self.type == "ZLLTemperature":
