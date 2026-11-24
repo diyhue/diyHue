@@ -28,6 +28,19 @@ discoveryPrefix = "homeassistant"
 latestStates = {}
 discoveredDevices = {}
 
+# Zigbee2MQTT publishes its device list, its log and its state topics under its
+# own base topic (Zigbee2MQTT: "base_topic", default "zigbee2mqtt"). A bridge
+# that talks to an installation with a different base topic would never see
+# the device list, so the base topic is configurable via mqtt.baseTopic.
+DEFAULT_Z2M_BASE_TOPIC = "zigbee2mqtt"
+
+
+def getBaseTopic():
+    """Return the Zigbee2MQTT base topic (config mqtt.baseTopic, default "zigbee2mqtt")."""
+    mqtt_config = (bridgeConfig.get("config") or {}).get("mqtt") or {}
+    topic = str(mqtt_config.get("baseTopic") or DEFAULT_Z2M_BASE_TOPIC).strip("/")
+    return topic or DEFAULT_Z2M_BASE_TOPIC
+
 
 motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001"]
 standardSensors = {
@@ -250,7 +263,7 @@ def getObject(friendly_name):
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
                         return device
-                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == "zigbee2mqtt/" + friendly_name:
+                    elif "state_topic" in device.protocol_cfg and device.protocol_cfg["state_topic"] == getBaseTopic() + "/" + friendly_name:
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
                         return device
@@ -329,7 +342,7 @@ def on_message(client, userdata, msg):
             logging.debug(msg.payload)
             if msg.topic.startswith(discoveryPrefix + "/light/"):
                 on_autodiscovery_light(msg)
-            elif msg.topic == "zigbee2mqtt/bridge/devices":
+            elif msg.topic == getBaseTopic() + "/bridge/devices":
                 for key in data:
                     if "model_id" in key and (key["model_id"] in standardSensors or key["model_id"] in motionSensors): # Sensor is supported
                         # Check by IEEE address first to catch sensors registered under a stale friendly name
@@ -385,7 +398,7 @@ def on_message(client, userdata, msg):
                                     addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
-            elif msg.topic == "zigbee2mqtt/bridge/log":
+            elif msg.topic == getBaseTopic() + "/bridge/log":
                 light = getObject(data["meta"]["friendly_name"])
                 if data["type"] == "device_announced":
                     if light.config["startup"]["mode"] == "powerfail":
@@ -514,10 +527,11 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     # Start autodetection on lights
     autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
+    baseTopic = getBaseTopic()
     client.subscribe(autodiscoveryTopic)
-    client.subscribe("zigbee2mqtt/+")
-    client.subscribe("zigbee2mqtt/bridge/devices")
-    client.subscribe("zigbee2mqtt/bridge/log")
+    client.subscribe(baseTopic + "/+")
+    client.subscribe(baseTopic + "/bridge/devices")
+    client.subscribe(baseTopic + "/bridge/log")
 
 def mqttServer():
 
@@ -530,6 +544,8 @@ def mqttServer():
 
     if bridgeConfig["config"]["mqtt"]['discoveryPrefix'] is not None:
         discoveryPrefix = bridgeConfig["config"]["mqtt"]['discoveryPrefix']
+    if not bridgeConfig["config"]["mqtt"].get("baseTopic"):
+        bridgeConfig["config"]["mqtt"]["baseTopic"] = DEFAULT_Z2M_BASE_TOPIC
 
     # defaults for TLS and certs
     if 'mqttCaCerts' not in bridgeConfig["config"]["mqtt"]:
