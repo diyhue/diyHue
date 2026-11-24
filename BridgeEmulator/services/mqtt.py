@@ -350,7 +350,10 @@ def on_message(client, userdata, msg):
             logging.debug("MQTT: got state message on " + msg.topic)
             data = json.loads(msg.payload)
             logging.debug(msg.payload)
-            if msg.topic.startswith(discoveryPrefix + "/light/"):
+            if msg.topic.startswith(discoveryPrefix + "/light/") or msg.topic.startswith(discoveryPrefix + "/switch/"):
+                # Zigbee2MQTT announces sockets (smart plugs) as HA switch
+                # entities; they carry the same command/state topics as a light,
+                # so the light path turns them into a Hue on/off plug.
                 on_autodiscovery_light(msg)
             elif msg.topic == getBaseTopic() + "/bridge/devices":
                 for key in data:
@@ -544,6 +547,8 @@ def on_connect(client, userdata, flags, rc):
     autodiscoveryTopic = discoveryPrefix + "/light/+/light/config" # + in topic is wildcard
     baseTopic = getBaseTopic()
     client.subscribe(autodiscoveryTopic)
+    # Zigbee2MQTT announces sockets (smart plugs) as HA "switch" entities.
+    client.subscribe(discoveryPrefix + "/switch/+/+/config")
     client.subscribe(baseTopic + "/+")
     client.subscribe(baseTopic + "/bridge/devices")
     client.subscribe(baseTopic + "/bridge/log")
