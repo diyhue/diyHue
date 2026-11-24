@@ -524,7 +524,8 @@ def on_message(client, userdata, msg):
                             if measurement in data and isinstance(data[measurement], (int, float)):
                                 state[measurement] = data[measurement]
                         if "child_lock" in data:
-                            state["childlock"] = data["child_lock"] == "ON"
+                            # Tuya plugs report LOCK/UNLOCK, some report ON/OFF.
+                            state["childlock"] = str(data["child_lock"]).upper() in ("LOCK", "ON", "TRUE")
                         if "child_lock" in data:
                             state["child_lock"] = data["child_lock"]
                         if "child_lock" in data:
