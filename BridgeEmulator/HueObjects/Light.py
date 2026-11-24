@@ -138,6 +138,11 @@ class Light():
         if "mode" in self.state:
             result["state"]["mode"] = self.state["mode"]
         result["state"]["reachable"] = self.state["reachable"]
+        # Smart plugs report their measurements; pass them through so apps and
+        # the WebUI can display them.
+        for measurement in ("power", "voltage", "current", "energy"):
+            if measurement in self.state:
+                result["state"][measurement] = self.state[measurement]
         result["modelid"] = self.modelid
         result["name"] = self.name
         result["uniqueid"] = self.uniqueid

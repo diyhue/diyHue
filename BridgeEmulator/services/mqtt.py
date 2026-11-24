@@ -518,6 +518,11 @@ def on_message(client, userdata, msg):
                             state["bri"] = data["brightness"]
                             v2State.update({"dimming": {"brightness": round(state["bri"] / 2.54, 2)}})
                             device.genStreamEvent(v2State)
+                        # Smart plugs report their measurements; keep them in the
+                        # light state so the WebUI can show them.
+                        for measurement in ("power", "voltage", "current", "energy"):
+                            if measurement in data and isinstance(data[measurement], (int, float)):
+                                state[measurement] = data[measurement]
                         device.state.update(state)
                         streamGroupEvent(device, v2State)
 
