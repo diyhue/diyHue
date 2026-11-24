@@ -31,7 +31,7 @@ class Light():
         self.function = data["function"] if "function" in data else "mixed"
 
         # entertainment
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": str(uuid.uuid5(
                              uuid.NAMESPACE_URL, self.id_v2 + 'entertainment')), "type": "entertainent"}],
                          "id": str(uuid.uuid4()),
@@ -42,7 +42,7 @@ class Light():
         StreamEvent(streamMessage)
 
         # zigbee_connectivity
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getZigBee()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -50,7 +50,7 @@ class Light():
         StreamEvent(streamMessage)
 
         # light
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -58,7 +58,7 @@ class Light():
         StreamEvent(streamMessage)
 
         # device
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getDevice()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
