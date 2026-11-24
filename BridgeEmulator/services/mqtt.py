@@ -350,7 +350,12 @@ def on_message(client, userdata, msg):
             logging.debug("MQTT: got state message on " + msg.topic)
             data = json.loads(msg.payload)
             logging.debug(msg.payload)
-            if msg.topic.startswith(discoveryPrefix + "/light/") or msg.topic.startswith(discoveryPrefix + "/switch/"):
+            switch_topic = msg.topic.startswith(discoveryPrefix + "/switch/")
+            # Only the main switch entity of a device is a socket; the same
+            # devices also announce child_lock, led_indication or permit_join
+            # entities that must not become lights.
+            if msg.topic.startswith(discoveryPrefix + "/light/") or (
+                    switch_topic and msg.topic.split("/")[-2] == "switch"):
                 # Zigbee2MQTT announces sockets (smart plugs) as HA switch
                 # entities; they carry the same command/state topics as a light,
                 # so the light path turns them into a Hue on/off plug.
