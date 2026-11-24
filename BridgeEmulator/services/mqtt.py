@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep
 from functions.core import nextFreeId
 from sensors.discover import addHueMotionSensor
-from sensors.sensor_types import sensorTypes, MODEL_ALIASES
+from sensors.sensor_types import sensorTypes, MODEL_ALIASES, MOTION_SENSOR_MODELS
 from lights.discover import addNewLight
 from functions.rules import rulesProcessor
 from functions.behavior_instance import checkBehaviorInstances
@@ -42,7 +42,7 @@ def getBaseTopic():
     return topic or DEFAULT_Z2M_BASE_TOPIC
 
 
-motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001"]
+motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion.aq2", "lumi.sensor_motion", "lumi.motion.ac02", "SML001", "SML002", "SML003"]
 standardSensors = {
     "TRADFRI remote control": {
         "dataConversion": {
@@ -258,7 +258,7 @@ def getObject(friendly_name):
             for key, device in bridgeConfig[resource].items():
                 if device.protocol == "mqtt":
                     if "friendly_name" in device.protocol_cfg and device.protocol_cfg["friendly_name"] == friendly_name:
-                        if device.modelid == "SML001" and device.type != "ZLLPresence":
+                        if device.modelid in MOTION_SENSOR_MODELS and device.type != "ZLLPresence":
                             continue
                         devices_ids[friendly_name] = weakref.ref(device)
                         logging.debug("Cache Miss " + friendly_name)
@@ -395,7 +395,7 @@ def on_message(client, userdata, msg):
                             ### TRADFRI Motion Sensor, Xiaomi motion sensor, etc
                             elif key["model_id"] in motionSensors:
                                     logging.info("MQTT: add new motion sensor " + key["model_id"])
-                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]})
+                                    addHueMotionSensor(key["friendly_name"], "mqtt", {"modelid": key["model_id"], "lightSensor": "on", "friendly_name": key["friendly_name"]}, key["model_id"])
                             else:
                                 logging.info("MQTT: unsupported sensor " + key["model_id"])
             elif msg.topic == getBaseTopic() + "/bridge/log":

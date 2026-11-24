@@ -1,6 +1,6 @@
 import uuid
 import logManager
-from sensors.sensor_types import sensorTypes
+from sensors.sensor_types import sensorTypes, MOTION_SENSOR_MODELS
 from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -61,7 +61,7 @@ class Sensor():
             StreamEvent(streamMessage)
 
     def __del__(self):
-        if self.modelid in ["SML001", "RWL022"]:
+        if self.modelid in MOTION_SENSOR_MODELS or self.modelid == "RWL022":
             streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.getDevice()["id"], "type": "device"}],
                          "id": str(uuid.uuid4()),
@@ -75,7 +75,7 @@ class Sensor():
         self.state.update(state)
 
     def getBridgeHome(self):
-        if self.modelid == "SML001":
+        if self.modelid in MOTION_SENSOR_MODELS:
             if self.type == "ZLLPresence":
                 rtype = "motion"
             elif self.type == "ZLLLightLevel":
@@ -115,10 +115,30 @@ class Sensor():
     def getObjectPath(self):
         return {"resource": "sensors", "id": self.id_v1}
 
+    def v2DeviceKey(self):
+        """Key that groups the v1 sensors of one v2 device.
+
+        A Hue motion sensor is exposed as three v1 sensors (presence, ambient
+        light, temperature) that share one uniqueid prefix. CLIP v2 has a
+        single device for them, so every sibling derives its resource ids from
+        that shared key instead of its own id.
+        """
+        if self.modelid in MOTION_SENSOR_MODELS and self.uniqueid:
+            return self.uniqueid.rsplit("-", 1)[0]
+        return self.id_v2
+
+    def v2DeviceId(self):
+        if self.modelid in MOTION_SENSOR_MODELS and self.uniqueid:
+            return str(uuid.uuid5(uuid.NAMESPACE_URL, self.v2DeviceKey() + 'device'))
+        return self.id_v2
+
+    def v2ServiceId(self, name):
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, self.v2DeviceKey() + name))
+
     def getDevice(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLPresence":
-            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+        if self.modelid in MOTION_SENSOR_MODELS and self.type == "ZLLPresence":
+            result = {"id": self.v2DeviceId(), "id_v1": "/sensors/" + self.id_v1, "type": "device"}
             result["identify"] = {}
             result["metadata"] = {
                 "archetype": "unknown_archetype",
@@ -134,23 +154,23 @@ class Sensor():
             }
             result["services"] = [
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
+                    "rid": self.v2ServiceId('motion'),
                     "rtype": "motion"
                 },
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                    "rid": self.v2ServiceId('device_power'),
                     "rtype": "device_power"
                 },
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                    "rid": self.v2ServiceId('zigbee_connectivity'),
                     "rtype": "zigbee_connectivity"
                 },
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'light_level')),
+                    "rid": self.v2ServiceId('light_level'),
                     "rtype": "light_level"
                 },
                 {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
+                    "rid": self.v2ServiceId('temperature'),
                     "rtype": "temperature"
                 }]
             result["type"] = "device"
@@ -233,10 +253,10 @@ class Sensor():
 
     def getMotion(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLPresence":
+        if self.modelid in MOTION_SENSOR_MODELS and self.type == "ZLLPresence":
             result = {
                 "enabled": self.config["on"],
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'motion')),
+                "id": self.v2ServiceId('motion'),
                 "id_v1": "/sensors/" + self.id_v1,
                 "motion": {
                     "motion_report": {
@@ -250,7 +270,7 @@ class Sensor():
                     "sensitivity_max": 2
                 },
                 "owner": {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rid": self.v2DeviceId(),
                     "rtype": "device"
                 },
                 "type": "motion"}
@@ -258,10 +278,10 @@ class Sensor():
     
     def getTemperature(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLTemperature":
+        if self.modelid in MOTION_SENSOR_MODELS and self.type == "ZLLTemperature":
             result = {
                 "enabled": self.config["on"],
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'temperature')),
+                "id": self.v2ServiceId('temperature'),
                 "id_v1": "/sensors/" + self.id_v1,
                 "temperature": {
                     "temperature_report":{
@@ -270,7 +290,7 @@ class Sensor():
                     }
                 },
                 "owner": {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rid": self.v2DeviceId(),
                     "rtype": "device"
                 },
                 "type": "temperature"}
@@ -278,10 +298,10 @@ class Sensor():
     
     def getLightlevel(self):
         result = None
-        if self.modelid == "SML001" and self.type == "ZLLLightLevel":
+        if self.modelid in MOTION_SENSOR_MODELS and self.type == "ZLLLightLevel":
             result = {
                 "enabled": self.config["on"],
-                "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'light_level')),
+                "id": self.v2ServiceId('light_level'),
                 "id_v1": "/sensors/" + self.id_v1,
                 "light": {
                     "light_level_report":{
@@ -290,7 +310,7 @@ class Sensor():
                     }
                 },
                 "owner": {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
+                    "rid": self.v2DeviceId(),
                     "rtype": "device"
                 },
                 "type": "light_level"}
@@ -298,18 +318,17 @@ class Sensor():
 
     def getZigBee(self):
         result = None
-        if self.modelid == "SML001" and self.type != "ZLLPresence":
+        if self.modelid in MOTION_SENSOR_MODELS and self.type != "ZLLPresence":
             return None
         if self.type == "ZLLRelativeRotary":
             return None
         if not self.uniqueid:
             return None
         result = {}
-        result["id"] = str(uuid.uuid5(
-            uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity'))
+        result["id"] = self.v2ServiceId('zigbee_connectivity')
         result["id_v1"] = "/sensors/" + self.id_v1
         result["owner"] = {
-            "rid": self.id_v2,
+            "rid": self.v2DeviceId(),
             "rtype": "device"
             }
         result["type"] = "zigbee_connectivity"
@@ -393,13 +412,16 @@ class Sensor():
         result = None
         if self.type == "ZLLRelativeRotary":
             return None
+        # The three v1 sensors of a motion sensor share one device and one
+        # power resource, so only the presence sensor reports it.
+        if self.modelid in MOTION_SENSOR_MODELS and self.type != "ZLLPresence":
+            return None
         if "battery" in self.config:
             result = {
-                "id": str(uuid.uuid5(
-                    uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "id": self.v2ServiceId('device_power'),
                 "id_v1": "/sensors/" + self.id_v1,
                 "owner": {
-                    "rid": self.id_v2,
+                    "rid": self.v2DeviceId(),
                     "rtype": "device"
                 },
                 "power_state": {},

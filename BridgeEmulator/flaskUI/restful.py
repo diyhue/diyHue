@@ -8,6 +8,7 @@ import os
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
+from sensors.sensor_types import MOTION_SENSOR_MODELS
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
 from flask import request
@@ -409,7 +410,7 @@ class Element(Resource):
                     logging.info("link not found")
             configManager.bridgeConfig.mark_dirty("resourcelinks")
         # delete also light and temperature sensor
-        if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid == "SML001":
+        if resource == "sensors" and bridgeConfig["sensors"][resourceid].modelid in MOTION_SENSOR_MODELS:
             for sensor in list(bridgeConfig["sensors"].keys()):
                 if bridgeConfig["sensors"][sensor].uniqueid != None and bridgeConfig["sensors"][sensor].uniqueid[:-1] == bridgeConfig["sensors"][resourceid].uniqueid[:-1] and bridgeConfig["sensors"][sensor].id_v1 != resourceid:
                     del bridgeConfig["sensors"][sensor]

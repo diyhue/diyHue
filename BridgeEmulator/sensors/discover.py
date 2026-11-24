@@ -12,16 +12,16 @@ def generate_unique_id():
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
     return "00:17:88:01:03:%02x:%02x:%02x" % (rand_bytes[0], rand_bytes[1], rand_bytes[2])
 
-def addHueMotionSensor(name, protocol, protocol_cfg):
+def addHueMotionSensor(name, protocol, protocol_cfg, modelid="SML001"):
     uniqueid = generate_unique_id()
     motion_sensor_id = nextFreeId(bridgeConfig, "sensors")
-    motion_sensor = {"name": "Hue motion " + name[:21], "id_v1": motion_sensor_id, "protocol": protocol, "modelid": "SML001", "type": "ZLLPresence", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0406"}
+    motion_sensor = {"name": "Hue motion " + name[:21], "id_v1": motion_sensor_id, "protocol": protocol, "modelid": modelid, "type": "ZLLPresence", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0406"}
     bridgeConfig["sensors"][motion_sensor_id] = Sensor.Sensor(motion_sensor)
     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-    light_sensor = {"name": "Hue ambient light " + name[:14], "id_v1": new_sensor_id, "protocol": protocol, "modelid": "SML001", "type": "ZLLLightLevel", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0400"}
+    light_sensor = {"name": "Hue ambient light " + name[:14], "id_v1": new_sensor_id, "protocol": protocol, "modelid": modelid, "type": "ZLLLightLevel", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0400"}
     bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(light_sensor)
     new_sensor_id = nextFreeId(bridgeConfig, "sensors")
-    temp_sensor = {"name": "Hue temperature " + name[:16], "id_v1": new_sensor_id, "protocol": protocol, "modelid": "SML001", "type": "ZLLTemperature", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0402"}
+    temp_sensor = {"name": "Hue temperature " + name[:16], "id_v1": new_sensor_id, "protocol": protocol, "modelid": modelid, "type": "ZLLTemperature", "protocol_cfg": protocol_cfg, "uniqueid": uniqueid + "-02-0402"}
     bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(temp_sensor)
     return
 
