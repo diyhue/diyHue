@@ -67,7 +67,7 @@ def setGroupAction(group, state, scene=None):
                 # Group 0 means "all lights". Sockets report as Hue on/off
                 # plug-in units (model ids LOM001/LOM004/...); switching them
                 # with the lights would cut power to whatever is plugged in.
-                if group.id_v1 == "0" and str(light().modelid).startswith("LOM"):
+                if group.id_v1 == "0" and (light().config.get("archetype") == "plug" or str(light().modelid).startswith("LOM")):
                     continue
                 lightsState[light().id_v1] = state
         if "xy" in state:
