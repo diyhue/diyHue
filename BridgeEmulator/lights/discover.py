@@ -3,6 +3,7 @@ import configManager
 import socket
 import json
 import uuid
+from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Dict, List, Tuple, Union, Generator
 from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, hue_bl, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato, govee
@@ -96,7 +97,9 @@ def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: Dict) -> U
     """
     newLightID = nextFreeId(bridgeConfig, "lights")
     if modelid in lightTypes:
-        light = lightTypes[modelid]
+        # The catalog entries are shared templates. Copy before filling in this light,
+        # or every light of this model keeps one state/config object.
+        light = deepcopy(lightTypes[modelid])
         light.update({
             "name": name,
             "id_v1": newLightID,

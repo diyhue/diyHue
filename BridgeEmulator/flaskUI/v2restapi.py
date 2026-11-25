@@ -22,7 +22,7 @@ bridgeConfig = configManager.bridgeConfig.yaml_config
 
 v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
-"geofence_client": {}, "motion": {}, "light_level": {}, "temperature": {}, "relative_rotary": {}, "button": {}}
+"geofence_client": {}, "motion": {}, "light_level": {}, "temperature": {}, "relative_rotary": {}, "button": {}, "contact": {}}
 
 
 def stopSmartScenesOn(group):
@@ -415,6 +415,11 @@ class ClipV2Resource(Resource):
                 motion = sensor.getMotion()
                 if motion != None:
                     response["data"].append(motion)
+        elif resource == "contact":
+            for key, sensor in bridgeConfig["sensors"].items():
+                contact = sensor.getContact()
+                if contact != None:
+                    response["data"].append(contact)
         elif resource == "device_power":
             for key, sensor in bridgeConfig["sensors"].items():
                 power = sensor.getDevicePower()
@@ -630,6 +635,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [v2Bridge()]}
         elif resource == "motion":
             return {"errors": [], "data": [object.getMotion()]}
+        elif resource == "contact":
+            return {"errors": [], "data": [object.getContact()]}
         elif resource == "device_power":
             return {"errors": [], "data": [object.getDevicePower()]}
         elif resource == "button":
@@ -784,6 +791,10 @@ class ClipV2ResourceId(Resource):
                                         }
                         StreamEvent(streamMessage)
         elif resource == "motion":
+            if "enabled" in putDict:
+                object.update_attr({"config": {"on": putDict["enabled"]}})
+                configManager.bridgeConfig.mark_dirty("sensors")
+        elif resource == "contact":
             if "enabled" in putDict:
                 object.update_attr({"config": {"on": putDict["enabled"]}})
                 configManager.bridgeConfig.mark_dirty("sensors")

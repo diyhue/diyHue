@@ -15,7 +15,7 @@ class BehaviorInstance():
         self.active = data["active"] if "active" in data else False
         self.script_id = data["script_id"] if "script_id" in data else ""
 
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
@@ -83,7 +83,7 @@ class BehaviorInstance():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Api()],
                          "id": str(uuid.uuid4()),
                          "type": "update"

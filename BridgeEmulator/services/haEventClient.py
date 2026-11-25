@@ -259,6 +259,9 @@ def make_client_class(legacy):
 
         def do_auth_complete(self):
             if self.current():
+                # Commands wait on this (#1155); without it every panel command
+                # fails as "not connected or not authorised" in reflection mode.
+                self.authenticated.set()
                 self.subscribe_for_updates()
 
         def do_auth_invalid(self, message):
@@ -322,6 +325,7 @@ def make_client_class(legacy):
                 self.id_to_type.pop(message.get('id'), None)
 
         def closed(self, code, reason=None):
+            self.authenticated.clear()
             if self.current():
                 self.owner.reducer.disconnect(self.epoch)
             self.deadline = 0

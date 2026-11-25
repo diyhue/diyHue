@@ -153,7 +153,7 @@ def main():
         homeAssistantWS.create_ws_client(bridgeConfig)
     if not ("discovery" in bridgeConfig["config"] and bridgeConfig["config"]["discovery"] == False):
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
-    Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
+    Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"], HOST_HTTP_PORT]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
