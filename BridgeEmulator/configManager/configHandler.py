@@ -278,6 +278,10 @@ class Config:
                 "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                 "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                 "hue": {},
+                # Entertainment settings. The cipher list of the DTLS
+                # entertainment server lives here under "ciphers"; without it
+                # the built-in default is used.
+                "entertainment": {},
                 "hue_bl": {"enabled": False},
                 "tradfri": {},
                 "homeassistant": {"enabled":False},
