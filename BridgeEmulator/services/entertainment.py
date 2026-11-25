@@ -25,6 +25,35 @@ for _candidate in ["/opt/homebrew/opt/openssl/bin/openssl", "/usr/local/opt/open
         break
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
+# Cipher list for the DTLS entertainment server. The HDMI Sync Box
+# negotiates PSK-AES128-CBC-SHA (0x00A8) and never starts the handshake
+# without CBC in the list, so it is offered first; the GCM/CCM entries stay
+# for clients that prefer them. The list is configurable through
+# config.entertainment.ciphers for installations with other clients.
+DEFAULT_ENTERTAINMENT_CIPHERS = (
+    "PSK-AES128-CBC-SHA:"
+    "PSK-AES128-GCM-SHA256:"
+    "PSK-AES128-CCM8:"
+    "PSK-AES128-CCM:"
+    "@SECLEVEL=0"
+)
+
+
+def entertainment_ciphers(config=None):
+    """Return the cipher list for the DTLS entertainment server.
+
+    The list comes from config.entertainment.ciphers so it can be adapted
+    to the clients in an installation. An installation without that block
+    keeps the default list.
+    """
+    if config is None:
+        config = bridgeConfig.get("config") or {}
+    block = config.get("entertainment") or {}
+    ciphers = block.get("ciphers")
+    if isinstance(ciphers, str) and ciphers.strip():
+        return ciphers.strip()
+    return DEFAULT_ENTERTAINMENT_CIPHERS
+
 cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller than this values
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
@@ -57,6 +86,20 @@ def _psk_value(key):
         return binascii.hexlify(decoded).decode()
     except Exception:
         return binascii.hexlify(key.encode()).decode()
+
+
+def _entertainment_credentials(config, user):
+    """Return (psk, identity) for the DTLS entertainment server.
+
+    Clients the Hue app pairs directly (the HDMI Sync Box) present the
+    entertainment credentials, not the API user. ``config.entertainment``
+    supplies them when the block is present; otherwise the API user is used,
+    which keeps installations without that block unchanged.
+    """
+    ent = (config or {}).get("entertainment") or {}
+    psk = _psk_value(ent.get("client_key") or user.client_key or user.username)
+    identity = ent.get("identity") or user.username
+    return psk, identity
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -207,12 +250,12 @@ def _entertainmentService(group, user, session):
     # A user without a client key cannot serve as DTLS identity. Fall back to
     # the username so the entertainment server still starts instead of
     # crashing on a None key.
-    psk = _psk_value(user.client_key or user.username)
+    psk, psk_identity = _entertainment_credentials(bridgeConfig["config"], user)
     opensslCmd = [
         _OPENSSL_BIN, "s_server",
         "-4", "-dtls1_2", "-listen",
-        "-cipher", "PSK-AES128-GCM-SHA256:PSK-AES128-CCM8:PSK-AES128-CCM:@SECLEVEL=0",
-        "-psk", psk, "-psk_identity", user.username,
+        "-cipher", entertainment_ciphers(bridgeConfig["config"]),
+        "-psk", psk, "-psk_identity", psk_identity,
         "-nocert", "-accept", _accept_address(),
     ]
     _logged_cmd = []
