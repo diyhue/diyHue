@@ -44,7 +44,7 @@ jobs:
 
       - name: Build docker image
         run: |
-          docker buildx build --builder mybuilder --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} --cache-from=type=local,src=/tmp/.buildx-cache --cache-to=type=local,dest=/tmp/.buildx-cache -t diyhue/diyhue:ci -f ./.build/Dockerfile --load .
+          docker buildx build --builder mybuilder --provenance=false --sbom=false --platform=${{ matrix.arch }} --build-arg TARGETPLATFORM=${{ matrix.arch }} --cache-from=type=local,src=/tmp/.buildx-cache --cache-to=type=local,dest=/tmp/.buildx-cache -t diyhue/diyhue:ci -f ./.build/Dockerfile --load .
 
       - name: Save tarball
         run: |
