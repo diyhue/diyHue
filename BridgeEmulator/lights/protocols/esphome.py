@@ -49,6 +49,7 @@ def discover(detectedLights, device_ips):
     logging.debug("ESPHome: <discover> invoked!")
 
     for ip in device_ips:
+        found = False
         try:
             logging.debug ( "ESPHome: probing ip " + ip)
             response = requests.get ("http://" + ip + "/text_sensor/light_id", timeout=3)
@@ -72,26 +73,39 @@ def discover(detectedLights, device_ips):
                     logging.debug("ESPHome: " + device_name + " is a RGBW ESPHome device")
                     properties = {"rgb": True, "ct": True, "ip": ip, "name": device_name,  "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-RGBW"}
                     modelid = "LCT015"
-                elif (white_response.status_code == 200):
-                    logging.debug("ESPHome: " + device_name + " is a CT ESPHome device")
-                    properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-CT"}
-                    modelid = "LTW001"
-                elif (color_response.status_code == 200):
-                    logging.debug("ESPHome: " + device_name + " is a RGB ESPHome device")
-                    properties = {"rgb": True, "ct": False, "ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-RGB"}
-                    modelid = "LCT015"
-                elif (dim_response.status_code == 200):
+                    detectedLights.append({"protocol": "esphome", "name": device_name+".RGBW", "modelid": modelid, "protocol_cfg": properties})
+                    found = True
+                else:
+                    if (white_response.status_code == 200):
+                        logging.debug("ESPHome: " + device_name + " is a CT ESPHome device")
+                        properties = {"rgb": False, "ct": True, "ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-CT"}
+                        modelid = "LTW001"
+                        detectedLights.append({"protocol": "esphome", "name": device_name+".CT", "modelid": modelid, "protocol_cfg": properties})
+                        found = True
+                    elif (color_response.status_code == 200):
+                        logging.debug("ESPHome: " + device_name + " is a RGB ESPHome device")
+                        properties = {"rgb": True, "ct": False, "ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-RGB"}
+                        modelid = "LCT015"
+                        detectedLights.append({"protocol": "esphome", "name": device_name+".RGB", "modelid": modelid, "protocol_cfg": properties})
+                        found = True
+                if (dim_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Dimmable ESPHome device")
                     properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name,  "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-Dimmable"}
                     modelid = "LWB010"
-                elif (toggle_response.status_code == 200):
+                    detectedLights.append({"protocol": "esphome", "name": device_name+".Dimmable", "modelid": modelid, "protocol_cfg": properties})
+                    found = True
+                if (toggle_response.status_code == 200):
                     logging.debug("ESPHome: " + device_name + " is a Toggle ESPHome device")
                     properties = {"rgb": False, "ct": False, "ip": ip, "name": device_name, "id": mac, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost, "esphome_model": "ESPHome-Toggle"}
                     modelid = "LOM001"
-                else:
-                    logging.debug("ESPHome: ip " + ip + " is unknown device")
-                    raise
-                detectedLights.append({"protocol": "esphome", "name": device_name, "modelid": modelid, "protocol_cfg": properties})
+                    detectedLights.append({"protocol": "esphome", "name": device_name+".Toggle", "modelid": modelid, "protocol_cfg": properties})
+                    found = True
+
+                if not found:
+                    logging.info("ESPHome: ip " + ip + " lights not found")
+
+            else:
+                logging.info("ESPHome: ip " + ip + " is not an esphome_diyhue_light")
 
         except Exception as e:
             logging.debug("ESPHome: ip " + ip + " is unknown device, " + str(e))
