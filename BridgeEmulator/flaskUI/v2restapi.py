@@ -381,6 +381,46 @@ def v2DiyHueBridge():
         "remote_discovery": bridgeConfig["config"]["discovery"]
     }
 
+# diyhue resource property -> bridge config key; hue_essentials_key is read-only
+DIYHUE_WRITABLE = {"remote_api_enabled": "Remote API enabled", "remote_discovery": "discovery"}
+
+def _diyHueError(description, status):
+    return {"errors": [{"description": description}], "data": []}, status
+
+def getDiyHue(resourceid):
+    if "user" not in authorizeV2(request.headers):
+        return "", 403
+    resource = v2DiyHueBridge()
+    if resourceid != resource["id"]:
+        return _diyHueError("Not Found", 404)
+    return {"errors": [], "data": [resource]}
+
+def putDiyHue(resourceid=None):
+    """PUT /clip/v2/resource/diyhue[/<id>]: change the diyHue specific settings."""
+    if "user" not in authorizeV2(request.headers):
+        return "", 403
+    resource = v2DiyHueBridge()
+    if resourceid is not None and resourceid != resource["id"]:
+        return _diyHueError("Not Found", 404)
+    putDict = request.get_json(force=True, silent=True)
+    if not isinstance(putDict, dict) or not putDict:
+        return _diyHueError("Body must be a JSON object", 400)
+    for key, value in putDict.items():
+        if key not in DIYHUE_WRITABLE:
+            return _diyHueError("Property " + key + " can not be changed", 400)
+        if not isinstance(value, bool):
+            return _diyHueError("Property " + key + " must be a boolean", 400)
+    for key, value in putDict.items():
+        bridgeConfig["config"][DIYHUE_WRITABLE[key]] = value
+    configManager.bridgeConfig.mark_dirty("config")
+    event = {"id": resource["id"], "id_v1": "", "type": "diyhue"}
+    event.update(putDict)
+    StreamEvent({"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "data": [event],
+                 "id": str(uuid.uuid4()),
+                 "type": "update"})
+    return {"errors": [], "data": [{"rid": resource["id"], "rtype": "diyhue"}]}
+
 class AuthV1(Resource):
     def get(self):
         authorisation = authorizeV2(request.headers)
@@ -629,6 +669,11 @@ class ClipV2Resource(Resource):
             del response["data"]
 
         return response
+
+    def put(self, resource):
+        if resource == "diyhue":  # singleton, like the Hue bridge resource
+            return putDiyHue()
+        return _diyHueError("The method is not allowed for this resource", 405)
 
     def post(self, resource):
         # logging.debug(request.headers)
@@ -883,6 +928,8 @@ class ClipV2Resource(Resource):
 
 class ClipV2ResourceId(Resource):
     def get(self, resource, resourceid):
+        if resource == "diyhue":
+            return getDiyHue(resourceid)
         # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
@@ -960,6 +1007,8 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getTamper()]}
 
     def put(self, resource, resourceid):
+        if resource == "diyhue":
+            return putDiyHue(resourceid)
         # Request headers contain the application key; never log them.
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:

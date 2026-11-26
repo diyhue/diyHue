@@ -162,8 +162,8 @@ def main():
         Thread(target=mqtt.mqttServer).start()
     if bridgeConfig["config"]["homeassistant"]["enabled"]:
         homeAssistantWS.create_ws_client(bridgeConfig)
-    if not ("discovery" in bridgeConfig["config"] and bridgeConfig["config"]["discovery"] == False):
-        Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
+    # the service follows config["discovery"], which can change at runtime
+    Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"], HOST_HTTP_PORT]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
     if discoverySettings["advertise_ssdp"]:

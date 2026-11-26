@@ -10,6 +10,9 @@ def runRemoteDiscover(config):
     logging.info("Starting discovery service")
     url = 'https://discovery.diyhue.org'
     while True:
+        if config.get("discovery", True) == False:
+            sleep(60)  # disabled, can be turned on again at runtime
+            continue
         try:
             payload = {"id": config["bridgeid"],"internalipaddress": config["ipaddress"],"macaddress": config["mac"],"name": config["name"]}
             response = requests.post(url, timeout=5, json=payload)
