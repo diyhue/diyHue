@@ -199,8 +199,12 @@ def is_light_matching(lightObj: Light.Light, light: Dict) -> bool:
                 lightObj.modelid == light["modelid"])
     if protocol in ["yeelight", "tasmota", "tradfri", "hyperion", "tpkasa"]:
         return lightObj.protocol_cfg["id"] == light["protocol_cfg"]["id"] and lightObj.modelid == light["modelid"]
-    if protocol in ["shelly", "native", "native_single", "esphome", "elgato"]:
+    if protocol in ["shelly", "native", "native_single", "elgato"]:
         return lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and lightObj.modelid == light["modelid"]
+    if protocol in ["esphome"]:
+        return (lightObj.protocol_cfg["mac"] == light["protocol_cfg"]["mac"] and
+                lightObj.modelid == light["modelid"] and
+                lightObj.name == light["name"])
     if protocol in ["hue", "hue_bl", "deconz"]:
         return lightObj.protocol_cfg["uniqueid"] == light["protocol_cfg"]["uniqueid"] and lightObj.modelid == light["modelid"]
     if protocol == "wled":
